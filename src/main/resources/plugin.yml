@@ -1,0 +1,11 @@
+main: phonon.xc.XCPlugin
+name: xc
+version: 0.0.0
+api-version: 1.16
+softdepend: [kotlin, ProtocolLib, WorldGuard]
+commands:
+  xc:
+    description: xc
+    aliases: []
+    permission: xc.command
+    usage: /xc help

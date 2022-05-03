@@ -1,0 +1,13 @@
+# XC Config
+# Combat plugin for miney man
+
+
+# ADVANCED ENGINE CONFIG
+# generally dont touch these...
+
+# material types for custom items, must match a Material exactly
+[material]
+gun = "WARPED_FUNGUS_ON_A_STICK"
+melee = "IRON_HORSE_ARMOR"
+misc_weapon = "GOLDEN_HORSE_ARMOR"
+hat = "LEATHER_HORSE_ARMOR"
