@@ -16,6 +16,7 @@ import java.util.EnumSet
 import java.util.UUID
 import java.util.logging.Logger
 import org.bukkit.Bukkit
+import org.bukkit.NamespacedKey
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
@@ -47,6 +48,10 @@ public object XC {
     internal var usingProtocolLib: Boolean = false
     internal var usingWorldGuard: Boolean = false
 
+    // namespace keys for custom item properties
+    internal var namespaceKeyItemAmmo: NamespacedKey? = null   // key for item ammo value
+    internal var namespaceKeyItemReload: NamespacedKey? = null // key for item reload id
+
     // ========================================================================
     // BUILT-IN ENGINE CONSTANTS
     // ========================================================================
@@ -56,8 +61,8 @@ public object XC {
     public const val MAX_HAT_CUSTOM_MODEL_ID: Int = 1024   // max allowed hat item custom model id
     
     // namespaced keys
-    public const val ITEM_KEY_AMMO: String = "ammo"          // ItemStack namespaced key for ammo count
-    public const val ITEM_KEY_RELOAD_ID: String = "reloadId" // ItemStack namespaced key for gun reload id
+    public const val ITEM_KEY_AMMO: String = "ammo"        // ItemStack namespaced key for ammo count
+    public const val ITEM_KEY_RELOAD_ID: String = "reload" // ItemStack namespaced key for gun reload id
     
     // ========================================================================
     // STORAGE
@@ -78,6 +83,11 @@ public object XC {
 
     // projectile systems for each world, map world uuid => ProjectileSystem
     internal val projectileSystems: HashMap<UUID, ProjectileSystem> = HashMap()
+
+    // queue of player controls requests
+    internal var playerShootRequests: ArrayList<Player> = ArrayList()
+    internal var playerReloadRequests: ArrayList<Player> = ArrayList()
+    internal var playerUseCustomWeaponRequests: ArrayList<Player> = ArrayList()
 
     // map of players doing automatic firing
     internal val isAutomaticFiring: HashMap<UUID, AutomaticFiring> = HashMap()
@@ -122,6 +132,10 @@ public object XC {
     internal fun onEnable(plugin: Plugin) {
         XC.plugin = plugin
         XC.logger = plugin.getLogger()
+
+        // namespaced keys
+        XC.namespaceKeyItemAmmo = NamespacedKey(plugin, ITEM_KEY_AMMO)
+        XC.namespaceKeyItemReload = NamespacedKey(plugin, ITEM_KEY_RELOAD_ID)
     }
 
     /**
@@ -130,6 +144,8 @@ public object XC {
     internal fun onDisable() {
         XC.plugin = null
         XC.logger = null
+        XC.namespaceKeyItemAmmo = null
+        XC.namespaceKeyItemReload = null
     }
 
     /**
@@ -178,6 +194,10 @@ public object XC {
         println(gun1)
         println(gun2)
         println(gun3)
+
+
+        // temporary: set gun 0 to debug gun
+        XC.guns[0] = XC.gunDebug
 
         // start new engine runnable
         val timeEnd = System.currentTimeMillis()
@@ -245,7 +265,12 @@ public object XC {
         XC.debugTimings.tick()
         XC.runBenchmarkProjectiles() // debugging
 
-        // run player gun handler tasks
+        // run player gun controls systems
+        gunPlayerShootSystem(XC.playerShootRequests)
+        gunPlayerReloadSystem(XC.playerReloadRequests)
+        XC.playerShootRequests = ArrayList()
+        XC.playerReloadRequests = ArrayList()
+        XC.playerUseCustomWeaponRequests = ArrayList()
 
         // update projectile systems for each world
         for ( projSys in this.projectileSystems.values ) {

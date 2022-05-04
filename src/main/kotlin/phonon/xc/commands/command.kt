@@ -12,8 +12,10 @@ import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
-import phonon.xc.utils.Message
 import phonon.xc.XC
+import phonon.xc.utils.Message
+import phonon.xc.gun.createItemFromGun
+
 
 private val SUBCOMMANDS = listOf(
     "help",
@@ -21,6 +23,7 @@ private val SUBCOMMANDS = listOf(
     "timings",
     "debugtimings",
     "benchmark",
+    "gun",
     "gundebug",
 
     // random testing debug commands
@@ -51,6 +54,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             "timings" -> timings(sender)
             "debugTimings" -> debugTimings(sender)
             "benchmark" -> benchmark(player, args)
+            "gun" -> gun(sender, args)
             "gundebug" -> gundebug(sender, args)
             
             // random testing debug commands
@@ -153,6 +157,38 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         Message.print(sender, "[xc] Must be run in-game by player")
     }
     
+    
+    /**
+     * Get a gun item from ID.
+     */
+    private fun gun(sender: CommandSender?, args: Array<String>) {
+        val player = if ( sender is Player ) sender else null
+        if ( player === null ) {
+            Message.error(sender, "[xc] Must be run in-game by player")
+            return
+        }
+        if ( !player.isOp() ) {
+            Message.error(player, "[xc] op only")
+            return
+        }
+
+        if ( args.size < 2 ) {
+            Message.print(sender, "/xc gun [id]")
+            return
+        }
+
+        val gunId = args[1].toInt()
+        if ( gunId >= 0 && gunId < XC.MAX_GUN_CUSTOM_MODEL_ID ) {
+            val gun = XC.guns[gunId]
+            if ( gun != null ) {
+                val item = createItemFromGun(gun)
+                player.getInventory().addItem(item)
+            }
+            return
+        }
+        
+        Message.error(sender, "[xc] Invalid gun ID")
+    }
     
     /**
      * Set debug gun parameters

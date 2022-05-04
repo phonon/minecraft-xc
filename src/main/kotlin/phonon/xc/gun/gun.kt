@@ -1,4 +1,6 @@
-
+/**
+ * Contain gun definition.
+ */
 package phonon.xc.gun
 
 
@@ -8,6 +10,17 @@ package phonon.xc.gun
  * Gun.Builder() object.
  */
 public data class Gun(
+    // gun item properties
+    public val itemName: String = "gun",
+    public val itemLore: List<String>? = null,
+    public val itemModelDefault: Int = 0,     // custom model data
+    public val itemModelReload: Int = -1,     // custom model data
+    public val itemModelIronsights: Int = -1, // custom model data
+    
+    // ammo
+    public val ammoId: Int = -1,
+    public val ammoMax: Int = 10,
+
     // projectile velocity in blocks/tick => (20*vel) m/s
     // physical velocities of ~900 m/s would require vel ~ 45.0
     // but usually this is too fast ingame (makes bullets too hitscan-y)
