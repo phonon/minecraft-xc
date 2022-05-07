@@ -25,14 +25,14 @@ public data class Gun(
     public val soundEmpty: String = "gun_empty",
 
     // reload [ms]
-    public val reloadTime: Long = 1500,
+    public val reloadTimeMillis: Long = 1500,
 
-    // semiauto fire rate [ms]
-    public val fireRate: Long = 500,
+    // semiauto/regular shoot firing rate [ms]
+    public val shootDelayMillis: Long = 500,
 
     // automatic fire rate properties
     public val autoFire: Boolean = false, // automatic weapon
-    public val autoFireRate: Int = 2,    // auto fire rate in ticks
+    public val autoFireDelayTicks: Int = 2,    // auto fire rate in ticks
 
     // ammo
     public val ammoId: Int = -1,

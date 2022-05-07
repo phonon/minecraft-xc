@@ -8,6 +8,7 @@ package phonon.xc.gun
 import kotlin.math.min
 import org.bukkit.ChatColor
 import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataType
 import phonon.xc.XC
 
@@ -48,8 +49,8 @@ public fun createItemFromGun(
 
     // ammo (IMPORTANT: actual ammo count used for shooting/reload logic)
     val ammoCount = min(ammo, gun.ammoMax)
-    val dataContainer = itemMeta.getPersistentDataContainer()
-    dataContainer.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, min(ammoCount, gun.ammoMax))
+    val itemData = itemMeta.getPersistentDataContainer()
+    itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, min(ammoCount, gun.ammoMax))
     
     // begin item description with ammo count
     val itemDescription: ArrayList<String> = arrayListOf("${ChatColor.GRAY}Ammo: ${ammoCount}/${gun.ammoMax}")
@@ -62,6 +63,44 @@ public fun createItemFromGun(
     return item
 }
 
+
+/**
+ * Re-creates gun item's text description using input ammo amount.
+ * This does not do any checks if item is actually the gun
+ * or if the ammo is in proper range. Client does these checks. 
+ */
+public fun updateGunItemAmmo(item: ItemStack, gun: Gun, ammo: Int) {
+    val itemMeta = item.getItemMeta()
+
+    // update ammo data
+    val itemData = itemMeta.getPersistentDataContainer()
+    itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, ammo)
+
+    // update description
+    val itemDescription: ArrayList<String> = arrayListOf("${ChatColor.GRAY}Ammo: ${ammo}/${gun.ammoMax}")
+    // append lore
+    gun.itemLore?.let { lore -> itemDescription.addAll(lore) }
+    itemMeta.setLore(itemDescription.toList())
+
+    item.setItemMeta(itemMeta)
+}
+
+/**
+ * Updates item metadata with gun lore and ammo.
+ * Note: this does not update an item itself, this is a sub-function
+ * for a client updating a gun item.
+ */
+public fun updateGunItemMetaAmmo(itemMeta: ItemMeta, gun: Gun, ammo: Int) {
+    // update ammo data
+    val itemData = itemMeta.getPersistentDataContainer()
+    itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, ammo)
+
+    // update description
+    val itemDescription: ArrayList<String> = arrayListOf("${ChatColor.GRAY}Ammo: ${ammo}/${gun.ammoMax}")
+    // append lore
+    gun.itemLore?.let { lore -> itemDescription.addAll(lore) }
+    itemMeta.setLore(itemDescription.toList())
+}
 
 /**
  * Return ammo value stored in an item stack's persistent data.

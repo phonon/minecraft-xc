@@ -11,10 +11,12 @@ package phonon.xc
 import java.nio.file.Paths
 import java.nio.file.Files
 import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.EnumMap
 import java.util.EnumSet
 import java.util.UUID
 import java.util.logging.Logger
+import kotlin.math.max
 import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
 import org.bukkit.entity.Entity
@@ -49,8 +51,10 @@ public object XC {
     internal var usingWorldGuard: Boolean = false
 
     // namespace keys for custom item properties
-    internal var namespaceKeyItemAmmo: NamespacedKey? = null   // key for item ammo value
-    internal var namespaceKeyItemReload: NamespacedKey? = null // key for item reload id
+    internal var namespaceKeyItemAmmo: NamespacedKey? = null      // key for item ammo value
+    internal var namespaceKeyItemReloading: NamespacedKey? = null // key for item is reloading (0 or 1)
+    internal var namespaceKeyItemReloadId: NamespacedKey? = null  // key for item reload id
+    internal var namespaceKeyItemReloadTimestamp: NamespacedKey? = null  // key for item reload timestamp
 
     // ========================================================================
     // BUILT-IN ENGINE CONSTANTS
@@ -61,8 +65,10 @@ public object XC {
     public const val MAX_HAT_CUSTOM_MODEL_ID: Int = 1024   // max allowed hat item custom model id
     
     // namespaced keys
-    public const val ITEM_KEY_AMMO: String = "ammo"        // ItemStack namespaced key for ammo count
-    public const val ITEM_KEY_RELOAD_ID: String = "reload" // ItemStack namespaced key for gun reload id
+    public const val ITEM_KEY_AMMO: String = "ammo"           // ItemStack namespaced key for ammo count
+    public const val ITEM_KEY_RELOADING: String = "reloading" // ItemStack namespaced key for gun reloading
+    public const val ITEM_KEY_RELOAD_ID: String = "reloadId"  // ItemStack namespaced key for gun reload id
+    public const val ITEM_KEY_RELOAD_TIMESTAMP: String = "reloadTime"  // ItemStack namespaced key for gun reload timestamp
     
     // ========================================================================
     // STORAGE
@@ -84,16 +90,19 @@ public object XC {
     // projectile systems for each world, map world uuid => ProjectileSystem
     internal val projectileSystems: HashMap<UUID, ProjectileSystem> = HashMap()
 
-    // queue of player controls requests
-    internal var playerShootRequests: ArrayList<Player> = ArrayList()
-    internal var playerReloadRequests: ArrayList<Player> = ArrayList()
-    internal var playerUseCustomWeaponRequests: ArrayList<Player> = ArrayList()
-
     // map of players doing automatic firing
     internal val isAutomaticFiring: HashMap<UUID, AutomaticFiring> = HashMap()
 
     // player death message storage, death event checks this for custom messages
     internal val playerDeathMessages: HashMap<UUID, String> = HashMap()
+
+    // queue of player controls requests
+    internal var playerShootRequests: ArrayList<PlayerGunShootRequest> = ArrayList()
+    internal var playerReloadRequests: ArrayList<PlayerGunReloadRequest> = ArrayList()
+    internal var playerUseCustomWeaponRequests: ArrayList<Player> = ArrayList()
+    // task finish queues
+    internal val playerReloadTaskQueue: LinkedBlockingQueue<PlayerReloadTask> = LinkedBlockingQueue()
+    internal val playerReloadCancelledTaskQueue: LinkedBlockingQueue<PlayerReloadCancelledTask> = LinkedBlockingQueue()
 
     // particle spawn queues
     internal var particleBulletTrailQueue: ArrayList<ParticleBulletTrail> = ArrayList()
@@ -105,7 +114,7 @@ public object XC {
     // When gun item reloads, it gets assigned a unique id from this counter.
     // When reload is complete, gun item id is checked with this to make sure
     // player did not swap items during reload that plugin failed to catch.
-    internal val gunReloadIdCounter: Int = 0
+    internal var gunReloadIdCounter: Int = 0
 
     // For debugging timings
     internal var doDebugTimings: Boolean = true
@@ -135,7 +144,9 @@ public object XC {
 
         // namespaced keys
         XC.namespaceKeyItemAmmo = NamespacedKey(plugin, ITEM_KEY_AMMO)
-        XC.namespaceKeyItemReload = NamespacedKey(plugin, ITEM_KEY_RELOAD_ID)
+        XC.namespaceKeyItemReloading = NamespacedKey(plugin, ITEM_KEY_RELOADING)
+        XC.namespaceKeyItemReloadId = NamespacedKey(plugin, ITEM_KEY_RELOAD_ID)
+        XC.namespaceKeyItemReloadTimestamp = NamespacedKey(plugin, ITEM_KEY_RELOAD_TIMESTAMP)
     }
 
     /**
@@ -145,7 +156,9 @@ public object XC {
         XC.plugin = null
         XC.logger = null
         XC.namespaceKeyItemAmmo = null
-        XC.namespaceKeyItemReload = null
+        XC.namespaceKeyItemReloading = null
+        XC.namespaceKeyItemReloadId = null
+        XC.namespaceKeyItemReloadTimestamp = null
     }
 
     /**
@@ -259,83 +272,12 @@ public object XC {
     }
 
     /**
-     * Runs on each tick
+     * Get current reload id counter for reload task.
      */
-    internal fun update() {
-        XC.debugTimings.tick()
-        XC.runBenchmarkProjectiles() // debugging
-
-        // run player gun controls systems
-        gunPlayerShootSystem(XC.playerShootRequests)
-        gunPlayerReloadSystem(XC.playerReloadRequests)
-        XC.playerShootRequests = ArrayList()
-        XC.playerReloadRequests = ArrayList()
-        XC.playerUseCustomWeaponRequests = ArrayList()
-
-        // update projectile systems for each world
-        for ( projSys in this.projectileSystems.values ) {
-            val (hitboxes, hitBlocksQueue, hitEntitiesQueue) = projSys.update()
-            
-            // handle hit blocks and entities
-            // if ( hitBlocksQueue.size > 0 ) println("HIT BLOCKS: ${hitBlocksQueue}")
-            // if ( hitEntitiesQueue.size > 0 ) println("HIT ENTITIES: ${hitEntitiesQueue}")
-
-            for ( hitBlock in hitBlocksQueue ) {
-                hitBlock.gun.hitBlockHandler(hitBlock.gun, hitBlock.location, hitBlock.block, hitBlock.source)
-            }
-
-            for ( hitEntity in hitEntitiesQueue ) {
-                hitEntity.gun.hitEntityHandler(hitEntity.gun, hitEntity.location, hitEntity.entity, hitEntity.source)
-            }
-
-            // TODO: handle explosions queue here
-        }
-
-        // ================================================
-        // SCHEDULE ALL ASYNC TASKS (particles, packets)
-        // ================================================
-        val tStartParticle = XC.debugNanoTime() // timing probe
-
-        val particleBulletTrails = XC.particleBulletTrailQueue
-        val particleBulletImpacts = XC.particleBulletImpactQueue
-
-        XC.particleBulletTrailQueue = ArrayList()
-        XC.particleBulletImpactQueue = ArrayList()
-
-        Bukkit.getScheduler().runTaskAsynchronously(
-            XC.plugin!!,
-            TaskSpawnParticleBulletTrails(particleBulletTrails),
-        )
-        Bukkit.getScheduler().runTaskAsynchronously(
-            XC.plugin!!,
-            TaskSpawnParticleBulletImpacts(particleBulletImpacts),
-        )
-
-        // sync
-        // TaskSpawnParticleBulletTrails(particleBulletTrails).run()
-        // TaskSpawnParticleBulletImpacts(particleBulletImpacts).run()
-
-        // custom packets (only if ProtocolLib is available)
-        if ( XC.usingProtocolLib ) {
-            // block crack animations
-            val blockCrackAnimations = XC.blockCrackAnimationQueue
-            XC.blockCrackAnimationQueue = ArrayList()
-            Bukkit.getScheduler().runTaskAsynchronously(
-                XC.plugin!!,
-                TaskBroadcastBlockCrackAnimations(ProtocolLibrary.getProtocolManager(), blockCrackAnimations),
-            )
-
-            // player recoil from gun firing
-
-            // sync
-            // TaskBroadcastBlockCrackAnimations(ProtocolLibrary.getProtocolManager(), blockCrackAnimations).run()
-        }
-        
-        // particle timings
-        if ( XC.doDebugTimings ) {
-            val tEndParticle = XC.debugNanoTime()
-            XC.debugTimings.add("particles", tEndParticle - tStartParticle)
-        }
+    internal fun getReloadId(): Int {
+        val id = XC.gunReloadIdCounter
+        XC.gunReloadIdCounter = max(0, id + 1)
+        return id
     }
 
     /**
@@ -421,35 +363,92 @@ public object XC {
         projectileSystem.addProjectiles(projectiles)
     }
 
+    
     /**
-     * Spawn projectile
+     * Main engine update, runs on each tick
      */
-    public fun shootGun(shooter: LivingEntity, gun: Gun) {
-        println("SHOOTING GUN ${gun}")
-        val loc = shooter.location
-        val world = loc.world
-        val projectileSystem = XC.projectileSystems[world.getUID()]
-        if ( projectileSystem == null ) return
+    internal fun update() {
+        XC.debugTimings.tick()
+        XC.runBenchmarkProjectiles() // debugging
 
-        val eyeHeight = shooter.eyeHeight
-        val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
-        val shootDirection = loc.direction.clone()
+        // run player gun controls systems
+        gunPlayerShootSystem(XC.playerShootRequests)
+        gunPlayerReloadSystem(XC.playerReloadRequests)
+        XC.playerShootRequests = ArrayList()
+        XC.playerReloadRequests = ArrayList()
+        XC.playerUseCustomWeaponRequests = ArrayList()
 
-        val projectile = Projectile(
-            gun = gun,
-            source = shooter,
-            x = shootPosition.x.toFloat(),
-            y = shootPosition.y.toFloat(),
-            z = shootPosition.z.toFloat(),
-            dirX = shootDirection.x.toFloat(),
-            dirY = shootDirection.y.toFloat(),
-            dirZ = shootDirection.z.toFloat(),
-            speed = gun.bulletVelocity,
-            gravity = gun.bulletGravity,
-            maxLifetime = gun.bulletLifetime,
-            maxDistance = gun.bulletMaxDistance,
+        // finish gun reloading tasks
+        val gunReloadTasks = ArrayList<PlayerReloadTask>()
+        val gunReloadCancelledTasks = ArrayList<PlayerReloadCancelledTask>()
+        XC.playerReloadTaskQueue.drainTo(gunReloadTasks)
+        XC.playerReloadCancelledTaskQueue.drainTo(gunReloadCancelledTasks)
+        doGunReload(gunReloadTasks)
+        doGunReloadCancelled(gunReloadCancelledTasks)
+
+        // update projectile systems for each world
+        for ( projSys in this.projectileSystems.values ) {
+            val (hitboxes, hitBlocksQueue, hitEntitiesQueue) = projSys.update()
+            
+            // handle hit blocks and entities
+            // if ( hitBlocksQueue.size > 0 ) println("HIT BLOCKS: ${hitBlocksQueue}")
+            // if ( hitEntitiesQueue.size > 0 ) println("HIT ENTITIES: ${hitEntitiesQueue}")
+
+            for ( hitBlock in hitBlocksQueue ) {
+                hitBlock.gun.hitBlockHandler(hitBlock.gun, hitBlock.location, hitBlock.block, hitBlock.source)
+            }
+
+            for ( hitEntity in hitEntitiesQueue ) {
+                hitEntity.gun.hitEntityHandler(hitEntity.gun, hitEntity.location, hitEntity.entity, hitEntity.source)
+            }
+
+            // TODO: handle explosions queue here
+        }
+
+        // ================================================
+        // SCHEDULE ALL ASYNC TASKS (particles, packets)
+        // ================================================
+        val tStartParticle = XC.debugNanoTime() // timing probe
+
+        val particleBulletTrails = XC.particleBulletTrailQueue
+        val particleBulletImpacts = XC.particleBulletImpactQueue
+
+        XC.particleBulletTrailQueue = ArrayList()
+        XC.particleBulletImpactQueue = ArrayList()
+
+        Bukkit.getScheduler().runTaskAsynchronously(
+            XC.plugin!!,
+            TaskSpawnParticleBulletTrails(particleBulletTrails),
+        )
+        Bukkit.getScheduler().runTaskAsynchronously(
+            XC.plugin!!,
+            TaskSpawnParticleBulletImpacts(particleBulletImpacts),
         )
 
-        projectileSystem.addProjectile(projectile)
+        // sync
+        // TaskSpawnParticleBulletTrails(particleBulletTrails).run()
+        // TaskSpawnParticleBulletImpacts(particleBulletImpacts).run()
+
+        // custom packets (only if ProtocolLib is available)
+        if ( XC.usingProtocolLib ) {
+            // block crack animations
+            val blockCrackAnimations = XC.blockCrackAnimationQueue
+            XC.blockCrackAnimationQueue = ArrayList()
+            Bukkit.getScheduler().runTaskAsynchronously(
+                XC.plugin!!,
+                TaskBroadcastBlockCrackAnimations(ProtocolLibrary.getProtocolManager(), blockCrackAnimations),
+            )
+
+            // player recoil from gun firing
+
+            // sync
+            // TaskBroadcastBlockCrackAnimations(ProtocolLibrary.getProtocolManager(), blockCrackAnimations).run()
+        }
+        
+        // particle timings
+        if ( XC.doDebugTimings ) {
+            val tEndParticle = XC.debugNanoTime()
+            XC.debugTimings.add("particles", tEndParticle - tStartParticle)
+        }
     }
 }

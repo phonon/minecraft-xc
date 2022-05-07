@@ -7,9 +7,12 @@ package phonon.xc.listeners
 import org.bukkit.ChatColor
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.entity.Player
+import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
+import org.bukkit.event.Event
+import org.bukkit.event.block.Action
 import org.bukkit.event.entity.EntityDeathEvent
 import org.bukkit.event.entity.EntityToggleSwimEvent
 import org.bukkit.event.inventory.InventoryClickEvent
@@ -29,6 +32,8 @@ import phonon.xc.XC
 import phonon.xc.utils.Message
 import phonon.xc.gun.getGunFromItem
 import phonon.xc.gun.getAmmoFromItem
+import phonon.xc.gun.PlayerGunReloadRequest
+import phonon.xc.gun.PlayerGunShootRequest
 
 
 public class EventListener(val plugin: JavaPlugin): Listener {
@@ -42,17 +47,17 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
     }
 
-    @EventHandler (ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true)
     public fun onToggleSneak(e: PlayerToggleSneakEvent) {
         
     }
 
-    @EventHandler (ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true)
     public fun onToggleSprint(e: PlayerToggleSprintEvent) {
 
     }
 
-    @EventHandler (ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true)
     public fun onDropItem(e: PlayerDropItemEvent) {
 
     }
@@ -60,7 +65,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     /**
      * When player swaps item in main hand (item selected in hotbar)
      */
-    @EventHandler (ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true)
     public fun onItemSelect(e: PlayerItemHeldEvent) {
         val player = e.player
         val inventory = player.getInventory()
@@ -85,7 +90,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     /**
      * When player swaps item between main/offhand.
      */
-    @EventHandler (ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true)
     public fun onItemSwapHand(e: PlayerSwapHandItemsEvent) {
         val player = e.player
         val equipment = player.equipment
@@ -94,12 +99,70 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         val itemMainHand = equipment.getItemInMainHand()
         getGunFromItem(itemMainHand)?.let { gun -> 
             Message.print(player, "Reloading...")
+            XC.playerReloadRequests.add(PlayerGunReloadRequest(
+                player = player,
+                gun = gun,
+                item = itemMainHand,
+            ))
             e.setCancelled(true)
         }
     }
-
-    @EventHandler (ignoreCancelled = true)
+    
+    /**
+     * Note when right clicking, PlayerInteractEvent runs for both hands.
+     * This can cause a condition where:
+     * - right hand runs first -> gun iron sight on
+     * - offhand runs immediately after -> gun iron sight off
+     * 
+     * Client generates false LEFT_CLICK_AIR events, see
+     * https://hub.spigotmc.org/jira/browse/SPIGOT-1955
+     * https://hub.spigotmc.org/jira/browse/SPIGOT-5435?focusedCommentId=35082&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel
+     * https://hub.spigotmc.org/jira/browse/SPIGOT-3049
+     * theres nothing i can do right now, at best can delay firing by 1 tick which catches
+     * SOME of the issues
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
     public fun onInteract(e: PlayerInteractEvent) {
+        val player = e.getPlayer()
+        val action = e.getAction()
+
+        println("ON PLAYER INTERACT EVENT: ${action}")
+
+        // ignores off hand event, physical events, or cancelled block interact event
+        // this event runs twice, 2nd main hand event is cancelled block interact event
+        if ( e.getHand() != EquipmentSlot.HAND || action == Action.PHYSICAL || ( action == Action.RIGHT_CLICK_BLOCK && e.useInteractedBlock() == Event.Result.DENY ) ) {
+            return
+        }
+
+        // run left/right click actions
+        if ( action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK ) {
+            val equipment = player.equipment
+            if ( equipment == null ) return
+
+            val itemMainHand = equipment.itemInMainHand
+            if ( itemMainHand.type == XC.config.materialGun ) {
+                getGunFromItem(itemMainHand)?.let { gun -> 
+                    Message.print(player, "Trying to shoot")
+                    XC.playerShootRequests.add(PlayerGunShootRequest(
+                        player = player,
+                        gun = gun,
+                        item = itemMainHand,
+                    ))
+
+                    // ignore block interact event
+                    e.setUseInteractedBlock(Event.Result.DENY)
+                }
+            }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public fun onInteractAt(e: PlayerInteractAtEntityEvent) {
+
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public fun onAnimation(e: PlayerAnimationEvent) {
         // val player = e.player
         // val equipment = player.equipment
         // if ( equipment == null ) return
@@ -109,24 +172,6 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         //     Message.print(player, "Firing")
         //     XC.shootGun(player, XC.gunDebug)
         // }
-    }
-
-    @EventHandler (ignoreCancelled = true)
-    public fun onInteractAt(e: PlayerInteractAtEntityEvent) {
-
-    }
-
-    @EventHandler (ignoreCancelled = true)
-    public fun onAnimation(e: PlayerAnimationEvent) {
-        val player = e.player
-        val equipment = player.equipment
-        if ( equipment == null ) return
-
-        val itemMainHand = equipment.itemInMainHand
-        if ( itemMainHand.type == XC.config.materialGun ) {
-            Message.print(player, "Firing")
-            XC.shootGun(player, XC.gunDebug)
-        }
     }
 
 }
