@@ -3,6 +3,15 @@
  */
 package phonon.xc.gun
 
+import java.nio.file.Path
+import java.util.logging.Logger
+import org.tomlj.Toml
+import phonon.xc.utils.mapToObject
+import phonon.xc.gun.getGunHitEntityHandler
+import phonon.xc.gun.getGunHitBlockHandler
+import phonon.xc.gun.noEntityHitHandler
+import phonon.xc.gun.noBlockHitHandler
+
 
 /**
  * Common gun object used by all guns.
@@ -11,6 +20,9 @@ package phonon.xc.gun
  * alter certain properties while leaving others the same.
  */
 public data class Gun(
+    // gun id, used for mapping custom models => gun
+    public val id: Int = Int.MAX_VALUE, // invalid
+
     // gun item/visual properties
     public val itemName: String = "gun",
     public val itemLore: List<String>? = null,
@@ -24,6 +36,10 @@ public data class Gun(
     public val soundReload: String = "gun_reload",
     public val soundEmpty: String = "gun_empty",
 
+    // equiped properties
+    // slowness while equiped (if > 0)
+    public val equipSlowness: Int = 0,
+
     // reload [ms]
     public val reloadTimeMillis: Long = 1500,
 
@@ -31,48 +47,47 @@ public data class Gun(
     public val shootDelayMillis: Long = 500,
 
     // automatic fire rate properties
-    public val autoFire: Boolean = false, // automatic weapon
-    public val autoFireDelayTicks: Int = 2,    // auto fire rate in ticks
+    public val autoFire: Boolean = false,     // automatic weapon
+    public val autoFireDelayTicks: Int = 2,   // auto fire rate in ticks
+    public val autoFireSlowness: Int = 2,     // auto fire slowness level
 
     // ammo
     public val ammoId: Int = -1,
     public val ammoMax: Int = 10,
-    public val ammoPerReload: Int = -1, // if -1, reload to max. otherwise: ammo + ammoPerReload
-
+    public val ammoPerReload: Int = -1,       // if -1, reload to max. otherwise: ammo + ammoPerReload
+    public val ammoIgnore: Boolean = false,   // if true, ignores out of ammo
+    
     // sway
     // TODO
 
     // recoil
-    public val recoilHorizontal: Float = 0.1f,
-    public val recoilVertical: Float = 0.2f,
+    public val recoilHorizontal: Double = 0.1,
+    public val recoilVertical: Double = 0.2,
     public val autoFireTimeBeforeRecoil: Long = 200,
-    public val autoFireHorizontalRecoilRamp: Float = 0.05f, // recoil ramp rate in recoil / millisecond
-    public val autoFireVerticalRecoilRamp: Float = 0.05f, // recoil ramp rate in recoil / millisecond
-
-    // slowness while equiped (if > 0)
-    public val slowness: Int = 0,
+    public val autoFireHorizontalRecoilRamp: Double = 0.05, // recoil ramp rate in recoil / millisecond
+    public val autoFireVerticalRecoilRamp: Double = 0.05, // recoil ramp rate in recoil / millisecond
     
     // projectile velocity in blocks/tick => (20*vel) m/s
     // physical velocities of ~900 m/s would require vel ~ 45.0
-    // but usually this is too fast ingame (makes bullets too hitscan-y)
+    // but usually this is too fast ingame (makes projectiles too hitscan-y)
     // so instead opt for lower velocity + lower gravity as default
-    public val bulletVelocity: Float = 16.0f,
+    public val projectileVelocity: Float = 16.0f,
 
     // projectile gravity in blocks/tick^2 => (400*g) m/s^2
     // physical world gravity would be 0.025 to give 10 m/s^2
     // NOTE: THIS IS A POSITIVE NUMBER
-    public val bulletGravity: Float = 0.025f,
+    public val projectileGravity: Float = 0.025f,
 
     // max lifetime in ticks before despawning
-    public val bulletLifetime: Int = 400, // ~20 seconds
+    public val projectileLifetime: Int = 400, // ~20 seconds
 
-    // max bullet distance in blocks before despawning
-    public val bulletMaxDistance: Float = 128.0f, // = view distance of 8 chunks
+    // max projectile distance in blocks before despawning
+    public val projectileMaxDistance: Float = 128.0f, // = view distance of 8 chunks
 
-    // bullet damage
-    public val bulletDamage: Double = 4.0,
-    public val bulletArmorReduction: Double = 0.5,
-    public val bulletResistanceReduction: Double = 0.5,
+    // main projectile damage
+    public val projectileDamage: Double = 4.0,
+    public val projectileArmorReduction: Double = 0.5,
+    public val projectileResistanceReduction: Double = 0.5,
 
     // explosion damage and radius and falloff (unused if no explosion)
     public val explosionDamage: Double = 8.0,
@@ -86,4 +101,134 @@ public data class Gun(
 
     // handler on entity hit
     public val hitEntityHandler: GunHitEntityHandler = entityDamageHitHandler,
-)
+) {
+
+    companion object {
+        /**
+         * Parse and return a Gun from a `gun.toml` file.
+         * Return null gun if something fails or no file found.
+         */
+        public fun fromToml(source: Path, logger: Logger? = null): Gun? {
+            try {
+                val toml = Toml.parse(source)
+                println(toml)
+
+                // map with keys as constructor property names
+                val properties = HashMap<String, Any>()
+
+                // parse toml file into properties
+                
+                // gun id
+                toml.getLong("id")?.let { properties["id"] = it.toInt() }
+
+                // item properties
+                toml.getTable("item")?.let { item -> 
+                    item.getString("name")?.let { properties["itemName"] = it }
+                    item.getArray("lore")?.let { properties["itemLore"] = it.toList().map { s -> s.toString() } }
+                }
+
+                // item model properties
+                toml.getTable("model")?.let { model -> 
+                    model.getLong("default")?.let { properties["itemModelDefault"] = it.toInt() }
+                    model.getLong("empty")?.let { properties["itemModelEmpty"] = it.toInt() }
+                    model.getLong("reload")?.let { properties["itemModelReload"] = it.toInt() }
+                    model.getLong("ironsights")?.let { properties["itemModelIronsights"] = it.toInt()}
+                }
+
+                // sounds
+                toml.getTable("sound")?.let { sound -> 
+                    sound.getString("shoot")?.let { properties["soundShoot"] = it }
+                    sound.getString("reload")?.let { properties["soundReload"] = it }
+                    sound.getString("empty")?.let { properties["soundEmpty"] = it }
+                }
+
+                // equip
+                toml.getTable("equip")?.let { equip ->
+                    equip.getLong("slowness")?.let { properties["equipSlowness"] = it.toInt() }
+                }
+
+                // ammo
+                toml.getTable("ammo")?.let { ammo ->
+                    ammo.getLong("id")?.let { properties["ammoId"] = it.toInt() }
+                    ammo.getLong("max")?.let { properties["ammoMax"] = it.toInt() }
+                    ammo.getLong("per_reload")?.let { properties["ammoPerReload"] = it.toInt() }
+                    ammo.getBoolean("ignore")?.let { properties["ammoIgnore"] = it }
+                }
+
+                // reloading
+                toml.getTable("reload")?.let { reload ->
+                    reload.getLong("time")?.let { properties["reloadTimeMillis"] = it }
+                }
+
+                // shooting (regular/semiauto)
+                toml.getTable("shoot")?.let { shoot ->
+                    shoot.getLong("delay")?.let { properties["shootDelayMillis"] = it }
+                }
+
+                // automatic fire
+                toml.getTable("automatic")?.let { auto ->
+                    auto.getBoolean("enabled")?.let { properties["autoFire"] = it }
+                    auto.getLong("delay_ticks")?.let { properties["autoFireDelayTicks"] = it.toInt() }
+                    auto.getLong("slowness")?.let { properties["autoFireSlowness"] = it.toInt() }
+                }
+
+                // sway
+                // TODO
+
+                // recoil
+                toml.getTable("recoil")?.let { recoil ->
+                    recoil.getDouble("horizontal")?.let { properties["recoilHorizontal"] = it }
+                    recoil.getDouble("vertical")?.let { properties["recoilVertical"] = it }
+                    recoil.getLong("auto_fire_time_before_recoil")?.let { properties["autoFireTimeBeforeRecoil"] = it }
+                    recoil.getDouble("auto_fire_horizontal_ramp")?.let { properties["autoFireHorizontalRecoilRamp"] = it }
+                    recoil.getDouble("auto_fire_vertical_ramp")?.let { properties["autoFireVerticalRecoilRamp"] = it }
+                }
+
+                // hit handlers
+                toml.getTable("hit")?.let { hit ->
+                    hit.getString("entity")?.let { handlerName ->
+                        val handler = getGunHitEntityHandler(handlerName)
+                        if ( handler == null ) {
+                            logger?.warning("Unknown entity hit handler: ${handlerName}")
+                        }
+                        properties["hitEntityHandler"] = handler ?: noEntityHitHandler
+                    }
+                    hit.getString("block")?.let { handlerName ->
+                        val handler = getGunHitBlockHandler(handlerName)
+                        if ( handler == null ) {
+                            logger?.warning("Unknown block hit handler: ${handlerName}")
+                        }
+                        properties["hitBlockHandler"] = handler ?: noBlockHitHandler
+                    }
+                }
+
+                // projectile
+                toml.getTable("projectile")?.let { projectile ->
+                    projectile.getDouble("damage")?.let { properties["projectileDamage"] = it }
+                    projectile.getDouble("armor_reduction")?.let { properties["projectileArmorReduction"] = it }
+                    projectile.getDouble("resist_reduction")?.let { properties["projectileResistanceReduction"] = it }
+                    projectile.getDouble("velocity")?.let { properties["projectileVelocity"] = it.toFloat() }
+                    projectile.getDouble("gravity")?.let { properties["projectileGravity"] = it.toFloat() }
+                    projectile.getLong("lifetime")?.let { properties["projectileLifetime"] = it.toInt() }
+                    projectile.getDouble("max_distance")?.let { properties["projectileMaxDistance"] = it.toFloat() }
+                }
+
+                // explosion
+                toml.getTable("explosion")?.let { explosion ->
+                    explosion.getDouble("damage")?.let { properties["explosionDamage"] = it }
+                    explosion.getDouble("radius")?.let { properties["explosionRadius"] = it }
+                    explosion.getDouble("falloff")?.let { properties["explosionFalloff"] = it }
+                    explosion.getDouble("armor_reduction")?.let { properties["explosionArmorReduction"] = it }
+                    explosion.getDouble("blast_prot_reduction")?.let { properties["explosionBlastProtReduction"] = it }
+                }
+
+                println("CREATING GUN WITH PROPERTIES: ${properties}")
+
+                return mapToObject(properties, Gun::class)
+            } catch (e: Exception) {
+                logger?.warning("Failed to parse gun file: ${source.toString()}, ${e}")
+                return null
+            }
+        }
+    }
+}

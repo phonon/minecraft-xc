@@ -79,10 +79,10 @@ public val entityDamageHitHandler = fun(
 ) {
     if ( target is LivingEntity && target is Damageable ) {
         val damage = damageAfterArmorAndResistance(
-            gun.bulletDamage,
+            gun.projectileDamage,
             target,
-            gun.bulletArmorReduction,
-            gun.bulletResistanceReduction,
+            gun.projectileArmorReduction,
+            gun.projectileResistanceReduction,
         )
         target.damage(damage, source)
         target.setNoDamageTicks(0)

@@ -207,15 +207,15 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             val velocity = args[1].toFloat()
             val gravity = 0.025f
             XC.gunDebug = XC.gunDebug.copy(
-                bulletVelocity = velocity,
-                bulletGravity = gravity,
+                projectileVelocity = velocity,
+                projectileGravity = gravity,
             )
         } else {
             val velocity = args[1].toFloat()
             val gravity = args[2].toFloat()
             XC.gunDebug = XC.gunDebug.copy(
-                bulletVelocity = velocity,
-                bulletGravity = gravity,
+                projectileVelocity = velocity,
+                projectileGravity = gravity,
             )
         }
     }

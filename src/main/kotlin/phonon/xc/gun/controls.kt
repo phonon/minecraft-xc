@@ -35,7 +35,7 @@ internal data class AutomaticFiring(
     val gun: Gun,
     // total length of time player has been firing
     val totalTime: Double,
-    // tick counter since last fired, used for timing firing rate in bullets/tick
+    // tick counter since last fired, used for timing firing rate in projectiles/tick
     val ticksSinceFired: Int,
 )
 
@@ -89,8 +89,13 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
         val ammo = getAmmoFromItem(item) ?: 0
         if ( ammo <= 0 ) {
             XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
-            // TODO: EXIT IF <= 0
+
+            if ( !gun.ammoIgnore ) {
+                // TODO: play gun empty sound effect
+                continue
+            }
         }
+
         val newAmmo = max(0, ammo - 1)
         updateGunItemAmmo(item, gun, newAmmo)
         XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
@@ -108,10 +113,10 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
             dirX = shootDirection.x.toFloat(),
             dirY = shootDirection.y.toFloat(),
             dirZ = shootDirection.z.toFloat(),
-            speed = gun.bulletVelocity,
-            gravity = gun.bulletGravity,
-            maxLifetime = gun.bulletLifetime,
-            maxDistance = gun.bulletMaxDistance,
+            speed = gun.projectileVelocity,
+            gravity = gun.projectileGravity,
+            maxLifetime = gun.projectileLifetime,
+            maxDistance = gun.projectileMaxDistance,
         )
 
         projectileSystem.addProjectile(projectile)
@@ -231,7 +236,7 @@ internal fun doGunReload(tasks: ArrayList<PlayerReloadTask>) {
         val (player, gun, item, reloadId) = task
 
         // new ammo amount
-        // TODO: adjustable reloading, either load to max or add # of bullets
+        // TODO: adjustable reloading, either load to max or add # of projectiles
         val newAmmo = gun.ammoMax
 
         // clear item reload data and set ammo

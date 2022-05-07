@@ -7,6 +7,7 @@
 
 package phonon.xc
 
+import java.nio.file.Paths
 import java.nio.file.Path
 import java.util.UUID
 import java.util.EnumSet
@@ -29,6 +30,13 @@ import phonon.xc.utils.blockCollisionHandlers
  * Immutable XC config
  */
 public data class Config(
+    // paths to item config folders
+    public val pathFilesGun: Path = Paths.get("plugins", "xc", "gun"),
+    public val pathFilesAmmo: Path = Paths.get("plugins", "xc", "ammo"),
+    public val pathFilesMelee: Path = Paths.get("plugins", "xc", "melee"),
+    public val pathFilesMisc: Path = Paths.get("plugins", "xc", "misc"),
+    public val pathFilesArmor: Path = Paths.get("plugins", "xc", "armor"),
+
     // flag that entity targetable
     public val entityTargetable: EnumArrayMap<EntityType, Boolean> = Hitbox.defaultEntityTargetable(),
     // entity hitbox sizes
@@ -38,8 +46,8 @@ public data class Config(
     // material types for custom items
     public val materialGun: Material = Material.WARPED_FUNGUS_ON_A_STICK,
     public val materialMelee: Material = Material.IRON_HORSE_ARMOR,
-    public val materialMiscWeapon: Material = Material.GOLDEN_HORSE_ARMOR,
-    public val materialHat: Material = Material.LEATHER_HORSE_ARMOR,
+    public val materialMisc: Material = Material.GOLDEN_HORSE_ARMOR,
+    public val materialArmor: Material = Material.LEATHER_HORSE_ARMOR,
     
     // particle effects
     
@@ -62,6 +70,16 @@ public data class Config(
 
             // parse toml file into configOptions
 
+            // item config folder paths
+            toml.getTable("configs")?.let { configsPaths -> 
+                val pluginDataFolder = XC.plugin!!.getDataFolder().getPath()
+                configsPaths.getString("gun")?.let { path -> configOptions["pathFilesGun"] = Paths.get(pluginDataFolder, path) }
+                configsPaths.getString("ammo")?.let { path -> configOptions["pathFilesAmmo"] = Paths.get(pluginDataFolder, path) }
+                configsPaths.getString("melee")?.let { path -> configOptions["pathFilesMelee"] = Paths.get(pluginDataFolder, path) }
+                configsPaths.getString("misc")?.let { path -> configOptions["pathFilesMisc"] = Paths.get(pluginDataFolder, path) }
+                configsPaths.getString("armor")?.let { path -> configOptions["pathFilesArmor"] = Paths.get(pluginDataFolder, path) }
+            }
+
             // materials
             toml.getString("material.gun")?.let { s ->
                 Material.getMaterial(s)?.let { configOptions["materialGun"] = it } ?: run {
@@ -73,14 +91,14 @@ public data class Config(
                     logger?.warning("[material.melee] Invalid material: ${s}")
                 }
             }
-            toml.getString("material.misc_weapon")?.let { s ->
-                Material.getMaterial(s)?.let { configOptions["materialMiscWeapon"] = it } ?: run {
-                    logger?.warning("[material.misc_weapon] Invalid material: ${s}")
+            toml.getString("material.misc")?.let { s ->
+                Material.getMaterial(s)?.let { configOptions["materialMisc"] = it } ?: run {
+                    logger?.warning("[material.misc] Invalid material: ${s}")
                 }
             }
-            toml.getString("material.hat")?.let { s ->
-                Material.getMaterial(s)?.let { configOptions["materialHat"] = it } ?: run {
-                    logger?.warning("[material.hat] Invalid material: ${s}")
+            toml.getString("material.armor")?.let { s ->
+                Material.getMaterial(s)?.let { configOptions["materialArmor"] = it } ?: run {
+                    logger?.warning("[material.armor] Invalid material: ${s}")
                 }
             }
 

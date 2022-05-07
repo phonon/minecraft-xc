@@ -35,6 +35,7 @@ import phonon.xc.utils.HitboxSize
 import phonon.xc.utils.particle.*
 import phonon.xc.utils.debug.DebugTimings
 import phonon.xc.utils.blockCrackAnimation.*
+import phonon.xc.utils.file.*
 
 
 /**
@@ -172,6 +173,7 @@ public object XC {
 
     /**
      * Re-initialize storages and re-load config.
+     * TODO: async
      */
     internal fun reload(async: Boolean = false) {
         val timeStart = System.currentTimeMillis()
@@ -183,40 +185,54 @@ public object XC {
         }
         
         // reload main plugin config
-        val configToml = Paths.get(XC.plugin!!.getDataFolder().getPath(), "config.toml")
-        val config = if ( Files.exists(configToml) ) {
-            Config.fromToml(configToml, XC.logger)
+        val pathConfigToml = Paths.get(XC.plugin!!.getDataFolder().getPath(), "config.toml")
+        val config = if ( Files.exists(pathConfigToml) ) {
+            Config.fromToml(pathConfigToml, XC.logger)
         } else {
             XC.logger!!.info("Creating default config.toml")
             XC.plugin!!.saveResource("config.toml", false)
             Config()
         }
 
+        XC.config = config
         println(config)
 
-        // reload item configs
+        // load guns
+        val filesGuns = listDirFiles(config.pathFilesGun)
+        println(filesGuns)
+        val gunsLoaded: List<Gun> = filesGuns
+            .map { file -> Gun.fromToml(config.pathFilesGun.resolve(file), XC.logger) }
+            .filterNotNull()
+        
+        // map custom model ids => gun (NOTE: guns can overwrite each other!)
+        val guns: Array<Gun?> = Array(MAX_GUN_CUSTOM_MODEL_ID, { _ -> null })
+        for ( g in gunsLoaded ) {
+            // special debug gun
+            if ( g.id == -1 ) {
+                XC.gunDebug = g
+            }
 
-        // test
-        val gunTestParams1: Map<String, Any> = mapOf(
-            "bulletVelocity" to 25.0f,
-            "bulletMaxDistance" to 100.0f,
-        )
-        val gunTestParams2: Map<String, Any> = mapOf(
-            "bulletVelocity" to 10.0f,
-            "bulletMaxDistance" to 420.0f,
-        )
-        val gunTestParams3: Map<String, Any> = mapOf(
-            "bulletVelocity" to 250.0f,
-            "bulletMaxDistance" to 1000.0f,
-        )
+            // map regular guns custom model ids => gun
+            val gunModels = arrayOf(
+                g.itemModelDefault,
+                g.itemModelEmpty,
+                g.itemModelReload,
+                g.itemModelIronsights,
+            )
 
-        val gun1 = mapToObject(gunTestParams1, Gun::class)
-        val gun2 = mapToObject(gunTestParams2, Gun::class)
-        val gun3 = mapToObject(gunTestParams3, Gun::class)
-        println(gun1)
-        println(gun2)
-        println(gun3)
-
+            for ( modelId in gunModels ) {
+                if ( modelId >= 0 ) {
+                    if ( modelId < MAX_GUN_CUSTOM_MODEL_ID ) {
+                        if ( guns[modelId] != null ) {
+                            XC.logger!!.warning("Gun ${g.id} overwrites gun ${guns[modelId]!!.id}")
+                        }
+                        guns[modelId] = g
+                    } else {
+                        XC.logger!!.warning("Gun ${g.id} has invalid custom model id: ${modelId}")
+                    }
+                }
+            }
+        }
 
         // temporary: set gun 0 to debug gun
         XC.guns[0] = XC.gunDebug
@@ -363,10 +379,10 @@ public object XC {
                 dirX = shootDirX.toFloat(),
                 dirY = shootDirY.toFloat(),
                 dirZ = shootDirZ.toFloat(),
-                speed = gun.bulletVelocity,
-                gravity = gun.bulletGravity,
-                maxLifetime = gun.bulletLifetime,
-                maxDistance = gun.bulletMaxDistance,
+                speed = gun.projectileVelocity,
+                gravity = gun.projectileGravity,
+                maxLifetime = gun.projectileLifetime,
+                maxDistance = gun.projectileMaxDistance,
             ))
         }
         projectileSystem.addProjectiles(projectiles)

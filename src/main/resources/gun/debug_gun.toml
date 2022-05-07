@@ -1,0 +1,96 @@
+# Debugging gun, shows all configurable properties.
+# For testing loading and gun properties.
+
+# Gun id. Used to map different custom models => gun.
+# Must be an integer from [0, 1024]. If outside this range,
+# Special -1 id is used for debug gun. This is only for
+# engine managed player custom model guns. For external plugin
+# managed guns (e.g. vehicles), this ID does nothing.
+id = -1
+
+# Item properties
+[item]
+name = "gun_debug"
+lore = [
+    "This gun is for debugging.",
+    "Trust the plan.",
+]
+
+# Visual models. Default is required (otherwise placeholder
+# will be used). Other models are optional, use -1 if they
+# do not exist.
+[model]
+default = 0     # normal model
+empty = -1      # no more ammo left
+reload = -1     # while reloading
+ironsights = -1 # while using iron sights
+
+# Sounds
+[sound]
+shoot = "gun_shot"
+reload = "gun_reload"
+empty = "gun_empty"
+
+# Equiped properties
+[equip]
+slowness = 0    # slowness level while equipping this item
+
+# Ammo id and count
+[ammo]
+id = 0
+max = 10
+per_reload = -1  # -1 to always reload to max. Otherwise, reloads fixed amount / clip.
+ignore = false   # ignore when gun out of ammo
+
+# Reload time in milliseconds
+[reload]
+time = 1500
+
+# Delay between [left-click] semi-auto mode shooting in milliseconds
+[shoot]
+delay = 500
+
+# Automatic fire settings
+[automatic]
+enabled = true     # if auto mode [right-click] is enabled
+delay_ticks = 2    # delay between shots in ticks
+slowness = 1       # slowness while using auto mode
+
+[sway]
+# TODO
+
+[recoil]
+horizontal = 0.1
+vertical = 0.2
+auto_fire_time_before_recoil = 200 # in milliseconds [ms]
+auto_fire_horizontal_ramp = 0.05   # horizontal recoil ramp rate / ms
+auto_fire_vertical_ramp = 0.05     # vertical recoil ramp rate / ms
+
+# Handler for what happens when projectile hits a block or entity.
+# If nothing specified, no effect will happen when a projectile hits.
+# Events will still be emitted, allowing custom handlers to be used.
+# So disable these if you are managing hits in external plugin.
+# Valid options for entity: ["damage", "explosion"]
+# Valid options for block: ["explosion"]
+[hit]
+entity = "damage"
+# block = "explosion"
+
+# Projectile properties.
+[projectile]
+damage = 4.0
+armor_reduction = 0.5    # damage reduced / point of armor
+resist_reduction = 0.5   # damage reduced / potion resist level
+velocity = 16.0          # blocks/tick
+gravity = 0.025          # blocks/tick^2
+lifetime = 400           # ticks before despawning
+max_distance = 128.0     # distance before despawning
+
+# Explosion damage properties. These are only used if the handler
+# for block or entity hit has an explosion effect.
+[explosion]
+damage = 8.0
+radius = 2.0
+falloff = 2.0
+armor_reduction = 0.5
+blast_prot_reduction = 0.5
