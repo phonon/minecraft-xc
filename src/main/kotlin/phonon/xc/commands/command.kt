@@ -29,6 +29,7 @@ private val SUBCOMMANDS = listOf(
     // random testing debug commands
     // "hitbox",
     // "chunk",
+    // "crawl",
 )
 
 /**
@@ -60,6 +61,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             // random testing debug commands
             // "hitbox" -> getEntityHitbox()
             // "chunk" -> debugChunkSnapshotTest(sender)
+            // "crawl" -> crawl(sender, args)
             else -> {
                 Message.error(player, "Invalid /xc subcommand, use /xc help")
             }
@@ -198,7 +200,6 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         if ( player !== null && !player.isOp() ) {
             Message.error(player, "[xc] op only")
         }
-        
 
         if ( args.size < 2 ) {
             Message.print(sender, "/xc gundebug [velocity] [gravity]")
@@ -218,7 +219,22 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             )
         }
     }
-    
+
+    // /**
+    //  * Experiment to try make player crawl
+    //  */
+    // private fun crawl(sender: CommandSender?, args: Array<String>) {
+    //     val player = if ( sender is Player ) sender else null
+
+    //     if ( player !== null ) {
+    //         player.setSwimming(true)
+
+    //         return
+    //     }
+
+    //     Message.print(sender, "[xc] Must be run in-game by player")
+    // }
+
     /**
      * Debug command to get entity default bounding box sizes.
      * This loads a chunk, spawns all possible entities, waits

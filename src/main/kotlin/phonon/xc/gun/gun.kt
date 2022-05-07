@@ -6,21 +6,52 @@ package phonon.xc.gun
 
 /**
  * Common gun object used by all guns.
- * This is an immutable object. Should be constructed using
- * Gun.Builder() object.
+ * This is an immutable object. When properties need to change,
+ * create a new gun using kotlin data class `copy()` which can
+ * alter certain properties while leaving others the same.
  */
 public data class Gun(
-    // gun item properties
+    // gun item/visual properties
     public val itemName: String = "gun",
     public val itemLore: List<String>? = null,
-    public val itemModelDefault: Int = 0,     // custom model data
-    public val itemModelReload: Int = -1,     // custom model data
-    public val itemModelIronsights: Int = -1, // custom model data
+    public val itemModelDefault: Int = 0,     // normal model (custom model data id)
+    public val itemModelEmpty: Int = -1,      // when gun out of ammo
+    public val itemModelReload: Int = -1,     // when gun is reloading
+    public val itemModelIronsights: Int = -1, // when using iron sights
     
+    // sounds
+    public val soundShoot: String = "gun_shot",
+    public val soundReload: String = "gun_reload",
+    public val soundEmpty: String = "gun_empty",
+
+    // reload [ms]
+    public val reloadTime: Long = 1500,
+
+    // semiauto fire rate [ms]
+    public val fireRate: Long = 500,
+
+    // automatic fire rate properties
+    public val autoFire: Boolean = false, // automatic weapon
+    public val autoFireRate: Int = 2,    // auto fire rate in ticks
+
     // ammo
     public val ammoId: Int = -1,
     public val ammoMax: Int = 10,
+    public val ammoPerReload: Int = -1, // if -1, reload to max. otherwise: ammo + ammoPerReload
 
+    // sway
+    // TODO
+
+    // recoil
+    public val recoilHorizontal: Float = 0.1f,
+    public val recoilVertical: Float = 0.2f,
+    public val autoFireTimeBeforeRecoil: Long = 200,
+    public val autoFireHorizontalRecoilRamp: Float = 0.05f, // recoil ramp rate in recoil / millisecond
+    public val autoFireVerticalRecoilRamp: Float = 0.05f, // recoil ramp rate in recoil / millisecond
+
+    // slowness while equiped (if > 0)
+    public val slowness: Int = 0,
+    
     // projectile velocity in blocks/tick => (20*vel) m/s
     // physical velocities of ~900 m/s would require vel ~ 45.0
     // but usually this is too fast ingame (makes bullets too hitscan-y)
@@ -55,6 +86,4 @@ public data class Gun(
 
     // handler on entity hit
     public val hitEntityHandler: GunHitEntityHandler = entityDamageHitHandler,
-) {
-
-}
+)
