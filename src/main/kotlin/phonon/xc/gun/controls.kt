@@ -16,50 +16,14 @@ import phonon.xc.XC
 import phonon.xc.utils.Message
 
 
-// For reload task, need to set integer-typed boolean flag indicating 
-// current gun is running reload task.
-private const val TRUE: Int = 1
-
 /**
- * Create progress bar string. Input should be double
- * in range [0.0, 1.0] marking progress.
+ * Async request for sending an ammo message packet to player.
  */
-private fun progressBarReload(progress: Double): String {
-    // available shades
-    // https://en.wikipedia.org/wiki/Box-drawing_character
-    // val SOLID = 2588     // full solid block
-    // val SHADE0 = 2592    // medium shade
-    // val SHADE1 = 2593    // dark shade
-
-    return when ( Math.round(progress * 10.0).toInt() ) {
-        0 ->  "\u2503${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        1 ->  "\u2503\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        2 ->  "\u2503\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        3 ->  "\u2503\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        4 ->  "\u2503\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        5 ->  "\u2503\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        6 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        7 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        8 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592${ChatColor.WHITE}\u2503"
-        9 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592${ChatColor.WHITE}\u2503"
-        10 -> "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2503"
-        else -> ""
-    }
-}
-
-/**
- * Format a double time value in milliseconds into a 
- * 0.x digit string in seconds.
- * e.g. 1525.2 => "1.5s"
- */
-private fun formatRemainingTimeString(timeMillis: Double): String {
-    val time = timeMillis.toInt()
-    val seconds = time / 1000
-    val remainder = time - (seconds * 1000)
-    val fraction = remainder / 100
-    return "${seconds}.${fraction}s"
-}
-
+internal data class AmmoInfoMessagePacket(
+    val player: Player,
+    val ammo: Int,
+    val maxAmmo: Int,
+)
 
 /**
  * Holds player automatic firing state for a gun.
@@ -121,18 +85,15 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
         val projectileSystem = XC.projectileSystems[world.getUID()]
         if ( projectileSystem == null ) return
 
-        // check ammo and update text
+        // check ammo and send ammo info message to player
         val ammo = getAmmoFromItem(item) ?: 0
         if ( ammo <= 0 ) {
-            Message.announcement(player, "${ChatColor.DARK_RED}[OUT OF AMMO]")
+            XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
+            // TODO: EXIT IF <= 0
         }
         val newAmmo = max(0, ammo - 1)
         updateGunItemAmmo(item, gun, newAmmo)
-        if ( newAmmo > 0 ) {
-            Message.announcement(player, "Ammo [${newAmmo}/${gun.ammoMax}]")
-        } else {
-            Message.announcement(player, "${ChatColor.DARK_RED}[OUT OF AMMO]")
-        }
+        XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
 
         val eyeHeight = player.eyeHeight
         val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
@@ -156,7 +117,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
         projectileSystem.addProjectile(projectile)
 
         Message.print(player, "Firing")
-        println("Shooting: ${gun}")
+        // println("Shooting: ${gun}")
     }
 }
 
@@ -167,8 +128,6 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
 internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) {
     for ( request in requests ) {
         val (player, gun, item) = request
-
-        println("Reload: ${gun}")
         
         val itemMeta = item.getItemMeta()
         val itemData = itemMeta.getPersistentDataContainer()
@@ -222,7 +181,6 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
             private val reloadCancelledTaskQueue = XC.playerReloadCancelledTaskQueue
 
             private fun cancelReload(playerDied: Boolean) {
-                println("RELOAD TASK CANCALLED!!! playerDied=${playerDied}")
                 reloadCancelledTaskQueue.add(PlayerReloadCancelledTask(player, gun, item, playerDied))
                 this.cancel()
             }
@@ -243,14 +201,12 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
                 val itemCurrData = itemInHand.getItemMeta().getPersistentDataContainer()
                 val itemReloadId = itemCurrData.get(itemDataKeyReloadId, PersistentDataType.INTEGER) ?: -1
                 if ( itemReloadId != reloadId ) {
-                    println("ITEM DOES NOT MATCH, CANCELLING (itemReloadId=${itemReloadId}, original=${reloadId}")
                     this.cancelReload(false)
                     return
                 }
 
                 val timeElapsedMillis = System.currentTimeMillis().toDouble() - startTime
                 if ( timeElapsedMillis > reloadTime ) {
-                    println("RELOAD TASK FINISHED!!!")
                     // reload done: add reload finish task to queue
                     reloadFinishTaskQueue.add(PlayerReloadTask(player, gun, item, reloadId))
                     this.cancel()
@@ -287,9 +243,7 @@ internal fun doGunReload(tasks: ArrayList<PlayerReloadTask>) {
         itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
         item.setItemMeta(itemMeta)
 
-        Message.announcement(player, "${ChatColor.WHITE} Ammo [${newAmmo}/${gun.ammoMax}]")
-
-        println("FINISHING RELOAD FOR ${player} ${gun}")
+        XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
     }
 }
 
@@ -312,6 +266,69 @@ internal fun doGunReloadCancelled(tasks: ArrayList<PlayerReloadCancelledTask>) {
         if ( !playerDied ) {
             Message.announcement(player, "${ChatColor.DARK_RED}Reload cancelled...")
         }
-        println("CANCELLED RELOAD FOR ${player} ${gun}")
     }
+}
+
+
+/**
+ * Runnable task to send gun ammo info messages to players.
+ */
+internal class TaskAmmoInfoMessages(
+    val ammoInfoMessages: ArrayList<AmmoInfoMessagePacket>,
+): Runnable {
+    override fun run() {
+        for ( info in ammoInfoMessages ) {
+            val (player, ammo, maxAmmo) = info
+            if ( ammo > 0 ) {
+                Message.announcement(player, "Ammo [${ammo}/${maxAmmo}]")
+            } else {
+                Message.announcement(player, "${ChatColor.DARK_RED}[OUT OF AMMO]")
+            }
+        }
+    }
+}
+
+
+// For reload task, need to set integer-typed boolean flag indicating 
+// current gun is running reload task.
+private const val TRUE: Int = 1
+
+/**
+ * Create progress bar string. Input should be double
+ * in range [0.0, 1.0] marking progress.
+ */
+private fun progressBarReload(progress: Double): String {
+    // available shades
+    // https://en.wikipedia.org/wiki/Box-drawing_character
+    // val SOLID = 2588     // full solid block
+    // val SHADE0 = 2592    // medium shade
+    // val SHADE1 = 2593    // dark shade
+
+    return when ( Math.round(progress * 10.0).toInt() ) {
+        0 ->  "\u2503${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
+        1 ->  "\u2503\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
+        2 ->  "\u2503\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
+        3 ->  "\u2503\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
+        4 ->  "\u2503\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
+        5 ->  "\u2503\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
+        6 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
+        7 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
+        8 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592${ChatColor.WHITE}\u2503"
+        9 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592${ChatColor.WHITE}\u2503"
+        10 -> "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2503"
+        else -> ""
+    }
+}
+
+/**
+ * Format a double time value in milliseconds into a 
+ * 0.x digit string in seconds.
+ * e.g. 1525.2 => "1.5s"
+ */
+private fun formatRemainingTimeString(timeMillis: Double): String {
+    val time = timeMillis.toInt()
+    val seconds = time / 1000
+    val remainder = time - (seconds * 1000)
+    val fraction = remainder / 100
+    return "${seconds}.${fraction}s"
 }

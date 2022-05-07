@@ -34,6 +34,7 @@ import phonon.xc.gun.getGunFromItem
 import phonon.xc.gun.getAmmoFromItem
 import phonon.xc.gun.PlayerGunReloadRequest
 import phonon.xc.gun.PlayerGunShootRequest
+import phonon.xc.gun.AmmoInfoMessagePacket
 
 
 public class EventListener(val plugin: JavaPlugin): Listener {
@@ -78,11 +79,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         getGunFromItem(itemMainHand)?.let { gun -> 
             val ammo = getAmmoFromItem(itemMainHand)
             if ( ammo != null ) {
-                if ( ammo > 0 ) {
-                    Message.announcement(player, "Ammo [${ammo}/${gun.ammoMax}]")
-                } else {
-                    Message.announcement(player, "${ChatColor.DARK_RED}[OUT OF AMMO]")
-                }
+                XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
             }
         }
     }
