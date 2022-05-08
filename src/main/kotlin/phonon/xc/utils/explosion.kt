@@ -7,11 +7,13 @@ package phonon.xc.utils.explosion
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
+import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Damageable
 import phonon.xc.XC
+import phonon.xc.event.XCExplosionDamageEvent
 import phonon.xc.utils.ChunkCoord3D
 import phonon.xc.utils.Hitbox
 import phonon.xc.utils.damage.DamageType
@@ -93,7 +95,14 @@ public fun createExplosion(
                             target.setNoDamageTicks(0)
                         }
                         
-                        // emit explosion damage event
+                        // emit event for external plugins to read
+                        Bukkit.getPluginManager().callEvent(XCExplosionDamageEvent(
+                            target,
+                            baseDamage,
+                            damageType,
+                            distance,
+                            source,
+                        ))
                     }
                 }
             }

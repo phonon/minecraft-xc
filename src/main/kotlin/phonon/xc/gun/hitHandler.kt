@@ -11,6 +11,7 @@
 
 package phonon.xc.gun
 
+import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.block.Block
 import org.bukkit.entity.Entity
@@ -20,6 +21,8 @@ import phonon.xc.utils.damage.*
 import phonon.xc.utils.ChunkCoord3D
 import phonon.xc.utils.Hitbox
 import phonon.xc.utils.explosion.createExplosion
+import phonon.xc.event.XCProjectileDamageEvent
+
 
 /**
  * Common hit block handler function type. Inputs are
@@ -91,6 +94,14 @@ public val entityDamageHitHandler = fun(
         target.damage(damage, source)
         target.setNoDamageTicks(0)
     }
+
+    // emit event for external plugins to read
+    Bukkit.getPluginManager().callEvent(XCProjectileDamageEvent(
+        target,
+        gun.projectileDamage,
+        gun.projectileDamageType,
+        source,
+    ))
 }
 
 /**
@@ -114,6 +125,14 @@ public val entityExplosionHitHandler = fun(
         target.damage(damage, source)
         target.setNoDamageTicks(0)
     }
+
+    // emit event for external plugins to read
+    Bukkit.getPluginManager().callEvent(XCProjectileDamageEvent(
+        target,
+        gun.projectileDamage,
+        gun.projectileDamageType,
+        source,
+    ))
 
     // summon explosion effect at location
     createExplosion(
