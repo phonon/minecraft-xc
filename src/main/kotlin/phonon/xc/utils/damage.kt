@@ -12,6 +12,40 @@ import org.bukkit.enchantments.Enchantment
 
 
 /**
+ * Damage type metadata for weapons. This is used
+ * for custom damage handlers (e.g. vehicles) to adjust
+ * damage based on type.
+ */
+public enum class DamageType {
+    UNKNOWN,   // placeholder or none specified
+    MELEE,     // melee weapons
+    BULLET,    // regular guns
+    FIRE,      // fire, like flamethrower
+    EXPLOSIVE, // generic explosive like grenade
+    EXPLOSIVE_SHELL, // e.g. artillery or tank vehicle type damage
+    ; // end enums
+
+    companion object {
+        /**
+         * Match name to damage type. Case-insensitive.
+         * If none found, will return null.
+         */
+        public fun match(name: String): DamageType? {
+            return when (name.uppercase()) {
+                "UNKNOWN" -> UNKNOWN
+                "MELEE" -> MELEE
+                "BULLET" -> BULLET
+                "FIRE" -> FIRE
+                "EXPLOSIVE" -> EXPLOSIVE
+                "EXPLOSIVE_SHELL" -> EXPLOSIVE_SHELL
+                else -> null
+            }
+        }
+    }
+} 
+
+
+/**
  * Return entity damage after armor and damage resistance calculation.
  * This only factors in armor points and potion damage resistance.
  * This does not include armor toughness or armor enchant protection.
@@ -45,30 +79,16 @@ public fun damageAfterArmorAndResistance(
 
 
 /**
- * Return damage from explosion based on distance, armor,
- * and blast protection enchant level.
- * 
- * Explosion damage done by a "hat" function:
- *          ___________  baseDamage
- *         /           \
- *     ___/             \____ 0
- *          <--> c <-->
- *                 radius
- * Within center radius, baseDamage is applied.
- * Outside of radius, linearly falloff factor applied, clamped to 0.
+ * Calculate explosion damage after armor.
+ * This is used after calculating explosion damage from
+ * distance using baseExplosionDamage().
  */
 public fun explosionDamageAfterArmor(
     baseDamage: Double,
-    distance: Double,
-    radius: Double,
-    falloff: Double,
     entity: LivingEntity,
     armorReductionFactor: Double,
     blastProtReductionFactor: Double,
 ): Double {
-    val distanceBeyondRadius = max(0.0, distance - radius)
-    val damage = max(0.0, baseDamage - (distanceBeyondRadius * falloff))
-
     // get total entity armor value
     val armor = if ( entity is Attributable ) {
         entity.getAttribute(Attribute.GENERIC_ARMOR)?.getValue() ?: 0.0
@@ -86,5 +106,5 @@ public fun explosionDamageAfterArmor(
         equipment.getBoots()?.getItemMeta()?.let { it -> totalBlastProtectionLevel += it.getEnchantLevel(Enchantment.PROTECTION_EXPLOSIONS).toDouble() }
     }
 
-    return max(0.0, damage - (armor * armorReductionFactor) - (totalBlastProtectionLevel * blastProtReductionFactor))
+    return max(0.0, baseDamage - (armor * armorReductionFactor) - (totalBlastProtectionLevel * blastProtReductionFactor))
 }

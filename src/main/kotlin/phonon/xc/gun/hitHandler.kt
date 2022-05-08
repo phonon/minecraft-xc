@@ -17,6 +17,9 @@ import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Damageable
 import phonon.xc.utils.damage.*
+import phonon.xc.utils.ChunkCoord3D
+import phonon.xc.utils.Hitbox
+import phonon.xc.utils.explosion.createExplosion
 
 /**
  * Common hit block handler function type. Inputs are
@@ -27,7 +30,7 @@ import phonon.xc.utils.damage.*
  *  source: Entity,
  * ) -> Unit
  */
-typealias GunHitBlockHandler = (Gun, Location, Block, Entity) -> Unit
+typealias GunHitBlockHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, Location, Block, Entity) -> Unit
 
 /**
  * Common hit entity handler function type. Inputs are
@@ -38,7 +41,7 @@ typealias GunHitBlockHandler = (Gun, Location, Block, Entity) -> Unit
  *  source: Entity,
  * ) -> Unit
  */
-typealias GunHitEntityHandler = (Gun, Location, Entity, Entity) -> Unit
+typealias GunHitEntityHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, Location, Entity, Entity) -> Unit
 
 
 /**
@@ -66,12 +69,13 @@ public fun getGunHitEntityHandler(name: String): GunHitEntityHandler? {
 /**
  * Empty entity hit handler.
  */
-public val noEntityHitHandler: GunHitEntityHandler = {_, _, _, _ -> }
+public val noEntityHitHandler: GunHitEntityHandler = {_, _, _, _, _ -> }
 
 /**
  * Entity hit handler with damage (standard entity damage hit handler).
  */
 public val entityDamageHitHandler = fun(
+    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     gun: Gun,
     location: Location,
     target: Entity,
@@ -93,28 +97,66 @@ public val entityDamageHitHandler = fun(
  * Entity hit handler with damage and a queued explosion at hit location.
  */
 public val entityExplosionHitHandler = fun(
+    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     gun: Gun,
     location: Location,
     target: Entity,
     source: Entity,
 ) {
-    
+    // do main damage directly to target
+    if ( target is LivingEntity && target is Damageable ) {
+        val damage = damageAfterArmorAndResistance(
+            gun.projectileDamage,
+            target,
+            gun.projectileArmorReduction,
+            gun.projectileResistanceReduction,
+        )
+        target.damage(damage, source)
+        target.setNoDamageTicks(0)
+    }
+
+    // summon explosion effect at location
+    createExplosion(
+        hitboxes,
+        location,
+        source,
+        gun.explosionMaxDistance,
+        gun.explosionDamage,
+        gun.explosionRadius,
+        gun.explosionFalloff,
+        gun.explosionArmorReduction,
+        gun.explosionBlastProtReduction,
+        gun.explosionDamageType,
+    )
 }
 
 
 /**
  * Empty entity hit handler.
  */
-public val noBlockHitHandler: GunHitBlockHandler = {_, _, _, _ -> }
+public val noBlockHitHandler: GunHitBlockHandler = {_, _, _, _, _ -> }
 
 /**
  * Block hit handler that queues explosion at hit location.
  */
 public val blockExplosionHitHandler = fun(
+    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     gun: Gun,
     location: Location,
     block: Block,
     source: Entity,
 ) {
-
+    // summon explosion effect at location
+    createExplosion(
+        hitboxes,
+        location,
+        source,
+        gun.explosionMaxDistance,
+        gun.explosionDamage,
+        gun.explosionRadius,
+        gun.explosionFalloff,
+        gun.explosionArmorReduction,
+        gun.explosionBlastProtReduction,
+        gun.explosionDamageType,
+    )
 }

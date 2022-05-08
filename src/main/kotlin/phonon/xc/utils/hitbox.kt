@@ -7,6 +7,7 @@ package phonon.xc.utils
 import java.util.EnumMap
 import kotlin.math.min
 import kotlin.math.max
+import kotlin.math.sqrt
 import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
@@ -43,6 +44,16 @@ public data class Hitbox(
     public val xmax: Float,
     public val ymax: Float,
     public val zmax: Float,
+
+    // store center location, used for some area effect checks
+    public val xcenter: Float,
+    public val ycenter: Float,
+    public val zcenter: Float,
+
+    // effective radius for explosion, using MINIMUM of x, y, z
+    // extents, so that explosion damage is more conservative.
+    // so this is NOT a sphere bound radius
+    public val radiusMin: Float,
 ) {
     
     /**
@@ -135,6 +146,16 @@ public data class Hitbox(
         return if ( tmax >= tmin ) tmin else null
     }
 
+    /**
+     * Return distance to x, y, z location.
+     */
+    public fun distance(x: Float, y: Float, z: Float): Float {
+        val dx = x - this.xcenter
+        val dy = y - this.ycenter
+        val dz = z - this.zcenter
+        return sqrt((dx * dx) + (dy * dy) + (dz * dz))
+    }
+
     companion object {
         /**
          * Create hitbox from an entity and size config.
@@ -158,6 +179,13 @@ public data class Hitbox(
             if ( entity.type == EntityType.PLAYER && (entity as Player).isSneaking() == true ) {
                 ymax -= 0.3f
             }
+
+            val xcenter = 0.5f * (xmin + xmax)
+            val ycenter = 0.5f * (ymin + ymax)
+            val zcenter = 0.5f * (zmin + zmax)
+
+            // calculate radiuses
+            val radiusMin = min(min(size.xHalf, size.zHalf), ymax - ymin)
             
             return Hitbox(
                 entity,
@@ -167,6 +195,10 @@ public data class Hitbox(
                 xmax,
                 ymax,
                 zmax,
+                xcenter,
+                ycenter,
+                zcenter,
+                radiusMin,
             )
         }
 

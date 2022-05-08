@@ -77,6 +77,8 @@ entity = "damage"
 # block = "explosion"
 
 # Projectile properties.
+# Damage types:
+# ["UNKNOWN", "MELEE", "BULLET", "FIRE", "EXPLOSIVE", "EXPLOSIVE_SHELL"]
 [projectile]
 damage = 4.0
 armor_reduction = 0.5    # damage reduced / point of armor
@@ -85,12 +87,15 @@ velocity = 16.0          # blocks/tick
 gravity = 0.025          # blocks/tick^2
 lifetime = 400           # ticks before despawning
 max_distance = 128.0     # distance before despawning
+damage_type = "BULLET"
 
 # Explosion damage properties. These are only used if the handler
 # for block or entity hit has an explosion effect.
 [explosion]
 damage = 8.0
-radius = 2.0
+max_distance = 8.0
+radius = 1.0
 falloff = 2.0
 armor_reduction = 0.5
 blast_prot_reduction = 0.5
+damage_type = "EXPLOSIVE_SHELL"

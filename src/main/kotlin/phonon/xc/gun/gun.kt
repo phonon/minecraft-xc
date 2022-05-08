@@ -6,11 +6,12 @@ package phonon.xc.gun
 import java.nio.file.Path
 import java.util.logging.Logger
 import org.tomlj.Toml
-import phonon.xc.utils.mapToObject
 import phonon.xc.gun.getGunHitEntityHandler
 import phonon.xc.gun.getGunHitBlockHandler
 import phonon.xc.gun.noEntityHitHandler
 import phonon.xc.gun.noBlockHitHandler
+import phonon.xc.utils.mapToObject
+import phonon.xc.utils.damage.DamageType
 
 
 /**
@@ -88,13 +89,16 @@ public data class Gun(
     public val projectileDamage: Double = 4.0,
     public val projectileArmorReduction: Double = 0.5,
     public val projectileResistanceReduction: Double = 0.5,
+    public val projectileDamageType: DamageType = DamageType.BULLET,
 
     // explosion damage and radius and falloff (unused if no explosion)
     public val explosionDamage: Double = 8.0,
-    public val explosionRadius: Double = 2.0,
-    public val explosionFalloff: Double = 2.0, // damage/block falloff
-    public val explosionArmorReduction: Double = 0.5, // damage/armor
+    public val explosionMaxDistance: Double = 8.0,        // max distance for checking entities
+    public val explosionRadius: Double = 1.0,
+    public val explosionFalloff: Double = 2.0,            // damage/block falloff
+    public val explosionArmorReduction: Double = 0.5,     // damage/armor point
     public val explosionBlastProtReduction: Double = 1.0, // damage/blast protection
+    public val explosionDamageType: DamageType = DamageType.EXPLOSIVE_SHELL,
 
     // handler on block hit
     public val hitBlockHandler: GunHitBlockHandler = noBlockHitHandler,
@@ -211,15 +215,32 @@ public data class Gun(
                     projectile.getDouble("gravity")?.let { properties["projectileGravity"] = it.toFloat() }
                     projectile.getLong("lifetime")?.let { properties["projectileLifetime"] = it.toInt() }
                     projectile.getDouble("max_distance")?.let { properties["projectileMaxDistance"] = it.toFloat() }
+                    projectile.getString("damage_type")?.let { name ->
+                        val damageType = DamageType.match(name)
+                        if ( damageType != null ) {
+                            properties["projectileDamageType"] = damageType
+                        } else {
+                            logger?.warning("Unknown damage type: ${name}")
+                        }
+                    }
                 }
 
                 // explosion
                 toml.getTable("explosion")?.let { explosion ->
                     explosion.getDouble("damage")?.let { properties["explosionDamage"] = it }
+                    explosion.getDouble("max_distance")?.let { properties["explosionMaxDistance"] = it }
                     explosion.getDouble("radius")?.let { properties["explosionRadius"] = it }
                     explosion.getDouble("falloff")?.let { properties["explosionFalloff"] = it }
                     explosion.getDouble("armor_reduction")?.let { properties["explosionArmorReduction"] = it }
                     explosion.getDouble("blast_prot_reduction")?.let { properties["explosionBlastProtReduction"] = it }
+                    explosion.getString("damage_type")?.let { name ->
+                        val damageType = DamageType.match(name)
+                        if ( damageType != null ) {
+                            properties["explosionDamageType"] = damageType
+                        } else {
+                            logger?.warning("Unknown damage type: ${name}")
+                        }
+                    }
                 }
 
                 println("CREATING GUN WITH PROPERTIES: ${properties}")

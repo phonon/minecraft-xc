@@ -116,6 +116,7 @@ public object XC {
     // particle packet spawn queues
     internal var particleBulletTrailQueue: ArrayList<ParticleBulletTrail> = ArrayList()
     internal var particleBulletImpactQueue: ArrayList<ParticleBulletImpact> = ArrayList()
+    internal var particleExplosionQueue: ArrayList<ParticleExplosion> = ArrayList()
 
     // block cracking packet animation queue
     internal var blockCrackAnimationQueue: ArrayList<BlockCrackAnimation> = ArrayList()
@@ -427,14 +428,12 @@ public object XC {
             // if ( hitEntitiesQueue.size > 0 ) println("HIT ENTITIES: ${hitEntitiesQueue}")
 
             for ( hitBlock in hitBlocksQueue ) {
-                hitBlock.gun.hitBlockHandler(hitBlock.gun, hitBlock.location, hitBlock.block, hitBlock.source)
+                hitBlock.gun.hitBlockHandler(hitboxes, hitBlock.gun, hitBlock.location, hitBlock.block, hitBlock.source)
             }
 
             for ( hitEntity in hitEntitiesQueue ) {
-                hitEntity.gun.hitEntityHandler(hitEntity.gun, hitEntity.location, hitEntity.entity, hitEntity.source)
+                hitEntity.gun.hitEntityHandler(hitboxes, hitEntity.gun, hitEntity.location, hitEntity.entity, hitEntity.source)
             }
-
-            // TODO: handle explosions queue here
         }
 
         // ================================================
@@ -444,10 +443,12 @@ public object XC {
 
         val particleBulletTrails = XC.particleBulletTrailQueue
         val particleBulletImpacts = XC.particleBulletImpactQueue
+        val particleExplosions = XC.particleExplosionQueue
         val gunAmmoInfoMessages = XC.gunAmmoInfoMessageQueue
 
         XC.particleBulletTrailQueue = ArrayList()
         XC.particleBulletImpactQueue = ArrayList()
+        XC.particleExplosionQueue = ArrayList()
         XC.gunAmmoInfoMessageQueue = ArrayList()
 
         Bukkit.getScheduler().runTaskAsynchronously(
@@ -457,6 +458,10 @@ public object XC {
         Bukkit.getScheduler().runTaskAsynchronously(
             XC.plugin!!,
             TaskSpawnParticleBulletImpacts(particleBulletImpacts),
+        )
+        Bukkit.getScheduler().runTaskAsynchronously(
+            XC.plugin!!,
+            TaskSpawnParticleExplosion(particleExplosions),
         )
         Bukkit.getScheduler().runTaskAsynchronously(
             XC.plugin!!,

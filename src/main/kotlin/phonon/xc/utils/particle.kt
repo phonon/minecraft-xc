@@ -95,7 +95,7 @@ public class TaskSpawnParticleBulletTrails(
 
 
 /**
- * Particle that appears
+ * Particle that appears when block hit by projectile.
  */
 public data class ParticleBulletImpact(
     val world: World,
@@ -142,6 +142,44 @@ public class TaskSpawnParticleBulletImpacts(
                 0.0, // extra
                 Particle.DustOptions(Color.WHITE, 0.8f),
                 // Particle.DustOptions(Color.RED, 1.0f), // FOR DEBUGGING
+                p.force,
+            )
+        }
+    }
+}
+
+
+/**
+ * Particle for explosions.
+ */
+public data class ParticleExplosion(
+    val world: World,
+    val count: Int,
+    val x: Double,
+    val y: Double,
+    val z: Double,
+    val force: Boolean,
+)
+
+/**
+ * Runnable task to spawn explosion particles
+ */
+public class TaskSpawnParticleExplosion(
+    val particles: ArrayList<ParticleExplosion>,
+): Runnable {
+    override fun run() {
+        for ( p in particles ) {
+            p.world.spawnParticle(
+                Particle.EXPLOSION_HUGE,
+                p.x,
+                p.y,
+                p.z,
+                p.count,
+                0.0, // offset.x
+                0.0, // offset.y
+                0.0, // offset.z
+                0.0, // extra
+                null,
                 p.force,
             )
         }
