@@ -25,6 +25,7 @@ private val SUBCOMMANDS = listOf(
     "benchmark",
     "gun",
     "gundebug",
+    "hitbox",
 
     // random testing debug commands
     // "hitbox",
@@ -57,9 +58,9 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             "benchmark" -> benchmark(player, args)
             "gun" -> gun(sender, args)
             "gundebug" -> gundebug(sender, args)
+            "hitbox" -> hitbox(sender, args)
             
             // random testing debug commands
-            // "hitbox" -> getEntityHitbox()
             // "chunk" -> debugChunkSnapshotTest(sender)
             // "crawl" -> crawl(sender, args)
             else -> {
@@ -81,6 +82,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         Message.print(sender, "/xc timings: print debug timings")
         Message.print(sender, "/xc debugtimings: toggle debug timings")
         Message.print(sender, "/xc benchmark: run projectile benchmark")
+        Message.print(sender, "/xc hitbox: visualize hitboxes")
         return
     }
 
@@ -206,18 +208,44 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         } else if ( args.size < 3 ) {
             val velocity = args[1].toFloat()
             val gravity = 0.025f
-            XC.gunDebug = XC.gunDebug.copy(
+            XC.guns[0] = XC.gunDebug.copy(
                 projectileVelocity = velocity,
                 projectileGravity = gravity,
             )
         } else {
             val velocity = args[1].toFloat()
             val gravity = args[2].toFloat()
-            XC.gunDebug = XC.gunDebug.copy(
+            XC.guns[0] = XC.gunDebug.copy(
                 projectileVelocity = velocity,
                 projectileGravity = gravity,
             )
         }
+    }
+
+
+    /**
+     * Debug hitboxes (show particles at hitbox locations) 
+     * in player range. Must be run in-game by a player.
+     */
+    private fun hitbox(sender: CommandSender?, args: Array<String>) {
+        val player = if ( sender is Player ) sender else null
+        if ( player === null ) {
+            Message.error(sender, "[xc] Must be run in-game by player")
+            return
+        }
+        if ( !player.isOp() ) {
+            Message.error(player, "[xc] op only")
+            return
+        }
+
+        var range = if ( args.size < 2 ) {
+            1
+        } else {
+            args[1].toInt()
+        }
+
+        Message.print(player, "[xc] Showing hitboxes in range=${range}")
+        XC.debugHitboxRequest(player, range)
     }
 
     // /**

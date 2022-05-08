@@ -17,9 +17,13 @@ import java.util.EnumSet
 import java.util.UUID
 import java.util.logging.Logger
 import kotlin.math.max
+import kotlin.math.floor
+import kotlin.math.ceil
 import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
+import org.bukkit.Particle
 import org.bukkit.entity.Entity
+import org.bukkit.entity.EntityType
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.entity.Damageable
@@ -31,6 +35,7 @@ import com.comphenix.protocol.ProtocolLibrary
 
 import phonon.xc.gun.*
 import phonon.xc.utils.mapToObject
+import phonon.xc.utils.Hitbox
 import phonon.xc.utils.HitboxSize
 import phonon.xc.utils.particle.*
 import phonon.xc.utils.debug.DebugTimings
@@ -89,7 +94,7 @@ public object XC {
     internal var customModelHitboxes: HashMap<Int, HitboxSize> = HashMap()
 
     // projectile systems for each world, map world uuid => ProjectileSystem
-    internal val projectileSystems: HashMap<UUID, ProjectileSystem> = HashMap()
+    internal val projectileSystems: HashMap<UUID, ProjectileSystem> = HashMap(4) // initial capacity 4 worlds
 
     // map of players doing automatic firing
     internal val isAutomaticFiring: HashMap<UUID, AutomaticFiring> = HashMap()
@@ -387,6 +392,44 @@ public object XC {
             ))
         }
         projectileSystem.addProjectiles(projectiles)
+    }
+
+
+    /**
+     * Add player hitbox debug request
+     */
+    public fun debugHitboxRequest(player: Player, range: Int) {
+        val world = player.world
+        val loc = player.location
+
+        val cxmin = (floor(loc.x).toInt() shr 4) - range
+        val cxmax = (ceil(loc.x).toInt() shr 4) + range
+        val czmin = (floor(loc.z).toInt() shr 4) - range
+        val czmax = (ceil(loc.z).toInt() shr 4) + range
+        
+        for ( cx in cxmin..cxmax ) {
+            for ( cz in czmin..czmax ) {
+                if ( world.isChunkLoaded(cx, cz) ) {
+                    val chunk = world.getChunkAt(cx, cz)
+
+                    for ( entity in chunk.getEntities() ) {
+                        // special handling for custom model hitboxes
+                        if ( entity.type == EntityType.ARMOR_STAND ) {
+                            val hitboxSize = XC.customModelHitboxes.get(entity.getEntityId())
+                            if ( hitboxSize != null ) {
+                                Hitbox.from(entity, hitboxSize).visualize(world, Particle.VILLAGER_HAPPY)
+                                continue
+                            }
+                        }
+        
+                        // regular entities
+                        if ( XC.config.entityTargetable[entity.type] ) {
+                            Hitbox.from(entity, XC.config.entityHitboxSizes[entity.type]).visualize(world, Particle.VILLAGER_HAPPY)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     

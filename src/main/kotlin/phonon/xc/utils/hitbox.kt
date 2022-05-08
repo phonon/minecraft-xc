@@ -8,7 +8,9 @@ import java.util.EnumMap
 import kotlin.math.min
 import kotlin.math.max
 import kotlin.math.sqrt
+import org.bukkit.World
 import org.bukkit.Location
+import org.bukkit.Particle
 import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
@@ -25,7 +27,9 @@ public data class HitboxSize(
     public val zHalf: Float,
     public val yHeight: Float,
     public val yOffset: Float,
-)
+) {
+    public val radiusMin = min(min(xHalf, zHalf), yHeight / 2f)
+}
 
 
 /**
@@ -156,6 +160,45 @@ public data class Hitbox(
         return sqrt((dx * dx) + (dy * dy) + (dz * dz))
     }
 
+    /**
+     * Create particles filling volume of the hitbox
+     */
+    public fun visualize(world: World, particle: Particle) {
+        val AMOUNT = 10f
+        val MIN_STEP = 0.1f
+        val dx = max(MIN_STEP, (xmax - xmin) / AMOUNT)
+        val dy = max(MIN_STEP, (ymax - ymin) / AMOUNT)
+        val dz = max(MIN_STEP, (zmax - zmin) / AMOUNT)
+
+        var n = 0
+        var x = xmin
+        while ( x <= xmax ) {
+            var y = ymin
+            while ( y <= ymax ) {
+                var z = zmin
+                while ( z <= zmax ) {
+                    world.spawnParticle(
+                        particle,
+                        x.toDouble(),
+                        y.toDouble(),
+                        z.toDouble(),
+                        1
+                    )
+                    z += dz
+
+                    n += 1
+                    // guard against loop too big
+                    if ( n > 10000 ) {
+                        return
+                    }
+                }
+                y += dy
+            }
+            x += dx
+        }
+    }
+
+
     companion object {
         /**
          * Create hitbox from an entity and size config.
@@ -185,7 +228,7 @@ public data class Hitbox(
             val zcenter = 0.5f * (zmin + zmax)
 
             // calculate radiuses
-            val radiusMin = min(min(size.xHalf, size.zHalf), ymax - ymin)
+            val radiusMin = size.radiusMin
             
             return Hitbox(
                 entity,
