@@ -31,7 +31,7 @@ Available types for custom items are thus:
 - Misc / throwables => `GOLDEN_HORSE_ARMOR`
 - Ammo => `LEATHER_HORSE_ARMOR`
 - Hats => `LEATHER_HORSE_ARMOR`
-- Vehicles => `DIAMOND_HORSE_ARMOR`
+- Vehicles => `CARROT_ON_A_STICK`
 
 
 # Ammo

@@ -29,6 +29,13 @@ public data class HitboxSize(
     public val yOffset: Float,
 ) {
     public val radiusMin = min(min(xHalf, zHalf), yHeight / 2f)
+
+    /**
+     * Create clone of this.
+     */
+    public fun clone(): HitboxSize {
+        return HitboxSize(xHalf, zHalf, yHeight, yOffset)
+    }
 }
 
 

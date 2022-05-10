@@ -91,7 +91,7 @@ public val entityDamageHitHandler = fun(
             gun.projectileArmorReduction,
             gun.projectileResistanceReduction,
         )
-        target.damage(damage, source)
+        target.damage(damage, null)
         target.setNoDamageTicks(0)
     }
 
@@ -122,7 +122,7 @@ public val entityExplosionHitHandler = fun(
             gun.projectileArmorReduction,
             gun.projectileResistanceReduction,
         )
-        target.damage(damage, source)
+        target.damage(damage, null)
         target.setNoDamageTicks(0)
     }
 

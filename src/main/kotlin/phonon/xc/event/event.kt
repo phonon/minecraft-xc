@@ -18,7 +18,7 @@ import phonon.xc.utils.damage.DamageType
  * and takes damage. This only occurs for entities that have
  * hitboxes enabled.
  */
-public class XCProjectileDamageEvent(
+public data class XCProjectileDamageEvent(
     public val target: Entity,
     public val damage: Double, // base damage, not modified by armor
     public val damageType: DamageType,
@@ -56,7 +56,7 @@ public class XCProjectileDamageEvent(
  * (so entity within explosion distance). This only occurs for
  * entities that have hitboxes enabled.
  */
-public class XCExplosionDamageEvent(
+public data class XCExplosionDamageEvent(
     public val target: Entity,
     public val damage: Double, // base damage, not modified by armor
     public val damageType: DamageType,

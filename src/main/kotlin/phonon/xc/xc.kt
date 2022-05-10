@@ -20,6 +20,7 @@ import kotlin.math.max
 import kotlin.math.floor
 import kotlin.math.ceil
 import org.bukkit.Bukkit
+import org.bukkit.World
 import org.bukkit.NamespacedKey
 import org.bukkit.Particle
 import org.bukkit.entity.Entity
@@ -394,6 +395,28 @@ public object XC {
         projectileSystem.addProjectiles(projectiles)
     }
 
+    /**
+     * Map an entity to a custom hitbox size.
+     */
+    public fun addHitbox(entity: Entity, hitbox: HitboxSize) {
+        XC.customModelHitboxes[entity.getEntityId()] = hitbox
+    }
+
+    /**
+     * Remove custom hitbox from entity if it exists.
+     */
+    public fun removeHitbox(entity: Entity) {
+        XC.customModelHitboxes.remove(entity.getEntityId())
+    }
+
+    /**
+     * Adds projectile to projectile system if it exists.
+     */
+    public fun addProjectile(world: World, projectile: Projectile) {
+        XC.projectileSystems[world.getUID()]?.let { sys ->
+            sys.addProjectile(projectile)
+        }
+    }
 
     /**
      * Add player hitbox debug request

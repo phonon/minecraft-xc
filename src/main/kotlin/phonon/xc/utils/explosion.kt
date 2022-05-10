@@ -89,9 +89,9 @@ public fun createExplosion(
                                 target,
                                 armorReduction,
                                 blastProtReduction,
-                                )
+                            )
                             
-                            target.damage(damage, source)
+                            target.damage(damage, null)
                             target.setNoDamageTicks(0)
                         }
                         

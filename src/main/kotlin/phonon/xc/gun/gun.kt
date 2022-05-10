@@ -4,8 +4,13 @@
 package phonon.xc.gun
 
 import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.Files
 import java.util.logging.Logger
 import org.tomlj.Toml
+import org.bukkit.Location
+import org.bukkit.entity.Entity
+import org.bukkit.util.Vector
 import phonon.xc.gun.getGunHitEntityHandler
 import phonon.xc.gun.getGunHitBlockHandler
 import phonon.xc.gun.noEntityHitHandler
@@ -106,7 +111,30 @@ public data class Gun(
     // handler on entity hit
     public val hitEntityHandler: GunHitEntityHandler = entityDamageHitHandler,
 ) {
-
+    /**
+     * Create a projectile using this gun's properties.
+     */
+    public fun createProjectile(
+        source: Entity,
+        shootLocation: Location,
+        shootDirection: Vector,
+    ): Projectile {
+        return Projectile(
+            gun = this,
+            source = source,
+            x = shootLocation.x.toFloat(),
+            y = shootLocation.y.toFloat(),
+            z = shootLocation.z.toFloat(),
+            dirX = shootDirection.x.toFloat(),
+            dirY = shootDirection.y.toFloat(),
+            dirZ = shootDirection.z.toFloat(),
+            speed = this.projectileVelocity,
+            gravity = this.projectileGravity,
+            maxLifetime = this.projectileLifetime,
+            maxDistance = this.projectileMaxDistance,
+        )
+    }
+    
     companion object {
         /**
          * Parse and return a Gun from a `gun.toml` file.
@@ -249,6 +277,23 @@ public data class Gun(
             } catch (e: Exception) {
                 logger?.warning("Failed to parse gun file: ${source.toString()}, ${e}")
                 return null
+            }
+        }
+        
+        /**
+         * Load gun from string file, return default gun if not found.
+         */
+        public fun loadFilenameOrDefault(filename: String, default: Gun, logger: Logger? = null): Gun {
+            val p = Paths.get(filename)
+            if ( Files.isRegularFile(p) ) {
+                try {
+                    return Gun.fromToml(p, logger) ?: default
+                } catch (err: Exception) {
+                    logger?.warning("Failed to parse gun file: ${filename}, ${err}")
+                    return default
+                }
+            } else {
+                return default
             }
         }
     }
