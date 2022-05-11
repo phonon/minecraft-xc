@@ -92,7 +92,7 @@ public object XC {
     internal var hats: Array<Gun?> = Array(MAX_HAT_CUSTOM_MODEL_ID, { _ -> null })
     
     // custom hitboxes for armor stand custom models, maps EntityId => HitboxSize
-    internal var customModelHitboxes: HashMap<Int, HitboxSize> = HashMap()
+    internal var customModelHitboxes: HashMap<UUID, HitboxSize> = HashMap()
 
     // projectile systems for each world, map world uuid => ProjectileSystem
     internal val projectileSystems: HashMap<UUID, ProjectileSystem> = HashMap(4) // initial capacity 4 worlds
@@ -396,17 +396,18 @@ public object XC {
     }
 
     /**
-     * Map an entity to a custom hitbox size.
+     * Map an uuid to a custom hitbox size. UUID flexible, can be
+     * entity unique id, or uuid managed by other systems.
      */
-    public fun addHitbox(entity: Entity, hitbox: HitboxSize) {
-        XC.customModelHitboxes[entity.getEntityId()] = hitbox
+    public fun addHitbox(uuid: UUID, hitbox: HitboxSize) {
+        XC.customModelHitboxes[uuid] = hitbox
     }
 
     /**
-     * Remove custom hitbox from entity if it exists.
+     * Remove custom hitbox from uuid if it exists.
      */
-    public fun removeHitbox(entity: Entity) {
-        XC.customModelHitboxes.remove(entity.getEntityId())
+    public fun removeHitbox(uuid: UUID) {
+        XC.customModelHitboxes.remove(uuid)
     }
 
     /**
@@ -438,7 +439,7 @@ public object XC {
                     for ( entity in chunk.getEntities() ) {
                         // special handling for custom model hitboxes
                         if ( entity.type == EntityType.ARMOR_STAND ) {
-                            val hitboxSize = XC.customModelHitboxes.get(entity.getEntityId())
+                            val hitboxSize = XC.customModelHitboxes.get(entity.getUniqueId())
                             if ( hitboxSize != null ) {
                                 Hitbox.from(entity, hitboxSize).visualize(world, Particle.VILLAGER_HAPPY)
                                 continue

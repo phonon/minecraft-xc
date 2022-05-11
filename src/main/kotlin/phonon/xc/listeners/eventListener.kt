@@ -118,7 +118,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
      * theres nothing i can do right now, at best can delay firing by 1 tick which catches
      * SOME of the issues
      */
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.NORMAL)
     public fun onInteract(e: PlayerInteractEvent) {
         val player = e.getPlayer()
         val action = e.getAction()

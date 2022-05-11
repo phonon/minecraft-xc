@@ -278,7 +278,7 @@ public class ProjectileSystem(public val world: World) {
             for ( entity in chunk.getEntities() ) {
                 // special handling for custom model hitboxes
                 if ( entity.type == EntityType.ARMOR_STAND ) {
-                    val hitboxSize = XC.customModelHitboxes.get(entity.getEntityId())
+                    val hitboxSize = XC.customModelHitboxes.get(entity.getUniqueId())
                     if ( hitboxSize != null ) {
                         addHitboxToAllIntersectingChunks(hitboxes, Hitbox.from(entity, hitboxSize))
                         continue
