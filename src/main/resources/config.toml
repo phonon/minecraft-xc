@@ -9,6 +9,9 @@ melee = "melee"
 misc = "misc"
 armor = "armor"
 
+# block damage
+[block_damage]
+explosion = false
 
 # ADVANCED ENGINE CONFIG
 # generally dont touch these...

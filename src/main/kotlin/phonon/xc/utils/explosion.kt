@@ -58,6 +58,7 @@ public fun createExplosion(
     armorReduction: Double, // damage/armor
     blastProtReduction: Double, // damage/blast protection
     damageType: DamageType,
+    blockDamagePower: Float,
 ) {
     // get chunks intersecting with explosion radius
     val cxmin = floor(location.x - maxDistance).toInt() shr 4
@@ -107,6 +108,16 @@ public fun createExplosion(
                 }
             }
         }
+    }
+    
+    // create block explosion if power > 0
+    if ( XC.config.blockDamageExplosion && blockDamagePower > 0.0f ) {
+        location.world?.createExplosion(
+            location.x,
+            location.y,
+            location.z,
+            blockDamagePower,
+        )
     }
     
     // queue explosion particle effect

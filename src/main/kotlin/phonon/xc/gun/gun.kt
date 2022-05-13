@@ -104,6 +104,7 @@ public data class Gun(
     public val explosionArmorReduction: Double = 0.5,     // damage/armor point
     public val explosionBlastProtReduction: Double = 1.0, // damage/blast protection
     public val explosionDamageType: DamageType = DamageType.EXPLOSIVE_SHELL,
+    public val explosionBlockDamagePower: Float = 0f,     // explosion block damage power level
 
     // handler on block hit
     public val hitBlockHandler: GunHitBlockHandler = noBlockHitHandler,
@@ -269,6 +270,7 @@ public data class Gun(
                             logger?.warning("Unknown damage type: ${name}")
                         }
                     }
+                    explosion.getDouble("block_damage_power")?.let { properties["explosionBlockDamagePower"] = it.toFloat() }
                 }
 
                 println("CREATING GUN WITH PROPERTIES: ${properties}")

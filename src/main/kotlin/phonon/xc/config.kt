@@ -49,6 +49,9 @@ public data class Config(
     public val materialMisc: Material = Material.GOLDEN_HORSE_ARMOR,
     public val materialArmor: Material = Material.LEATHER_HORSE_ARMOR,
     
+    // block damage
+    public val blockDamageExplosion: Boolean = true,
+    
     // particle effects
     
     // number of bullet impact particles to spawn
@@ -101,6 +104,9 @@ public data class Config(
                     logger?.warning("[material.armor] Invalid material: ${s}")
                 }
             }
+            
+            // block damage config
+            toml.getBoolean("block_damage.explosion")?.let { configOptions["blockDamageExplosion"] = it }
 
             return mapToObject(configOptions, Config::class)
         }
