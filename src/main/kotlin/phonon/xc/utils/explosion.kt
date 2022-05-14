@@ -60,6 +60,12 @@ public fun createExplosion(
     damageType: DamageType,
     blockDamagePower: Float,
 ) {
+    // check if region allows explosions
+    if ( !XC.canExplodeAt(location) ) {
+        // print to player cannot attack here?
+        return
+    }
+
     // get chunks intersecting with explosion radius
     val cxmin = floor(location.x - maxDistance).toInt() shr 4
     val cxmax = ceil(location.x + maxDistance).toInt() shr 4

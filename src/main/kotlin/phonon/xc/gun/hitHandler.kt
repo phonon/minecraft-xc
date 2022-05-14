@@ -16,7 +16,9 @@ import org.bukkit.Location
 import org.bukkit.block.Block
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
+import org.bukkit.entity.Player
 import org.bukkit.entity.Damageable
+import phonon.xc.XC
 import phonon.xc.utils.damage.*
 import phonon.xc.utils.ChunkCoord3D
 import phonon.xc.utils.Hitbox
@@ -85,6 +87,10 @@ public val entityDamageHitHandler = fun(
     source: Entity,
 ) {
     if ( target is LivingEntity && target is Damageable ) {
+        if ( target is Player && !XC.canPvpAt(location) ) {
+            return
+        }
+
         val damage = damageAfterArmorAndResistance(
             gun.projectileDamage,
             target,
@@ -116,6 +122,10 @@ public val entityExplosionHitHandler = fun(
 ) {
     // do main damage directly to target
     if ( target is LivingEntity && target is Damageable ) {
+        if ( target is Player && !XC.canPvpAt(location) ) {
+            return
+        }
+
         val damage = damageAfterArmorAndResistance(
             gun.projectileDamage,
             target,

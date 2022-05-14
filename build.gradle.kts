@@ -40,6 +40,9 @@ repositories {
     maven { // protocol lib
         url = uri("https://repo.dmulloy2.net/nexus/repository/public/")
     }
+    maven { // worldguard
+        url = uri("https://maven.enginehub.org/repo/")
+    }
 }
 
 java {
@@ -73,10 +76,14 @@ dependencies {
     compileOnly("org.tomlj:tomlj:1.0.0")
     configurations["resolvableImplementation"]("org.tomlj:tomlj:1.0.0")
 
+    // paper api
+    api("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
+    
     // protocol lib (for packets)
     compileOnly("com.comphenix.protocol:ProtocolLib:4.5.0")
-
-    api("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
+    
+    // world guard region protection
+    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.7")
 
     // Use the Kotlin test library.
     testImplementation("org.jetbrains.kotlin:kotlin-test")

@@ -21,6 +21,7 @@ import kotlin.math.floor
 import kotlin.math.ceil
 import org.bukkit.Bukkit
 import org.bukkit.World
+import org.bukkit.Location
 import org.bukkit.NamespacedKey
 import org.bukkit.Particle
 import org.bukkit.entity.Entity
@@ -42,6 +43,7 @@ import phonon.xc.utils.particle.*
 import phonon.xc.utils.debug.DebugTimings
 import phonon.xc.utils.blockCrackAnimation.*
 import phonon.xc.utils.file.*
+import phonon.xc.utils.WorldGuard
 
 
 /**
@@ -310,6 +312,32 @@ public object XC {
         val id = XC.gunReloadIdCounter
         XC.gunReloadIdCounter = max(0, id + 1)
         return id
+    }
+
+    /**
+     * Protection check if location allows player pvp damage.
+     * In future, this should add other hooked plugin checks.
+     */
+    internal fun canPvpAt(loc: Location): Boolean {
+        if ( XC.usingWorldGuard ) {
+            return WorldGuard.canPvpAt(loc)
+        }
+
+        return true
+    }
+
+    /**
+     * Protection check if location allows explosions.
+     * This includes all explosion behavior (custom damage, particles,
+     * and block damage).
+     * In future, this should add other hooked plugin checks.
+     */
+    internal fun canExplodeAt(loc: Location): Boolean {
+        if ( XC.usingWorldGuard ) {
+            return WorldGuard.canExplodeAt(loc)
+        }
+
+        return true
     }
 
     /**
