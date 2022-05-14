@@ -208,12 +208,10 @@ public object XC {
         }
 
         XC.config = config
-        println(config)
 
         // load guns
         val filesAmmo = listDirFiles(config.pathFilesAmmo)
         val filesGuns = listDirFiles(config.pathFilesGun)
-        println(filesGuns)
         val gunsLoaded: List<Gun> = filesGuns
             .map { file -> Gun.fromToml(config.pathFilesGun.resolve(file), XC.logger) }
             .filterNotNull()

@@ -78,7 +78,7 @@ entity = "damage"
 
 # Projectile properties.
 # Damage types:
-# ["UNKNOWN", "MELEE", "BULLET", "FIRE", "EXPLOSIVE", "EXPLOSIVE_SHELL"]
+# ["UNKNOWN", "MELEE", "BULLET", "FIRE", "EXPLOSIVE", "EXPLOSIVE_SHELL", "ARMOR_PIERCING", "ARMOR_PIERCING_SHELL"]
 [projectile]
 damage = 4.0
 armor_reduction = 0.5    # damage reduced / point of armor

@@ -70,7 +70,6 @@ public data class Config(
          */
         public fun fromToml(source: Path, logger: Logger? = null): Config {
             val toml = Toml.parse(source)
-            println(toml)
 
             // map with keys as Config constructor property names
             val configOptions = HashMap<String, Any>()
