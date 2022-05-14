@@ -21,4 +21,5 @@ explosion = false
 gun = "WARPED_FUNGUS_ON_A_STICK"
 melee = "IRON_HORSE_ARMOR"
 misc = "GOLDEN_HORSE_ARMOR"
+ammo = "LEATHER_HORSE_ARMOR"
 armor = "LEATHER_HORSE_ARMOR"

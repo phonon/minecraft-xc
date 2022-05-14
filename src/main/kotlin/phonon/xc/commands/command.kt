@@ -18,6 +18,7 @@ import phonon.xc.gun.createItemFromGun
 
 
 private val SUBCOMMANDS = listOf(
+    "ammo",
     "help",
     "reload",
     "timings",
@@ -53,10 +54,11 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         when ( arg ) {
             "help" -> printHelp(sender)
             "reload" -> reload(sender)
+            "ammo"-> ammo(sender, args)
+            "gun" -> gun(sender, args)
             "timings" -> timings(sender)
             "debugTimings" -> debugTimings(sender)
             "benchmark" -> benchmark(player, args)
-            "gun" -> gun(sender, args)
             "gundebug" -> gundebug(sender, args)
             "hitbox" -> hitbox(sender, args)
             
@@ -161,6 +163,36 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         Message.print(sender, "[xc] Must be run in-game by player")
     }
     
+    
+    /**
+     * Get a ammo item from ID.
+     */
+    private fun ammo(sender: CommandSender?, args: Array<String>) {
+        val player = if ( sender is Player ) sender else null
+        if ( player === null ) {
+            Message.error(sender, "[xc] Must be run in-game by player")
+            return
+        }
+        if ( !player.isOp() ) {
+            Message.error(player, "[xc] op only")
+            return
+        }
+
+        if ( args.size < 2 ) {
+            Message.print(sender, "/xc ammo [id]")
+            return
+        }
+
+        val ammoId = args[1].toInt()
+        val ammo = XC.ammo[ammoId]
+        if ( ammo != null ) {
+            val item = ammo.toItem()
+            player.getInventory().addItem(item)
+            return
+        } else {
+            Message.error(sender, "[xc] Invalid ammo ID")       
+        }
+    }
     
     /**
      * Get a gun item from ID.

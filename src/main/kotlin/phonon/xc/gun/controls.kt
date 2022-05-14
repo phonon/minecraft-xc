@@ -8,8 +8,10 @@ package phonon.xc.gun
 import kotlin.math.max
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
+import org.bukkit.Material
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.entity.Player
+import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import phonon.xc.XC
@@ -121,7 +123,6 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
 
         projectileSystem.addProjectile(projectile)
 
-        Message.print(player, "Firing")
         // println("Shooting: ${gun}")
     }
 }
@@ -154,11 +155,15 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
         val ammoCurrent = itemData.get(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER) ?: 0
         val ammoMax = gun.ammoMax
         if ( ammoCurrent >= ammoMax ) {
-            return
+            continue
         }
 
         // check that player has enough ammo in inventory
-        // TODO
+        val ammoId = gun.ammoId
+        if ( !inventoryContainsItem(player.getInventory(), XC.config.materialAmmo, ammoId, 1) ) {
+            Message.announcement(player, "${ChatColor.DARK_RED}[No ammo in inventory]")
+            continue
+        }
 
         // set reload flag and reloading id: this ensures this is same item
         // being reloaded when reload task finishes
@@ -229,11 +234,17 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
 }
 
 /**
- * Finish reload task after async reload wait time is
+ * Finish reload task after async reload wait time finishes.
  */
 internal fun doGunReload(tasks: ArrayList<PlayerReloadTask>) {
     for ( task in tasks ) {
         val (player, gun, item, reloadId) = task
+
+        // remove ammo item from player inventory
+        if ( !inventoryRemoveItem(player.getInventory(), XC.config.materialAmmo, gun.ammoId, 1) ) {
+            Message.announcement(player, "${ChatColor.DARK_RED}[No ammo in inventory]")
+            continue
+        }
 
         // new ammo amount
         // TODO: adjustable reloading, either load to max or add # of projectiles
@@ -336,4 +347,123 @@ private fun formatRemainingTimeString(timeMillis: Double): String {
     val remainder = time - (seconds * 1000)
     val fraction = remainder / 100
     return "${seconds}.${fraction}s"
+}
+
+/**
+ * Return if inventory contains at least `amount` items with
+ * material type and custom model data. 
+ */
+private fun inventoryContainsItem(
+    inventory: Inventory,
+    material: Material,
+    modelData: Int,
+    amount: Int,
+): Boolean {
+    if ( amount <= 0 ) {
+        return true
+    }
+
+    for ( item in inventory.getStorageContents() ) {
+        if ( item != null && item.type == material && (item.getAmount() - amount) >= 0 ) {
+            // check custom model data
+            val itemMeta = item.getItemMeta()
+            if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() == modelData ) {
+                return true
+            }
+        }
+    }
+
+    return false
+}
+
+/**
+ * Removes first "amount" of item from inventory.
+ * If amount == 1, then we can just remove the first item
+ * found. Otherwise, if the items are spread into multiple
+ * stacks, we first build a transaction queue to make sure
+ * full amount can be removed in a single transaction.
+ * Returns true if items successfully removed. Otherwise, false.
+ * 
+ * Use `inventory.setItem(...)` and avoid `inventory.removeItem(...)`
+ * Code for removeItem seems to have inefficient inner loop:
+ * https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/browse/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventory.java#352
+ * https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/browse/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventory.java#99
+ */
+private fun inventoryRemoveItem(
+    inventory: Inventory,
+    material: Material,
+    modelData: Int,
+    amount: Int,
+): Boolean {
+    if ( amount <= 0 ) {
+        return true
+    }
+    else if ( amount == 1 ) {
+        // remove first item found matching
+        val items = inventory.getStorageContents()
+        for ( i in 0 until items.size ) {
+            val item = items[i]
+            if ( item != null && item.type == material ) {
+                // check custom model data
+                val itemMeta = item.getItemMeta()
+                if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() == modelData ) {
+                    // found matching item: remove from slot
+                    if ( item.getAmount() > 1 ) {
+                        item.setAmount(item.getAmount() - 1)
+                        inventory.setItem(i, item)
+                    } else {
+                        inventory.setItem(i, null)
+                    }
+                    return true
+                }
+            }
+        }
+    }
+    else {
+        // build transaction queue from matching items
+        val indicesToRemove = ArrayList<Int>(4)
+        var amountLeft = amount
+
+        val items = inventory.getStorageContents()
+        for ( i in 0 until items.size ) {
+            val item = items[i]
+            if ( item != null && item.type == material ) {
+                // check custom model data
+                val itemMeta = item.getItemMeta()
+                if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() == modelData ) {
+                    // found matching item: remove from slot
+                    indicesToRemove.add(i)
+                    amountLeft -= item.getAmount()
+                    if ( amountLeft <= 0 ) {
+                        break
+                    }
+                }
+            }
+        }
+
+        // only remove items if enough amount found across all item stacks
+        if ( amountLeft <= 0 ) {
+            var amountToRemove = amount
+
+            for ( i in indicesToRemove ) {
+                val item = items[i]
+                val itemAmount = item.getAmount()           
+                if ( itemAmount > amountToRemove ) {
+                    item.setAmount(itemAmount - amountToRemove)
+                    inventory.setItem(i, item)
+                    break
+                } else {
+                    inventory.setItem(i, null)
+                    amountToRemove -= itemAmount
+                    if ( amountToRemove <= 0 ) {
+                        break
+                    }
+                }
+            }
+
+            return true
+        }
+    }
+
+    return false
 }

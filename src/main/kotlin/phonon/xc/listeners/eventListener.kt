@@ -95,7 +95,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
         val itemMainHand = equipment.getItemInMainHand()
         getGunFromItem(itemMainHand)?.let { gun -> 
-            Message.print(player, "Reloading...")
+            // Message.print(player, "Reloading...")
             XC.playerReloadRequests.add(PlayerGunReloadRequest(
                 player = player,
                 gun = gun,
@@ -123,7 +123,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         val player = e.getPlayer()
         val action = e.getAction()
 
-        println("ON PLAYER INTERACT EVENT: ${action}")
+        // println("ON PLAYER INTERACT EVENT: ${action}")
 
         // ignores off hand event, physical events, or cancelled block interact event
         // this event runs twice, 2nd main hand event is cancelled block interact event
@@ -139,7 +139,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             val itemMainHand = equipment.itemInMainHand
             if ( itemMainHand.type == XC.config.materialGun ) {
                 getGunFromItem(itemMainHand)?.let { gun -> 
-                    Message.print(player, "Trying to shoot")
+                    // Message.print(player, "Trying to shoot")
                     XC.playerShootRequests.add(PlayerGunShootRequest(
                         player = player,
                         gun = gun,

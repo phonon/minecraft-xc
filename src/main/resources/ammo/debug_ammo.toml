@@ -1,0 +1,13 @@
+# Debugging ammo, shows all configurable properties.
+# For testing/loading ammo properties.
+
+# Ammo id. This is the ammo custom model data.
+id = 69
+
+# Item properties
+[item]
+name = "ammo_debug"
+lore = [
+    "This ammo is for debugging.",
+    "Trust the plan.",
+]

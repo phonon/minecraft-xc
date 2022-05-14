@@ -39,14 +39,18 @@ public data class Config(
 
     // flag that entity targetable
     public val entityTargetable: EnumArrayMap<EntityType, Boolean> = Hitbox.defaultEntityTargetable(),
+    
     // entity hitbox sizes
     public val entityHitboxSizes: EnumArrayMap<EntityType, HitboxSize> = Hitbox.defaultEntityHitboxSizes(),
+    
     // block collision handlers
     public val blockCollision: EnumArrayMap<Material, BlockCollisionHandler> = blockCollisionHandlers(),
+    
     // material types for custom items
     public val materialGun: Material = Material.WARPED_FUNGUS_ON_A_STICK,
     public val materialMelee: Material = Material.IRON_HORSE_ARMOR,
     public val materialMisc: Material = Material.GOLDEN_HORSE_ARMOR,
+    public val materialAmmo: Material = Material.LEATHER_HORSE_ARMOR,
     public val materialArmor: Material = Material.LEATHER_HORSE_ARMOR,
     
     // block damage
@@ -97,6 +101,11 @@ public data class Config(
             toml.getString("material.misc")?.let { s ->
                 Material.getMaterial(s)?.let { configOptions["materialMisc"] = it } ?: run {
                     logger?.warning("[material.misc] Invalid material: ${s}")
+                }
+            }
+            toml.getString("material.ammo")?.let { s ->
+                Material.getMaterial(s)?.let { configOptions["materialAmmo"] = it } ?: run {
+                    logger?.warning("[material.ammo] Invalid material: ${s}")
                 }
             }
             toml.getString("material.armor")?.let { s ->

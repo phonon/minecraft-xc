@@ -1,5 +1,5 @@
 # Debugging gun, shows all configurable properties.
-# For testing loading and gun properties.
+# For testing/loading gun properties.
 
 # Gun id. Used to map different custom models => gun.
 # Must be an integer from [0, 1024]. If outside this range,

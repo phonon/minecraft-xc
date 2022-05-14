@@ -36,6 +36,7 @@ import org.bukkit.util.Vector
 import com.comphenix.protocol.ProtocolLibrary
 
 import phonon.xc.gun.*
+import phonon.xc.ammo.*
 import phonon.xc.utils.mapToObject
 import phonon.xc.utils.Hitbox
 import phonon.xc.utils.HitboxSize
@@ -87,12 +88,15 @@ public object XC {
     // gun storage and lookup, 
     internal var guns: Array<Gun?> = Array(MAX_GUN_CUSTOM_MODEL_ID, { _ -> null }) 
 
-    // melee weapon storage and lookup TODO
+    // melee weapon storage and lookup
     internal var melee: Array<Gun?> = Array(MAX_MELEE_CUSTOM_MODEL_ID, { _ -> null })
     
-    // custom hat (helmet) storage and lookup TODO
+    // custom hat (helmet) storage and lookup
     internal var hats: Array<Gun?> = Array(MAX_HAT_CUSTOM_MODEL_ID, { _ -> null })
     
+    // ammo lookup
+    internal var ammo: HashMap<Int, Ammo> = HashMap()
+
     // custom hitboxes for armor stand custom models, maps EntityId => HitboxSize
     internal var customModelHitboxes: HashMap<UUID, HitboxSize> = HashMap()
 
@@ -207,10 +211,14 @@ public object XC {
         println(config)
 
         // load guns
+        val filesAmmo = listDirFiles(config.pathFilesAmmo)
         val filesGuns = listDirFiles(config.pathFilesGun)
         println(filesGuns)
         val gunsLoaded: List<Gun> = filesGuns
             .map { file -> Gun.fromToml(config.pathFilesGun.resolve(file), XC.logger) }
+            .filterNotNull()
+        val ammoLoaded: List<Ammo> = filesAmmo
+            .map { file -> Ammo.fromToml(config.pathFilesAmmo.resolve(file), XC.logger) }
             .filterNotNull()
         
         // map custom model ids => gun (NOTE: guns can overwrite each other!)
@@ -244,7 +252,16 @@ public object XC {
         }
 
         // temporary: set gun 0 to debug gun
-        XC.guns[0] = XC.gunDebug
+        guns[0] = XC.gunDebug
+
+        val ammo = HashMap<Int, Ammo>()
+        for ( a in ammoLoaded ) {
+            ammo[a.id] = a
+        }
+
+        // set guns/ammos/etc...
+        XC.guns = guns
+        XC.ammo = ammo
 
         // start new engine runnable
         val timeEnd = System.currentTimeMillis()

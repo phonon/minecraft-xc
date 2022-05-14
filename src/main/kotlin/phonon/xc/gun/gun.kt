@@ -144,7 +144,6 @@ public data class Gun(
         public fun fromToml(source: Path, logger: Logger? = null): Gun? {
             try {
                 val toml = Toml.parse(source)
-                println(toml)
 
                 // map with keys as constructor property names
                 val properties = HashMap<String, Any>()
@@ -273,7 +272,7 @@ public data class Gun(
                     explosion.getDouble("block_damage_power")?.let { properties["explosionBlockDamagePower"] = it.toFloat() }
                 }
 
-                println("CREATING GUN WITH PROPERTIES: ${properties}")
+                // println("CREATING GUN WITH PROPERTIES: ${properties}")
 
                 return mapToObject(properties, Gun::class)
             } catch (e: Exception) {
