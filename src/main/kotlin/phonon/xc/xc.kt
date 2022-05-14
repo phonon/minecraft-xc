@@ -439,6 +439,20 @@ public object XC {
     }
 
     /**
+     * Return current XC config.
+     */
+    public fun config(): Config {
+        return XC.config
+    }
+
+    /**
+     * Return Ammo object for given id if it exists.
+     */
+    public fun getAmmo(id: Int): Ammo? {
+        return XC.ammo[id]
+    }
+
+    /**
      * Map an uuid to a custom hitbox size. UUID flexible, can be
      * entity unique id, or uuid managed by other systems.
      */

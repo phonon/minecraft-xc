@@ -282,6 +282,24 @@ public data class Gun(
         }
         
         /**
+         * Load gun from string file, return null if path not found or
+         * if loading encounters an error.
+         */
+        public fun loadFilename(filename: String, logger: Logger? = null): Gun? {
+            val p = Paths.get(filename)
+            if ( Files.isRegularFile(p) ) {
+                try {
+                    return Gun.fromToml(p, logger)
+                } catch (err: Exception) {
+                    logger?.warning("Failed to parse gun file: ${filename}, ${err}")
+                    return null
+                }
+            } else {
+                return null
+            }
+        }
+        
+        /**
          * Load gun from string file, return default gun if not found.
          */
         public fun loadFilenameOrDefault(filename: String, default: Gun, logger: Logger? = null): Gun {
