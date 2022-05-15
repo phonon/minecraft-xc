@@ -18,6 +18,7 @@ import phonon.xc.utils.ChunkCoord3D
 import phonon.xc.utils.Hitbox
 import phonon.xc.utils.damage.DamageType
 import phonon.xc.utils.damage.explosionDamageAfterArmor
+import phonon.xc.utils.particle.ParticlePacket
 import phonon.xc.utils.particle.ParticleExplosion
 
 
@@ -59,6 +60,7 @@ public fun createExplosion(
     blastProtReduction: Double, // damage/blast protection
     damageType: DamageType,
     blockDamagePower: Float,
+    particles: ParticlePacket?,
 ) {
     // check if region allows explosions
     if ( !XC.canExplodeAt(location) ) {
@@ -127,12 +129,14 @@ public fun createExplosion(
     }
     
     // queue explosion particle effect
-    XC.particleExplosionQueue.add(ParticleExplosion(
-        location.world,
-        1,
-        location.x,
-        location.y,
-        location.z,
-        true,
-    ))
+    if ( particles != null ) {
+        XC.particleExplosionQueue.add(ParticleExplosion(
+            particles,
+            location.world,
+            location.x,
+            location.y,
+            location.z,
+            true,
+        ))
+    }
 }

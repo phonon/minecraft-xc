@@ -99,3 +99,12 @@ falloff = 2.0
 armor_reduction = 0.5
 blast_prot_reduction = 0.5
 damage_type = "EXPLOSIVE_SHELL"
+block_damage_power = 2.0
+
+# Explosion particle settings
+[explosion.particles]
+type = "EXPLOSION_NORMAL"
+count = 8
+random_x = 0.5
+random_y = 0.5
+random_z = 0.5

@@ -9,6 +9,7 @@ import java.nio.file.Files
 import java.util.logging.Logger
 import org.tomlj.Toml
 import org.bukkit.Location
+import org.bukkit.Particle
 import org.bukkit.entity.Entity
 import org.bukkit.util.Vector
 import phonon.xc.gun.getGunHitEntityHandler
@@ -17,7 +18,7 @@ import phonon.xc.gun.noEntityHitHandler
 import phonon.xc.gun.noBlockHitHandler
 import phonon.xc.utils.mapToObject
 import phonon.xc.utils.damage.DamageType
-
+import phonon.xc.utils.particle.ParticlePacket
 
 /**
  * Common gun object used by all guns.
@@ -105,6 +106,7 @@ public data class Gun(
     public val explosionBlastProtReduction: Double = 1.0, // damage/blast protection
     public val explosionDamageType: DamageType = DamageType.EXPLOSIVE_SHELL,
     public val explosionBlockDamagePower: Float = 0f,     // explosion block damage power level
+    public val explosionParticles: ParticlePacket = ParticlePacket.placeholderExplosion(),
 
     // handler on block hit
     public val hitBlockHandler: GunHitBlockHandler = noBlockHitHandler,
@@ -270,6 +272,28 @@ public data class Gun(
                         }
                     }
                     explosion.getDouble("block_damage_power")?.let { properties["explosionBlockDamagePower"] = it.toFloat() }
+                }
+
+                // explosion particles
+                toml.getTable("explosion.particles")?.let { particles ->
+                    val particleType = particles.getString("type")?.let { ty ->
+                        try {
+                            Particle.valueOf(ty)
+                        } catch ( err: Exception ) {
+                            Particle.EXPLOSION_LARGE
+                        }
+                    } ?: Particle.EXPLOSION_LARGE
+                    val count = particles.getLong("count")?.toInt() ?: 1
+                    val randomX = particles.getDouble("random_x") ?: 0.0
+                    val randomY = particles.getDouble("random_y") ?: 0.0
+                    val randomZ = particles.getDouble("random_z") ?: 0.0
+                    properties["explosionParticles"] = ParticlePacket(
+                        particle = particleType,
+                        count = count,
+                        randomX = randomX,
+                        randomY = randomY,
+                        randomZ = randomZ
+                    )
                 }
 
                 // println("CREATING GUN WITH PROPERTIES: ${properties}")

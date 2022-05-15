@@ -13,6 +13,34 @@ import org.bukkit.block.data.BlockData
 
 
 /**
+ * Simplified wrapper for particle data.
+ */
+public data class ParticlePacket(
+    val particle: Particle,
+    val count: Int,
+    val randomX: Double,
+    val randomY: Double,
+    val randomZ: Double,
+) {
+    
+    companion object {
+        /**
+         * Placeholder packet for standard explosion.
+         */
+        public fun placeholderExplosion(): ParticlePacket {
+            return ParticlePacket(
+                particle = Particle.EXPLOSION_HUGE,
+                count = 1,
+                randomX = 0.0,
+                randomY = 0.0,
+                randomZ = 0.0,
+            )
+        }
+    }
+}
+
+
+/**
  * Particle bullet trail between two bullet points
  */
 public data class ParticleBulletTrail(
@@ -153,8 +181,8 @@ public class TaskSpawnParticleBulletImpacts(
  * Particle for explosions.
  */
 public data class ParticleExplosion(
+    val particles: ParticlePacket,
     val world: World,
-    val count: Int,
     val x: Double,
     val y: Double,
     val z: Double,
@@ -170,14 +198,14 @@ public class TaskSpawnParticleExplosion(
     override fun run() {
         for ( p in particles ) {
             p.world.spawnParticle(
-                Particle.EXPLOSION_HUGE,
+                p.particles.particle,
                 p.x,
                 p.y,
                 p.z,
-                p.count,
-                0.0, // offset.x
-                0.0, // offset.y
-                0.0, // offset.z
+                p.particles.count,
+                p.particles.randomX, // random offset x
+                p.particles.randomY, // random offset y
+                p.particles.randomZ, // random offset z
                 0.0, // extra
                 null,
                 p.force,
