@@ -100,6 +100,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                 player = player,
                 gun = gun,
                 item = itemMainHand,
+                inventorySlot = player.getInventory().getHeldItemSlot(),
             ))
             e.setCancelled(true)
         }

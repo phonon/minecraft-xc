@@ -52,6 +52,7 @@ internal data class PlayerGunReloadRequest(
     val player: Player,
     val gun: Gun,
     val item: ItemStack,
+    val inventorySlot: Int,
 )
 
 /**
@@ -62,6 +63,7 @@ internal data class PlayerReloadTask(
     val gun: Gun,
     val item: ItemStack,
     val reloadId: Int,
+    val inventorySlot: Int,
 )
 
 /**
@@ -150,7 +152,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
  */
 internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) {
     for ( request in requests ) {
-        val (player, gun, item) = request
+        val (player, gun, item, inventorySlot) = request
         
         val itemMeta = item.getItemMeta()
         val itemData = itemMeta.getPersistentDataContainer()
@@ -213,6 +215,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
             private val player = player
             private val gun = gun
             private val reloadId = reloadId
+            private val inventorySlot = inventorySlot
             private val reloadTime = reloadTimeMillis.toDouble()
             private val startTime = currentTimeMillis.toDouble()
             private val itemGunMaterial = XC.config.materialGun
@@ -248,7 +251,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
                 val timeElapsedMillis = System.currentTimeMillis().toDouble() - startTime
                 if ( timeElapsedMillis > reloadTime ) {
                     // reload done: add reload finish task to queue
-                    reloadFinishTaskQueue.add(PlayerReloadTask(player, gun, item, reloadId))
+                    reloadFinishTaskQueue.add(PlayerReloadTask(player, gun, item, reloadId, inventorySlot))
                     this.cancel()
                 } else {
                     val progress = timeElapsedMillis / reloadTime
@@ -268,11 +271,22 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
  */
 internal fun doGunReload(tasks: ArrayList<PlayerReloadTask>) {
     for ( task in tasks ) {
-        val (player, gun, item, reloadId) = task
+        val (player, gun, item, reloadId, inventorySlot) = task
 
         // remove ammo item from player inventory
         if ( !inventoryRemoveItem(player.getInventory(), XC.config.materialAmmo, gun.ammoId, 1) ) {
             Message.announcement(player, "${ChatColor.DARK_RED}[No ammo in inventory]")
+            continue
+        }
+
+        // check player main hand same and item same
+        val inventory = player.getInventory()
+        val currentMainHandSlot = inventory.getHeldItemSlot()
+        val itemInHand = inventory.getItemInMainHand()
+        val itemInHandReloadId = itemInHand.getItemMeta().getPersistentDataContainer().get(XC.namespaceKeyItemReloadId!!, PersistentDataType.INTEGER) ?: -1
+        if ( currentMainHandSlot != inventorySlot || itemInHandReloadId != reloadId ) {
+            // this should never actually happen...
+            Message.announcement(player, "${ChatColor.DARK_RED}[Item changed, reload cancelled]")
             continue
         }
 
@@ -288,7 +302,10 @@ internal fun doGunReload(tasks: ArrayList<PlayerReloadTask>) {
         itemData.remove(XC.namespaceKeyItemReloadId!!)
         itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
         item.setItemMeta(itemMeta)
+        
+        inventory.setItem(inventorySlot, item)
 
+        // send ammo reloaded message
         XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
 
         // play reload finish sound
