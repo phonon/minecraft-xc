@@ -90,7 +90,7 @@ public fun updateGunItemAmmo(item: ItemStack, gun: Gun, ammo: Int) {
  * Note: this does not update an item itself, this is a sub-function
  * for a client updating a gun item.
  */
-public fun updateGunItemMetaAmmo(itemMeta: ItemMeta, gun: Gun, ammo: Int) {
+public fun setGunItemMetaAmmo(itemMeta: ItemMeta, gun: Gun, ammo: Int): ItemMeta {
     // update ammo data
     val itemData = itemMeta.getPersistentDataContainer()
     itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, ammo)
@@ -100,6 +100,8 @@ public fun updateGunItemMetaAmmo(itemMeta: ItemMeta, gun: Gun, ammo: Int) {
     // append lore
     gun.itemLore?.let { lore -> itemDescription.addAll(lore) }
     itemMeta.setLore(itemDescription.toList())
+
+    return itemMeta
 }
 
 /**
@@ -111,4 +113,48 @@ public fun getAmmoFromItem(item: ItemStack): Int? {
     val itemMeta = item.getItemMeta()
     val dataContainer = itemMeta.getPersistentDataContainer()
     return dataContainer.get(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER)
+}
+
+
+/**
+ * Set gun item model based on gun and ammo count.
+ * Just a wrapper around `setGunItemMetaModel`.
+ */
+public fun setGunItemStackModel(item: ItemStack, gun: Gun, ammo: Int): ItemStack {
+    val itemMeta = item.getItemMeta()
+    item.setItemMeta(setGunItemMetaModel(itemMeta, gun, ammo))
+
+    return item
+}
+
+/**
+ * Set gun item meta model based on gun and ammo count
+ */
+public fun setGunItemMetaModel(itemMeta: ItemMeta, gun: Gun, ammo: Int): ItemMeta {
+    // gun empty and there is custom empty model
+    if ( ammo <= 0 && gun.itemModelEmpty > 0 ) {
+        itemMeta.setCustomModelData(gun.itemModelEmpty)
+    }
+    // else, use regular model
+    else {
+        itemMeta.setCustomModelData(gun.itemModelDefault)
+    }
+
+    return itemMeta
+}
+
+/**
+ * Set gun item meta to reload model, if it exists for Gun.
+ */
+public fun setGunItemMetaReloadModel(itemMeta: ItemMeta, gun: Gun): ItemMeta {
+    // gun empty and there is custom empty model
+    if ( gun.itemModelReload > 0 ) {
+        itemMeta.setCustomModelData(gun.itemModelReload)
+    }
+    // else, use regular model
+    else {
+        itemMeta.setCustomModelData(gun.itemModelDefault)
+    }
+
+    return itemMeta
 }

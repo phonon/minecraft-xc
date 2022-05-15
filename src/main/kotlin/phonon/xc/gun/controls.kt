@@ -46,6 +46,7 @@ internal data class PlayerGunShootRequest(
     val player: Player,
     val gun: Gun,
     val item: ItemStack,
+    val inventorySlot: Int,
 )
 
 internal data class PlayerGunReloadRequest(
@@ -83,7 +84,7 @@ internal data class PlayerReloadCancelledTask(
  */
 internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
     for ( request in requests ) {
-        val (player, gun, item) = request
+        val (player, gun, item, inventorySlot) = request
         
         val loc = player.location
         val world = loc.world
@@ -110,7 +111,14 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
         }
 
         val newAmmo = max(0, ammo - 1)
-        updateGunItemAmmo(item, gun, newAmmo)
+
+        // update player item: set new ammo and set model
+        var itemMeta = item.getItemMeta()
+        itemMeta = setGunItemMetaAmmo(itemMeta, gun, newAmmo)
+        itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo)
+        item.setItemMeta(itemMeta)
+        player.getInventory().setItem(inventorySlot, item)
+
         XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
 
         val eyeHeight = player.eyeHeight
@@ -154,7 +162,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
     for ( request in requests ) {
         val (player, gun, item, inventorySlot) = request
         
-        val itemMeta = item.getItemMeta()
+        var itemMeta = item.getItemMeta()
         val itemData = itemMeta.getPersistentDataContainer()
 
         // do reload if gun not reloading already and ammo less than max
@@ -193,9 +201,13 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
         // set timestamp when reload started.
         val currentTimeMillis = System.currentTimeMillis()
         itemData.set(XC.namespaceKeyItemReloadTimestamp!!, PersistentDataType.LONG, currentTimeMillis)
+        
+        // set reloading model
+        itemMeta = setGunItemMetaReloadModel(itemMeta, gun)
 
         // update item meta with new data
         item.setItemMeta(itemMeta)
+        player.getInventory().setItem(inventorySlot, item)
 
         // play reload start sound
         val location = player.location
@@ -295,14 +307,15 @@ internal fun doGunReload(tasks: ArrayList<PlayerReloadTask>) {
         val newAmmo = gun.ammoMax
 
         // clear item reload data and set ammo
-        val itemMeta = item.getItemMeta()
-        updateGunItemMetaAmmo(itemMeta, gun, newAmmo)
+        var itemMeta = item.getItemMeta()
+        itemMeta = setGunItemMetaAmmo(itemMeta, gun, newAmmo)
+        itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo)
         val itemData = itemMeta.getPersistentDataContainer()
         itemData.remove(XC.namespaceKeyItemReloading!!)
         itemData.remove(XC.namespaceKeyItemReloadId!!)
         itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
         item.setItemMeta(itemMeta)
-        
+
         inventory.setItem(inventorySlot, item)
 
         // send ammo reloaded message
@@ -336,7 +349,10 @@ internal fun doGunReloadCancelled(tasks: ArrayList<PlayerReloadCancelledTask>) {
         itemData.remove(XC.namespaceKeyItemReloading!!)
         itemData.remove(XC.namespaceKeyItemReloadId!!)
         itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
-        item.setItemMeta(itemMeta)
+
+        // set model to either regular or empty model
+        val ammo = itemData.get(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER) ?: 0
+        item.setItemMeta(setGunItemMetaModel(itemMeta, gun, ammo))
         
         // send player message
         if ( !playerDied ) {

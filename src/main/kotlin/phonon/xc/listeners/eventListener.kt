@@ -32,6 +32,7 @@ import phonon.xc.XC
 import phonon.xc.utils.Message
 import phonon.xc.gun.getGunFromItem
 import phonon.xc.gun.getAmmoFromItem
+import phonon.xc.gun.setGunItemStackModel
 import phonon.xc.gun.PlayerGunReloadRequest
 import phonon.xc.gun.PlayerGunShootRequest
 import phonon.xc.gun.AmmoInfoMessagePacket
@@ -71,7 +72,8 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         val player = e.player
         val inventory = player.getInventory()
 
-        val itemMainHand = inventory.getItem(e.getNewSlot())
+        val mainHandSlot = e.getNewSlot()
+        val itemMainHand = inventory.getItem(mainHandSlot)
         if ( itemMainHand == null ) {
             return
         }
@@ -80,6 +82,8 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             val ammo = getAmmoFromItem(itemMainHand)
             if ( ammo != null ) {
                 XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
+                val itemMainHandNewModel = setGunItemStackModel(itemMainHand, gun, ammo)
+                inventory.setItem(mainHandSlot, itemMainHandNewModel)
             }
         }
     }
@@ -145,6 +149,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                         player = player,
                         gun = gun,
                         item = itemMainHand,
+                        inventorySlot = player.getInventory().getHeldItemSlot(),
                     ))
 
                     // ignore block interact event
