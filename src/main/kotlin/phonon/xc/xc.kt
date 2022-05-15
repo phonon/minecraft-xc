@@ -41,6 +41,7 @@ import phonon.xc.utils.mapToObject
 import phonon.xc.utils.Hitbox
 import phonon.xc.utils.HitboxSize
 import phonon.xc.utils.particle.*
+import phonon.xc.utils.sound.*
 import phonon.xc.utils.debug.DebugTimings
 import phonon.xc.utils.blockCrackAnimation.*
 import phonon.xc.utils.file.*
@@ -135,6 +136,9 @@ public object XC {
 
     // gun ammo message packets
     internal var gunAmmoInfoMessageQueue: ArrayList<AmmoInfoMessagePacket> = ArrayList()
+
+    // sounds queue
+    internal var soundQueue: ArrayList<SoundPacket> = ArrayList()
 
     // ========================================================================
     // Debug/benchmarking
@@ -569,11 +573,13 @@ public object XC {
         val particleBulletImpacts = XC.particleBulletImpactQueue
         val particleExplosions = XC.particleExplosionQueue
         val gunAmmoInfoMessages = XC.gunAmmoInfoMessageQueue
+        val soundPackets = XC.soundQueue
 
         XC.particleBulletTrailQueue = ArrayList()
         XC.particleBulletImpactQueue = ArrayList()
         XC.particleExplosionQueue = ArrayList()
         XC.gunAmmoInfoMessageQueue = ArrayList()
+        XC.soundQueue = ArrayList()
 
         Bukkit.getScheduler().runTaskAsynchronously(
             XC.plugin!!,
@@ -590,6 +596,10 @@ public object XC {
         Bukkit.getScheduler().runTaskAsynchronously(
             XC.plugin!!,
             TaskAmmoInfoMessages(gunAmmoInfoMessages),
+        )
+        Bukkit.getScheduler().runTaskAsynchronously(
+            XC.plugin!!,
+            TaskSounds(soundPackets),
         )
 
         // sync

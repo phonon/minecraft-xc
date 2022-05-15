@@ -37,11 +37,6 @@ public data class Gun(
     public val itemModelEmpty: Int = -1,      // when gun out of ammo
     public val itemModelReload: Int = -1,     // when gun is reloading
     public val itemModelIronsights: Int = -1, // when using iron sights
-    
-    // sounds
-    public val soundShoot: String = "gun_shot",
-    public val soundReload: String = "gun_reload",
-    public val soundEmpty: String = "gun_empty",
 
     // equiped properties
     // slowness while equiped (if > 0)
@@ -113,6 +108,21 @@ public data class Gun(
 
     // handler on entity hit
     public val hitEntityHandler: GunHitEntityHandler = entityDamageHitHandler,
+    
+    // sounds
+    public val soundShoot: String = "gun_shoot",
+    public val soundShootVolume: Float = 1f,
+    public val soundShootPitch: Float = 1f,
+    public val soundEmpty: String = "gun_empty",
+    public val soundEmptyVolume: Float = 1f,
+    public val soundEmptyPitch: Float = 1f,
+    public val soundReloadStart: String = "gun_reload_start",
+    public val soundReloadStartVolume: Float = 1f,
+    public val soundReloadStartPitch: Float = 1f,
+    public val soundReloadFinish: String = "gun_reload_finish",
+    public val soundReloadFinishVolume: Float = 1f,
+    public val soundReloadFinishPitch: Float = 1f,
+
 ) {
     /**
      * Create a projectile using this gun's properties.
@@ -294,6 +304,49 @@ public data class Gun(
                         randomY = randomY,
                         randomZ = randomZ
                     )
+                }
+                
+                // sounds
+                toml.getTable("sound")?.let { sound ->
+                    if ( sound.isTable("shoot") ) {
+                        sound.getTable("shoot")?.let { shootSound ->
+                            shootSound.getString("name")?.let { properties["soundShoot"] = it }
+                            shootSound.getDouble("volume")?.let { properties["soundShootVolume"] = it.toFloat() }
+                            shootSound.getDouble("pitch")?.let { properties["soundShootPitch"] = it.toFloat() }
+                        }
+                    } else {
+                        sound.getString("shoot")?.let { properties["soundShoot"] = it }
+                    }
+
+                    if ( sound.isTable("empty") ) {
+                        sound.getTable("empty")?.let { shootSound ->
+                            shootSound.getString("name")?.let { properties["soundEmpty"] = it }
+                            shootSound.getDouble("volume")?.let { properties["soundEmptyVolume"] = it.toFloat() }
+                            shootSound.getDouble("pitch")?.let { properties["soundEmptyPitch"] = it.toFloat() }
+                        }
+                    } else {
+                        sound.getString("empty")?.let { properties["soundEmpty"] = it }
+                    }
+
+                    if ( sound.isTable("reload_start") ) {
+                        sound.getTable("reload_start")?.let { shootSound ->
+                            shootSound.getString("name")?.let { properties["soundReloadStart"] = it }
+                            shootSound.getDouble("volume")?.let { properties["soundReloadStartVolume"] = it.toFloat() }
+                            shootSound.getDouble("pitch")?.let { properties["soundReloadStartPitch"] = it.toFloat() }
+                        }
+                    } else {
+                        sound.getString("reload_start")?.let { properties["soundReloadStart"] = it }
+                    }
+
+                    if ( sound.isTable("reload_finish") ) {
+                        sound.getTable("reload_finish")?.let { shootSound ->
+                            shootSound.getString("name")?.let { properties["soundReloadFinish"] = it }
+                            shootSound.getDouble("volume")?.let { properties["soundReloadFinishVolume"] = it.toFloat() }
+                            shootSound.getDouble("pitch")?.let { properties["soundReloadFinishPitch"] = it.toFloat() }
+                        }
+                    } else {
+                        sound.getString("reload_finish")?.let { properties["soundReloadFinish"] = it }
+                    }
                 }
 
                 // println("CREATING GUN WITH PROPERTIES: ${properties}")

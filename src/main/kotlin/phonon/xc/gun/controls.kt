@@ -16,6 +16,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import phonon.xc.XC
 import phonon.xc.utils.Message
+import phonon.xc.utils.sound.SoundPacket
 
 
 /**
@@ -91,9 +92,17 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
         val ammo = getAmmoFromItem(item) ?: 0
         if ( ammo <= 0 ) {
             XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
+            
+            // play gun empty sound effect
+            XC.soundQueue.add(SoundPacket(
+                sound = gun.soundEmpty,
+                world = world,
+                location = loc,
+                volume = gun.soundEmptyVolume,
+                pitch = gun.soundEmptyPitch,
+            ))
 
             if ( !gun.ammoIgnore ) {
-                // TODO: play gun empty sound effect
                 continue
             }
         }
@@ -122,6 +131,14 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
         )
 
         projectileSystem.addProjectile(projectile)
+
+        XC.soundQueue.add(SoundPacket(
+            sound = gun.soundShoot,
+            world = world,
+            location = loc,
+            volume = gun.soundShootVolume,
+            pitch = gun.soundShootPitch,
+        ))
 
         // println("Shooting: ${gun}")
     }
@@ -177,6 +194,19 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
 
         // update item meta with new data
         item.setItemMeta(itemMeta)
+
+        // play reload start sound
+        val location = player.location
+        val world = location.world
+        if ( world != null ) {
+            XC.soundQueue.add(SoundPacket(
+                sound = gun.soundReloadStart,
+                world = world,
+                location = location,
+                volume = gun.soundReloadStartVolume,
+                pitch = gun.soundReloadStartPitch,
+            ))
+        }
 
         // launch reload task
         val reloadTask = object: BukkitRunnable() {
@@ -260,6 +290,19 @@ internal fun doGunReload(tasks: ArrayList<PlayerReloadTask>) {
         item.setItemMeta(itemMeta)
 
         XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
+
+        // play reload finish sound
+        val location = player.location
+        val world = location.world
+        if ( world != null ) {
+            XC.soundQueue.add(SoundPacket(
+                sound = gun.soundReloadFinish,
+                world = world,
+                location = location,
+                volume = gun.soundReloadFinishVolume,
+                pitch = gun.soundReloadFinishPitch,
+            ))
+        }
     }
 }
 
