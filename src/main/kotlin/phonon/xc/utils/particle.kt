@@ -5,6 +5,7 @@
 
 package phonon.xc.utils.particle
 
+import java.util.concurrent.ThreadLocalRandom
 import org.bukkit.World
 import org.bukkit.Color
 import org.bukkit.Particle
@@ -210,6 +211,49 @@ public class TaskSpawnParticleExplosion(
                 null,
                 p.force,
             )
+        }
+    }
+}
+
+
+/**
+ * Runnable task to spawn explosion particles with trans colors.
+ * Shitpost.
+ */
+public class TaskSpawnParticleExplosionTrans(
+    val particles: ArrayList<ParticleExplosion>,
+): Runnable {
+    override fun run() {
+        for ( p in particles ) {
+            // temporary for shitpost
+            val random = ThreadLocalRandom.current()
+            val range = 10.0
+            val colors = listOf(
+                Particle.DustOptions(Color.fromRGB(255, 255, 255), 8.0f), // white
+                Particle.DustOptions(Color.fromRGB(91, 207, 250), 8.0f), // light blue
+                Particle.DustOptions(Color.fromRGB(245, 171, 185), 8.0f), // light pink
+            )
+
+            for ( i in 0..100 ) {
+                val px = p.x + random.nextDouble(-range, range)
+                val py = p.y + random.nextDouble(-range, range)
+                val pz = p.z + random.nextDouble(-range, range)
+                val col = colors[i % colors.size]
+
+                p.world.spawnParticle(
+                    Particle.REDSTONE,
+                    px,
+                    py,
+                    pz,
+                    8,
+                    0.7, // random offset x
+                    0.7, // random offset y
+                    0.7, // random offset z
+                    0.0, // extra
+                    col,
+                    p.force,
+                )
+            }
         }
     }
 }

@@ -17,7 +17,9 @@ import org.bukkit.event.entity.EntityDeathEvent
 import org.bukkit.event.entity.EntityToggleSwimEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
+import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.player.PlayerChangedMainHandEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.event.player.PlayerSwapHandItemsEvent
@@ -33,15 +35,77 @@ import phonon.xc.utils.Message
 import phonon.xc.gun.getGunFromItem
 import phonon.xc.gun.getAmmoFromItem
 import phonon.xc.gun.setGunItemStackModel
+import phonon.xc.gun.PlayerGunSelectRequest
 import phonon.xc.gun.PlayerGunReloadRequest
 import phonon.xc.gun.PlayerGunShootRequest
+import phonon.xc.gun.PlayerGunCleanupReloadRequest
+import phonon.xc.gun.ItemGunCleanupReloadRequest
 import phonon.xc.gun.AmmoInfoMessagePacket
 
 
 public class EventListener(val plugin: JavaPlugin): Listener {
     @EventHandler
-    public fun onPlayerQuit(e: PlayerQuitEvent) {
+    public fun onPlayerJoin(e: PlayerJoinEvent) {
+        // if player joins and is holding a gun or custom wep,
+        // do handle selection event
+        val player = e.player
+        val inventory = player.getInventory()
 
+        val itemMainHand = inventory.getItemInMainHand()
+        if ( itemMainHand == null ) {
+            return
+        }
+
+        getGunFromItem(itemMainHand)?.let { gun -> 
+            XC.playerGunSelectRequests.add(PlayerGunSelectRequest(
+                player = player,
+            ))
+        }
+    }
+
+    @EventHandler
+    public fun onPlayerQuit(e: PlayerQuitEvent) {
+        // if player leaves and is holding a gun or custom wep,
+        // do reload cleanup
+        val player = e.player
+        val inventory = player.getInventory()
+
+        val itemMainHand = inventory.getItemInMainHand()
+        if ( itemMainHand == null ) {
+            return
+        }
+
+        getGunFromItem(itemMainHand)?.let { gun -> 
+            XC.playerGunSelectRequests.add(PlayerGunSelectRequest(
+                player = player,
+            ))
+        }
+    }
+
+    @EventHandler
+    public fun onPlayerDeath(e: PlayerDeathEvent) {
+        // if player dies and is holding a gun or custom wep,
+        // do reload cleanup
+        val player: Player = e.entity
+        val inventory = player.getInventory()
+
+        val itemMainHand = inventory.getItemInMainHand()
+        if ( itemMainHand == null ) {
+            return
+        }
+
+        getGunFromItem(itemMainHand)?.let { gun -> 
+            XC.playerGunCleanupReloadRequests.add(PlayerGunCleanupReloadRequest(
+                player = player,
+            ))
+        }
+
+        // ==========================================================
+        // CUSTOM DEATH MESSAGE HANDLING
+        // ==========================================================
+        // TODO
+        // TODO
+        // TODO
     }
 
     @EventHandler
@@ -51,17 +115,23 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
     @EventHandler(ignoreCancelled = true)
     public fun onToggleSneak(e: PlayerToggleSneakEvent) {
+        // println("toggleSneak")
+    }
+    
+    @EventHandler(ignoreCancelled = true)
+    public fun onToggleSprint(e: PlayerToggleSprintEvent) {
+        // println("toggleSprint")
         
     }
 
     @EventHandler(ignoreCancelled = true)
-    public fun onToggleSprint(e: PlayerToggleSprintEvent) {
-
-    }
-
-    @EventHandler(ignoreCancelled = true)
     public fun onDropItem(e: PlayerDropItemEvent) {
-
+        val itemEntity = e.getItemDrop()
+        getGunFromItem(itemEntity.getItemStack())?.let { gun -> 
+            XC.itemGunCleanupReloadRequests.add(ItemGunCleanupReloadRequest(
+                itemEntity = itemEntity,
+            ))
+        }
     }
     
     /**
@@ -79,12 +149,9 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         }
 
         getGunFromItem(itemMainHand)?.let { gun -> 
-            val ammo = getAmmoFromItem(itemMainHand)
-            if ( ammo != null ) {
-                XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
-                val itemMainHandNewModel = setGunItemStackModel(itemMainHand, gun, ammo)
-                inventory.setItem(mainHandSlot, itemMainHandNewModel)
-            }
+            XC.playerGunSelectRequests.add(PlayerGunSelectRequest(
+                player = player,
+            ))
         }
     }
 
@@ -102,9 +169,6 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             // Message.print(player, "Reloading...")
             XC.playerReloadRequests.add(PlayerGunReloadRequest(
                 player = player,
-                gun = gun,
-                item = itemMainHand,
-                inventorySlot = player.getInventory().getHeldItemSlot(),
             ))
             e.setCancelled(true)
         }
@@ -147,14 +211,17 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                     // Message.print(player, "Trying to shoot")
                     XC.playerShootRequests.add(PlayerGunShootRequest(
                         player = player,
-                        gun = gun,
-                        item = itemMainHand,
-                        inventorySlot = player.getInventory().getHeldItemSlot(),
                     ))
 
                     // ignore block interact event
                     e.setUseInteractedBlock(Event.Result.DENY)
                 }
+            }
+            else if ( itemMainHand.type == XC.config.materialMisc ) {
+                // TODO: misc weapon behavior (grenade, etc.)
+            }
+            else if ( itemMainHand.type == XC.config.materialArmor ) {
+                // TODO: put armor (helmet) on
             }
         }
     }

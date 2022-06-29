@@ -1,6 +1,9 @@
 /**
  * Contain all player gun shooting controls systems and
  * support classes.
+ * 
+ * TODO: reload cleanup edge cases?
+ * - player move item thats reloading by clicking it or using shift key
  */
 
 package phonon.xc.gun
@@ -11,6 +14,7 @@ import org.bukkit.ChatColor
 import org.bukkit.Material
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.entity.Player
+import org.bukkit.entity.Item
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
@@ -42,19 +46,47 @@ internal data class AutomaticFiring(
     val ticksSinceFired: Int,
 )
 
-internal data class PlayerGunShootRequest(
+/**
+ * Data for controls request to select gun.
+ */
+@JvmInline
+internal value class PlayerGunSelectRequest(
     val player: Player,
-    val gun: Gun,
-    val item: ItemStack,
-    val inventorySlot: Int,
 )
 
-internal data class PlayerGunReloadRequest(
+/**
+ * Data for controls request to shoot gun.
+ */
+@JvmInline
+internal value class PlayerGunShootRequest(
     val player: Player,
-    val gun: Gun,
-    val item: ItemStack,
-    val inventorySlot: Int,
 )
+
+/**
+ * Data for controls request to reload gun.
+ */
+@JvmInline
+internal value class PlayerGunReloadRequest(
+    val player: Player,
+)
+
+
+/**
+ * Data for request to cleanup a player.
+ */
+@JvmInline
+internal value class PlayerGunCleanupReloadRequest(
+    val player: Player,
+)
+
+/**
+ * Data for request to cleanup an item stack.
+ */
+@JvmInline
+internal value class ItemGunCleanupReloadRequest(
+    val itemEntity: Item,
+)
+
 
 /**
  * Data for task that runs after player finishes reloading.
@@ -74,9 +106,151 @@ internal data class PlayerReloadTask(
 internal data class PlayerReloadCancelledTask(
     val player: Player,
     val gun: Gun,
+    val reloadId: Int,
     val item: ItemStack,
+    val inventorySlot: Int,
     val playerDied: Boolean,
 )
+
+/**
+ * Cleans up gun item metadata if it contains reload flags.
+ * Note: THIS MUTATES THE ITEM STACK.
+ * Returns:
+ *  - True if item was reloading and if flags were removed.
+ *  - False if item was not reloading
+ */
+private fun cleanupGunReloadFlags(item: ItemStack, gun: Gun): Boolean {
+    var itemMeta = item.getItemMeta()
+    val itemData = itemMeta.getPersistentDataContainer()
+
+    val isReloading = itemData.get(XC.namespaceKeyItemReloading!!, PersistentDataType.INTEGER) ?: 0
+    if ( isReloading == TRUE ) {
+        // println("CLEANED UP RELOAD FLAGS!!!")
+        
+        // clean up reloading flags
+        itemData.remove(XC.namespaceKeyItemReloading!!)
+        itemData.remove(XC.namespaceKeyItemReloadId!!)
+        itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
+
+        // update player item: reset current ammo and model (cleanup)
+        val ammoCurrent = itemData.get(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER) ?: 0
+        itemMeta = setGunItemMetaModel(itemMeta, gun, ammoCurrent)
+        item.setItemMeta(itemMeta)
+        
+        return true
+    }
+
+    return false
+}
+
+/**
+ * System to cleanup reload flags when player logs out, dies, etc.
+ */
+internal fun gunPlayerCleanupReloadSystem(requests: ArrayList<PlayerGunCleanupReloadRequest>) {
+    for ( request in requests ) {
+        val player = request.player
+
+        // Do redundant player main hand is gun check here
+        // since events could override the first shoot event, causing
+        // inventory slot or item to change
+        val equipment = player.getInventory()
+        val inventorySlot = equipment.getHeldItemSlot()
+        val item = equipment.getItem(inventorySlot)
+        if ( item == null ) {
+            continue
+        }
+
+        val gun = getGunFromItem(item)
+        if ( gun == null ) {
+            continue
+        }
+
+        // Clean up gun item reload metadata
+        if ( cleanupGunReloadFlags(item, gun) ) {
+            equipment.setItem(inventorySlot, item)
+        }
+    }
+}
+
+/**
+ * System to cleanup reload flags when item is dropped.
+ */
+internal fun gunItemCleanupReloadSystem(requests: ArrayList<ItemGunCleanupReloadRequest>) {
+    for ( request in requests ) {
+        val itemEntity = request.itemEntity
+        val item = itemEntity.getItemStack()
+
+        val gun = getGunFromItem(item)
+        if ( gun == null ) {
+            continue
+        }
+
+        // Clean up gun item reload metadata
+        if ( cleanupGunReloadFlags(item, gun) ) {
+            itemEntity.setItemStack(item)
+        }
+    }
+}
+
+/**
+ * Player swap to gun system:
+ * 1. Handle cleaning up reload if gun still has reloading flags.
+ * 2. Add shooting delay if swapping from another gun.
+ * 3. Send ammo info to player.
+ */
+internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>) {
+    for ( request in requests ) {
+        val player = request.player
+
+        // Do redundant player main hand is gun check here
+        // since events could override the first shoot event, causing
+        // inventory slot or item to change
+        val equipment = player.getInventory()
+        val inventorySlot = equipment.getHeldItemSlot()
+        val item = equipment.getItem(inventorySlot)
+        if ( item == null ) {
+            continue
+        }
+
+        val gun = getGunFromItem(item)
+        if ( gun == null ) {
+            continue
+        }
+
+        // Clean up gun item reload metadata
+        if ( cleanupGunReloadFlags(item, gun) ) {
+            equipment.setItem(inventorySlot, item)
+        }
+
+        // gun swap delay:
+        // -> goal is to block players fast swapping between guns
+        //    (e.g. using macros) to bypass gun shooting delays
+        //    or to swap between different types (e.g. rifle -> shotgun)
+        // What we will do is, if player has recently fired a gun
+        // then swapping to gun has a "gun swap delay". This will
+        // be repeatedly set to the MAX of existing delay or new
+        // gun's delay, e.g.:
+        //      1. player shoots rifle (2s swap delay begins)
+        //      2. 0.5s pass
+        //      3. player swaps to pistol with 1s swap delay => delay = MAX(1.5s, 1.0s) = 1.5s
+        //      4. player swaps back to rifle (2s delay) => delay = MAX(1.5s, 2.0s) = 2.0s
+        // This gun swap delay is a separate timer than gun shoot delay.
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+
+        // send ammo info to player
+        val ammo = getAmmoFromItem(item)
+        if ( ammo != null ) {
+            XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
+            val itemNewModel = setGunItemStackModel(item, gun, ammo)
+            equipment.setItem(inventorySlot, itemNewModel)
+        }
+    }
+}
 
 
 /**
@@ -84,12 +258,49 @@ internal data class PlayerReloadCancelledTask(
  */
 internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
     for ( request in requests ) {
-        val (player, gun, item, inventorySlot) = request
+        val player = request.player
         
+        // Do redundant player main hand is gun check here
+        // since events could override the first shoot event, causing
+        // inventory slot or item to change
+        val equipment = player.getInventory()
+        val inventorySlot = equipment.getHeldItemSlot()
+        val item = equipment.getItem(inventorySlot)
+        if ( item == null ) {
+            continue
+        }
+
+        val gun = getGunFromItem(item)
+        if ( gun == null ) {
+            continue
+        }
+
         val loc = player.location
         val world = loc.world
         val projectileSystem = XC.projectileSystems[world.getUID()]
         if ( projectileSystem == null ) return
+
+        var itemMeta = item.getItemMeta()
+        val itemData = itemMeta.getPersistentDataContainer()
+        
+        // check gun is reloading
+        // if reloading is past time + some margin, cancel reload and clear flags
+        val reloadTimeMillis = gun.reloadTimeMillis
+        val isReloading = itemData.get(XC.namespaceKeyItemReloading!!, PersistentDataType.INTEGER) ?: 0
+        if ( isReloading == TRUE ) {
+            // Check reload timestamp, if current time > timestamp0 + reloadTime + 1000 ms,
+            // assume this gun's reload was broken somehow and continue with shoot.
+            // Else, this is still in a reload process: skip shooting
+            val reloadTimestamp = itemData.get(XC.namespaceKeyItemReloadTimestamp!!, PersistentDataType.LONG)
+            if ( reloadTimestamp != null && System.currentTimeMillis() < reloadTimestamp + reloadTimeMillis + 1000L ) {
+                continue
+            }
+
+            // clean up reloading flags
+            itemData.remove(XC.namespaceKeyItemReloading!!)
+            itemData.remove(XC.namespaceKeyItemReloadId!!)
+            itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
+        }
 
         // check ammo and send ammo info message to player
         val ammo = getAmmoFromItem(item) ?: 0
@@ -113,11 +324,10 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
         val newAmmo = max(0, ammo - 1)
 
         // update player item: set new ammo and set model
-        var itemMeta = item.getItemMeta()
         itemMeta = setGunItemMetaAmmo(itemMeta, gun, newAmmo)
         itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo)
         item.setItemMeta(itemMeta)
-        player.getInventory().setItem(inventorySlot, item)
+        equipment.setItem(inventorySlot, item)
 
         XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
 
@@ -160,8 +370,23 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
  */
 internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) {
     for ( request in requests ) {
-        val (player, gun, item, inventorySlot) = request
-        
+        val player = request.player
+
+        // Do redundant player main hand is gun check here
+        // since events could override the first shoot event, causing
+        // inventory slot or item to change
+        val equipment = player.getInventory()
+        val inventorySlot = equipment.getHeldItemSlot()
+        val item = equipment.getItem(inventorySlot)
+        if ( item == null ) {
+            continue
+        }
+
+        val gun = getGunFromItem(item)
+        if ( gun == null ) {
+            continue
+        }
+
         var itemMeta = item.getItemMeta()
         val itemData = itemMeta.getPersistentDataContainer()
 
@@ -207,7 +432,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
 
         // update item meta with new data
         item.setItemMeta(itemMeta)
-        player.getInventory().setItem(inventorySlot, item)
+        equipment.setItem(inventorySlot, item)
 
         // play reload start sound
         val location = player.location
@@ -236,7 +461,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
             private val reloadCancelledTaskQueue = XC.playerReloadCancelledTaskQueue
 
             private fun cancelReload(playerDied: Boolean) {
-                reloadCancelledTaskQueue.add(PlayerReloadCancelledTask(player, gun, item, playerDied))
+                reloadCancelledTaskQueue.add(PlayerReloadCancelledTask(player, gun, reloadId, item, inventorySlot, playerDied))
                 this.cancel()
             }
 
@@ -341,8 +566,12 @@ internal fun doGunReload(tasks: ArrayList<PlayerReloadTask>) {
  */
 internal fun doGunReloadCancelled(tasks: ArrayList<PlayerReloadCancelledTask>) {
     for ( task in tasks ) {
-        val (player, gun, item, playerDied) = task
+        val (player, gun, reloadId, item, inventorySlot, playerDied) = task
         
+        val inventory = player.getInventory()
+        val itemGunSlot = inventory.getItem(inventorySlot)
+        val itemGunSlotReloadId = itemGunSlot?.getItemMeta()?.getPersistentDataContainer()?.get(XC.namespaceKeyItemReloadId!!, PersistentDataType.INTEGER) ?: -1
+
         // clear item reload data
         val itemMeta = item.getItemMeta()
         val itemData = itemMeta.getPersistentDataContainer()
@@ -354,6 +583,13 @@ internal fun doGunReloadCancelled(tasks: ArrayList<PlayerReloadCancelledTask>) {
         val ammo = itemData.get(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER) ?: 0
         item.setItemMeta(setGunItemMetaModel(itemMeta, gun, ammo))
         
+        // if item in gun's slot is same, then replace that item.
+        // case where this is not true: if player picks up item from slot during reload
+        // avoid duplicating item in that case...
+        if ( itemGunSlotReloadId == reloadId ) {
+            inventory.setItem(inventorySlot, item)
+        }
+
         // send player message
         if ( !playerDied ) {
             Message.announcement(player, "${ChatColor.DARK_RED}Reload cancelled...")

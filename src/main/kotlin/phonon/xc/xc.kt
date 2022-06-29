@@ -116,8 +116,11 @@ public object XC {
     internal val playerDeathMessages: HashMap<UUID, String> = HashMap()
 
     // queue of player controls requests
+    internal var playerGunSelectRequests: ArrayList<PlayerGunSelectRequest> = ArrayList()
     internal var playerShootRequests: ArrayList<PlayerGunShootRequest> = ArrayList()
     internal var playerReloadRequests: ArrayList<PlayerGunReloadRequest> = ArrayList()
+    internal var playerGunCleanupReloadRequests: ArrayList<PlayerGunCleanupReloadRequest> = ArrayList()
+    internal var itemGunCleanupReloadRequests: ArrayList<ItemGunCleanupReloadRequest> = ArrayList()
     internal var playerUseCustomWeaponRequests: ArrayList<Player> = ArrayList()
     // task finish queues
     internal val playerReloadTaskQueue: LinkedBlockingQueue<PlayerReloadTask> = LinkedBlockingQueue()
@@ -528,13 +531,20 @@ public object XC {
         XC.runBenchmarkProjectiles() // debugging
 
         val tShootSystem = XC.debugNanoTime() // timing probe
-        // run player gun controls systems
+        // run gun controls systems
+        gunPlayerCleanupReloadSystem(XC.playerGunCleanupReloadRequests)
+        gunItemCleanupReloadSystem(XC.itemGunCleanupReloadRequests)
+        gunSelectSystem(XC.playerGunSelectRequests)
         gunPlayerShootSystem(XC.playerShootRequests)
         gunPlayerReloadSystem(XC.playerReloadRequests)
+
+        // create new request arrays
+        XC.playerGunSelectRequests = ArrayList()
         XC.playerShootRequests = ArrayList()
         XC.playerReloadRequests = ArrayList()
+        XC.playerGunCleanupReloadRequests = ArrayList()
+        XC.itemGunCleanupReloadRequests = ArrayList()    
         XC.playerUseCustomWeaponRequests = ArrayList()
-
         
         // finish gun reloading tasks
         val tReloadSystem = XC.debugNanoTime() // timing probe
