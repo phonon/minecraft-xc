@@ -183,7 +183,7 @@ internal fun gunAimDownSightsSystem(requests: ArrayList<PlayerAimDownSightsReque
             continue
         }
         
-        if ( gun.itemModelIronsights > 0 ) {
+        if ( gun.itemModelAimDownSights > 0 ) {
             var itemMeta = item.getItemMeta()
             val itemData = itemMeta.getPersistentDataContainer()
 
@@ -199,8 +199,8 @@ internal fun gunAimDownSightsSystem(requests: ArrayList<PlayerAimDownSightsReque
                 val isShift = player.isSneaking()
     
                 if ( isShift ) {
-                    itemMeta.setCustomModelData(gun.itemModelIronsights)
-                    XC.createAimDownSightsOffhandModel(gun.itemModelIronsights, player)
+                    itemMeta.setCustomModelData(gun.itemModelAimDownSights)
+                    XC.createAimDownSightsOffhandModel(gun.itemModelAimDownSights, player)
                 } else {
                     itemMeta.setCustomModelData(gun.itemModelDefault)
                     XC.removeAimDownSightsOffhandModel(player)
@@ -301,9 +301,17 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>) {
             continue
         }
 
+        // check if playing is aim down sights
+        val aimDownSights = useAimDownSights(player)
+
         // clean up gun item metadata
-        cleanupGun(item, gun, useAimDownSights(player))
+        cleanupGun(item, gun, aimDownSights)
         equipment.setItem(inventorySlot, item)
+
+        // if player is aim down sights, add offhand model
+        if ( aimDownSights ) {
+            XC.createAimDownSightsOffhandModel(gun.itemModelAimDownSights, player)
+        }
 
         // gun swap delay:
         // -> goal is to block players fast swapping between guns
@@ -639,7 +647,7 @@ internal fun doGunReload(tasks: ArrayList<PlayerReloadTask>) {
         
         // if player is aim down sights, add offhand model
         if ( aimDownSights ) {
-            XC.createAimDownSightsOffhandModel(gun.itemModelIronsights, player)
+            XC.createAimDownSightsOffhandModel(gun.itemModelAimDownSights, player)
         }
 
         // send ammo reloaded message

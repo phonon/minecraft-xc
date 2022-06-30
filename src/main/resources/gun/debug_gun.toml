@@ -23,7 +23,7 @@ lore = [
 default = 0     # normal model
 empty = -1      # no more ammo left
 reload = -1     # while reloading
-ironsights = -1 # while using iron sights
+ads = -1        # while using aim down sights (ADS uses offhand model)
 
 # Equiped properties
 [equip]

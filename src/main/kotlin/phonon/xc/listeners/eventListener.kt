@@ -139,6 +139,12 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     public fun onDropItem(e: PlayerDropItemEvent) {
         val itemEntity = e.getItemDrop()
         val item = itemEntity.getItemStack()
+        
+        // remove invalid aim down sights model item
+        if ( XC.isAimDownSightsModel(item) ) {
+            itemEntity.remove()
+        }
+
         getGunFromItem(item)?.let { gun -> 
             XC.ItemGunCleanupRequests.add(ItemGunCleanupRequest(
                 itemEntity = itemEntity,
@@ -151,7 +157,14 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     @EventHandler(ignoreCancelled = true)
     public fun onPickupItem(e: EntityPickupItemEvent) {
         val itemEntity = e.getItem()
-        getGunFromItem(itemEntity.getItemStack())?.let { gun -> 
+        val item = itemEntity.getItemStack()
+
+        // remove invalid aim down sights model item
+        if ( XC.isAimDownSightsModel(item) ) {
+            itemEntity.remove()
+        }
+        
+        getGunFromItem(item)?.let { gun -> 
             XC.ItemGunCleanupRequests.add(ItemGunCleanupRequest(
                 itemEntity = itemEntity,
                 onDrop = false,

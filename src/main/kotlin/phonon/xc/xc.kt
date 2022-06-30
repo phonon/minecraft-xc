@@ -245,7 +245,7 @@ public object XC {
                 g.itemModelDefault,
                 g.itemModelEmpty,
                 g.itemModelReload,
-                g.itemModelIronsights,
+                g.itemModelAimDownSights,
             )
 
             for ( modelId in gunModels ) {
@@ -574,7 +574,7 @@ public object XC {
         // println("removeAimDownSightsOffhandModel")
         val equipment = player.getInventory()
         
-        // drop current offhand item
+        // remove offhand item if its an aim down sights model
         val itemOffhand = equipment.getItemInOffHand()
         if ( itemOffhand != null && itemOffhand.type == XC.config.materialAimDownSights ) {
             val itemMeta = itemOffhand.getItemMeta()
@@ -582,6 +582,20 @@ public object XC {
                 equipment.setItemInOffHand(ItemStack(Material.AIR, 1))
             }
         }
+    }
+
+    /**
+     * Return true if item stack is an aim down sights model.
+     */
+    public fun isAimDownSightsModel(item: ItemStack): Boolean {
+        if ( item.getType() == XC.config.materialAimDownSights ) {
+            val itemMeta = item.getItemMeta()
+            if ( itemMeta.hasCustomModelData() ) {
+                return itemMeta.getCustomModelData() < XC.MAX_GUN_CUSTOM_MODEL_ID
+            }
+        }
+
+        return false
     }
 
     /**

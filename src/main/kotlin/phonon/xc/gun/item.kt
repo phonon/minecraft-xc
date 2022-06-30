@@ -139,8 +139,8 @@ public fun setGunItemMetaModel(itemMeta: ItemMeta, gun: Gun, ammo: Int, aimdowns
     }
     // else, use regular or aim down sights model
     else {
-        if ( gun.itemModelIronsights > 0 && aimdownsights )
-            itemMeta.setCustomModelData(gun.itemModelIronsights)
+        if ( gun.itemModelAimDownSights > 0 && aimdownsights )
+            itemMeta.setCustomModelData(gun.itemModelAimDownSights)
         else {
             itemMeta.setCustomModelData(gun.itemModelDefault)
         }

@@ -36,7 +36,7 @@ public data class Gun(
     public val itemModelDefault: Int = 0,     // normal model (custom model data id)
     public val itemModelEmpty: Int = -1,      // when gun out of ammo
     public val itemModelReload: Int = -1,     // when gun is reloading
-    public val itemModelIronsights: Int = -1, // when using iron sights
+    public val itemModelAimDownSights: Int = -1, // when using iron sights
 
     // equiped properties
     // slowness while equiped (if > 0)
@@ -176,7 +176,7 @@ public data class Gun(
                     model.getLong("default")?.let { properties["itemModelDefault"] = it.toInt() }
                     model.getLong("empty")?.let { properties["itemModelEmpty"] = it.toInt() }
                     model.getLong("reload")?.let { properties["itemModelReload"] = it.toInt() }
-                    model.getLong("ironsights")?.let { properties["itemModelIronsights"] = it.toInt()}
+                    model.getLong("ads")?.let { properties["itemModelAimDownSights"] = it.toInt()}
                 }
 
                 // sounds
