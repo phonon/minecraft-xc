@@ -9,3 +9,8 @@ commands:
     aliases: []
     permission: xc.command
     usage: /xc help
+  aimdownsights:
+    description: Toggles gun aim down sights
+    aliases: [ads]
+    permission: xc.ads
+    usage: /ads off

@@ -72,6 +72,14 @@ internal value class PlayerGunReloadRequest(
 
 
 /**
+ * Data for request to aim down sights.
+ */
+@JvmInline
+internal value class PlayerAimDownSightsRequest(
+    val player: Player,
+)
+
+/**
  * Data for request to cleanup a player.
  */
 @JvmInline
@@ -113,13 +121,20 @@ internal data class PlayerReloadCancelledTask(
 )
 
 /**
+ * Helper function to determine if model should be aim down sights.
+ */
+private fun useAimDownSights(player: Player): Boolean {
+    return player.isSneaking() && !XC.dontUseAimDownSights.contains(player.getUniqueId())
+}
+
+/**
  * Cleans up gun item metadata if it contains reload flags.
  * Note: THIS MUTATES THE ITEM STACK.
  * Returns:
  *  - True if item was reloading and if flags were removed.
  *  - False if item was not reloading
  */
-private fun cleanupGunReloadFlags(item: ItemStack, gun: Gun): Boolean {
+private fun cleanupGunReloadFlags(item: ItemStack, gun: Gun, aimdownsights: Boolean): Boolean {
     var itemMeta = item.getItemMeta()
     val itemData = itemMeta.getPersistentDataContainer()
 
@@ -134,13 +149,63 @@ private fun cleanupGunReloadFlags(item: ItemStack, gun: Gun): Boolean {
 
         // update player item: reset current ammo and model (cleanup)
         val ammoCurrent = itemData.get(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER) ?: 0
-        itemMeta = setGunItemMetaModel(itemMeta, gun, ammoCurrent)
+        itemMeta = setGunItemMetaModel(itemMeta, gun, ammoCurrent, aimdownsights)
         item.setItemMeta(itemMeta)
         
         return true
     }
 
     return false
+}
+
+
+/**
+ * System to aim down sights. This modifies player's gun item model if they
+ * have aim down sights enabled.
+ */
+internal fun gunAimDownSightsSystem(requests: ArrayList<PlayerAimDownSightsRequest>) {
+    for ( request in requests ) {
+        val player = request.player
+
+        if ( XC.dontUseAimDownSights.contains(player.getUniqueId()) ) {
+            continue
+        }
+
+        // Do redundant player main hand is gun check here
+        // since events could override the first shoot event, causing
+        // inventory slot or item to change
+        val equipment = player.getInventory()
+        val inventorySlot = equipment.getHeldItemSlot()
+        val item = equipment.getItem(inventorySlot)
+        if ( item == null ) {
+            continue
+        }
+
+        val gun = getGunFromItem(item)
+        if ( gun == null ) {
+            continue
+        }
+
+        
+        if ( gun.itemModelIronsights > 0 ) {
+            // Don't aim down sights if no ammo
+            val ammo = getAmmoFromItem(item) ?: 0
+            if ( ammo > 0 ) {
+                var itemMeta = item.getItemMeta()
+                val itemData = itemMeta.getPersistentDataContainer()
+                val isShift = player.isSneaking()
+    
+                if ( isShift ) {
+                    itemMeta.setCustomModelData(gun.itemModelIronsights)
+                } else {
+                    itemMeta.setCustomModelData(gun.itemModelDefault)
+                }
+    
+                item.setItemMeta(itemMeta)
+                equipment.setItem(inventorySlot, item)
+            }
+        }
+    }
 }
 
 /**
@@ -166,7 +231,7 @@ internal fun gunPlayerCleanupReloadSystem(requests: ArrayList<PlayerGunCleanupRe
         }
 
         // Clean up gun item reload metadata
-        if ( cleanupGunReloadFlags(item, gun) ) {
+        if ( cleanupGunReloadFlags(item, gun, false) ) {
             equipment.setItem(inventorySlot, item)
         }
     }
@@ -186,7 +251,7 @@ internal fun gunItemCleanupReloadSystem(requests: ArrayList<ItemGunCleanupReload
         }
 
         // Clean up gun item reload metadata
-        if ( cleanupGunReloadFlags(item, gun) ) {
+        if ( cleanupGunReloadFlags(item, gun, false) ) {
             itemEntity.setItemStack(item)
         }
     }
@@ -218,7 +283,7 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>) {
         }
 
         // Clean up gun item reload metadata
-        if ( cleanupGunReloadFlags(item, gun) ) {
+        if ( cleanupGunReloadFlags(item, gun, useAimDownSights(player)) ) {
             equipment.setItem(inventorySlot, item)
         }
 
@@ -246,7 +311,7 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>) {
         val ammo = getAmmoFromItem(item)
         if ( ammo != null ) {
             XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
-            val itemNewModel = setGunItemStackModel(item, gun, ammo)
+            val itemNewModel = setGunItemStackModel(item, gun, ammo, useAimDownSights(player))
             equipment.setItem(inventorySlot, itemNewModel)
         }
     }
@@ -325,7 +390,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
 
         // update player item: set new ammo and set model
         itemMeta = setGunItemMetaAmmo(itemMeta, gun, newAmmo)
-        itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo)
+        itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo, useAimDownSights(player))
         item.setItemMeta(itemMeta)
         equipment.setItem(inventorySlot, item)
 
@@ -534,7 +599,7 @@ internal fun doGunReload(tasks: ArrayList<PlayerReloadTask>) {
         // clear item reload data and set ammo
         var itemMeta = item.getItemMeta()
         itemMeta = setGunItemMetaAmmo(itemMeta, gun, newAmmo)
-        itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo)
+        itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo, useAimDownSights(player))
         val itemData = itemMeta.getPersistentDataContainer()
         itemData.remove(XC.namespaceKeyItemReloading!!)
         itemData.remove(XC.namespaceKeyItemReloadId!!)
@@ -581,7 +646,7 @@ internal fun doGunReloadCancelled(tasks: ArrayList<PlayerReloadCancelledTask>) {
 
         // set model to either regular or empty model
         val ammo = itemData.get(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER) ?: 0
-        item.setItemMeta(setGunItemMetaModel(itemMeta, gun, ammo))
+        item.setItemMeta(setGunItemMetaModel(itemMeta, gun, ammo, useAimDownSights(player)))
         
         // if item in gun's slot is same, then replace that item.
         // case where this is not true: if player picks up item from slot during reload

@@ -7,6 +7,7 @@ package phonon.xc.gun
 
 import kotlin.math.min
 import org.bukkit.ChatColor
+import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataType
@@ -120,24 +121,29 @@ public fun getAmmoFromItem(item: ItemStack): Int? {
  * Set gun item model based on gun and ammo count.
  * Just a wrapper around `setGunItemMetaModel`.
  */
-public fun setGunItemStackModel(item: ItemStack, gun: Gun, ammo: Int): ItemStack {
+public fun setGunItemStackModel(item: ItemStack, gun: Gun, ammo: Int, aimdownsights: Boolean): ItemStack {
     val itemMeta = item.getItemMeta()
-    item.setItemMeta(setGunItemMetaModel(itemMeta, gun, ammo))
+    item.setItemMeta(setGunItemMetaModel(itemMeta, gun, ammo, aimdownsights))
 
     return item
 }
 
 /**
- * Set gun item meta model based on gun and ammo count
+ * Set gun item meta model based on gun and ammo count.
+ * Player used to set model to aim down sights.
  */
-public fun setGunItemMetaModel(itemMeta: ItemMeta, gun: Gun, ammo: Int): ItemMeta {
+public fun setGunItemMetaModel(itemMeta: ItemMeta, gun: Gun, ammo: Int, aimdownsights: Boolean): ItemMeta {
     // gun empty and there is custom empty model
     if ( ammo <= 0 && gun.itemModelEmpty > 0 ) {
         itemMeta.setCustomModelData(gun.itemModelEmpty)
     }
-    // else, use regular model
+    // else, use regular or aim down sights model
     else {
-        itemMeta.setCustomModelData(gun.itemModelDefault)
+        if ( gun.itemModelIronsights > 0 && aimdownsights )
+            itemMeta.setCustomModelData(gun.itemModelIronsights)
+        else {
+            itemMeta.setCustomModelData(gun.itemModelDefault)
+        }
     }
 
     return itemMeta

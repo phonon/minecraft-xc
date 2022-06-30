@@ -35,6 +35,7 @@ import phonon.xc.utils.Message
 import phonon.xc.gun.getGunFromItem
 import phonon.xc.gun.getAmmoFromItem
 import phonon.xc.gun.setGunItemStackModel
+import phonon.xc.gun.PlayerAimDownSightsRequest
 import phonon.xc.gun.PlayerGunSelectRequest
 import phonon.xc.gun.PlayerGunReloadRequest
 import phonon.xc.gun.PlayerGunShootRequest
@@ -116,6 +117,15 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     @EventHandler(ignoreCancelled = true)
     public fun onToggleSneak(e: PlayerToggleSneakEvent) {
         // println("toggleSneak")
+        val player = e.player
+        val equipment = player.getInventory()
+        val itemMainHand = equipment.getItemInMainHand()
+        getGunFromItem(itemMainHand)?.let { gun -> 
+            // Message.print(player, "Reloading...")
+            XC.playerAimDownSightsRequests.add(PlayerAimDownSightsRequest(
+                player = player,
+            ))
+        }
     }
     
     @EventHandler(ignoreCancelled = true)

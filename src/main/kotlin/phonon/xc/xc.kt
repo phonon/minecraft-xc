@@ -107,6 +107,9 @@ public object XC {
     // map of players doing automatic firing
     internal val isAutomaticFiring: HashMap<UUID, AutomaticFiring> = HashMap()
 
+    // map of players and aim down sights settings
+    internal val dontUseAimDownSights: HashSet<UUID> = HashSet()
+    
     // When gun item reloads, it gets assigned a unique id from this counter.
     // When reload is complete, gun item id is checked with this to make sure
     // player did not swap items during reload that plugin failed to catch.
@@ -116,6 +119,7 @@ public object XC {
     internal val playerDeathMessages: HashMap<UUID, String> = HashMap()
 
     // queue of player controls requests
+    internal var playerAimDownSightsRequests: ArrayList<PlayerAimDownSightsRequest> = ArrayList()
     internal var playerGunSelectRequests: ArrayList<PlayerGunSelectRequest> = ArrayList()
     internal var playerShootRequests: ArrayList<PlayerGunShootRequest> = ArrayList()
     internal var playerReloadRequests: ArrayList<PlayerGunReloadRequest> = ArrayList()
@@ -520,6 +524,17 @@ public object XC {
         }
     }
 
+    /**
+     * Set a player's aim down sights setting.
+     */
+    public fun setAimDownSights(player: Player, use: Boolean) {
+        if ( use ) {
+            XC.dontUseAimDownSights.remove(player.getUniqueId())
+        } else {
+            XC.dontUseAimDownSights.add(player.getUniqueId())
+        }
+    }
+
     
     /**
      * Main engine update, runs on each tick
@@ -532,6 +547,7 @@ public object XC {
 
         val tShootSystem = XC.debugNanoTime() // timing probe
         // run gun controls systems
+        gunAimDownSightsSystem(XC.playerAimDownSightsRequests)
         gunPlayerCleanupReloadSystem(XC.playerGunCleanupReloadRequests)
         gunItemCleanupReloadSystem(XC.itemGunCleanupReloadRequests)
         gunSelectSystem(XC.playerGunSelectRequests)
@@ -539,6 +555,7 @@ public object XC {
         gunPlayerReloadSystem(XC.playerReloadRequests)
 
         // create new request arrays
+        XC.playerAimDownSightsRequests = ArrayList()
         XC.playerGunSelectRequests = ArrayList()
         XC.playerShootRequests = ArrayList()
         XC.playerReloadRequests = ArrayList()

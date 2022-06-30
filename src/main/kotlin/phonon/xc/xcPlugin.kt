@@ -51,9 +51,11 @@ public class XCPlugin : JavaPlugin() {
 
         // register commands
         this.getCommand("xc")?.setExecutor(Command(this))
+        this.getCommand("aimdownsights")?.setExecutor(AimDownSightsCommand(this))
         
         // override command aliases tab complete if they exist
         this.getCommand("xc")?.setTabCompleter(this.getCommand("xc")?.getExecutor() as TabCompleter)
+        this.getCommand("ads")?.setTabCompleter(this.getCommand("aimdownsights")?.getExecutor() as TabCompleter)
 
         // load plugin and start engine
         XC.reload()
