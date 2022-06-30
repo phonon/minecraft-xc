@@ -19,6 +19,7 @@ explosion = false
 # material types for custom items, must match a Material exactly
 [material]
 gun = "WARPED_FUNGUS_ON_A_STICK"
+aim_down_sights = "CARROT_ON_A_STICK"
 melee = "IRON_HORSE_ARMOR"
 misc = "GOLDEN_HORSE_ARMOR"
 ammo = "LEATHER_HORSE_ARMOR"

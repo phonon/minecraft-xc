@@ -22,7 +22,9 @@ import kotlin.math.ceil
 import org.bukkit.Bukkit
 import org.bukkit.World
 import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.NamespacedKey
+import org.bukkit.inventory.ItemStack
 import org.bukkit.Particle
 import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
@@ -123,8 +125,8 @@ public object XC {
     internal var playerGunSelectRequests: ArrayList<PlayerGunSelectRequest> = ArrayList()
     internal var playerShootRequests: ArrayList<PlayerGunShootRequest> = ArrayList()
     internal var playerReloadRequests: ArrayList<PlayerGunReloadRequest> = ArrayList()
-    internal var playerGunCleanupReloadRequests: ArrayList<PlayerGunCleanupReloadRequest> = ArrayList()
-    internal var itemGunCleanupReloadRequests: ArrayList<ItemGunCleanupReloadRequest> = ArrayList()
+    internal var PlayerGunCleanupRequests: ArrayList<PlayerGunCleanupRequest> = ArrayList()
+    internal var ItemGunCleanupRequests: ArrayList<ItemGunCleanupRequest> = ArrayList()
     internal var playerUseCustomWeaponRequests: ArrayList<Player> = ArrayList()
     // task finish queues
     internal val playerReloadTaskQueue: LinkedBlockingQueue<PlayerReloadTask> = LinkedBlockingQueue()
@@ -534,8 +536,54 @@ public object XC {
             XC.dontUseAimDownSights.add(player.getUniqueId())
         }
     }
-
     
+    /**
+     * This adds an aim down sights model to the player's offhand,
+     * for aim down sights visual.
+     */
+    internal fun createAimDownSightsOffhandModel(modelId: Int, player: Player) {
+        // println("createAimDownSightsOffhandModel")
+        val equipment = player.getInventory()
+        
+        // drop current offhand item
+        val itemOffhand = equipment.getItemInOffHand()
+        if ( itemOffhand != null && itemOffhand.type != Material.AIR ) {
+            // if this is an existing aim down sights model, ignore (ADS models can be glitchy)
+            val itemMeta = itemOffhand.getItemMeta()
+            if ( itemOffhand.type != XC.config.materialAimDownSights || ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() >= XC.MAX_GUN_CUSTOM_MODEL_ID ) ) {
+                player.getWorld().dropItem(player.getLocation(), itemOffhand)
+            }
+        }
+
+        // create new offhand item
+        val item = ItemStack(XC.config.materialAimDownSights, 1)
+        val itemMeta = item.getItemMeta()
+
+        itemMeta.setDisplayName("Aim down sights")
+        itemMeta.setCustomModelData(modelId)
+
+        item.setItemMeta(itemMeta)
+
+        equipment.setItemInOffHand(item)
+    }
+
+    /**
+     * Removes any aim down sights custom model in player's offhand.
+     */
+    internal fun removeAimDownSightsOffhandModel(player: Player) {
+        // println("removeAimDownSightsOffhandModel")
+        val equipment = player.getInventory()
+        
+        // drop current offhand item
+        val itemOffhand = equipment.getItemInOffHand()
+        if ( itemOffhand != null && itemOffhand.type == XC.config.materialAimDownSights ) {
+            val itemMeta = itemOffhand.getItemMeta()
+            if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() < XC.MAX_GUN_CUSTOM_MODEL_ID ) {
+                equipment.setItemInOffHand(ItemStack(Material.AIR, 1))
+            }
+        }
+    }
+
     /**
      * Main engine update, runs on each tick
      */
@@ -548,8 +596,8 @@ public object XC {
         val tShootSystem = XC.debugNanoTime() // timing probe
         // run gun controls systems
         gunAimDownSightsSystem(XC.playerAimDownSightsRequests)
-        gunPlayerCleanupReloadSystem(XC.playerGunCleanupReloadRequests)
-        gunItemCleanupReloadSystem(XC.itemGunCleanupReloadRequests)
+        playerGunCleanupSystem(XC.PlayerGunCleanupRequests)
+        gunItemCleanupSystem(XC.ItemGunCleanupRequests)
         gunSelectSystem(XC.playerGunSelectRequests)
         gunPlayerShootSystem(XC.playerShootRequests)
         gunPlayerReloadSystem(XC.playerReloadRequests)
@@ -559,8 +607,8 @@ public object XC {
         XC.playerGunSelectRequests = ArrayList()
         XC.playerShootRequests = ArrayList()
         XC.playerReloadRequests = ArrayList()
-        XC.playerGunCleanupReloadRequests = ArrayList()
-        XC.itemGunCleanupReloadRequests = ArrayList()    
+        XC.PlayerGunCleanupRequests = ArrayList()
+        XC.ItemGunCleanupRequests = ArrayList()    
         XC.playerUseCustomWeaponRequests = ArrayList()
         
         // finish gun reloading tasks

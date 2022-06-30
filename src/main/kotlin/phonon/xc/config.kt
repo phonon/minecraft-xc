@@ -48,6 +48,7 @@ public data class Config(
     
     // material types for custom items
     public val materialGun: Material = Material.WARPED_FUNGUS_ON_A_STICK,
+    public val materialAimDownSights: Material = Material.CARROT_ON_A_STICK, // phantom model for ads
     public val materialMelee: Material = Material.IRON_HORSE_ARMOR,
     public val materialMisc: Material = Material.GOLDEN_HORSE_ARMOR,
     public val materialAmmo: Material = Material.LEATHER_HORSE_ARMOR,
@@ -90,6 +91,11 @@ public data class Config(
             toml.getString("material.gun")?.let { s ->
                 Material.getMaterial(s)?.let { configOptions["materialGun"] = it } ?: run {
                     logger?.warning("[material.gun] Invalid material: ${s}")
+                }
+            }
+            toml.getString("material.aim_down_sights")?.let { s ->
+                Material.getMaterial(s)?.let { configOptions["materialAimDownSights"] = it } ?: run {
+                    logger?.warning("[material.aim_down_sights] Invalid material: ${s}")
                 }
             }
             toml.getString("material.melee")?.let { s ->

@@ -51,8 +51,13 @@ public class AimDownSightsCommand(val plugin: JavaPlugin) : CommandExecutor, Tab
         when ( arg ) {
             "on" -> XC.setAimDownSights(player, true)
             "off" -> XC.setAimDownSights(player, false)
-            else -> printHelp(sender)
+            else -> {
+                printHelp(sender)
+                return true
+            }
         }
+
+        Message.print(sender, "${ChatColor.BOLD}Aim down sights turned ${arg}")
 
         return true
     }

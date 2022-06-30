@@ -15,6 +15,7 @@ import org.bukkit.event.Event
 import org.bukkit.event.block.Action
 import org.bukkit.event.entity.EntityDeathEvent
 import org.bukkit.event.entity.EntityToggleSwimEvent
+import org.bukkit.event.entity.EntityPickupItemEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.player.PlayerJoinEvent
@@ -39,8 +40,8 @@ import phonon.xc.gun.PlayerAimDownSightsRequest
 import phonon.xc.gun.PlayerGunSelectRequest
 import phonon.xc.gun.PlayerGunReloadRequest
 import phonon.xc.gun.PlayerGunShootRequest
-import phonon.xc.gun.PlayerGunCleanupReloadRequest
-import phonon.xc.gun.ItemGunCleanupReloadRequest
+import phonon.xc.gun.PlayerGunCleanupRequest
+import phonon.xc.gun.ItemGunCleanupRequest
 import phonon.xc.gun.AmmoInfoMessagePacket
 
 
@@ -77,7 +78,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         }
 
         getGunFromItem(itemMainHand)?.let { gun -> 
-            XC.playerGunSelectRequests.add(PlayerGunSelectRequest(
+            XC.PlayerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
             ))
         }
@@ -96,7 +97,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         }
 
         getGunFromItem(itemMainHand)?.let { gun -> 
-            XC.playerGunCleanupReloadRequests.add(PlayerGunCleanupReloadRequest(
+            XC.PlayerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
             ))
         }
@@ -137,9 +138,23 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     @EventHandler(ignoreCancelled = true)
     public fun onDropItem(e: PlayerDropItemEvent) {
         val itemEntity = e.getItemDrop()
-        getGunFromItem(itemEntity.getItemStack())?.let { gun -> 
-            XC.itemGunCleanupReloadRequests.add(ItemGunCleanupReloadRequest(
+        val item = itemEntity.getItemStack()
+        getGunFromItem(item)?.let { gun -> 
+            XC.ItemGunCleanupRequests.add(ItemGunCleanupRequest(
                 itemEntity = itemEntity,
+                onDrop = true,
+            ))
+        }
+    }
+    
+
+    @EventHandler(ignoreCancelled = true)
+    public fun onPickupItem(e: EntityPickupItemEvent) {
+        val itemEntity = e.getItem()
+        getGunFromItem(itemEntity.getItemStack())?.let { gun -> 
+            XC.ItemGunCleanupRequests.add(ItemGunCleanupRequest(
+                itemEntity = itemEntity,
+                onDrop = false,
             ))
         }
     }
@@ -151,6 +166,9 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     public fun onItemSelect(e: PlayerItemHeldEvent) {
         val player = e.player
         val inventory = player.getInventory()
+
+        // remove any aim down sights models
+        XC.removeAimDownSightsOffhandModel(player)
 
         val mainHandSlot = e.getNewSlot()
         val itemMainHand = inventory.getItem(mainHandSlot)
