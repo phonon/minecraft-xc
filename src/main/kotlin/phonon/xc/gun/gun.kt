@@ -20,6 +20,28 @@ import phonon.xc.utils.mapToObject
 import phonon.xc.utils.damage.DamageType
 import phonon.xc.utils.particle.ParticlePacket
 
+public enum class GunSingleFireMode {
+    NONE,
+    SINGLE,
+    BURST,
+    ;
+
+    companion object {
+        /**
+         * Match name to type. Case-insensitive.
+         * If none found, will return null.
+         */
+        public fun match(name: String): GunSingleFireMode? {
+            return when (name.uppercase()) {
+                "NONE" -> NONE
+                "SINGLE" -> SINGLE
+                "BURST" -> BURST
+                else -> null
+            }
+        }
+    }
+}
+
 /**
  * Common gun object used by all guns.
  * This is an immutable object. When properties need to change,
@@ -45,7 +67,10 @@ public data class Gun(
     // reload [ms]
     public val reloadTimeMillis: Long = 1500,
 
-    // semiauto/regular shoot firing rate [ms]
+    // semiauto/regular shoot properties [ms]
+    public val singleFireMode: GunSingleFireMode = GunSingleFireMode.SINGLE,
+    public val burstFireCount: Int = 3,
+    public val burstFireDelayTicks: Int = 2,
     public val shootDelayMillis: Long = 500,
 
     // automatic fire rate properties
@@ -122,7 +147,6 @@ public data class Gun(
     public val soundReloadFinish: String = "gun_reload_finish",
     public val soundReloadFinishVolume: Float = 1f,
     public val soundReloadFinishPitch: Float = 1f,
-
 ) {
     /**
      * Create a projectile using this gun's properties.
@@ -204,12 +228,22 @@ public data class Gun(
                     reload.getLong("time")?.let { properties["reloadTimeMillis"] = it }
                 }
 
-                // shooting (regular/semiauto)
+                // [left-click] shooting (regular/semiauto) single or burst fire
                 toml.getTable("shoot")?.let { shoot ->
+                    shoot.getString("fire_mode")?.let { name ->
+                        val fireMode = GunSingleFireMode.match(name)
+                        if ( fireMode != null ) {
+                            properties["singleFireMode"] = fireMode
+                        } else {
+                            logger?.warning("Unknown firing mode type for [shoot.fire_mode]: ${name}")
+                        }
+                    }
+                    shoot.getLong("burst_count")?.let { properties["burstFireCount"] = it.toInt() }
+                    shoot.getLong("burst_delay")?.let { properties["burstFireDelayTicks"] = it.toInt() }
                     shoot.getLong("delay")?.let { properties["shootDelayMillis"] = it }
                 }
 
-                // automatic fire
+                // [right-click] automatic fire
                 toml.getTable("automatic")?.let { auto ->
                     auto.getBoolean("enabled")?.let { properties["autoFire"] = it }
                     auto.getLong("delay_ticks")?.let { properties["autoFireDelayTicks"] = it.toInt() }
@@ -354,6 +388,7 @@ public data class Gun(
                 return mapToObject(properties, Gun::class)
             } catch (e: Exception) {
                 logger?.warning("Failed to parse gun file: ${source.toString()}, ${e}")
+                e.printStackTrace()
                 return null
             }
         }

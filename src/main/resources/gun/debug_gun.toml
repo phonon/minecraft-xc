@@ -40,11 +40,14 @@ ignore = false   # ignore when gun out of ammo
 [reload]
 time = 1500
 
-# Delay between [left-click] semi-auto mode shooting in milliseconds
+# [left-click] Single or burst mode firing config
 [shoot]
-delay = 500
+fire_mode = "single" # "single" or "burst"
+burst_count = 3 # number of shots in a burst
+burst_delay = 2 # ticks between burst fire
+delay = 500 # Delay between [left-click] semi-auto mode shooting in milliseconds
 
-# Automatic fire settings
+# [right-click] Automatic fire settings
 [automatic]
 enabled = true     # if auto mode [right-click] is enabled
 delay_ticks = 2    # delay between shots in ticks

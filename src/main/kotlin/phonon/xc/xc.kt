@@ -106,16 +106,20 @@ public object XC {
     // projectile systems for each world, map world uuid => ProjectileSystem
     internal val projectileSystems: HashMap<UUID, ProjectileSystem> = HashMap(4) // initial capacity 4 worlds
 
-    // map of players doing automatic firing
-    internal val isAutomaticFiring: HashMap<UUID, AutomaticFiring> = HashMap()
-
     // map of players and aim down sights settings
     internal val dontUseAimDownSights: HashSet<UUID> = HashSet()
     
     // When gun item reloads, it gets assigned a unique id from this counter.
     // When reload is complete, gun item id is checked with this to make sure
     // player did not swap items during reload that plugin failed to catch.
+    // Using int instead of atomic int since mineman is single threaded.
     internal var gunReloadIdCounter: Int = 0
+
+    // Burst and auto fire ID counter. Used to detect if player is firing
+    // the same weapon in a burst or auto fire sequence.
+    // Using int instead of atomic int since mineman is single threaded.
+    internal var burstFireIdCounter: Int = 0
+    internal var autoFireIdCounter: Int = 0
 
     // player death message storage, death event checks this for custom messages
     internal val playerDeathMessages: HashMap<UUID, String> = HashMap()
@@ -128,6 +132,10 @@ public object XC {
     internal var PlayerGunCleanupRequests: ArrayList<PlayerGunCleanupRequest> = ArrayList()
     internal var ItemGunCleanupRequests: ArrayList<ItemGunCleanupRequest> = ArrayList()
     internal var playerUseCustomWeaponRequests: ArrayList<Player> = ArrayList()
+    // burst firing queue: map entity uuid -> burst fire state
+    internal var burstFiringPackets: HashMap<UUID, BurstFire> = HashMap()
+    // automatic firing queue: map entity uuid -> automatic fire state
+    internal var autoFiringPackets: HashMap<UUID, AutoFire> = HashMap()
     // task finish queues
     internal val playerReloadTaskQueue: LinkedBlockingQueue<PlayerReloadTask> = LinkedBlockingQueue()
     internal val playerReloadCancelledTaskQueue: LinkedBlockingQueue<PlayerReloadCancelledTask> = LinkedBlockingQueue()
@@ -339,6 +347,26 @@ public object XC {
     internal fun getReloadId(): Int {
         val id = XC.gunReloadIdCounter
         XC.gunReloadIdCounter = max(0, id + 1)
+        return id
+    }
+
+    /**
+     * Get current burst id counter for burst firing.
+     * Used to detect if same gun is being fired in burst mode.
+     */
+    internal fun getBurstFireId(): Int {
+        val id = XC.burstFireIdCounter
+        XC.burstFireIdCounter = max(0, id + 1)
+        return id
+    }
+
+    /**
+     * Get current auto fire id counter for auto firing
+     * Used to detect if same gun is being fired in automatic mode.
+     */
+    internal fun getAutoFireId(): Int {
+        val id = XC.autoFireIdCounter
+        XC.autoFireIdCounter = max(0, id + 1)
         return id
     }
 
@@ -615,6 +643,8 @@ public object XC {
         gunSelectSystem(XC.playerGunSelectRequests)
         gunPlayerShootSystem(XC.playerShootRequests)
         gunPlayerReloadSystem(XC.playerReloadRequests)
+        XC.burstFiringPackets = burstFireSystem(XC.burstFiringPackets)
+        XC.autoFiringPackets = autoFireSystem(XC.autoFiringPackets)
 
         // create new request arrays
         XC.playerAimDownSightsRequests = ArrayList()

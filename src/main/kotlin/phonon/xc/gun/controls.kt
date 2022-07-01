@@ -8,6 +8,7 @@
 
 package phonon.xc.gun
 
+import java.util.UUID
 import kotlin.math.max
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
@@ -33,9 +34,25 @@ internal data class AmmoInfoMessagePacket(
 )
 
 /**
+ * Holds player burst firing state for a gun.
+ */
+internal data class BurstFire(
+    // player firing
+    val player: Player,
+    // gun
+    val gun: Gun,
+    // total length of time player has been firing
+    val totalTime: Double,
+    // tick counter since last fired, used for timing firing rate in projectiles/tick
+    val ticksSinceFired: Int,
+    // number of shots remaining in this burst fire packet
+    val remainingCount: Int,
+)
+
+/**
  * Holds player automatic firing state for a gun.
  */
-internal data class AutomaticFiring(
+internal data class AutoFire(
     // player firing
     val player: Player,
     // gun
@@ -393,6 +410,134 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
             itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
         }
 
+        val fireMode = gun.singleFireMode
+
+        if ( fireMode == GunSingleFireMode.SINGLE ) {
+            
+            // check ammo and send ammo info message to player
+            val ammo = getAmmoFromItem(item) ?: 0
+            if ( ammo <= 0 ) {
+                XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
+                
+                // play gun empty sound effect
+                XC.soundQueue.add(SoundPacket(
+                    sound = gun.soundEmpty,
+                    world = world,
+                    location = loc,
+                    volume = gun.soundEmptyVolume,
+                    pitch = gun.soundEmptyPitch,
+                ))
+
+                if ( !gun.ammoIgnore ) {
+                    continue
+                }
+            }
+
+            val newAmmo = max(0, ammo - 1)
+
+            // update player item: set new ammo and set model
+            itemMeta = setGunItemMetaAmmo(itemMeta, gun, newAmmo)
+            itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo, useAimDownSights(player))
+            item.setItemMeta(itemMeta)
+            equipment.setItem(inventorySlot, item)
+
+            // if newAmmo is 0, remove any aim down sights model
+            if ( newAmmo == 0 ) {
+                XC.removeAimDownSightsOffhandModel(player)
+            }
+
+            XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
+            
+            val eyeHeight = player.eyeHeight
+            val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
+            val shootDirection = loc.direction.clone()
+    
+            val projectile = Projectile(
+                gun = gun,
+                source = player,
+                x = shootPosition.x.toFloat(),
+                y = shootPosition.y.toFloat(),
+                z = shootPosition.z.toFloat(),
+                dirX = shootDirection.x.toFloat(),
+                dirY = shootDirection.y.toFloat(),
+                dirZ = shootDirection.z.toFloat(),
+                speed = gun.projectileVelocity,
+                gravity = gun.projectileGravity,
+                maxLifetime = gun.projectileLifetime,
+                maxDistance = gun.projectileMaxDistance,
+            )
+    
+            projectileSystem.addProjectile(projectile)
+    
+            XC.soundQueue.add(SoundPacket(
+                sound = gun.soundShoot,
+                world = world,
+                location = loc,
+                volume = gun.soundShootVolume,
+                pitch = gun.soundShootPitch,
+            ))
+    
+            // println("Shooting: ${gun}")
+        } else if ( fireMode == GunSingleFireMode.BURST ) {
+            // add burst packet if not already burst firing
+            if ( !XC.burstFiringPackets.contains(player.getUniqueId()) ) {
+                XC.burstFiringPackets[player.getUniqueId()] = BurstFire(
+                    player = player,
+                    gun = gun,
+                    totalTime = 0.0,
+                    ticksSinceFired = 0,
+                    remainingCount = gun.burstFireCount,
+                )
+            }
+        } else { // fireMode == GunSingleFireMode.NONE
+            // no-op
+            return
+        }
+
+    }
+}
+
+
+/**
+ * Player burst fire shooting system. Return a new hashmap
+ * of burst fire packets for next tick.
+ */
+internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>): HashMap<UUID, BurstFire> {
+    val nextTickRequests = HashMap<UUID, BurstFire>()
+
+    for ( (playerId, request) in requests ) {
+        val (player, gun, totalTime, ticksSinceFired, remainingCount) = request
+
+        // Do redundant player main hand is gun check here
+        // since events could override the first shoot event, causing
+        // inventory slot or item to change
+        val equipment = player.getInventory()
+        val inventorySlot = equipment.getHeldItemSlot()
+        val item = equipment.getItem(inventorySlot)
+        if ( item == null ) {
+            continue
+        }
+
+        // decrement burst delay
+        if ( ticksSinceFired > 0 ) {
+            nextTickRequests[playerId] = BurstFire(
+                player = player,
+                gun = gun,
+                totalTime = totalTime + 1,
+                ticksSinceFired = ticksSinceFired - 1,
+                remainingCount = remainingCount,
+            )
+            continue
+        }
+
+        val loc = player.location
+        val world = loc.world
+        val projectileSystem = XC.projectileSystems[world.getUID()]
+        if ( projectileSystem == null ) continue
+
+        var itemMeta = item.getItemMeta()
+        val itemData = itemMeta.getPersistentDataContainer()
+
         // check ammo and send ammo info message to player
         val ammo = getAmmoFromItem(item) ?: 0
         if ( ammo <= 0 ) {
@@ -420,13 +565,21 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
         item.setItemMeta(itemMeta)
         equipment.setItem(inventorySlot, item)
 
-        // if newAmmo is 0, remove any aim down sights model
+        // if newAmmo is 0, remove any aim down sights model and also play empty sound
         if ( newAmmo == 0 ) {
             XC.removeAimDownSightsOffhandModel(player)
+
+            XC.soundQueue.add(SoundPacket(
+                sound = gun.soundEmpty,
+                world = world,
+                location = loc,
+                volume = gun.soundEmptyVolume,
+                pitch = gun.soundEmptyPitch,
+            ))
         }
 
         XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
-
+        
         val eyeHeight = player.eyeHeight
         val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
         val shootDirection = loc.direction.clone()
@@ -456,10 +609,34 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
             pitch = gun.soundShootPitch,
         ))
 
-        // println("Shooting: ${gun}")
+        // continue sequence if have ammo and burst has remaining shots
+        if ( newAmmo > 0 && remainingCount > 1 ) {
+            nextTickRequests[playerId] = BurstFire(
+                player = player,
+                gun = gun,
+                totalTime = totalTime + 1,
+                ticksSinceFired = gun.burstFireDelayTicks,
+                remainingCount = remainingCount - 1,
+            )
+        }
     }
+
+    return nextTickRequests
 }
 
+/**
+ * Player automatic fire shooting system. Return a new hashmap
+ * of auto fire packets for next tick.
+ */
+internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, AutoFire> {
+    val nextTickRequests = HashMap<UUID, AutoFire>()
+
+    for ( request in requests ) {
+        
+    }
+
+    return nextTickRequests
+}
 
 /**
  * Player reload request system
