@@ -68,6 +68,8 @@ public object XC {
     internal var namespaceKeyItemReloading: NamespacedKey? = null // key for item is reloading (0 or 1)
     internal var namespaceKeyItemReloadId: NamespacedKey? = null  // key for item reload id
     internal var namespaceKeyItemReloadTimestamp: NamespacedKey? = null  // key for item reload timestamp
+    internal var namespaceKeyItemBurstFireId: NamespacedKey? = null  // key for item reload id
+    internal var namespaceKeyItemAutoFireId: NamespacedKey? = null  // key for item reload id
 
     // ========================================================================
     // BUILT-IN ENGINE CONSTANTS
@@ -82,6 +84,8 @@ public object XC {
     public const val ITEM_KEY_RELOADING: String = "reloading" // ItemStack namespaced key for gun reloading
     public const val ITEM_KEY_RELOAD_ID: String = "reloadId"  // ItemStack namespaced key for gun reload id
     public const val ITEM_KEY_RELOAD_TIMESTAMP: String = "reloadTime"  // ItemStack namespaced key for gun reload timestamp
+    public const val ITEM_KEY_BURST_FIRE_ID: String = "burstId"  // ItemStack namespaced key for gun burst fire id
+    public const val ITEM_KEY_AUTO_FIRE_ID: String = "autoId"  // ItemStack namespaced key for gun auto fire id
     
     // ========================================================================
     // STORAGE
@@ -191,6 +195,8 @@ public object XC {
         XC.namespaceKeyItemReloading = NamespacedKey(plugin, ITEM_KEY_RELOADING)
         XC.namespaceKeyItemReloadId = NamespacedKey(plugin, ITEM_KEY_RELOAD_ID)
         XC.namespaceKeyItemReloadTimestamp = NamespacedKey(plugin, ITEM_KEY_RELOAD_TIMESTAMP)
+        XC.namespaceKeyItemBurstFireId = NamespacedKey(plugin, ITEM_KEY_BURST_FIRE_ID)
+        XC.namespaceKeyItemAutoFireId = NamespacedKey(plugin, ITEM_KEY_AUTO_FIRE_ID)
     }
 
     /**
@@ -203,6 +209,8 @@ public object XC {
         XC.namespaceKeyItemReloading = null
         XC.namespaceKeyItemReloadId = null
         XC.namespaceKeyItemReloadTimestamp = null
+        XC.namespaceKeyItemBurstFireId = null
+        XC.namespaceKeyItemAutoFireId = null
     }
 
     /**
@@ -344,7 +352,7 @@ public object XC {
     /**
      * Get current reload id counter for reload task.
      */
-    internal fun getReloadId(): Int {
+    internal fun newReloadId(): Int {
         val id = XC.gunReloadIdCounter
         XC.gunReloadIdCounter = max(0, id + 1)
         return id
@@ -354,7 +362,7 @@ public object XC {
      * Get current burst id counter for burst firing.
      * Used to detect if same gun is being fired in burst mode.
      */
-    internal fun getBurstFireId(): Int {
+    internal fun newBurstFireId(): Int {
         val id = XC.burstFireIdCounter
         XC.burstFireIdCounter = max(0, id + 1)
         return id
@@ -364,7 +372,7 @@ public object XC {
      * Get current auto fire id counter for auto firing
      * Used to detect if same gun is being fired in automatic mode.
      */
-    internal fun getAutoFireId(): Int {
+    internal fun newAutoFireId(): Int {
         val id = XC.autoFireIdCounter
         XC.autoFireIdCounter = max(0, id + 1)
         return id

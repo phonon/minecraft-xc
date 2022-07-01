@@ -37,6 +37,8 @@ internal data class AmmoInfoMessagePacket(
  * Holds player burst firing state for a gun.
  */
 internal data class BurstFire(
+    // id (to track same gun is being used)
+    val id: Int,
     // player firing
     val player: Player,
     // gun
@@ -53,6 +55,8 @@ internal data class BurstFire(
  * Holds player automatic firing state for a gun.
  */
 internal data class AutoFire(
+    // id (to track same gun is being used)
+    val id: Int,
     // player firing
     val player: Player,
     // gun
@@ -481,13 +485,21 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
         } else if ( fireMode == GunSingleFireMode.BURST ) {
             // add burst packet if not already burst firing
             if ( !XC.burstFiringPackets.contains(player.getUniqueId()) ) {
+                val burstFireId = XC.newBurstFireId()
+
                 XC.burstFiringPackets[player.getUniqueId()] = BurstFire(
+                    id = burstFireId,
                     player = player,
                     gun = gun,
                     totalTime = 0.0,
                     ticksSinceFired = 0,
                     remainingCount = gun.burstFireCount,
                 )
+
+                // set item in hand's burst fire id
+                itemData.set(XC.namespaceKeyItemBurstFireId!!, PersistentDataType.INTEGER, burstFireId)
+                item.setItemMeta(itemMeta)
+                equipment.setItem(inventorySlot, item)
             }
         } else { // fireMode == GunSingleFireMode.NONE
             // no-op
@@ -506,7 +518,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>): HashMap<UUID, 
     val nextTickRequests = HashMap<UUID, BurstFire>()
 
     for ( (playerId, request) in requests ) {
-        val (player, gun, totalTime, ticksSinceFired, remainingCount) = request
+        val (id, player, gun, totalTime, ticksSinceFired, remainingCount) = request
 
         // Do redundant player main hand is gun check here
         // since events could override the first shoot event, causing
@@ -518,9 +530,19 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>): HashMap<UUID, 
             continue
         }
 
+        var itemMeta = item.getItemMeta()
+        val itemData = itemMeta.getPersistentDataContainer()
+
+        // check if item burst fire id matches
+        val itemBurstFireId = itemData?.get(XC.namespaceKeyItemBurstFireId!!, PersistentDataType.INTEGER) ?: -1
+        if ( itemBurstFireId != id ) {
+            continue
+        }
+
         // decrement burst delay
         if ( ticksSinceFired > 0 ) {
             nextTickRequests[playerId] = BurstFire(
+                id = id,
                 player = player,
                 gun = gun,
                 totalTime = totalTime + 1,
@@ -534,9 +556,6 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>): HashMap<UUID, 
         val world = loc.world
         val projectileSystem = XC.projectileSystems[world.getUID()]
         if ( projectileSystem == null ) continue
-
-        var itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
 
         // check ammo and send ammo info message to player
         val ammo = getAmmoFromItem(item) ?: 0
@@ -612,6 +631,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>): HashMap<UUID, 
         // continue sequence if have ammo and burst has remaining shots
         if ( newAmmo > 0 && remainingCount > 1 ) {
             nextTickRequests[playerId] = BurstFire(
+                id = id,
                 player = player,
                 gun = gun,
                 totalTime = totalTime + 1,
@@ -692,7 +712,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
 
         // set reload flag and reloading id: this ensures this is same item
         // being reloaded when reload task finishes
-        val reloadId = XC.getReloadId()
+        val reloadId = XC.newReloadId()
         itemData.set(XC.namespaceKeyItemReloading!!, PersistentDataType.INTEGER, TRUE)
         itemData.set(XC.namespaceKeyItemReloadId!!, PersistentDataType.INTEGER, reloadId)
 
