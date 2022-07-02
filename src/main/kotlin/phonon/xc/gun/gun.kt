@@ -42,6 +42,26 @@ public enum class GunSingleFireMode {
     }
 }
 
+
+/**
+ * Gun type categories. This is used for:
+ * - Gun shoot delays by category
+ */
+public enum class GunType {
+    PISTOL,
+    RIFLE,
+    SHOTGUN,
+    SUB_MACHINE_GUN,
+    LIGHT_MACHINE_GUN,
+    HEAVY_MACHINE_GUN,
+    SNIPER,
+    ANTI_TANK_RIFLE,
+    FLAMETHROWER,
+    RPG,
+    ;
+}
+
+
 /**
  * Common gun object used by all guns.
  * This is an immutable object. When properties need to change,
@@ -51,6 +71,9 @@ public enum class GunSingleFireMode {
 public data class Gun(
     // gun id, used for mapping custom models => gun
     public val id: Int = Int.MAX_VALUE, // invalid
+    
+    // gun type
+    public val type: GunType = GunType.RIFLE,
 
     // gun item/visual properties
     public val itemName: String = "gun",

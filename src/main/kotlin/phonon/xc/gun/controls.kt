@@ -34,6 +34,14 @@ internal data class AmmoInfoMessagePacket(
 )
 
 /**
+ * Hold state for shooting delay
+ */
+internal data class ShootDelay(
+    val timestampDelayAfterShoot: Long, // = time shoot + delay
+    val timestampCanShoot: Long, // = time player can actually shoot again
+)
+
+/**
  * Holds player burst firing state for a gun.
  */
 internal data class BurstFire(
@@ -343,21 +351,12 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>) {
         // -> goal is to block players fast swapping between guns
         //    (e.g. using macros) to bypass gun shooting delays
         //    or to swap between different types (e.g. rifle -> shotgun)
-        // What we will do is, if player has recently fired a gun
-        // then swapping to gun has a "gun swap delay". This will
-        // be repeatedly set to the MAX of existing delay or new
-        // gun's delay, e.g.:
-        //      1. player shoots rifle (2s swap delay begins)
-        //      2. 0.5s pass
-        //      3. player swaps to pistol with 1s swap delay => delay = MAX(1.5s, 1.0s) = 1.5s
-        //      4. player swaps back to rifle (2s delay) => delay = MAX(1.5s, 2.0s) = 2.0s
-        // This gun swap delay is a separate timer than gun shoot delay.
-        // TODO
-        // TODO
-        // TODO
-        // TODO
-        // TODO
-        // TODO
+        // See `docs/delay.md` for details.
+        XC.playerShootDelay[player.getUniqueId()]?.let { shootDelay ->
+            XC.playerShootDelay[player.getUniqueId()] = shootDelay.copy(
+                timestampCanShoot = shootDelay.timestampDelayAfterShoot + gun.equipDelayMillis,
+            )
+        }
 
         // send ammo info to player
         val ammo = getAmmoFromItem(item)
@@ -378,7 +377,7 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>) {
 /**
  * Player shooting system
  */
-internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
+internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, time: Long) {
     for ( request in requests ) {
         val player = request.player
         
@@ -422,6 +421,12 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
             itemData.remove(XC.namespaceKeyItemReloading!!)
             itemData.remove(XC.namespaceKeyItemReloadId!!)
             itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
+        }
+
+        // check if still under shoot delay
+        val shootDelay = XC.playerShootDelay[player.getUniqueId()]
+        if ( shootDelay != null && time < shootDelay.timestampCanShoot ) {
+            continue
         }
 
         val fireMode = gun.singleFireMode
@@ -490,6 +495,13 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
                 volume = gun.soundShootVolume,
                 pitch = gun.soundShootPitch,
             ))
+
+            // shoot delay
+            val timestampShootDelay = time + gun.shootDelayMillis
+            XC.playerShootDelay[player.getUniqueId()] = ShootDelay(
+                timestampDelayAfterShoot = timestampShootDelay,
+                timestampCanShoot = timestampShootDelay,
+            )
     
             // println("Shooting: ${gun}")
         } else if ( fireMode == GunSingleFireMode.BURST ) {
@@ -524,7 +536,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>) {
  * Player burst fire shooting system. Return a new hashmap
  * of burst fire packets for next tick.
  */
-internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>): HashMap<UUID, BurstFire> {
+internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, time: Long): HashMap<UUID, BurstFire> {
     val nextTickRequests = HashMap<UUID, BurstFire>()
 
     for ( (playerId, request) in requests ) {
@@ -648,6 +660,15 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>): HashMap<UUID, 
                 ticksSinceFired = gun.burstFireDelayTicks,
                 remainingCount = remainingCount - 1,
             )
+        } else {
+            // burst done.
+
+            // add shooting delay
+            val timestampShootDelay = time + gun.shootDelayMillis
+            XC.playerShootDelay[playerId] = ShootDelay(
+                timestampDelayAfterShoot = timestampShootDelay,
+                timestampCanShoot = timestampShootDelay,
+            )
         }
     }
 
@@ -657,11 +678,18 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>): HashMap<UUID, 
 /**
  * Automatic fire request system. Initiate or refresh an auto fire sequence.
  */
-internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, autoFiring: HashMap<UUID, AutoFire>): HashMap<UUID, AutoFire> {
+internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, autoFiring: HashMap<UUID, AutoFire>, time: Long): HashMap<UUID, AutoFire> {
     for ( request in requests ) {
         val player = request.player
 
         val playerId = player.getUniqueId()
+
+        // check if still under shoot delay
+        val shootDelay = XC.playerShootDelay[playerId]
+        if ( shootDelay != null && time < shootDelay.timestampCanShoot ) {
+            continue
+        }
+
         val currentAutoFire = autoFiring[playerId]
         if ( currentAutoFire != null ) { // refresh current autofire request
             autoFiring[playerId] = currentAutoFire.copy(

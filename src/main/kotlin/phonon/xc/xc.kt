@@ -39,6 +39,7 @@ import com.comphenix.protocol.ProtocolLibrary
 
 import phonon.xc.gun.*
 import phonon.xc.ammo.*
+import phonon.xc.utils.EnumArrayMap
 import phonon.xc.utils.mapToObject
 import phonon.xc.utils.Hitbox
 import phonon.xc.utils.HitboxSize
@@ -113,6 +114,9 @@ public object XC {
     // map of players and aim down sights settings
     internal val dontUseAimDownSights: HashSet<UUID> = HashSet()
     
+    // map of player => gun shoot delays
+    internal val playerShootDelay: HashMap<UUID, ShootDelay> = HashMap()
+
     // When gun item reloads, it gets assigned a unique id from this counter.
     // When reload is complete, gun item id is checked with this to make sure
     // player did not swap items during reload that plugin failed to catch.
@@ -646,18 +650,21 @@ public object XC {
 
         val tShootSystem = XC.debugNanoTime() // timing probe
 
+        // timestamp for beginning update tick
+        val timestamp = System.currentTimeMillis()
+
         // run pipelined player movement check, for sway modifier
         // TODO
-        
+
         // run gun controls systems
         gunAimDownSightsSystem(XC.playerAimDownSightsRequests)
         playerGunCleanupSystem(XC.PlayerGunCleanupRequests)
         gunItemCleanupSystem(XC.ItemGunCleanupRequests)
         gunSelectSystem(XC.playerGunSelectRequests)
-        XC.autoFiringPackets = autoFireRequestSystem(XC.playerAutoFireRequests, XC.autoFiringPackets) // do auto fire request before single/burst fire
-        gunPlayerShootSystem(XC.playerShootRequests)
+        XC.autoFiringPackets = autoFireRequestSystem(XC.playerAutoFireRequests, XC.autoFiringPackets, timestamp) // do auto fire request before single/burst fire
+        gunPlayerShootSystem(XC.playerShootRequests, timestamp)
         gunPlayerReloadSystem(XC.playerReloadRequests)
-        XC.burstFiringPackets = burstFireSystem(XC.burstFiringPackets)
+        XC.burstFiringPackets = burstFireSystem(XC.burstFiringPackets, timestamp)
         XC.autoFiringPackets = autoFireSystem(XC.autoFiringPackets)
 
         // create new request arrays

@@ -68,9 +68,13 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
     @EventHandler
     public fun onPlayerQuit(e: PlayerQuitEvent) {
+        val player = e.player
+
+        // remove player from shoot delay map
+        XC.playerShootDelay.remove(player.getUniqueId())
+        
         // if player leaves and is holding a gun or custom wep,
         // do reload cleanup
-        val player = e.player
         val inventory = player.getInventory()
 
         val itemMainHand = inventory.getItemInMainHand()
