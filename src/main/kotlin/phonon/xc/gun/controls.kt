@@ -22,6 +22,7 @@ import org.bukkit.persistence.PersistentDataType
 import phonon.xc.XC
 import phonon.xc.utils.Message
 import phonon.xc.utils.sound.SoundPacket
+import phonon.xc.utils.recoil.RecoilPacket
 
 
 /**
@@ -487,13 +488,20 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
             )
     
             projectileSystem.addProjectile(projectile)
-    
+            
+            // shoot sound
             XC.soundQueue.add(SoundPacket(
                 sound = gun.soundShoot,
                 world = world,
                 location = loc,
                 volume = gun.soundShootVolume,
                 pitch = gun.soundShootPitch,
+            ))
+
+            // recoil packet
+            XC.recoilQueue.add(RecoilPacket(
+                player = player,
+                gun = gun,
             ))
 
             // shoot delay
@@ -642,12 +650,19 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, time: Long): Ha
 
         projectileSystem.addProjectile(projectile)
 
+        // shoot sound
         XC.soundQueue.add(SoundPacket(
             sound = gun.soundShoot,
             world = world,
             location = loc,
             volume = gun.soundShootVolume,
             pitch = gun.soundShootPitch,
+        ))
+
+        // recoil packet
+        XC.recoilQueue.add(RecoilPacket(
+            player = player,
+            gun = gun,
         ))
 
         // continue sequence if have ammo and burst has remaining shots
@@ -849,12 +864,19 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
 
         projectileSystem.addProjectile(projectile)
 
+        // shoot sound
         XC.soundQueue.add(SoundPacket(
             sound = gun.soundShoot,
             world = world,
             location = loc,
             volume = gun.soundShootVolume,
             pitch = gun.soundShootPitch,
+        ))
+
+        // recoil packet
+        XC.recoilQueue.add(RecoilPacket(
+            player = player,
+            gun = gun,
         ))
 
         // continue sequence if have ammo and burst has remaining shots

@@ -44,6 +44,7 @@ import phonon.xc.utils.mapToObject
 import phonon.xc.utils.Hitbox
 import phonon.xc.utils.HitboxSize
 import phonon.xc.utils.particle.*
+import phonon.xc.utils.recoil.*
 import phonon.xc.utils.sound.*
 import phonon.xc.utils.debug.DebugTimings
 import phonon.xc.utils.blockCrackAnimation.*
@@ -165,6 +166,9 @@ public object XC {
 
     // sounds queue
     internal var soundQueue: ArrayList<SoundPacket> = ArrayList()
+
+    // recoil packets
+    internal var recoilQueue: ArrayList<RecoilPacket> = ArrayList()
 
     // ========================================================================
     // Debug/benchmarking
@@ -715,12 +719,16 @@ public object XC {
         val particleExplosions = XC.particleExplosionQueue
         val gunAmmoInfoMessages = XC.gunAmmoInfoMessageQueue
         val soundPackets = XC.soundQueue
+        val recoilPackets = XC.recoilQueue
+        val blockCrackAnimations = XC.blockCrackAnimationQueue
 
         XC.particleBulletTrailQueue = ArrayList()
         XC.particleBulletImpactQueue = ArrayList()
         XC.particleExplosionQueue = ArrayList()
         XC.gunAmmoInfoMessageQueue = ArrayList()
         XC.soundQueue = ArrayList()
+        XC.recoilQueue = ArrayList()
+        XC.blockCrackAnimationQueue = ArrayList()
 
         Bukkit.getScheduler().runTaskAsynchronously(
             XC.plugin!!,
@@ -750,15 +758,19 @@ public object XC {
 
         // custom packets (only if ProtocolLib is available)
         if ( XC.usingProtocolLib ) {
+            val protocolManager = ProtocolLibrary.getProtocolManager()
+
             // block crack animations
-            val blockCrackAnimations = XC.blockCrackAnimationQueue
-            XC.blockCrackAnimationQueue = ArrayList()
             Bukkit.getScheduler().runTaskAsynchronously(
                 XC.plugin!!,
-                TaskBroadcastBlockCrackAnimations(ProtocolLibrary.getProtocolManager(), blockCrackAnimations),
+                TaskBroadcastBlockCrackAnimations(protocolManager, blockCrackAnimations),
             )
 
             // player recoil from gun firing
+            Bukkit.getScheduler().runTaskAsynchronously(
+                XC.plugin!!,
+                TaskRecoil(protocolManager, recoilPackets),
+            )
 
             // sync
             // TaskBroadcastBlockCrackAnimations(ProtocolLibrary.getProtocolManager(), blockCrackAnimations).run()

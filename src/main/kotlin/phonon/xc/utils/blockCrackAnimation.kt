@@ -8,8 +8,9 @@ package phonon.xc.utils.blockCrackAnimation
 import java.util.concurrent.ThreadLocalRandom
 import org.bukkit.World
 import org.bukkit.Location
-import com.comphenix.protocol.*
-import com.comphenix.protocol.events.*
+import com.comphenix.protocol.ProtocolLibrary
+import com.comphenix.protocol.ProtocolManager
+import com.comphenix.protocol.PacketType
 import com.comphenix.protocol.wrappers.BlockPosition
 
 
