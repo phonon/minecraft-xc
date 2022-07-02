@@ -339,11 +339,6 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>) {
         cleanupGun(item, gun, aimDownSights)
         equipment.setItem(inventorySlot, item)
 
-        // if player is aim down sights, add offhand model
-        if ( aimDownSights ) {
-            XC.createAimDownSightsOffhandModel(gun.itemModelAimDownSights, player)
-        }
-
         // gun swap delay:
         // -> goal is to block players fast swapping between guns
         //    (e.g. using macros) to bypass gun shooting delays
@@ -368,8 +363,13 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>) {
         val ammo = getAmmoFromItem(item)
         if ( ammo != null ) {
             XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
-            val itemNewModel = setGunItemStackModel(item, gun, ammo, useAimDownSights(player))
+            val itemNewModel = setGunItemStackModel(item, gun, ammo, aimDownSights)
             equipment.setItem(inventorySlot, itemNewModel)
+
+            // if player is aim down sights, add offhand model
+            if ( ammo > 0 && aimDownSights ) {
+                XC.createAimDownSightsOffhandModel(gun.itemModelAimDownSights, player)
+            }
         }
     }
 }
