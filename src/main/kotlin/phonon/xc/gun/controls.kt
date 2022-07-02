@@ -727,6 +727,28 @@ internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, a
                 continue
             }
             
+            var itemMeta = item.getItemMeta()
+            val itemData = itemMeta.getPersistentDataContainer()
+
+            // check gun is reloading
+            // if reloading is past time + some margin, cancel reload and clear flags
+            val reloadTimeMillis = gun.reloadTimeMillis
+            val isReloading = itemData.get(XC.namespaceKeyItemReloading!!, PersistentDataType.INTEGER) ?: 0
+            if ( isReloading == TRUE ) {
+                // Check reload timestamp, if current time > timestamp0 + reloadTime + 1000 ms,
+                // assume this gun's reload was broken somehow and continue with shoot.
+                // Else, this is still in a reload process: skip shooting
+                val reloadTimestamp = itemData.get(XC.namespaceKeyItemReloadTimestamp!!, PersistentDataType.LONG)
+                if ( reloadTimestamp != null && System.currentTimeMillis() < reloadTimestamp + reloadTimeMillis + 1000L ) {
+                    continue
+                }
+
+                // clean up reloading flags
+                itemData.remove(XC.namespaceKeyItemReloading!!)
+                itemData.remove(XC.namespaceKeyItemReloadId!!)
+                itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
+            }
+
             val autoFireId = XC.newAutoFireId()
 
             autoFiring[playerId] = AutoFire(
@@ -739,8 +761,6 @@ internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, a
             )
             
             // set item in hand's auto fire id
-            var itemMeta = item.getItemMeta()
-            val itemData = itemMeta.getPersistentDataContainer()
             itemData.set(XC.namespaceKeyItemAutoFireId!!, PersistentDataType.INTEGER, autoFireId)
             item.setItemMeta(itemMeta)
             equipment.setItem(inventorySlot, item)
@@ -902,6 +922,7 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
 internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) {
     for ( request in requests ) {
         val player = request.player
+        val playerId = player.getUniqueId()
 
         // Do redundant player main hand is gun check here
         // since events could override the first shoot event, causing
@@ -918,9 +939,14 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
             continue
         }
 
+        // skip if player is burst firing or auto firing
+        if ( XC.burstFiringPackets[playerId] != null || XC.autoFiringPackets[playerId] != null ) {
+            continue
+        }
+
         var itemMeta = item.getItemMeta()
         val itemData = itemMeta.getPersistentDataContainer()
-
+        
         // do reload if gun not reloading already and ammo less than max
         val reloadTimeMillis = gun.reloadTimeMillis
         val isReloading = itemData.get(XC.namespaceKeyItemReloading!!, PersistentDataType.INTEGER) ?: 0
