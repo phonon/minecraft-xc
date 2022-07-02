@@ -645,6 +645,10 @@ public object XC {
         XC.runBenchmarkProjectiles() // debugging
 
         val tShootSystem = XC.debugNanoTime() // timing probe
+
+        // run pipelined player movement check, for sway modifier
+        // TODO
+        
         // run gun controls systems
         gunAimDownSightsSystem(XC.playerAimDownSightsRequests)
         playerGunCleanupSystem(XC.PlayerGunCleanupRequests)

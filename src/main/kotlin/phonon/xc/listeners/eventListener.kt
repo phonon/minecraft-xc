@@ -133,7 +133,26 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     @EventHandler(ignoreCancelled = true)
     public fun onToggleSprint(e: PlayerToggleSprintEvent) {
         // println("toggleSprint")
-        
+
+        // check if gun cancels sprinting
+        // setSprinting(false) DOES NOT WORK!!!!
+        // if ( e.isSprinting() ) {
+        //     val player = e.player
+        //     val equipment = player.equipment
+        //     if ( equipment == null ) return
+    
+        //     // disable sprint if gun is no sprint
+        //     val itemMainHand = equipment.itemInMainHand
+        //     if ( itemMainHand.type == XC.config.materialGun ) {
+        //         getGunFromItem(itemMainHand)?.let { gun -> 
+        //             if ( gun.equipNoSprint ) {
+        //                 println("Stop sprint!")
+        //                 player.setSprinting(false)
+        //                 e.setCancelled(true)
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     @EventHandler(ignoreCancelled = true)

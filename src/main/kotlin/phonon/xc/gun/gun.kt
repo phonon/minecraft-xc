@@ -62,7 +62,9 @@ public data class Gun(
 
     // equiped properties
     // slowness while equiped (if > 0)
+    public val equipDelayMillis: Long = 500, // delay before player can fire after selecting weapon
     public val equipSlowness: Int = 0,
+    public val equipNoSprint: Boolean = false,
 
     // reload [ms]
     public val reloadTimeMillis: Long = 1500,
@@ -212,7 +214,9 @@ public data class Gun(
 
                 // equip
                 toml.getTable("equip")?.let { equip ->
+                    equip.getLong("delay")?.let { properties["equipDelayMillis"] = it }
                     equip.getLong("slowness")?.let { properties["equipSlowness"] = it.toInt() }
+                    equip.getBoolean("no_sprint")?.let { properties["equipNoSprint"] = it }
                 }
 
                 // ammo

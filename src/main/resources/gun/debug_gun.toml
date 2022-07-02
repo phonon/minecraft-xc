@@ -27,7 +27,9 @@ ads = -1        # while using aim down sights (ADS uses offhand model)
 
 # Equiped properties
 [equip]
+delay = 500     # delay before can fire gun [ms]
 slowness = 0    # slowness level while equipping this item
+no_sprint = false # if true, cannot sprint while equipping this item
 
 # Ammo id and count
 [ammo]
