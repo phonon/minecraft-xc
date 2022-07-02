@@ -9,6 +9,10 @@ melee = "melee"
 misc = "misc"
 armor = "armor"
 
+# max number of ticks from last auto fire request before stopping
+[auto_fire]
+max_ticks_since_last_request = 4
+
 # block damage
 [block_damage]
 explosion = false

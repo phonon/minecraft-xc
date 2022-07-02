@@ -54,6 +54,9 @@ public data class Config(
     public val materialAmmo: Material = Material.LEATHER_HORSE_ARMOR,
     public val materialArmor: Material = Material.LEATHER_HORSE_ARMOR,
     
+    // auto fire max ticks before stopping
+    public val autoFireMaxTicksSinceLastRequest: Int = 4,
+
     // block damage
     public val blockDamageExplosion: Boolean = true,
     
@@ -118,6 +121,9 @@ public data class Config(
                     logger?.warning("[material.armor] Invalid material: ${s}")
                 }
             }
+            
+            // auto fire max ticks since last request config
+            toml.getLong("auto_fire.max_ticks_since_last_request")?.let { configOptions["autoFireMaxTicksSinceLastRequest"] = it.toInt() }
             
             // block damage config
             toml.getBoolean("block_damage.explosion")?.let { configOptions["blockDamageExplosion"] = it }

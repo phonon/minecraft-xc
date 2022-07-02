@@ -132,6 +132,7 @@ public object XC {
     internal var playerAimDownSightsRequests: ArrayList<PlayerAimDownSightsRequest> = ArrayList()
     internal var playerGunSelectRequests: ArrayList<PlayerGunSelectRequest> = ArrayList()
     internal var playerShootRequests: ArrayList<PlayerGunShootRequest> = ArrayList()
+    internal var playerAutoFireRequests: ArrayList<PlayerAutoFireRequest> = ArrayList()
     internal var playerReloadRequests: ArrayList<PlayerGunReloadRequest> = ArrayList()
     internal var PlayerGunCleanupRequests: ArrayList<PlayerGunCleanupRequest> = ArrayList()
     internal var ItemGunCleanupRequests: ArrayList<ItemGunCleanupRequest> = ArrayList()
@@ -649,6 +650,7 @@ public object XC {
         playerGunCleanupSystem(XC.PlayerGunCleanupRequests)
         gunItemCleanupSystem(XC.ItemGunCleanupRequests)
         gunSelectSystem(XC.playerGunSelectRequests)
+        XC.autoFiringPackets = autoFireRequestSystem(XC.playerAutoFireRequests, XC.autoFiringPackets) // do auto fire request before single/burst fire
         gunPlayerShootSystem(XC.playerShootRequests)
         gunPlayerReloadSystem(XC.playerReloadRequests)
         XC.burstFiringPackets = burstFireSystem(XC.burstFiringPackets)
@@ -658,6 +660,7 @@ public object XC {
         XC.playerAimDownSightsRequests = ArrayList()
         XC.playerGunSelectRequests = ArrayList()
         XC.playerShootRequests = ArrayList()
+        XC.playerAutoFireRequests = ArrayList()
         XC.playerReloadRequests = ArrayList()
         XC.PlayerGunCleanupRequests = ArrayList()
         XC.ItemGunCleanupRequests = ArrayList()    

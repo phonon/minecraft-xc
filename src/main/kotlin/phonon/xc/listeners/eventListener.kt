@@ -40,6 +40,7 @@ import phonon.xc.gun.PlayerAimDownSightsRequest
 import phonon.xc.gun.PlayerGunSelectRequest
 import phonon.xc.gun.PlayerGunReloadRequest
 import phonon.xc.gun.PlayerGunShootRequest
+import phonon.xc.gun.PlayerAutoFireRequest
 import phonon.xc.gun.PlayerGunCleanupRequest
 import phonon.xc.gun.ItemGunCleanupRequest
 import phonon.xc.gun.AmmoInfoMessagePacket
@@ -241,7 +242,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             return
         }
 
-        // run left/right click actions
+        // left click: single fire or burst
         if ( action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK ) {
             val equipment = player.equipment
             if ( equipment == null ) return
@@ -263,6 +264,25 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             }
             else if ( itemMainHand.type == XC.config.materialArmor ) {
                 // TODO: put armor (helmet) on
+            }
+        }
+        // right click: auto fire
+        if ( action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK ) {
+            val equipment = player.equipment
+            if ( equipment == null ) return
+
+            val itemMainHand = equipment.itemInMainHand
+
+            getGunFromItem(itemMainHand)?.let { gun -> 
+                // Message.print(player, "auto firing request")
+                if ( gun.autoFire ) {
+                    XC.playerAutoFireRequests.add(PlayerAutoFireRequest(
+                        player = player,
+                    ))
+
+                    // ignore block interact event
+                    e.setUseInteractedBlock(Event.Result.DENY)
+                }
             }
         }
     }
