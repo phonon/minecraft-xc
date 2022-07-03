@@ -13,6 +13,10 @@ armor = "armor"
 [auto_fire]
 max_ticks_since_last_request = 4
 
+# recoil recovery rate per tick
+[recoil]
+recovery_rate = 0.2
+
 # block damage
 [block_damage]
 explosion = false

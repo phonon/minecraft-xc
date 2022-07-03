@@ -5,6 +5,7 @@
 
 package phonon.xc.utils.recoil
 
+import java.util.concurrent.ThreadLocalRandom
 import com.comphenix.protocol.ProtocolManager
 import com.comphenix.protocol.PacketType
 import com.comphenix.protocol.wrappers.EnumWrappers
@@ -19,7 +20,9 @@ import phonon.xc.gun.Gun
  */
 public data class RecoilPacket(
     val player: Player,
-    val gun: Gun,
+    val recoilVertical: Double,
+    val recoilHorizontal: Double,
+    val multiplier: Double, // recoil multiplier
 )
 
 // https://wiki.vg/Protocol#Player_Position
@@ -60,9 +63,21 @@ public class TaskRecoil(
     val packets: ArrayList<RecoilPacket>,
 ): Runnable {
     override fun run() {
+        val random = ThreadLocalRandom.current()
+
         for ( p in packets ) {
-            val (player, gun) = p
+            val (player, recoilVertical, recoilHorizontal, multiplier) = p
             
+            // skip if no recoil
+            if ( recoilVertical == 0.0 && recoilHorizontal == 0.0 ) {
+                continue
+            }
+            
+            // calculate net recoil after multiplier
+            val netRecoilVertical = recoilVertical * multiplier
+            val netRecoilHorizontalRange = recoilHorizontal * multiplier
+            val netRecoilHorizontal = random.nextDouble(-netRecoilHorizontalRange, netRecoilHorizontalRange)
+
             // https://wiki.vg/Protocol#Player_Position
             // Position packet: 0x36, Play, Server -> Client
             //      X                    Double    Absolute or relative position, depending on Flags.
@@ -85,8 +100,8 @@ public class TaskRecoil(
             yawPacket.getDoubles().write(0, 0.0)
             yawPacket.getDoubles().write(1, 0.0)
             yawPacket.getDoubles().write(2, 0.0)
-            yawPacket.getFloat().write(0, 0f)
-            yawPacket.getFloat().write(1, -gun.recoilVertical.toFloat())
+            yawPacket.getFloat().write(0, netRecoilHorizontal.toFloat())
+            yawPacket.getFloat().write(1, -netRecoilVertical.toFloat())
             
             // teleport relative position flags
             val teleportFlags = yawPacket.getSets(EnumWrappers.getGenericConverter(EnumPlayerTeleportFlags, PlayerTeleportFlag::class.java))

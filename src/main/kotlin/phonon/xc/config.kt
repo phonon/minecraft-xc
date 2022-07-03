@@ -57,6 +57,9 @@ public data class Config(
     // auto fire max ticks before stopping
     public val autoFireMaxTicksSinceLastRequest: Int = 4,
 
+    // recoil recovery rate per tick
+    public val recoilRecoveryRate: Double = 0.2,
+
     // block damage
     public val blockDamageExplosion: Boolean = true,
     
@@ -124,6 +127,9 @@ public data class Config(
             
             // auto fire max ticks since last request config
             toml.getLong("auto_fire.max_ticks_since_last_request")?.let { configOptions["autoFireMaxTicksSinceLastRequest"] = it.toInt() }
+            
+            // recoil recovery rate
+            toml.getDouble("recoil.recovery_rate")?.let { configOptions["recoilRecoveryRate"] = it }
             
             // block damage config
             toml.getBoolean("block_damage.explosion")?.let { configOptions["blockDamageExplosion"] = it }

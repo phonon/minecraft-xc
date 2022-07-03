@@ -118,6 +118,9 @@ public object XC {
     // map of player => gun shoot delays
     internal val playerShootDelay: HashMap<UUID, ShootDelay> = HashMap()
 
+    // map of players => recoil multiplier
+    internal var playerRecoil: HashMap<UUID, Double> = HashMap()
+    
     // When gun item reloads, it gets assigned a unique id from this counter.
     // When reload is complete, gun item id is checked with this to make sure
     // player did not swap items during reload that plugin failed to catch.
@@ -670,6 +673,7 @@ public object XC {
         gunPlayerReloadSystem(XC.playerReloadRequests)
         XC.burstFiringPackets = burstFireSystem(XC.burstFiringPackets, timestamp)
         XC.autoFiringPackets = autoFireSystem(XC.autoFiringPackets)
+        XC.playerRecoil = recoilRecoverySystem(XC.playerRecoil)
 
         // create new request arrays
         XC.playerAimDownSightsRequests = ArrayList()

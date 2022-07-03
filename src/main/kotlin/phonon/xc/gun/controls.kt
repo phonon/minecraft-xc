@@ -10,6 +10,7 @@ package phonon.xc.gun
 
 import java.util.UUID
 import kotlin.math.max
+import kotlin.math.min
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.Material
@@ -498,11 +499,8 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
                 pitch = gun.soundShootPitch,
             ))
 
-            // recoil packet
-            XC.recoilQueue.add(RecoilPacket(
-                player = player,
-                gun = gun,
-            ))
+            // recoil handling:
+            doRecoil(player, gun.recoilSingleHorizontal, gun.recoilSingleVertical, gun.recoilSingleFireRamp)
 
             // shoot delay
             val timestampShootDelay = time + gun.shootDelayMillis
@@ -660,10 +658,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, time: Long): Ha
         ))
 
         // recoil packet
-        XC.recoilQueue.add(RecoilPacket(
-            player = player,
-            gun = gun,
-        ))
+        doRecoil(player, gun.recoilSingleHorizontal, gun.recoilSingleVertical, gun.recoilSingleFireRamp)
 
         // continue sequence if have ammo and burst has remaining shots
         if ( remainingCount > 1 && ( newAmmo > 0 || gun.ammoIgnore ) ) {
@@ -726,7 +721,7 @@ internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, a
             if ( gun == null ) {
                 continue
             }
-            
+
             var itemMeta = item.getItemMeta()
             val itemData = itemMeta.getPersistentDataContainer()
 
@@ -894,10 +889,7 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
         ))
 
         // recoil packet
-        XC.recoilQueue.add(RecoilPacket(
-            player = player,
-            gun = gun,
-        ))
+        doRecoil(player, gun.recoilAutoHorizontal, gun.recoilAutoVertical, gun.recoilAutoFireRamp)
 
         // continue sequence if have ammo and burst has remaining shots
         if ( gun.ammoIgnore || newAmmo > 0 ) {
@@ -914,6 +906,29 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
     }
 
     return nextTickRequests
+}
+
+
+/**
+ * Player recoil recovery. Return a new hashmap with new player
+ * recoil multipliers.
+ */
+internal fun recoilRecoverySystem(playerRecoil: HashMap<UUID, Double>): HashMap<UUID, Double> {
+    val newPlayerRecoil: HashMap<UUID, Double> = HashMap()
+
+    for ( (playerId, recoil) in playerRecoil ) {
+        // recoil recovery is player is not burst or auto firing
+        if ( !XC.burstFiringPackets.contains(playerId) && !XC.autoFiringPackets.contains(playerId) ) {
+            val newRecoil = recoil - XC.config.recoilRecoveryRate
+            if ( newRecoil > 0.0 ) {
+                newPlayerRecoil[playerId] = newRecoil
+            }
+        } else { // keep current recoil
+            newPlayerRecoil[playerId] = recoil
+        }
+    }
+
+    return newPlayerRecoil
 }
 
 /**
@@ -1346,4 +1361,30 @@ private fun inventoryRemoveItem(
     }
 
     return false
+}
+
+/**
+ * Handle recoil: ramp player recoil multiplier,
+ * and queue recoil packet.
+ */
+private fun doRecoil(
+    player: Player,
+    recoilHorizontal: Double,
+    recoilVertical: Double,
+    recoilRamp: Double,
+) {
+    val playerId = player.getUniqueId()
+
+    // ramp player recoil rate
+    val currRecoilMultiplier = XC.playerRecoil[playerId] ?: 0.0
+    val newRecoilMultiplier = min(1.0, currRecoilMultiplier + recoilRamp)
+    XC.playerRecoil[playerId] = newRecoilMultiplier
+
+    // recoil handling:
+    XC.recoilQueue.add(RecoilPacket(
+        player = player,
+        recoilVertical = recoilVertical,
+        recoilHorizontal = recoilHorizontal,
+        multiplier = newRecoilMultiplier,
+    ))
 }

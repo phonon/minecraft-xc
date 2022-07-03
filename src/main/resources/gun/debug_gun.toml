@@ -59,11 +59,12 @@ slowness = 1       # slowness while using auto mode
 # TODO
 
 [recoil]
-horizontal = 0.1
-vertical = 0.2
-auto_fire_time_before_recoil = 200 # in milliseconds [ms]
-auto_fire_horizontal_ramp = 0.05   # horizontal recoil ramp rate / ms
-auto_fire_vertical_ramp = 0.05     # vertical recoil ramp rate / ms
+single_horizontal = 3.0
+single_vertical = 5.0
+auto_horizontal = 3.0
+auto_vertical = 6.0
+single_fire_ramp = 0.2   # single/burst recoil multiplier ramp rate / tick
+auto_fire_ramp = 0.3     # auto fire recoil multiplier ramp rate / tick
 
 # Handler for what happens when projectile hits a block or entity.
 # If nothing specified, no effect will happen when a projectile hits.

@@ -113,11 +113,12 @@ public data class Gun(
     // TODO
 
     // recoil
-    public val recoilHorizontal: Double = 0.1,
-    public val recoilVertical: Double = 0.2,
-    public val autoFireTimeBeforeRecoil: Long = 200,
-    public val autoFireHorizontalRecoilRamp: Double = 0.05, // recoil ramp rate in recoil / millisecond
-    public val autoFireVerticalRecoilRamp: Double = 0.05, // recoil ramp rate in recoil / millisecond
+    public val recoilSingleHorizontal: Double = 3.0,
+    public val recoilSingleVertical: Double = 4.0,
+    public val recoilAutoHorizontal: Double = 5.0,
+    public val recoilAutoVertical: Double = 6.0,
+    public val recoilSingleFireRamp: Double = 0.2,
+    public val recoilAutoFireRamp: Double = 0.3,
     
     // projectile velocity in blocks/tick => (20*vel) m/s
     // physical velocities of ~900 m/s would require vel ~ 45.0
@@ -282,11 +283,12 @@ public data class Gun(
 
                 // recoil
                 toml.getTable("recoil")?.let { recoil ->
-                    recoil.getDouble("horizontal")?.let { properties["recoilHorizontal"] = it }
-                    recoil.getDouble("vertical")?.let { properties["recoilVertical"] = it }
-                    recoil.getLong("auto_fire_time_before_recoil")?.let { properties["autoFireTimeBeforeRecoil"] = it }
-                    recoil.getDouble("auto_fire_horizontal_ramp")?.let { properties["autoFireHorizontalRecoilRamp"] = it }
-                    recoil.getDouble("auto_fire_vertical_ramp")?.let { properties["autoFireVerticalRecoilRamp"] = it }
+                    recoil.getDouble("single_horizontal")?.let { properties["recoilSingleHorizontal"] = it }
+                    recoil.getDouble("single_vertical")?.let { properties["recoilSingleVertical"] = it }
+                    recoil.getDouble("auto_horizontal")?.let { properties["recoilAutoHorizontal"] = it }
+                    recoil.getDouble("auto_vertical")?.let { properties["recoilAutoVertical"] = it }
+                    recoil.getDouble("single_fire_ramp")?.let { properties["recoilSingleFireRamp"] = it }
+                    recoil.getDouble("auto_fire_ramp")?.let { properties["recoilAutoFireRamp"] = it }
                 }
 
                 // hit handlers
