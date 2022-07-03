@@ -168,6 +168,11 @@ public data class Gun(
     // handler on entity hit
     public val hitEntityHandler: GunHitEntityHandler = entityDamageHitHandler,
     
+    // hit fire ticks (when hit handler is fire)
+    public val hitFireTicks: Int = 0,
+    // probability setting a hit block on fire
+    public val hitBlockFireProbability: Double = 0.04,
+
     // sounds
     public val soundShoot: String = "gun_shoot",
     public val soundShootVolume: Float = 1f,
@@ -322,6 +327,10 @@ public data class Gun(
                         }
                         properties["hitBlockHandler"] = handler ?: noBlockHitHandler
                     }
+
+                    // fire properties
+                    hit.getLong("fire_ticks")?.let { properties["hitFireTicks"] = it.toInt() }
+                    hit.getDouble("block_fire_probability")?.let { properties["hitBlockFireProbability"] = it }
                 }
 
                 // projectile

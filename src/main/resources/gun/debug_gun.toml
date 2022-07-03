@@ -82,6 +82,8 @@ auto_fire_ramp = 0.3     # auto fire recoil multiplier ramp rate / tick
 [hit]
 entity = "damage"
 # block = "explosion"
+fire_ticks = 0
+block_fire_probability = 0.05
 
 # Projectile properties.
 # Damage types:

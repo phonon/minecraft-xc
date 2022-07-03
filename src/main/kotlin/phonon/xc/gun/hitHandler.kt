@@ -11,8 +11,10 @@
 
 package phonon.xc.gun
 
+import java.util.concurrent.ThreadLocalRandom
 import org.bukkit.Bukkit
 import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.entity.Entity
 import org.bukkit.entity.LivingEntity
@@ -55,6 +57,7 @@ typealias GunHitEntityHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, 
 public fun getGunHitBlockHandler(name: String): GunHitBlockHandler? {
     return when ( name.lowercase() ) {
         "explosion" -> blockExplosionHitHandler
+        "fire" -> blockFireHitHandler
         else -> null
     }
 }
@@ -99,6 +102,11 @@ public val entityDamageHitHandler = fun(
         )
         target.damage(damage, null)
         target.setNoDamageTicks(0)
+
+        // add fire ticks
+        if ( gun.hitFireTicks > 0 ) {
+            target.setFireTicks(gun.hitFireTicks)
+        }
     }
 
     // emit event for external plugins to read
@@ -134,6 +142,11 @@ public val entityExplosionHitHandler = fun(
         )
         target.damage(damage, null)
         target.setNoDamageTicks(0)
+
+        // add fire ticks
+        if ( gun.hitFireTicks > 0 ) {
+            target.setFireTicks(gun.hitFireTicks)
+        }
     }
 
     // emit event for external plugins to read
@@ -161,9 +174,8 @@ public val entityExplosionHitHandler = fun(
     )
 }
 
-
 /**
- * Empty entity hit handler.
+ * Empty block hit handler.
  */
 public val noBlockHitHandler: GunHitBlockHandler = {_, _, _, _, _ -> }
 
@@ -192,4 +204,33 @@ public val blockExplosionHitHandler = fun(
         gun.explosionBlockDamagePower,
         gun.explosionParticles,
     )
+}
+
+/**
+ * Block hit handler that creates fire on top of hit location.
+ */
+public val blockFireHitHandler = fun(
+    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    gun: Gun,
+    location: Location,
+    block: Block,
+    source: Entity,
+) {
+    if ( ThreadLocalRandom.current().nextDouble() < gun.hitBlockFireProbability ) {
+        val blType = block.getType()
+
+        // set block below on fire
+        if ( blType == Material.AIR ) {
+            val blBelow = block.getRelative(0, -1, 0);
+            if ( blBelow.getType().isSolid() ) {
+                block.setType(Material.FIRE);
+            }
+        }
+        else if ( blType.isSolid() ) {
+            val blAbove = block.getRelative(0, 1, 0);
+            if ( blAbove.getType() == Material.AIR ) {
+                blAbove.setType(Material.FIRE);
+            }
+        }
+    }
 }
