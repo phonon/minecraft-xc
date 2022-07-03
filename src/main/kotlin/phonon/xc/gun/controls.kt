@@ -385,6 +385,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
     
     for ( request in requests ) {
         val player = request.player
+        val playerId = player.getUniqueId()
         
         // Do redundant player main hand is gun check here
         // since events could override the first shoot event, causing
@@ -398,6 +399,11 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
 
         val gun = getGunFromItem(item)
         if ( gun == null ) {
+            continue
+        }
+
+        // skip single shoot while auto firing
+        if ( XC.autoFiringPackets.contains(playerId) ) {
             continue
         }
 
@@ -477,7 +483,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
             val shootDirection = loc.direction.clone()
             
             // apply gun sway randomness
-            val sway = calculateSway(player, gun, XC.playerSpeed[player.getUniqueId()] ?: 0.0)
+            val sway = calculateSway(player, gun, XC.playerSpeed[playerId] ?: 0.0)
             // println("sway = $sway")
             var shootDirX = shootDirection.x
             var shootDirY = shootDirection.y
