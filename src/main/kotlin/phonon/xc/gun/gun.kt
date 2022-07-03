@@ -125,6 +125,9 @@ public data class Gun(
     public val recoilSingleFireRamp: Double = 0.1,
     public val recoilAutoFireRamp: Double = 0.1,
     
+    // number of projectiles fired
+    public val projectileCount: Int = 1,
+
     // projectile velocity in blocks/tick => (20*vel) m/s
     // physical velocities of ~900 m/s would require vel ~ 45.0
     // but usually this is too fast ingame (makes projectiles too hitscan-y)
@@ -323,6 +326,7 @@ public data class Gun(
 
                 // projectile
                 toml.getTable("projectile")?.let { projectile ->
+                    projectile.getLong("count")?.let { properties["projectileCount"] = it.toInt() }
                     projectile.getDouble("damage")?.let { properties["projectileDamage"] = it }
                     projectile.getDouble("armor_reduction")?.let { properties["projectileArmorReduction"] = it }
                     projectile.getDouble("resist_reduction")?.let { properties["projectileResistanceReduction"] = it }

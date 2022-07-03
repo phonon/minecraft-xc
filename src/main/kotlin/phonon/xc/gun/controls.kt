@@ -14,6 +14,7 @@ import kotlin.math.max
 import kotlin.math.min
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
+import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.entity.Player
@@ -197,6 +198,78 @@ private fun cleanupGun(item: ItemStack, gun: Gun, aimdownsights: Boolean) {
     item.setItemMeta(itemMeta)
 }
 
+
+/**
+ * Common function to run a single gun shot for single, burst, and auto
+ * firing modes.
+ */
+private fun doSingleShot(
+    player: Player,
+    loc: Location,
+    gun: Gun,
+    newAmmo: Int,
+    projectileSystem: ProjectileSystem,
+    random: ThreadLocalRandom,
+) {
+    // if newAmmo is 0, remove any aim down sights model and also play empty sound
+    if ( newAmmo == 0 ) {
+        XC.removeAimDownSightsOffhandModel(player)
+
+        XC.soundQueue.add(SoundPacket(
+            sound = gun.soundEmpty,
+            world = loc.world,
+            location = loc,
+            volume = gun.soundEmptyVolume,
+            pitch = gun.soundEmptyPitch,
+        ))
+    }
+
+    XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
+    
+    val eyeHeight = player.eyeHeight
+    val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
+    val shootDirection = loc.direction.clone()
+
+    val sway = calculateSway(player, gun, XC.playerSpeed[player.getUniqueId()] ?: 0.0)
+    // println("sway = $sway")
+
+    for ( _i in 0 until gun.projectileCount ) {
+        var shootDirX = shootDirection.x
+        var shootDirY = shootDirection.y
+        var shootDirZ = shootDirection.z
+        if ( sway > 0.0 ) {
+            shootDirX += random.nextDouble(-sway, sway)
+            shootDirY += random.nextDouble(-sway, sway)
+            shootDirZ += random.nextDouble(-sway, sway)
+        }
+
+        val projectile = Projectile(
+            gun = gun,
+            source = player,
+            x = shootPosition.x.toFloat(),
+            y = shootPosition.y.toFloat(),
+            z = shootPosition.z.toFloat(),
+            dirX = shootDirX.toFloat(),
+            dirY = shootDirY.toFloat(),
+            dirZ = shootDirZ.toFloat(),
+            speed = gun.projectileVelocity,
+            gravity = gun.projectileGravity,
+            maxLifetime = gun.projectileLifetime,
+            maxDistance = gun.projectileMaxDistance,
+        )
+
+        projectileSystem.addProjectile(projectile)
+    }
+
+    // shoot sound
+    XC.soundQueue.add(SoundPacket(
+        sound = gun.soundShoot,
+        world = loc.world,
+        location = loc,
+        volume = gun.soundShootVolume,
+        pitch = gun.soundShootPitch,
+    ))
+}
 
 /**
  * System to aim down sights. This modifies player's gun item model if they
@@ -471,54 +544,15 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
             item.setItemMeta(itemMeta)
             equipment.setItem(inventorySlot, item)
 
-            // if newAmmo is 0, remove any aim down sights model
-            if ( newAmmo == 0 ) {
-                XC.removeAimDownSightsOffhandModel(player)
-            }
-
-            XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
-            
-            val eyeHeight = player.eyeHeight
-            val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
-            val shootDirection = loc.direction.clone()
-            
-            // apply gun sway randomness
-            val sway = calculateSway(player, gun, XC.playerSpeed[playerId] ?: 0.0)
-            // println("sway = $sway")
-            var shootDirX = shootDirection.x
-            var shootDirY = shootDirection.y
-            var shootDirZ = shootDirection.z
-            if ( sway > 0.0 ) {
-                shootDirX += random.nextDouble(-sway, sway)
-                shootDirY += random.nextDouble(-sway, sway)
-                shootDirZ += random.nextDouble(-sway, sway)
-            }
-
-            val projectile = Projectile(
-                gun = gun,
-                source = player,
-                x = shootPosition.x.toFloat(),
-                y = shootPosition.y.toFloat(),
-                z = shootPosition.z.toFloat(),
-                dirX = shootDirX.toFloat(),
-                dirY = shootDirY.toFloat(),
-                dirZ = shootDirZ.toFloat(),
-                speed = gun.projectileVelocity,
-                gravity = gun.projectileGravity,
-                maxLifetime = gun.projectileLifetime,
-                maxDistance = gun.projectileMaxDistance,
+            // fires projectiles
+            doSingleShot(
+                player,
+                loc,
+                gun,
+                newAmmo,
+                projectileSystem,
+                random,
             )
-    
-            projectileSystem.addProjectile(projectile)
-            
-            // shoot sound
-            XC.soundQueue.add(SoundPacket(
-                sound = gun.soundShoot,
-                world = world,
-                location = loc,
-                volume = gun.soundShootVolume,
-                pitch = gun.soundShootPitch,
-            ))
 
             // recoil handling:
             doRecoil(player, gun.recoilSingleHorizontal, gun.recoilSingleVertical, gun.recoilSingleFireRamp)
@@ -634,62 +668,15 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
         item.setItemMeta(itemMeta)
         equipment.setItem(inventorySlot, item)
 
-        // if newAmmo is 0, remove any aim down sights model and also play empty sound
-        if ( newAmmo == 0 ) {
-            XC.removeAimDownSightsOffhandModel(player)
-
-            XC.soundQueue.add(SoundPacket(
-                sound = gun.soundEmpty,
-                world = world,
-                location = loc,
-                volume = gun.soundEmptyVolume,
-                pitch = gun.soundEmptyPitch,
-            ))
-        }
-
-        XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
-        
-        val eyeHeight = player.eyeHeight
-        val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
-        val shootDirection = loc.direction.clone()
-
-        // apply gun sway randomness
-        val sway = calculateSway(player, gun, XC.playerSpeed[player.getUniqueId()] ?: 0.0)
-        // println("sway = $sway")
-        var shootDirX = shootDirection.x
-        var shootDirY = shootDirection.y
-        var shootDirZ = shootDirection.z
-        if ( sway > 0.0 ) {
-            shootDirX += random.nextDouble(-sway, sway)
-            shootDirY += random.nextDouble(-sway, sway)
-            shootDirZ += random.nextDouble(-sway, sway)
-        }
-        
-        val projectile = Projectile(
-            gun = gun,
-            source = player,
-            x = shootPosition.x.toFloat(),
-            y = shootPosition.y.toFloat(),
-            z = shootPosition.z.toFloat(),
-            dirX = shootDirX.toFloat(),
-            dirY = shootDirY.toFloat(),
-            dirZ = shootDirZ.toFloat(),
-            speed = gun.projectileVelocity,
-            gravity = gun.projectileGravity,
-            maxLifetime = gun.projectileLifetime,
-            maxDistance = gun.projectileMaxDistance,
+        // fires projectiles
+        doSingleShot(
+            player,
+            loc,
+            gun,
+            newAmmo,
+            projectileSystem,
+            random,
         )
-
-        projectileSystem.addProjectile(projectile)
-
-        // shoot sound
-        XC.soundQueue.add(SoundPacket(
-            sound = gun.soundShoot,
-            world = world,
-            location = loc,
-            volume = gun.soundShootVolume,
-            pitch = gun.soundShootPitch,
-        ))
 
         // recoil packet
         doRecoil(player, gun.recoilSingleHorizontal, gun.recoilSingleVertical, gun.recoilSingleFireRamp)
@@ -877,62 +864,16 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
         itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo, useAimDownSights(player))
         item.setItemMeta(itemMeta)
         equipment.setItem(inventorySlot, item)
-
-        // if newAmmo is 0, remove any aim down sights model and also play empty sound
-        if ( newAmmo == 0 ) {
-            XC.removeAimDownSightsOffhandModel(player)
-
-            XC.soundQueue.add(SoundPacket(
-                sound = gun.soundEmpty,
-                world = world,
-                location = loc,
-                volume = gun.soundEmptyVolume,
-                pitch = gun.soundEmptyPitch,
-            ))
-        }
-
-        XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
         
-        val eyeHeight = player.eyeHeight
-        val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
-        val shootDirection = loc.direction.clone()
-
-        val sway = calculateSway(player, gun, XC.playerSpeed[player.getUniqueId()] ?: 0.0)
-        // println("sway = $sway")
-        var shootDirX = shootDirection.x
-        var shootDirY = shootDirection.y
-        var shootDirZ = shootDirection.z
-        if ( sway > 0.0 ) {
-            shootDirX += random.nextDouble(-sway, sway)
-            shootDirY += random.nextDouble(-sway, sway)
-            shootDirZ += random.nextDouble(-sway, sway)
-        }
-
-        val projectile = Projectile(
-            gun = gun,
-            source = player,
-            x = shootPosition.x.toFloat(),
-            y = shootPosition.y.toFloat(),
-            z = shootPosition.z.toFloat(),
-            dirX = shootDirX.toFloat(),
-            dirY = shootDirY.toFloat(),
-            dirZ = shootDirZ.toFloat(),
-            speed = gun.projectileVelocity,
-            gravity = gun.projectileGravity,
-            maxLifetime = gun.projectileLifetime,
-            maxDistance = gun.projectileMaxDistance,
+        // fires projectiles
+        doSingleShot(
+            player,
+            loc,
+            gun,
+            newAmmo,
+            projectileSystem,
+            random,
         )
-
-        projectileSystem.addProjectile(projectile)
-
-        // shoot sound
-        XC.soundQueue.add(SoundPacket(
-            sound = gun.soundShoot,
-            world = world,
-            location = loc,
-            volume = gun.soundShootVolume,
-            pitch = gun.soundShootPitch,
-        ))
 
         // recoil packet
         doRecoil(player, gun.recoilAutoHorizontal, gun.recoilAutoVertical, gun.recoilAutoFireRamp)
