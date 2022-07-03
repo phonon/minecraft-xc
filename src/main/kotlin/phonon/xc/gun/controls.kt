@@ -379,7 +379,7 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>) {
 /**
  * Player shooting system
  */
-internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, time: Long) {
+internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, timestamp: Long) {
     for ( request in requests ) {
         val player = request.player
         
@@ -415,7 +415,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
             // assume this gun's reload was broken somehow and continue with shoot.
             // Else, this is still in a reload process: skip shooting
             val reloadTimestamp = itemData.get(XC.namespaceKeyItemReloadTimestamp!!, PersistentDataType.LONG)
-            if ( reloadTimestamp != null && System.currentTimeMillis() < reloadTimestamp + reloadTimeMillis + 1000L ) {
+            if ( reloadTimestamp != null && timestamp < reloadTimestamp + reloadTimeMillis + 1000L ) {
                 continue
             }
 
@@ -427,7 +427,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
 
         // check if still under shoot delay
         val shootDelay = XC.playerShootDelay[player.getUniqueId()]
-        if ( shootDelay != null && time < shootDelay.timestampCanShoot ) {
+        if ( shootDelay != null && timestamp < shootDelay.timestampCanShoot ) {
             continue
         }
 
@@ -503,7 +503,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
             doRecoil(player, gun.recoilSingleHorizontal, gun.recoilSingleVertical, gun.recoilSingleFireRamp)
 
             // shoot delay
-            val timestampShootDelay = time + gun.shootDelayMillis
+            val timestampShootDelay = timestamp + gun.shootDelayMillis
             XC.playerShootDelay[player.getUniqueId()] = ShootDelay(
                 timestampDelayAfterShoot = timestampShootDelay,
                 timestampCanShoot = timestampShootDelay,
@@ -542,7 +542,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
  * Player burst fire shooting system. Return a new hashmap
  * of burst fire packets for next tick.
  */
-internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, time: Long): HashMap<UUID, BurstFire> {
+internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long): HashMap<UUID, BurstFire> {
     val nextTickRequests = HashMap<UUID, BurstFire>()
 
     for ( (playerId, request) in requests ) {
@@ -674,7 +674,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, time: Long): Ha
             // burst done.
 
             // add shooting delay
-            val timestampShootDelay = time + gun.shootDelayMillis
+            val timestampShootDelay = timestamp + gun.shootDelayMillis
             XC.playerShootDelay[playerId] = ShootDelay(
                 timestampDelayAfterShoot = timestampShootDelay,
                 timestampCanShoot = timestampShootDelay,
@@ -688,7 +688,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, time: Long): Ha
 /**
  * Automatic fire request system. Initiate or refresh an auto fire sequence.
  */
-internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, autoFiring: HashMap<UUID, AutoFire>, time: Long): HashMap<UUID, AutoFire> {
+internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, autoFiring: HashMap<UUID, AutoFire>, timestamp: Long): HashMap<UUID, AutoFire> {
     for ( request in requests ) {
         val player = request.player
 
@@ -696,7 +696,7 @@ internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, a
 
         // check if still under shoot delay
         val shootDelay = XC.playerShootDelay[playerId]
-        if ( shootDelay != null && time < shootDelay.timestampCanShoot ) {
+        if ( shootDelay != null && timestamp < shootDelay.timestampCanShoot ) {
             continue
         }
 
@@ -734,7 +734,7 @@ internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, a
                 // assume this gun's reload was broken somehow and continue with shoot.
                 // Else, this is still in a reload process: skip shooting
                 val reloadTimestamp = itemData.get(XC.namespaceKeyItemReloadTimestamp!!, PersistentDataType.LONG)
-                if ( reloadTimestamp != null && System.currentTimeMillis() < reloadTimestamp + reloadTimeMillis + 1000L ) {
+                if ( reloadTimestamp != null && timestamp < reloadTimestamp + reloadTimeMillis + 1000L ) {
                     continue
                 }
 
@@ -934,7 +934,7 @@ internal fun recoilRecoverySystem(playerRecoil: HashMap<UUID, Double>): HashMap<
 /**
  * Player reload request system
  */
-internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) {
+internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>, timestamp: Long) {
     for ( request in requests ) {
         val player = request.player
         val playerId = player.getUniqueId()
@@ -971,7 +971,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
             // assume this gun's reload was broken somehow and continue starting
             // a new reload task. Otherwise, we are still reloading, so exit.
             val reloadTimestamp = itemData.get(XC.namespaceKeyItemReloadTimestamp!!, PersistentDataType.LONG)
-            if ( reloadTimestamp != null && System.currentTimeMillis() < reloadTimestamp + reloadTimeMillis + 1000L ) {
+            if ( reloadTimestamp != null && timestamp < reloadTimestamp + reloadTimeMillis + 1000L ) {
                 continue
             }
         }
@@ -996,8 +996,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
         itemData.set(XC.namespaceKeyItemReloadId!!, PersistentDataType.INTEGER, reloadId)
 
         // set timestamp when reload started.
-        val currentTimeMillis = System.currentTimeMillis()
-        itemData.set(XC.namespaceKeyItemReloadTimestamp!!, PersistentDataType.LONG, currentTimeMillis)
+        itemData.set(XC.namespaceKeyItemReloadTimestamp!!, PersistentDataType.LONG, timestamp)
         
         // set reloading model
         itemMeta = setGunItemMetaReloadModel(itemMeta, gun)
@@ -1029,7 +1028,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>) 
             private val reloadId = reloadId
             private val inventorySlot = inventorySlot
             private val reloadTime = reloadTimeMillis.toDouble()
-            private val startTime = currentTimeMillis.toDouble()
+            private val startTime = timestamp.toDouble()
             private val itemGunMaterial = XC.config.materialGun
             private val itemDataKeyReloadId = XC.namespaceKeyItemReloadId!!
             private val reloadFinishTaskQueue = XC.playerReloadTaskQueue

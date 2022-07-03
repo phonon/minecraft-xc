@@ -670,7 +670,7 @@ public object XC {
         gunSelectSystem(XC.playerGunSelectRequests)
         XC.autoFiringPackets = autoFireRequestSystem(XC.playerAutoFireRequests, XC.autoFiringPackets, timestamp) // do auto fire request before single/burst fire
         gunPlayerShootSystem(XC.playerShootRequests, timestamp)
-        gunPlayerReloadSystem(XC.playerReloadRequests)
+        gunPlayerReloadSystem(XC.playerReloadRequests, timestamp)
         XC.burstFiringPackets = burstFireSystem(XC.burstFiringPackets, timestamp)
         XC.autoFiringPackets = autoFireSystem(XC.autoFiringPackets)
         XC.playerRecoil = recoilRecoverySystem(XC.playerRecoil)
