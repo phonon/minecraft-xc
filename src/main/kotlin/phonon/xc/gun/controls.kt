@@ -8,6 +8,7 @@
 
 package phonon.xc.gun
 
+import java.util.concurrent.ThreadLocalRandom
 import java.util.UUID
 import kotlin.math.max
 import kotlin.math.min
@@ -380,6 +381,8 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>) {
  * Player shooting system
  */
 internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, timestamp: Long) {
+    val random = ThreadLocalRandom.current()
+    
     for ( request in requests ) {
         val player = request.player
         
@@ -472,16 +475,28 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
             val eyeHeight = player.eyeHeight
             val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
             val shootDirection = loc.direction.clone()
-    
+            
+            // apply gun sway randomness
+            val sway = calculateSway(player, gun, XC.playerSpeed[player.getUniqueId()] ?: 0.0)
+            // println("sway = $sway")
+            var shootDirX = shootDirection.x
+            var shootDirY = shootDirection.y
+            var shootDirZ = shootDirection.z
+            if ( sway > 0.0 ) {
+                shootDirX += random.nextDouble(-sway, sway)
+                shootDirY += random.nextDouble(-sway, sway)
+                shootDirZ += random.nextDouble(-sway, sway)
+            }
+
             val projectile = Projectile(
                 gun = gun,
                 source = player,
                 x = shootPosition.x.toFloat(),
                 y = shootPosition.y.toFloat(),
                 z = shootPosition.z.toFloat(),
-                dirX = shootDirection.x.toFloat(),
-                dirY = shootDirection.y.toFloat(),
-                dirZ = shootDirection.z.toFloat(),
+                dirX = shootDirX.toFloat(),
+                dirY = shootDirY.toFloat(),
+                dirZ = shootDirZ.toFloat(),
                 speed = gun.projectileVelocity,
                 gravity = gun.projectileGravity,
                 maxLifetime = gun.projectileLifetime,
@@ -544,6 +559,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
  */
 internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long): HashMap<UUID, BurstFire> {
     val nextTickRequests = HashMap<UUID, BurstFire>()
+    val random = ThreadLocalRandom.current()
 
     for ( (playerId, request) in requests ) {
         val (id, player, gun, totalTime, ticksSinceFired, remainingCount) = request
@@ -631,15 +647,27 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
         val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
         val shootDirection = loc.direction.clone()
 
+        // apply gun sway randomness
+        val sway = calculateSway(player, gun, XC.playerSpeed[player.getUniqueId()] ?: 0.0)
+        // println("sway = $sway")
+        var shootDirX = shootDirection.x
+        var shootDirY = shootDirection.y
+        var shootDirZ = shootDirection.z
+        if ( sway > 0.0 ) {
+            shootDirX += random.nextDouble(-sway, sway)
+            shootDirY += random.nextDouble(-sway, sway)
+            shootDirZ += random.nextDouble(-sway, sway)
+        }
+        
         val projectile = Projectile(
             gun = gun,
             source = player,
             x = shootPosition.x.toFloat(),
             y = shootPosition.y.toFloat(),
             z = shootPosition.z.toFloat(),
-            dirX = shootDirection.x.toFloat(),
-            dirY = shootDirection.y.toFloat(),
-            dirZ = shootDirection.z.toFloat(),
+            dirX = shootDirX.toFloat(),
+            dirY = shootDirY.toFloat(),
+            dirZ = shootDirZ.toFloat(),
             speed = gun.projectileVelocity,
             gravity = gun.projectileGravity,
             maxLifetime = gun.projectileLifetime,
@@ -771,6 +799,7 @@ internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, a
  */
 internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, AutoFire> {
     val nextTickRequests = HashMap<UUID, AutoFire>()
+    val random = ThreadLocalRandom.current()
     
     for ( (playerId, request) in requests ) {
         val (id, player, gun, totalTime, ticksSinceFired, ticksSinceLastRequest) = request
@@ -862,15 +891,26 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
         val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
         val shootDirection = loc.direction.clone()
 
+        val sway = calculateSway(player, gun, XC.playerSpeed[player.getUniqueId()] ?: 0.0)
+        // println("sway = $sway")
+        var shootDirX = shootDirection.x
+        var shootDirY = shootDirection.y
+        var shootDirZ = shootDirection.z
+        if ( sway > 0.0 ) {
+            shootDirX += random.nextDouble(-sway, sway)
+            shootDirY += random.nextDouble(-sway, sway)
+            shootDirZ += random.nextDouble(-sway, sway)
+        }
+
         val projectile = Projectile(
             gun = gun,
             source = player,
             x = shootPosition.x.toFloat(),
             y = shootPosition.y.toFloat(),
             z = shootPosition.z.toFloat(),
-            dirX = shootDirection.x.toFloat(),
-            dirY = shootDirection.y.toFloat(),
-            dirZ = shootDirection.z.toFloat(),
+            dirX = shootDirX.toFloat(),
+            dirY = shootDirY.toFloat(),
+            dirZ = shootDirZ.toFloat(),
             speed = gun.projectileVelocity,
             gravity = gun.projectileGravity,
             maxLifetime = gun.projectileLifetime,

@@ -110,17 +110,20 @@ public data class Gun(
     public val ammoIgnore: Boolean = false,   // if true, ignores out of ammo
     
     // sway
-    public val swayMoving: Double = 1.5,        // sway multiplier while moving, depends on player velocity
-    public val swayRiding: Double = 1.5,        // sway while riding an entity
-    public val swayAimDownSights: Double = 0.5, // sway while aiming down sights
+    public val swayBase: Double = 0.05,           // base sway (how random projectiles are)
+    public val swaySpeedMultiplier: Double = 2.0, // sway multiplier while moving, depends on player velocity
+    public val swayAimDownSights: Double = 0.25,  // sway while aiming down sights
+    public val swayRideHorse: Double = 1.5,       // sway while riding horse
+    public val swayRideBoat: Double = 1.5,        // sway while riding boat
+    public val swayRideArmorStand: Double = 1.0,  // sway while riding armor stand
 
     // recoil
-    public val recoilSingleHorizontal: Double = 3.0,
-    public val recoilSingleVertical: Double = 4.0,
-    public val recoilAutoHorizontal: Double = 5.0,
-    public val recoilAutoVertical: Double = 6.0,
-    public val recoilSingleFireRamp: Double = 0.2,
-    public val recoilAutoFireRamp: Double = 0.3,
+    public val recoilSingleHorizontal: Double = 2.0,
+    public val recoilSingleVertical: Double = 5.0,
+    public val recoilAutoHorizontal: Double = 2.0,
+    public val recoilAutoVertical: Double = 5.0,
+    public val recoilSingleFireRamp: Double = 0.1,
+    public val recoilAutoFireRamp: Double = 0.1,
     
     // projectile velocity in blocks/tick => (20*vel) m/s
     // physical velocities of ~900 m/s would require vel ~ 45.0
@@ -281,7 +284,14 @@ public data class Gun(
                 }
 
                 // sway
-                // TODO
+                toml.getTable("sway")?.let { sway ->
+                    sway.getDouble("base")?.let { properties["swayBase"] = it }
+                    sway.getDouble("speed_multiplier")?.let { properties["swaySpeedMultiplier"] = it }
+                    sway.getDouble("aim_down_sights")?.let { properties["swayAimDownSights"] = it }
+                    sway.getDouble("ride_horse")?.let { properties["swayRideHorse"] = it }
+                    sway.getDouble("ride_boat")?.let { properties["swayRideBoat"] = it }
+                    sway.getDouble("ride_armor_stand")?.let { properties["swayRideArmorStand"] = it }
+                }
 
                 // recoil
                 toml.getTable("recoil")?.let { recoil ->

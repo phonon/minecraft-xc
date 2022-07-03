@@ -12,7 +12,7 @@ import kotlin.math.min
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Player
-import org.bukkit.entity.Item
+import org.bukkit.entity.EntityType
 import phonon.xc.XC
 
 /**
@@ -23,8 +23,34 @@ public fun calculateSway(
     gun: Gun,
     playerSpeed: Double,
 ): Double {
-    // TODO
-    return 0.0
+    var sway = gun.swayBase
+
+    // player movement:
+    // - player sneak move: ~0.0647 blocks/tick
+    // - player walk:       ~0.2158 blocks/tick
+    // - player sprint:     ~0.2806 blocks/tick
+    // here motion will be gated at 0.1 before aim down sights stops
+    // so that players can still move while sneaking.
+    if ( playerSpeed > 0.1 ) {
+        sway *= (1.0 + (playerSpeed * gun.swaySpeedMultiplier))
+    } else {
+        if ( player.isSneaking() ) {
+            sway *= gun.swayAimDownSights
+        }
+    }
+
+    // player riding a mount:
+    player.getVehicle()?.let { mount ->
+        if ( mount.type == EntityType.ARMOR_STAND ) {
+            sway *= gun.swayRideArmorStand
+        } else if ( mount.type == EntityType.BOAT ) {
+            sway *= gun.swayRideBoat
+        } else { // apply horse modifier (generic entity mount)
+            sway *= gun.swayRideHorse
+        }
+    }
+    
+    return sway
 }
 
 
@@ -104,6 +130,17 @@ internal fun playerSpeedSystem(
 /**
  * Calculate player speed from distance between locations
  * and insert into map input arg.
+ * 
+ * Note: This uses exponential weighted average of speed
+ * to smooth out speed. When player is turning rapidly or accidently
+ * hits a block, speed will drop to 0, even though player is still in
+ * motion. Moving average smooths out these blips where speed = 0.0
+ * temporarily.
+ * 
+ * Sometimes previous location does not change before this is run.
+ * Player curr == prev which will cause speed to drop to 0.0.
+ * No idea why mineman does this...retarded engine...
+ * Must set avg smoothing to deal with these cases...
  */
 private fun calculatePlayerSpeed(
     player: Player,
@@ -114,12 +151,16 @@ private fun calculatePlayerSpeed(
     val currLocation = player.getLocation()
     val dist = playerLocation[player.uniqueId]?.distance(currLocation) ?: 0.0
     val speed = dist / dt
-
+    val oldSpeed = playerSpeed[player.uniqueId] ?: 0.0
+    
     val playerId = player.getUniqueId()
-    playerSpeed[playerId] = speed
+    playerSpeed[playerId] = 0.3*speed + 0.7*oldSpeed // moving avg
     playerLocation[playerId] = currLocation
 
-    // println("player = ${player.getName()}, dt = $dt, speed = $speed")
+    // DEBUG
+    // val speedFmt = "%.2f".format(speed)
+    // val avgSpeedFmt = "%.2f".format(playerSpeed[playerId] ?: 0.0)
+    // println("player = ${player.getName()}, dt = $dt, speed = $speedFmt, avg_speed = $avgSpeedFmt")
 }
 
 /**

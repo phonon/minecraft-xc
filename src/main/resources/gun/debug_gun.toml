@@ -55,9 +55,16 @@ enabled = true     # if auto mode [right-click] is enabled
 delay_ticks = 2    # delay between shots in ticks
 slowness = 1       # slowness while using auto mode
 
+# sway: projectile randomness depending on player motion state
 [sway]
-# TODO
+base = 0.05   # base randomness
+speed_multiplier = 2.0 # 1.0 + (player_speed * speed_multiplier)
+aim_down_sights = 0.25
+ride_horse = 1.5
+ride_boat = 1.5
+ride_armor_stand = 1.0
 
+# player visual recoil from firing guns
 [recoil]
 single_horizontal = 3.0
 single_vertical = 5.0
