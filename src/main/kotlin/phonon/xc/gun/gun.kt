@@ -110,7 +110,9 @@ public data class Gun(
     public val ammoIgnore: Boolean = false,   // if true, ignores out of ammo
     
     // sway
-    // TODO
+    public val swayMoving: Double = 1.5,        // sway multiplier while moving, depends on player velocity
+    public val swayRiding: Double = 1.5,        // sway while riding an entity
+    public val swayAimDownSights: Double = 0.5, // sway while aiming down sights
 
     // recoil
     public val recoilSingleHorizontal: Double = 3.0,

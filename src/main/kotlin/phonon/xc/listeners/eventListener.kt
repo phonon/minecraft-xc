@@ -49,9 +49,14 @@ import phonon.xc.gun.AmmoInfoMessagePacket
 public class EventListener(val plugin: JavaPlugin): Listener {
     @EventHandler
     public fun onPlayerJoin(e: PlayerJoinEvent) {
+        val player = e.player
+        val playerId = player.getUniqueId()
+
+        // initialize XC engine player data maps
+        XC.playerPreviousLocation[playerId] = player.getLocation()
+
         // if player joins and is holding a gun or custom wep,
         // do handle selection event
-        val player = e.player
         val inventory = player.getInventory()
 
         val itemMainHand = inventory.getItemInMainHand()
@@ -69,9 +74,12 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     @EventHandler
     public fun onPlayerQuit(e: PlayerQuitEvent) {
         val player = e.player
+        val playerId = player.getUniqueId()
 
-        // remove player from shoot delay map
-        XC.playerShootDelay.remove(player.getUniqueId())
+        // remove player from XC player data maps
+        XC.playerShootDelay.remove(playerId)
+        XC.playerSpeed.remove(playerId)
+        XC.playerPreviousLocation.remove(playerId)
         
         // if player leaves and is holding a gun or custom wep,
         // do reload cleanup

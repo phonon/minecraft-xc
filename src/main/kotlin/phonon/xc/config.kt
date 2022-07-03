@@ -62,13 +62,18 @@ public data class Config(
 
     // block damage
     public val blockDamageExplosion: Boolean = true,
-    
+
     // particle effects
     
     // number of bullet impact particles to spawn
     public val particleBulletTrailSpacing: Double = 0.2,
     public val particleBulletTrailMinDistance: Double = 0.3,
     public val particleBulletImpactCount: Int = 12,
+
+    // ADVANCED
+
+    // number of players before pipelined sway system enabled
+    public val playersBeforePipelinedSway: Int = 4,
 ) {
 
     companion object {
@@ -133,6 +138,9 @@ public data class Config(
             
             // block damage config
             toml.getBoolean("block_damage.explosion")?.let { configOptions["blockDamageExplosion"] = it }
+            
+            // block damage config
+            toml.getLong("sway.players_before_pipelined_sway")?.let { configOptions["playersBeforePipelinedSway"] = it.toInt() }
 
             return mapToObject(configOptions, Config::class)
         }

@@ -121,6 +121,12 @@ public object XC {
     // map of players => recoil multiplier
     internal var playerRecoil: HashMap<UUID, Double> = HashMap()
     
+    // map of players => speed for sway multiplier (in blocks/tick)
+    internal var playerSpeed: HashMap<UUID, Double> = HashMap() 
+
+    // map of players => previous location
+    internal var playerPreviousLocation: HashMap<UUID, Location> = HashMap()
+    
     // When gun item reloads, it gets assigned a unique id from this counter.
     // When reload is complete, gun item id is checked with this to make sure
     // player did not swap items during reload that plugin failed to catch.
@@ -661,7 +667,9 @@ public object XC {
         val timestamp = System.currentTimeMillis()
 
         // run pipelined player movement check, for sway modifier
-        // TODO
+        val (playerNewSpeed, playerNewLocation) = playerSpeedSystem(XC.playerSpeed, XC.playerPreviousLocation)
+        XC.playerSpeed = playerNewSpeed
+        XC.playerPreviousLocation = playerNewLocation
 
         // run gun controls systems
         gunAimDownSightsSystem(XC.playerAimDownSightsRequests)
