@@ -20,6 +20,7 @@ import net.minecraft.server.v1_16_R3.EntityTypes
 import net.minecraft.server.v1_16_R3.EntityShulker
 import org.bukkit.craftbukkit.v1_16_R3.CraftWorld
 import org.bukkit.World
+import org.bukkit.block.data.BlockData
 import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.Material
@@ -155,62 +156,182 @@ public class BoxEntity(
 
 }
 
-public fun forceCrawl(player: Player): BoxEntity {
-    val boxEntity = BoxEntity(player.getLocation())
-    boxEntity.setRawPeekAmount(0.toByte())
+// block data for barrier block to place above player
+private val FAKE_BLOCK_DATA = Material.BARRIER.createBlockData()
 
-    updateCrawl(player, boxEntity)
+/**
+ * Crawl position state for a player.
+ */
+public data class Crawling(
+    val player: Player,
+    val initialLocation: Location, // initial location
+    val prevLocationX: Double,   // location on previous tick
+    val prevLocationY: Double,   // location on previous tick
+    val prevLocationZ: Double,   // location on previous tick
+    val blAboveX: Int,
+    val blAboveY: Int,
+    val blAboveZ: Int,
+    val blAboveMaterial: Material,
+    val boxEntity: BoxEntity?,
+) {
+    /**
+     * Update current crawl state to a new location.
+     */
+    public fun update(newLocation: Location): Crawling {        
+        val newBlAboveX = newLocation.getBlockX()
+        val newBlAboveY = newLocation.getBlockY() + 1
+        val newBlAboveZ = newLocation.getBlockZ()
+        
+        // if block location changed and previous material was air, cleanup barrier
+        if ( this.blAboveMaterial == Material.AIR ) {
+            if ( newBlAboveX != blAboveX || newBlAboveY != blAboveY || newBlAboveZ != blAboveZ ) {
+                // if material still air, send packet that previous block is air
+                val blAbove = player.getWorld().getBlockAt(this.blAboveX, this.blAboveY, this.blAboveZ)
+                if ( blAbove.getType() == Material.AIR ) {
+                    sendFakeBlockPacket(player, this.blAboveX, this.blAboveY, this.blAboveZ, blAbove.getBlockData())
+                }
+            }
+        }
 
-    // send packets to create fake shulker box
-    val protocolManager = ProtocolLibrary.getProtocolManager()
+        val yHeightInBlock = newLocation.getY() - Math.floor(newLocation.getY())
+        
+        val newBlAboveMaterial = player.getWorld().getBlockAt(newBlAboveX, newBlAboveY, newBlAboveZ).getType()
 
-    val entityConstructor = protocolManager.createPacketConstructor(PacketType.Play.Server.SPAWN_ENTITY_LIVING, boxEntity)
-    val packet = entityConstructor.createPacket(boxEntity)
+        val boxEntityOrNull = if ( yHeightInBlock < 0.5 && newBlAboveMaterial == Material.AIR ) {
+            // block above can be set to a fake barrier
+            sendFakeBlockPacket(player, newBlAboveX, newBlAboveY, newBlAboveZ, FAKE_BLOCK_DATA)
 
-    protocolManager.sendServerPacket(player, packet)
+            // remove shulker for player
+            this.boxEntity?.let { it -> removeBoxEntityPacket(this.player, it) }
 
-    // entity metadata
-    // https://wiki.vg/Entity_metadata#Shulker
-    // https://aadnk.github.io/ProtocolLib/Javadoc/com/comphenix/protocol/wrappers/WrappedDataWatcher.html
-    // https://github.com/aadnk/PacketWrapper/blob/master/PacketWrapper/src/main/java/com/comphenix/packetwrapper/WrapperPlayServerEntityMetadata.java
-    // getWatchableObjects()
-    val dataWatcher = WrappedDataWatcher(boxEntity.getDataWatcher())
-    val dataPacket = protocolManager.createPacket(PacketType.Play.Server.ENTITY_METADATA, false)
-    dataPacket.getIntegers().write(0, boxEntity.getId())
-    dataPacket.getWatchableCollectionModifier().write(0, dataWatcher.getWatchableObjects())
-    protocolManager.sendServerPacket(player, dataPacket)
+            // return current box entity
+            this.boxEntity
+        } else {
+            val boxEntity = if ( this.boxEntity != null ) {
+                // re-use same box entity, with updated location
+                this.boxEntity.setLocation(
+                    newLocation.getX(),
+                    newLocation.getY() + 1.25,
+                    newLocation.getZ(),
+                    0f,
+                    0f,
+                )
+                this.boxEntity
+            } else {
+                val newBoxEntity = BoxEntity(newLocation.clone().add(0.0, 1.0, 0.0))
+                newBoxEntity.setRawPeekAmount(0.toByte())
+                newBoxEntity.setLocation(
+                    newLocation.getX(),
+                    newLocation.getY() + 1.25,
+                    newLocation.getZ(),
+                    0f,
+                    0f,
+                )
+                newBoxEntity
+            }
+            
+            sendBoxEntityPacket(player, boxEntity)
 
-    return boxEntity
+            boxEntity
+        }
+    
+        return Crawling(
+            player = this.player,
+            initialLocation = this.initialLocation,
+            prevLocationX = newLocation.getX(),
+            prevLocationY = newLocation.getY(),
+            prevLocationZ = newLocation.getZ(),
+            blAboveX = newBlAboveX,
+            blAboveY = newBlAboveY,
+            blAboveZ = newBlAboveZ,
+            blAboveMaterial = newBlAboveMaterial,
+            boxEntity = boxEntityOrNull,
+        )
+    }
+
+    public fun cleanup() {
+        // if block above is air and material is still air, cleanup barrier
+        if ( this.blAboveMaterial == Material.AIR ) {
+            val blAbove = player.getWorld().getBlockAt(this.blAboveX, this.blAboveY, this.blAboveZ)
+            sendFakeBlockPacket(player, this.blAboveX, this.blAboveY, this.blAboveZ, blAbove.getBlockData())
+        }
+        // remove box entity for player if it exists
+        this.boxEntity?.let { it -> removeBoxEntityPacket(this.player, it) }
+    }
 }
 
-internal fun updateCrawl(player: Player, boxEntity: BoxEntity): Location {
-    val location = player.getLocation()
-    location.setY(location.getY() + 1.0)
+/**
+ * Initializes a crawl state for a player 
+ */
+public fun forceCrawl(player: Player): Crawling {
+    val playerLocation = player.getLocation()
+    val blAboveX = playerLocation.getBlockX()
+    val blAboveY = playerLocation.getBlockY() + 1
+    val blAboveZ = playerLocation.getBlockZ()
+    
+    val yHeightInBlock = playerLocation.getY() - Math.floor(playerLocation.getY())
+    
+    val blAboveMaterial = player.getWorld().getBlockAt(blAboveX, blAboveY, blAboveZ).getType()
+    
+    val boxEntityOrNull = if ( yHeightInBlock < 0.5 && blAboveMaterial == Material.AIR ) {
+        // block above can be set to a fake barrier
+        sendFakeBlockPacket(player, blAboveX, blAboveY, blAboveZ, FAKE_BLOCK_DATA)
 
-    boxEntity.setLocation(
-        location.getX(),
-        location.getY(),
-        location.getZ(),
-        0f,
-        0f,
+        // null box entity
+        null
+    } else { // must create a fake shulker entity
+        val loc = playerLocation.clone().add(0.0, 1.25, 0.0)
+        // println("box loc = $loc")
+        val boxEntity = BoxEntity(loc)
+        boxEntity.setRawPeekAmount(0.toByte())
+        boxEntity.setLocation(
+            loc.getX(),
+            loc.getY(),
+            loc.getZ(),
+            0f,
+            0f,
+        )
+        sendBoxEntityPacket(player, boxEntity)
+
+        boxEntity
+    }
+
+    return Crawling(
+        player = player,
+        initialLocation = playerLocation,
+        prevLocationX = playerLocation.getX(),
+        prevLocationY = playerLocation.getY(),
+        prevLocationZ = playerLocation.getZ(),
+        blAboveX = blAboveX,
+        blAboveY = blAboveY,
+        blAboveZ = blAboveZ,
+        blAboveMaterial = blAboveMaterial,
+        boxEntity = boxEntityOrNull,
     )
-
-    return location
 }
+
 
 /**
  * Currently works by sending packet to respawn the shulker box.
  * Teleport packet does not seem to work, despite seeming correct
  * based on what packet should be...wtf?
  */
-internal fun sendUpdateCrawlPacket(player: Player, boxEntity: BoxEntity, loc: Location) {
+internal fun sendBoxEntityPacket(player: Player, boxEntity: BoxEntity) {
     // println("sendUpdateCrawlPacket $loc")
+
+    // send packets to create fake shulker box
     val protocolManager = ProtocolLibrary.getProtocolManager()
-    
+
     val entityConstructor = protocolManager.createPacketConstructor(PacketType.Play.Server.SPAWN_ENTITY_LIVING, boxEntity)
     val spawnPacket = entityConstructor.createPacket(boxEntity)
+
     protocolManager.sendServerPacket(player, spawnPacket)
 
+    // entity metadata
+    // https://wiki.vg/Entity_metadata#Shulker
+    // https://aadnk.github.io/ProtocolLib/Javadoc/com/comphenix/protocol/wrappers/WrappedDataWatcher.html
+    // https://github.com/aadnk/PacketWrapper/blob/master/PacketWrapper/src/main/java/com/comphenix/packetwrapper/WrapperPlayServerEntityMetadata.java
+    // getWatchableObjects()
     val dataWatcher = WrappedDataWatcher(boxEntity.getDataWatcher())
     val dataPacket = protocolManager.createPacket(PacketType.Play.Server.ENTITY_METADATA, false)
     dataPacket.getIntegers().write(0, boxEntity.getId())
@@ -249,6 +370,14 @@ internal fun removeBoxEntityPacket(player: Player, boxEntity: BoxEntity) {
     protocolManager.sendServerPacket(player, packet)
 }
 
+
+/**
+ * Send fake block material packet to player.
+ * https://github.com/aadnk/PacketWrapper/blob/master/PacketWrapper/src/main/java/com/comphenix/packetwrapper/WrapperPlayServerBlockChange.java
+ */
+internal fun sendFakeBlockPacket(player: Player, x: Int, y: Int, z: Int, blockData: BlockData) {
+    player.sendBlockChange(Location(player.getWorld(), x.toDouble(), y.toDouble(), z.toDouble(), 0f, 0f), blockData)
+}
 
 // /**
 //  * Cancel's player fov change with server client abilities packet?
@@ -291,16 +420,6 @@ public value class CrawlStop(
     val player: Player,
 )
 
-/**
- * Crawl position status of a player.
- */
-public data class Crawling(
-    val player: Player,
-    val initialLocation: Location, // initial location
-    val location: Location,
-    val boxEntity: BoxEntity,
-)
-
 // Slowness effect while crawling. Max potion amplifier should be 255 i think... (ambient = true, particles = false)
 private val SLOWNESS_EFFECT: PotionEffect = PotionEffect(PotionEffectType.SLOW, Int.MAX_VALUE, 255, true, false)
 // No jump effect: when jump negative, prevents player from jumping (ambient = true, particles = false)
@@ -321,7 +440,6 @@ public fun startCrawlSystem(requests: List<CrawlStart>): ArrayList<CrawlStart> {
         // println("START CRAWL $player")
         // println("CURRENT WALK SPEED: ${player.getWalkSpeed()}")
 
-        player.setSwimming(true)
         // SLOWNESS_EFFECT.apply(player)
         NO_JUMP_EFFECT.apply(player)
         player.setWalkSpeed(0.0f)
@@ -330,16 +448,10 @@ public fun startCrawlSystem(requests: List<CrawlStart>): ArrayList<CrawlStart> {
         // NOT NEEDED WHEN USING player.setWalkSpeed(0.0f)
         // resetFovPacket(player)
 
-        // create shulker box that forces player to crawl
-        val boxEntity = forceCrawl(player)
+        XC.crawling[player.getUniqueId()] = forceCrawl(player)
 
-        val initialLocation = player.getLocation()
-        XC.crawling[player.getUniqueId()] = Crawling(
-            player = player,
-            initialLocation = initialLocation,
-            location = initialLocation,
-            boxEntity = boxEntity,
-        )
+        // start fake swimming motion
+        player.setSwimming(true)
     }
 
     return ArrayList(4)
@@ -354,15 +466,11 @@ public fun stopCrawlSystem(requests: List<CrawlStop>): ArrayList<CrawlStop> {
         val playerId = player.getUniqueId()
         // println("STOP CRAWL $player")
 
-        player.setSwimming(false)
         // player.removePotionEffect(PotionEffectType.SLOW)
         player.removePotionEffect(PotionEffectType.JUMP)
         player.setWalkSpeed(0.2f) // default speed
 
-        XC.crawling.remove(playerId)?.let { crawlState ->
-            // remove box entity from client
-            removeBoxEntityPacket(player, crawlState.boxEntity)
-        }
+        XC.crawling.remove(playerId)?.cleanup()
 
         // remove and stop crawl request task
         XC.crawlRequestTasks.remove(playerId)?.let { task ->
@@ -376,6 +484,9 @@ public fun stopCrawlSystem(requests: List<CrawlStop>): ArrayList<CrawlStop> {
 
         // remove aim down sights model
         XC.removeAimDownSightsOffhandModel(player)
+
+        // stop fake swimming
+        player.setSwimming(false)
     }
 
     return ArrayList(4)
@@ -388,23 +499,50 @@ public fun stopCrawlSystem(requests: List<CrawlStop>): ArrayList<CrawlStop> {
 public fun crawlRefreshSystem(requests: HashMap<UUID, Crawling>): HashMap<UUID, Crawling> {
     val newCrawlingState = HashMap<UUID, Crawling>()
 
-    for ( (playerId, r) in requests ) {
-        val (player, initialLocation, prevLocation, boxEntity) = r
-        // println("CRAWL REFRESH $player")
-        
-        player.setSwimming(true)
+    for ( (playerId, prevCrawlState) in requests ) {
+        val (player,
+            initialLocation,
+            prevLocationX,
+            prevLocationY,
+            prevLocationZ,
+            blAboveX,
+            blAboveY,
+            blAboveZ,
+            prevBlAboveMaterial,
+            boxEntity,
+        ) = prevCrawlState
 
-        // if player location has changed, send crawl update packet
+        // not needed, toggle event should cancel stop swimming event
+        // player.setSwimming(true)
+
+        // TODO: periodically send barrier update packet
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+        // TODO
+
+        // if player location has changed or block above changed, send crawl update packet
         val currLocation = player.getLocation()
-        if ( currLocation.x != prevLocation.x || currLocation.y != prevLocation.y || currLocation.z != prevLocation.z ) {
-            val loc = updateCrawl(player, boxEntity)
-            sendUpdateCrawlPacket(player, boxEntity, loc)
-
+        val currBlockAboveMaterial = currLocation.world?.getBlockAt(blAboveX, blAboveY, blAboveZ)?.getType() ?: Material.AIR
+        newCrawlingState[player.getUniqueId()] = if ( 
+            currLocation.x != prevLocationX ||
+            currLocation.y != prevLocationY ||
+            currLocation.z != prevLocationZ ||
+            currBlockAboveMaterial != prevBlAboveMaterial
+        ) {
             // if travelled too far from initial location (e.g. water bucket or falling down)
             // cancel crawl next tick
             if ( initialLocation.distance(currLocation) > 1.0 ) {
                 XC.crawlStopQueue.add(CrawlStop(player))
             }
+
+            prevCrawlState.update(currLocation)
+        } else {
+            prevCrawlState
         }
 
         // if only allowed to crawl while using a crawl required weapon,
@@ -425,13 +563,6 @@ public fun crawlRefreshSystem(requests: HashMap<UUID, Crawling>): HashMap<UUID, 
                 }
             }
         }
-
-        newCrawlingState[player.getUniqueId()] = Crawling(
-            player = player,
-            initialLocation = initialLocation,
-            location = currLocation,
-            boxEntity = boxEntity,
-        )
     }
 
     return newCrawlingState

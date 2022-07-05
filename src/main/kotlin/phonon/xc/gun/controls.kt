@@ -460,11 +460,17 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>) {
  */
 internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, timestamp: Long) {
     val random = ThreadLocalRandom.current()
-    
+    val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
+
     for ( request in requests ) {
         val player = request.player
         val playerId = player.getUniqueId()
         
+        if ( playerHandled.add(playerId) == false ) {
+            // false if already contained in set
+            continue
+        }
+
         // Do redundant player main hand is gun check here
         // since events could override the first shoot event, causing
         // inventory slot or item to change
@@ -721,10 +727,16 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
  * Automatic fire request system. Initiate or refresh an auto fire sequence.
  */
 internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, autoFiring: HashMap<UUID, AutoFire>, timestamp: Long): HashMap<UUID, AutoFire> {
+    val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
+
     for ( request in requests ) {
         val player = request.player
-
         val playerId = player.getUniqueId()
+
+        if ( playerHandled.add(playerId) == false ) {
+            // false if already contained in set
+            continue
+        }
 
         // check if still under shoot delay
         val shootDelay = XC.playerShootDelay[playerId]

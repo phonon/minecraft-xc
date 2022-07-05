@@ -7,6 +7,7 @@ package phonon.xc.listeners
 import org.bukkit.ChatColor
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.entity.Player
+import org.bukkit.entity.EntityType
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -160,7 +161,21 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             ))
         }
     }
-    
+
+    /**
+     * When crawling, need to cancel this swim event. Otherwise other
+     * players will not see player in swimming animation mode.
+     */
+    @EventHandler
+    public fun onEntityToggleSwim(e: EntityToggleSwimEvent) {
+        // println("onEntityToggleSwim ${e.getEntity()}")
+        if ( !e.isSwimming() && e.getEntityType() == EntityType.PLAYER ) {
+            if( XC.crawling.contains(e.getEntity().getUniqueId()) ) {
+                e.setCancelled(true)
+            }
+        }
+    }
+
     @EventHandler(ignoreCancelled = true)
     public fun onToggleSprint(e: PlayerToggleSprintEvent) {
         // println("toggleSprint")
@@ -281,6 +296,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
      */
     @EventHandler(priority = EventPriority.NORMAL)
     public fun onInteract(e: PlayerInteractEvent) {
+        // println("onInteract")
         val player = e.getPlayer()
         val action = e.getAction()
 
@@ -288,7 +304,10 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
         // ignores off hand event, physical events, or cancelled block interact event
         // this event runs twice, 2nd main hand event is cancelled block interact event
+        // ISSUE: when crawling, having the interacted block is glitchy???
+        // TODO: INVESTIGATE DEAD ZONES
         if ( e.getHand() != EquipmentSlot.HAND || action == Action.PHYSICAL || ( action == Action.RIGHT_CLICK_BLOCK && e.useInteractedBlock() == Event.Result.DENY ) ) {
+        // if ( e.getHand() != EquipmentSlot.HAND || action == Action.PHYSICAL ) {
             return
         }
 
@@ -337,13 +356,14 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         }
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler
     public fun onInteractAt(e: PlayerInteractAtEntityEvent) {
-
+        // println("onInteractAtEntityEvent")
     }
-
-    @EventHandler(ignoreCancelled = true)
+    
+    @EventHandler
     public fun onAnimation(e: PlayerAnimationEvent) {
+        // println("onAnimation")
         // val player = e.player
         // val equipment = player.equipment
         // if ( equipment == null ) return

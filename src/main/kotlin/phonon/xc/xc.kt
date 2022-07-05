@@ -239,6 +239,11 @@ public object XC {
      * Remove hooks to plugins and external APIs
      */
     internal fun onDisable() {
+        // cleanup crawl fake entity/packets
+        for ( (playerId, crawlState) in crawling ) {
+            crawlState.cleanup()
+        }
+        
         XC.plugin = null
         XC.logger = null
         XC.namespaceKeyItemAmmo = null
