@@ -348,7 +348,7 @@ public class ProjectileSystem(public val world: World) {
             XC.particleBulletTrailQueue.add(ParticleBulletTrail(
                 world = world,
                 particle = Particle.REDSTONE,
-                particleData = Particle.DustOptions(Color.WHITE, 0.5f),
+                particleData = Particle.DustOptions(Color.WHITE, 0.4f),
                 xStart = projectile.x.toDouble(),
                 yStart = projectile.y.toDouble(),
                 zStart = projectile.z.toDouble(),

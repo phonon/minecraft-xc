@@ -33,11 +33,14 @@ import org.bukkit.entity.Player
 import org.bukkit.entity.Damageable
 import org.bukkit.plugin.Plugin
 import org.bukkit.scheduler.BukkitTask
+import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.util.Vector
 
 import com.comphenix.protocol.ProtocolLibrary
 
 import phonon.xc.gun.*
+import phonon.xc.gun.getGunFromItem
+import phonon.xc.gun.crawl.*
 import phonon.xc.ammo.*
 import phonon.xc.utils.EnumArrayMap
 import phonon.xc.utils.mapToObject
@@ -72,6 +75,7 @@ public object XC {
     internal var namespaceKeyItemReloadTimestamp: NamespacedKey? = null  // key for item reload timestamp
     internal var namespaceKeyItemBurstFireId: NamespacedKey? = null  // key for item reload id
     internal var namespaceKeyItemAutoFireId: NamespacedKey? = null  // key for item reload id
+    internal var namespaceKeyItemCrawlToShootId: NamespacedKey? = null  // key for item reload id
 
     // ========================================================================
     // BUILT-IN ENGINE CONSTANTS
@@ -88,6 +92,7 @@ public object XC {
     public const val ITEM_KEY_RELOAD_TIMESTAMP: String = "reloadTime"  // ItemStack namespaced key for gun reload timestamp
     public const val ITEM_KEY_BURST_FIRE_ID: String = "burstId"  // ItemStack namespaced key for gun burst fire id
     public const val ITEM_KEY_AUTO_FIRE_ID: String = "autoId"  // ItemStack namespaced key for gun auto fire id
+    public const val ITEM_KEY_CRAWL_TO_SHOOT_ID: String = "crawlId"  // ItemStack namespaced key for gun crawl to shoot request id
     
     // ========================================================================
     // STORAGE
@@ -132,12 +137,15 @@ public object XC {
     // player did not swap items during reload that plugin failed to catch.
     // Using int instead of atomic int since mineman is single threaded.
     internal var gunReloadIdCounter: Int = 0
-
+    
     // Burst and auto fire ID counter. Used to detect if player is firing
     // the same weapon in a burst or auto fire sequence.
     // Using int instead of atomic int since mineman is single threaded.
     internal var burstFireIdCounter: Int = 0
     internal var autoFireIdCounter: Int = 0
+
+    // ID counter for crawl to shoot request.
+    internal var crawlToShootIdCounter: Int = 0
 
     // player death message storage, death event checks this for custom messages
     internal val playerDeathMessages: HashMap<UUID, String> = HashMap()
@@ -155,9 +163,18 @@ public object XC {
     internal var burstFiringPackets: HashMap<UUID, BurstFire> = HashMap()
     // automatic firing queue: map entity uuid -> automatic fire state
     internal var autoFiringPackets: HashMap<UUID, AutoFire> = HashMap()
+    // crawling system queues
+    internal var crawlRequestTasks: HashMap<UUID, CrawlToShootRequestTask> = HashMap()
+    internal var crawlStartQueue: ArrayList<CrawlStart> = ArrayList()
+    internal var crawlStopQueue: ArrayList<CrawlStop> = ArrayList()
+    internal var crawling: HashMap<UUID, Crawling> = HashMap()
+    internal var crawlToShootRequestQueue: ArrayList<CrawlToShootRequest> = ArrayList()
+    internal val crawlingAndReadyToShoot: HashMap<UUID, Boolean> = HashMap() // map of players => is crawling and ready to shoot
     // task finish queues
     internal val playerReloadTaskQueue: LinkedBlockingQueue<PlayerReloadTask> = LinkedBlockingQueue()
     internal val playerReloadCancelledTaskQueue: LinkedBlockingQueue<PlayerReloadCancelledTask> = LinkedBlockingQueue()
+    internal val playerCrawlRequestFinishQueue: LinkedBlockingQueue<CrawlToShootRequestFinish> = LinkedBlockingQueue()
+    internal val playerCrawlRequestCancelQueue: LinkedBlockingQueue<CrawlToShootRequestCancel> = LinkedBlockingQueue()
 
     // ========================================================================
     // Async packet queues
@@ -215,6 +232,7 @@ public object XC {
         XC.namespaceKeyItemReloadTimestamp = NamespacedKey(plugin, ITEM_KEY_RELOAD_TIMESTAMP)
         XC.namespaceKeyItemBurstFireId = NamespacedKey(plugin, ITEM_KEY_BURST_FIRE_ID)
         XC.namespaceKeyItemAutoFireId = NamespacedKey(plugin, ITEM_KEY_AUTO_FIRE_ID)
+        XC.namespaceKeyItemCrawlToShootId = NamespacedKey(plugin, ITEM_KEY_CRAWL_TO_SHOOT_ID)
     }
 
     /**
@@ -229,6 +247,7 @@ public object XC {
         XC.namespaceKeyItemReloadTimestamp = null
         XC.namespaceKeyItemBurstFireId = null
         XC.namespaceKeyItemAutoFireId = null
+        XC.namespaceKeyItemCrawlToShootId = null
     }
 
     /**
@@ -393,6 +412,15 @@ public object XC {
     internal fun newAutoFireId(): Int {
         val id = XC.autoFireIdCounter
         XC.autoFireIdCounter = max(0, id + 1)
+        return id
+    }
+
+    /**
+     * Get current crawl to shoot id counter for crawling.
+     */
+    internal fun newCrawlToShootId(): Int {
+        val id = XC.crawlToShootIdCounter
+        XC.crawlToShootIdCounter = max(0, id + 1)
         return id
     }
 
@@ -653,6 +681,13 @@ public object XC {
     }
 
     /**
+     * Return true if player is crawling.
+     */
+    public fun isCrawling(player: Player): Boolean {
+        return XC.crawling.contains(player.getUniqueId())
+    }
+
+    /**
      * Main engine update, runs on each tick
      */
     internal fun update() {
@@ -671,6 +706,18 @@ public object XC {
         XC.playerSpeed = playerNewSpeed
         XC.playerPreviousLocation = playerNewLocation
 
+        // crawl systems
+        XC.crawlStartQueue = startCrawlSystem(XC.crawlStartQueue)
+        XC.crawlStopQueue = stopCrawlSystem(XC.crawlStopQueue)
+        XC.crawling = crawlRefreshSystem(XC.crawling)
+        // finish crawl to shoot requests
+        val crawlRequestFinishTasks = ArrayList<CrawlToShootRequestFinish>()
+        val crawlRequestCancelTasks = ArrayList<CrawlToShootRequestCancel>()
+        XC.playerCrawlRequestFinishQueue.drainTo(crawlRequestFinishTasks)
+        XC.playerCrawlRequestCancelQueue.drainTo(crawlRequestCancelTasks)
+        finishCrawlToShootRequestSystem(crawlRequestFinishTasks)
+        cancelCrawlToShootRequestSystem(crawlRequestCancelTasks)
+
         // run gun controls systems
         gunAimDownSightsSystem(XC.playerAimDownSightsRequests)
         playerGunCleanupSystem(XC.PlayerGunCleanupRequests)
@@ -682,6 +729,7 @@ public object XC {
         XC.burstFiringPackets = burstFireSystem(XC.burstFiringPackets, timestamp)
         XC.autoFiringPackets = autoFireSystem(XC.autoFiringPackets)
         XC.playerRecoil = recoilRecoverySystem(XC.playerRecoil)
+        XC.crawlToShootRequestQueue = requestCrawlToShootSystem(XC.crawlToShootRequestQueue, timestamp)
 
         // create new request arrays
         XC.playerAimDownSightsRequests = ArrayList()

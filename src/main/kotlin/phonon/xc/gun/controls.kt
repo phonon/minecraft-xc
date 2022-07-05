@@ -23,9 +23,11 @@ import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
 import phonon.xc.XC
+import phonon.xc.gun.crawl.CrawlToShootRequest
 import phonon.xc.utils.Message
 import phonon.xc.utils.sound.SoundPacket
 import phonon.xc.utils.recoil.RecoilPacket
+import phonon.xc.utils.progressBar10
 
 
 /**
@@ -166,8 +168,8 @@ internal data class PlayerReloadCancelledTask(
 /**
  * Helper function to determine if model should be aim down sights.
  */
-private fun useAimDownSights(player: Player): Boolean {
-    return player.isSneaking() && !XC.dontUseAimDownSights.contains(player.getUniqueId())
+internal fun useAimDownSights(player: Player): Boolean {
+    return (player.isSneaking() || player.isSwimming()) && !XC.dontUseAimDownSights.contains(player.getUniqueId())
 }
 
 /**
@@ -226,8 +228,11 @@ private fun doSingleShot(
 
     XC.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
     
-    val eyeHeight = player.eyeHeight
-    val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
+    val shootPosition = if ( player.isSwimming() ) {
+        loc.clone().add(0.0, 0.4, 0.0)
+    } else {
+        loc.clone().add(0.0, player.eyeHeight, 0.0)
+    }
     val shootDirection = loc.direction.clone()
 
     val sway = calculateSway(player, gun, XC.playerSpeed[player.getUniqueId()] ?: 0.0)
@@ -507,6 +512,12 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
             itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
         }
 
+        // if crawling required, request crawl to shoot
+        if ( gun.crawlRequired && XC.crawlingAndReadyToShoot[playerId] != true ) {
+            XC.crawlToShootRequestQueue.add(CrawlToShootRequest(player))
+            continue
+        }
+
         // check if still under shoot delay
         val shootDelay = XC.playerShootDelay[player.getUniqueId()]
         if ( shootDelay != null && timestamp < shootDelay.timestampCanShoot ) {
@@ -765,6 +776,12 @@ internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, a
                 itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
             }
 
+            // if crawling required, request crawl to shoot
+            if ( gun.crawlRequired && XC.crawlingAndReadyToShoot[playerId] != true ) {
+                XC.crawlToShootRequestQueue.add(CrawlToShootRequest(player))
+                continue
+            }
+
             val autoFireId = XC.newAutoFireId()
 
             autoFiring[playerId] = AutoFire(
@@ -1015,7 +1032,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>, 
             private val reloadId = reloadId
             private val inventorySlot = inventorySlot
             private val reloadTime = reloadTimeMillis.toDouble()
-            private val startTime = timestamp.toDouble()
+            private val startTime = timestamp
             private val itemGunMaterial = XC.config.materialGun
             private val itemDataKeyReloadId = XC.namespaceKeyItemReloadId!!
             private val reloadFinishTaskQueue = XC.playerReloadTaskQueue
@@ -1046,7 +1063,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>, 
                     return
                 }
 
-                val timeElapsedMillis = System.currentTimeMillis().toDouble() - startTime
+                val timeElapsedMillis = (System.currentTimeMillis() - startTime).toDouble()
                 if ( timeElapsedMillis > reloadTime ) {
                     // reload done: add reload finish task to queue
                     reloadFinishTaskQueue.add(PlayerReloadTask(player, gun, item, reloadId, inventorySlot))
@@ -1054,7 +1071,7 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>, 
                 } else {
                     val progress = timeElapsedMillis / reloadTime
                     val strRemainingTime = formatRemainingTimeString(reloadTime - timeElapsedMillis)
-                    Message.announcement(player, "Reloading ${progressBarReload(progress)} ${strRemainingTime}")
+                    Message.announcement(player, "Reloading ${progressBar10(progress)} ${strRemainingTime}")
                 }
             }
         }
@@ -1189,33 +1206,6 @@ internal class TaskAmmoInfoMessages(
 // For reload task, need to set integer-typed boolean flag indicating 
 // current gun is running reload task.
 private const val TRUE: Int = 1
-
-/**
- * Create progress bar string. Input should be double
- * in range [0.0, 1.0] marking progress.
- */
-private fun progressBarReload(progress: Double): String {
-    // available shades
-    // https://en.wikipedia.org/wiki/Box-drawing_character
-    // val SOLID = 2588     // full solid block
-    // val SHADE0 = 2592    // medium shade
-    // val SHADE1 = 2593    // dark shade
-
-    return when ( Math.round(progress * 10.0).toInt() ) {
-        0 ->  "\u2503${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        1 ->  "\u2503\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        2 ->  "\u2503\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        3 ->  "\u2503\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        4 ->  "\u2503\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        5 ->  "\u2503\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        6 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        7 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592\u2592${ChatColor.WHITE}\u2503"
-        8 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592${ChatColor.WHITE}\u2503"
-        9 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592${ChatColor.WHITE}\u2503"
-        10 -> "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2503"
-        else -> ""
-    }
-}
 
 /**
  * Format a double time value in milliseconds into a 

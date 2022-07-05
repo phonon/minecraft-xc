@@ -28,6 +28,10 @@ explosion = false
 [sway]
 players_before_pipelined_sway = 4
 
+# crawl config
+[crawl]
+only_allowed_on_crawl_weapons = true
+
 # material types for custom items, must match a Material exactly
 [material]
 gun = "WARPED_FUNGUS_ON_A_STICK"

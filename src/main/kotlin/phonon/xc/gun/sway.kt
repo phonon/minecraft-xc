@@ -34,7 +34,7 @@ public fun calculateSway(
     if ( playerSpeed > 0.1 ) {
         sway *= (1.0 + (playerSpeed * gun.swaySpeedMultiplier))
     } else {
-        if ( player.isSneaking() ) {
+        if ( player.isSneaking() || XC.isCrawling(player) ) {
             sway *= gun.swayAimDownSights
         }
     }

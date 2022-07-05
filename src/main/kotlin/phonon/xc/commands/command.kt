@@ -15,7 +15,7 @@ import org.bukkit.entity.Player
 import phonon.xc.XC
 import phonon.xc.utils.Message
 import phonon.xc.gun.createItemFromGun
-
+import phonon.xc.gun.crawl.*
 
 private val SUBCOMMANDS = listOf(
     "ammo",
@@ -29,9 +29,8 @@ private val SUBCOMMANDS = listOf(
     "hitbox",
 
     // random testing debug commands
-    // "hitbox",
     // "chunk",
-    // "crawl",
+    "crawl",
 )
 
 /**
@@ -64,7 +63,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             
             // random testing debug commands
             // "chunk" -> debugChunkSnapshotTest(sender)
-            // "crawl" -> crawl(sender, args)
+            "crawl" -> crawl(sender, args)
             else -> {
                 Message.error(player, "Invalid /xc subcommand, use /xc help")
             }
@@ -283,17 +282,19 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
     // /**
     //  * Experiment to try make player crawl
     //  */
-    // private fun crawl(sender: CommandSender?, args: Array<String>) {
-    //     val player = if ( sender is Player ) sender else null
+    private fun crawl(sender: CommandSender?, args: Array<String>) {
+        val player = if ( sender is Player ) sender else null
 
-    //     if ( player !== null ) {
-    //         player.setSwimming(true)
+        if ( player !== null ) {
+            // player.setSwimming(true)
+            // forceCrawl(player)
+            XC.crawlStartQueue.add(CrawlStart(player))
 
-    //         return
-    //     }
+            return
+        }
 
-    //     Message.print(sender, "[xc] Must be run in-game by player")
-    // }
+        Message.print(sender, "[xc] Must be run in-game by player")
+    }
 
     /**
      * Debug command to get entity default bounding box sizes.

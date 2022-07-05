@@ -89,6 +89,10 @@ public data class Gun(
     public val equipSlowness: Int = 0,
     public val equipNoSprint: Boolean = false,
 
+    // require crawl (prone position) to shoot
+    public val crawlRequired: Boolean = false,
+    public val crawlTimeMillis: Long = 1000, // time to crawl to shoot in milliseconds
+
     // reload [ms]
     public val reloadTimeMillis: Long = 1500,
 
@@ -254,6 +258,12 @@ public data class Gun(
                     equip.getLong("delay")?.let { properties["equipDelayMillis"] = it }
                     equip.getLong("slowness")?.let { properties["equipSlowness"] = it.toInt() }
                     equip.getBoolean("no_sprint")?.let { properties["equipNoSprint"] = it }
+                }
+
+                // crawl
+                toml.getTable("crawl")?.let { crawl ->
+                    crawl.getBoolean("required")?.let { properties["crawlRequired"] = it }
+                    crawl.getLong("time")?.let { properties["crawlTimeMillis"] = it }
                 }
 
                 // ammo

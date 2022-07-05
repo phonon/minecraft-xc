@@ -56,7 +56,21 @@ configurations {
         isCanBeResolved = true
         isCanBeConsumed = true
     }
+
+    // Special configuration with priority over compileOnly.
+    // Required so we can include NMS and bukkit as dependency,
+    // without overriding the paper API (which has slight differences
+    // in api). See:
+    // https://github.com/gradle/gradle/issues/10502
+    // https://stackoverflow.com/questions/31698510/can-i-force-the-order-of-dependencies-in-my-classpath-with-gradle/47953373#47953373
+    create("compileOnlyPriority") {
+        isCanBeResolved = true
+        isCanBeConsumed = true
+        sourceSets["main"].compileClasspath = configurations["compileOnlyPriority"] + sourceSets["main"].compileClasspath
+    }
 }
+
+sourceSets.main.get().compileClasspath
 
 dependencies {
     // Align versions of all Kotlin components
@@ -92,13 +106,17 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 
     if ( project.hasProperty("1.12") === true ) {
-        compileOnly("com.destroystokyo.paper:paper-api:1.12.2-R0.1-SNAPSHOT")
+        compileOnly(files("./lib/spigot-1.12.2.jar"))
+        configurations["compileOnlyPriority"]("com.destroystokyo.paper:paper-api:1.12.2-R0.1-SNAPSHOT")
         target = "1.12"
     } else if ( project.hasProperty("1.16") === true ) {
-        compileOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
+        // compileOnly(files("./lib/craftbukkit-1.16.5.jar"))
+        compileOnly(files("./lib/spigot-1.16.5.jar"))
+        configurations["compileOnlyPriority"]("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
         target = "1.16"
     } else if ( project.hasProperty("1.18") === true ) {
-        compileOnly("io.papermc.paper:paper-api:1.18.1-R0.1-SNAPSHOT")
+        compileOnly(files("./lib/spigot-1.18.2.jar"))
+        configurations["compileOnlyPriority"]("io.papermc.paper:paper-api:1.18.1-R0.1-SNAPSHOT")
         target = "1.18"
     }
 }

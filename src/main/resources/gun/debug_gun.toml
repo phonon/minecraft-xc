@@ -31,6 +31,11 @@ delay = 500     # delay before can fire gun [ms]
 slowness = 0    # slowness level while equipping this item
 no_sprint = false # if true, cannot sprint while equipping this item
 
+# Crawl required
+[crawl]
+required = false
+time = 1000 # time to finish crawl in milliseconds
+
 # Ammo id and count
 [ammo]
 id = 0

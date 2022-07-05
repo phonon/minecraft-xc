@@ -72,6 +72,9 @@ public data class Config(
 
     // ADVANCED
 
+    // stops player crawling when switching to a non-crawl to shoot weapon
+    public val crawlOnlyAllowedOnCrawlWeapons: Boolean = false,
+
     // number of players before pipelined sway system enabled
     public val playersBeforePipelinedSway: Int = 4,
 ) {
@@ -136,6 +139,9 @@ public data class Config(
             // recoil recovery rate
             toml.getDouble("recoil.recovery_rate")?.let { configOptions["recoilRecoveryRate"] = it }
             
+            // crawl config
+            toml.getBoolean("crawl.only_allowed_on_crawl_weapons")?.let { configOptions["crawlOnlyAllowedOnCrawlWeapons"] = it }
+
             // block damage config
             toml.getBoolean("block_damage.explosion")?.let { configOptions["blockDamageExplosion"] = it }
             

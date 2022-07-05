@@ -226,8 +226,13 @@ public data class Hitbox(
             val zmax = z + size.zHalf
 
             // if player, must adjust for sneak
-            if ( entity.type == EntityType.PLAYER && (entity as Player).isSneaking() == true ) {
-                ymax -= 0.3f
+            if ( entity.type == EntityType.PLAYER ) {
+                val playerEntity = entity as Player
+                if ( playerEntity.isSneaking() ) {
+                    ymax -= 0.3f
+                } else if ( playerEntity.isSwimming() ) {
+                    ymax = ymin + 0.5f
+                }
             }
 
             val xcenter = 0.5f * (xmin + xmax)

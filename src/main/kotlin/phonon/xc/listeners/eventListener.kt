@@ -44,6 +44,7 @@ import phonon.xc.gun.PlayerAutoFireRequest
 import phonon.xc.gun.PlayerGunCleanupRequest
 import phonon.xc.gun.ItemGunCleanupRequest
 import phonon.xc.gun.AmmoInfoMessagePacket
+import phonon.xc.gun.crawl.CrawlStop
 
 
 public class EventListener(val plugin: JavaPlugin): Listener {
@@ -51,6 +52,9 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     public fun onPlayerJoin(e: PlayerJoinEvent) {
         val player = e.player
         val playerId = player.getUniqueId()
+
+        // stop crawling (cleans up old crawl state)
+        XC.crawlStopQueue.add(CrawlStop(player))
 
         // initialize XC engine player data maps
         XC.playerPreviousLocation[playerId] = player.getLocation()
@@ -81,6 +85,9 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         XC.playerSpeed.remove(playerId)
         XC.playerPreviousLocation.remove(playerId)
         
+        // stop crawling (cleans up old crawl state)
+        XC.crawlStopQueue.add(CrawlStop(player))
+
         // if player leaves and is holding a gun or custom wep,
         // do reload cleanup
         val inventory = player.getInventory()
@@ -99,9 +106,15 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
     @EventHandler
     public fun onPlayerDeath(e: PlayerDeathEvent) {
+        val player: Player = e.entity
+
+        // stop crawling
+        if ( XC.isCrawling(player) ) {
+            XC.crawlStopQueue.add(CrawlStop(player))
+        }
+
         // if player dies and is holding a gun or custom wep,
         // do reload cleanup
-        val player: Player = e.entity
         val inventory = player.getInventory()
 
         val itemMainHand = inventory.getItemInMainHand()
@@ -132,6 +145,12 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     public fun onToggleSneak(e: PlayerToggleSneakEvent) {
         // println("toggleSneak")
         val player = e.player
+
+        // stop crawling
+        if ( XC.isCrawling(player) ) {
+            XC.crawlStopQueue.add(CrawlStop(player))
+        }
+        
         val equipment = player.getInventory()
         val itemMainHand = equipment.getItemInMainHand()
         getGunFromItem(itemMainHand)?.let { gun -> 
