@@ -59,7 +59,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             "ammo"-> ammo(sender, args)
             "gun" -> gun(sender, args)
             "timings" -> timings(sender)
-            "debugTimings" -> debugTimings(sender)
+            "debugtimings" -> debugTimings(sender)
             "benchmark" -> benchmark(player, args)
             "gundebug" -> gundebug(sender, args)
             "hitbox" -> hitbox(sender, args)
@@ -68,7 +68,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             // "chunk" -> debugChunkSnapshotTest(sender)
             "crawl" -> crawl(sender, args)
             else -> {
-                Message.error(player, "Invalid /xc subcommand, use /xc help")
+                Message.error(sender, "Invalid /xc subcommand, use /xc help")
             }
         }
 
@@ -134,7 +134,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         }
 
         XC.doDebugTimings = !XC.doDebugTimings
-        Message.print(null, "[xc] Debug timings: ${XC.doDebugTimings}")
+        Message.print(sender, "[xc] Debug timings: ${XC.doDebugTimings}")
     }
     
     /**
