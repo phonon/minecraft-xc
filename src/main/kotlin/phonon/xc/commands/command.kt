@@ -14,8 +14,11 @@ import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
 import phonon.xc.XC
 import phonon.xc.utils.Message
-import phonon.xc.gun.createItemFromGun
-import phonon.xc.gun.crawl.*
+
+// TODO: in future need to select NMS version
+import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
+import phonon.xc.compatibility.v1_16_R3.gun.item.*
+
 
 private val SUBCOMMANDS = listOf(
     "ammo",
@@ -127,6 +130,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         val player = if ( sender is Player ) sender else null
         if ( player !== null && !player.isOp() ) {
             Message.error(player, "[xc] op only")
+            return
         }
 
         XC.doDebugTimings = !XC.doDebugTimings
@@ -142,6 +146,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         if ( player !== null ) {
             if ( !player.isOp() ) {
                 Message.error(player, "[xc] op only")
+                return
             }
 
             if ( args.size < 2 ) {

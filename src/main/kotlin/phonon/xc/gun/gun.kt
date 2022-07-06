@@ -7,7 +7,9 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
 import java.util.logging.Logger
+import kotlin.math.min
 import org.tomlj.Toml
+import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.Particle
 import org.bukkit.entity.Entity
@@ -20,6 +22,18 @@ import phonon.xc.utils.mapToObject
 import phonon.xc.utils.damage.DamageType
 import phonon.xc.utils.particle.ParticlePacket
 
+
+/**
+ * Put cap on max ammo allowed in a gun.
+ * This is because guns generate all possible lore strings with ammo.
+ * Protect against user making guns with massive amount of ammo 9001
+ * that then generate huge arrays of strings.
+ */
+public const val GUN_MAX_AMMO_ALLOWED: Int = 1024
+
+/**
+ * Gun single shot firing mode types.
+ */
 public enum class GunSingleFireMode {
     NONE,
     SINGLE,
@@ -44,8 +58,7 @@ public enum class GunSingleFireMode {
 
 
 /**
- * Gun type categories. This is used for:
- * - Gun shoot delays by category
+ * Gun type categories. Currently just metadata.
  */
 public enum class GunType {
     PISTOL,
@@ -77,7 +90,7 @@ public data class Gun(
 
     // gun item/visual properties
     public val itemName: String = "gun",
-    public val itemLore: List<String>? = null,
+    public val itemLore: List<String> = listOf(),
     public val itemModelDefault: Int = 0,     // normal model (custom model data id)
     public val itemModelEmpty: Int = -1,      // when gun out of ammo
     public val itemModelReload: Int = -1,     // when gun is reloading
@@ -191,6 +204,35 @@ public data class Gun(
     public val soundReloadFinishVolume: Float = 1f,
     public val soundReloadFinishPitch: Float = 1f,
 ) {
+
+    // This contains an array of all possible combinations of
+    // ammo string (e.g. "Ammo: 4/10") and item lore.
+    // Each index is: loreWithAmmo[ammo] => List<String> item lore 
+    public val itemDescriptionForAmmo: List<List<String>>
+
+    init {
+        // generate all possible item descriptions with different ammo values
+        val itemDescriptionForAmmoBuf = ArrayList<List<String>>(this.ammoMax + 1)
+        for (i in 0..this.ammoMax) {
+            val itemDescription: ArrayList<String> = arrayListOf("${ChatColor.GRAY}Ammo: ${i}/${this.ammoMax}")
+            // append lore
+            itemDescription.addAll(this.itemLore)
+            
+            itemDescriptionForAmmoBuf.add(itemDescription)
+        }
+
+        this.itemDescriptionForAmmo = itemDescriptionForAmmoBuf
+    }
+
+    /**
+     * Returns the item lore for the given ammo value.
+     * Coerces ammo value to range [0, ammoMax].
+     */
+    public fun getItemDescriptionForAmmo(ammo: Int): List<String> {
+        val index = ammo.coerceIn(0, this.ammoMax)
+        return this.itemDescriptionForAmmo[index]
+    }
+
     /**
      * Create a projectile using this gun's properties.
      */
@@ -269,7 +311,7 @@ public data class Gun(
                 // ammo
                 toml.getTable("ammo")?.let { ammo ->
                     ammo.getLong("id")?.let { properties["ammoId"] = it.toInt() }
-                    ammo.getLong("max")?.let { properties["ammoMax"] = it.toInt() }
+                    ammo.getLong("max")?.let { properties["ammoMax"] = min(GUN_MAX_AMMO_ALLOWED, it.toInt()) }
                     ammo.getLong("per_reload")?.let { properties["ammoPerReload"] = it.toInt() }
                     ammo.getBoolean("ignore")?.let { properties["ammoIgnore"] = it }
                 }

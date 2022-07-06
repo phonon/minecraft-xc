@@ -12,7 +12,7 @@
  * https://github.com/Gecolay/GSit/blob/main/v1_17_R1/src/main/java/dev/geco/gsit/mcv/v1_17_R1/objects/BoxEntity.java
  */
 
-package phonon.xc.gun.crawl
+package phonon.xc.compatibility.v1_16_R3.gun.crawl
 
 import java.util.UUID
 import net.minecraft.server.v1_16_R3.EnumDirection
@@ -35,11 +35,11 @@ import com.comphenix.protocol.PacketType
 import com.comphenix.protocol.wrappers.WrappedDataWatcher
 import phonon.xc.XC
 import phonon.xc.utils.Message
-import phonon.xc.gun.getGunFromItem
 import phonon.xc.gun.useAimDownSights
-import phonon.xc.gun.setGunItemMetaModel
 import phonon.xc.gun.AmmoInfoMessagePacket
 import phonon.xc.utils.progressBar10
+
+import phonon.xc.compatibility.v1_16_R3.gun.item.*
 
 // ==================================================================
 // Entity Shulker in 1.16.5:
@@ -549,18 +549,9 @@ public fun crawlRefreshSystem(requests: HashMap<UUID, Crawling>): HashMap<UUID, 
         // check if player using a crawl weapon.
         // if not, cancel crawl
         if ( XC.config.crawlOnlyAllowedOnCrawlWeapons ) {
-            val equipment = player.getInventory()
-            val inventorySlot = equipment.getHeldItemSlot()
-            val item = equipment.getItem(inventorySlot)
-            if ( item == null ) {
-                // println("ITEM NULL - CANCELLING CRAWL")
+            val gun = getGunInHand(player)
+            if ( gun == null || gun.crawlRequired == false ) {
                 XC.crawlStopQueue.add(CrawlStop(player))
-            } else {
-                val gun = getGunFromItem(item)
-                if ( gun == null || gun.crawlRequired == false ) {
-                    // println("GUN NULL OR CRAWL NOT REQUIRED ${gun?.crawlRequired} - CANCELLING CRAWL")
-                    XC.crawlStopQueue.add(CrawlStop(player))
-                }
             }
         }
     }

@@ -17,7 +17,6 @@ import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
 import phonon.xc.XC
 import phonon.xc.utils.Message
-import phonon.xc.gun.createItemFromGun
 
 
 private val AIM_DOWN_SIGHTS_SETTINGS = listOf(

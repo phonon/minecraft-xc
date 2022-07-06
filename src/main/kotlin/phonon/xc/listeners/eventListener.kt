@@ -34,9 +34,6 @@ import org.bukkit.event.player.PlayerAnimationEvent
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent 
 import phonon.xc.XC
 import phonon.xc.utils.Message
-import phonon.xc.gun.getGunFromItem
-import phonon.xc.gun.getAmmoFromItem
-import phonon.xc.gun.setGunItemStackModel
 import phonon.xc.gun.PlayerAimDownSightsRequest
 import phonon.xc.gun.PlayerGunSelectRequest
 import phonon.xc.gun.PlayerGunReloadRequest
@@ -45,7 +42,10 @@ import phonon.xc.gun.PlayerAutoFireRequest
 import phonon.xc.gun.PlayerGunCleanupRequest
 import phonon.xc.gun.ItemGunCleanupRequest
 import phonon.xc.gun.AmmoInfoMessagePacket
-import phonon.xc.gun.crawl.CrawlStop
+
+// TODO: in future need to select NMS version
+import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
+import phonon.xc.compatibility.v1_16_R3.gun.item.*
 
 
 public class EventListener(val plugin: JavaPlugin): Listener {
@@ -62,14 +62,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
         // if player joins and is holding a gun or custom wep,
         // do handle selection event
-        val inventory = player.getInventory()
-
-        val itemMainHand = inventory.getItemInMainHand()
-        if ( itemMainHand == null ) {
-            return
-        }
-
-        getGunFromItem(itemMainHand)?.let { gun -> 
+        getGunInHand(player)?.let { gun -> 
             XC.playerGunSelectRequests.add(PlayerGunSelectRequest(
                 player = player,
             ))
@@ -91,14 +84,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
         // if player leaves and is holding a gun or custom wep,
         // do reload cleanup
-        val inventory = player.getInventory()
-
-        val itemMainHand = inventory.getItemInMainHand()
-        if ( itemMainHand == null ) {
-            return
-        }
-
-        getGunFromItem(itemMainHand)?.let { gun -> 
+        getGunInHand(player)?.let { gun -> 
             XC.PlayerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
             ))
@@ -116,14 +102,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
         // if player dies and is holding a gun or custom wep,
         // do reload cleanup
-        val inventory = player.getInventory()
-
-        val itemMainHand = inventory.getItemInMainHand()
-        if ( itemMainHand == null ) {
-            return
-        }
-
-        getGunFromItem(itemMainHand)?.let { gun -> 
+        getGunInHand(player)?.let { gun -> 
             XC.PlayerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
             ))
@@ -152,9 +131,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             XC.crawlStopQueue.add(CrawlStop(player))
         }
         
-        val equipment = player.getInventory()
-        val itemMainHand = equipment.getItemInMainHand()
-        getGunFromItem(itemMainHand)?.let { gun -> 
+        getGunInHand(player)?.let { gun -> 
             // Message.print(player, "Reloading...")
             XC.playerAimDownSightsRequests.add(PlayerAimDownSightsRequest(
                 player = player,
@@ -176,30 +153,30 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         }
     }
 
-    @EventHandler(ignoreCancelled = true)
-    public fun onToggleSprint(e: PlayerToggleSprintEvent) {
-        // println("toggleSprint")
+    // @EventHandler(ignoreCancelled = true)
+    // public fun onToggleSprint(e: PlayerToggleSprintEvent) {
+    //     // println("toggleSprint")
 
-        // check if gun cancels sprinting
-        // setSprinting(false) DOES NOT WORK!!!!
-        // if ( e.isSprinting() ) {
-        //     val player = e.player
-        //     val equipment = player.equipment
-        //     if ( equipment == null ) return
+    //     // check if gun cancels sprinting
+    //     // setSprinting(false) DOES NOT WORK!!!!
+    //     // if ( e.isSprinting() ) {
+    //     //     val player = e.player
+    //     //     val equipment = player.equipment
+    //     //     if ( equipment == null ) return
     
-        //     // disable sprint if gun is no sprint
-        //     val itemMainHand = equipment.itemInMainHand
-        //     if ( itemMainHand.type == XC.config.materialGun ) {
-        //         getGunFromItem(itemMainHand)?.let { gun -> 
-        //             if ( gun.equipNoSprint ) {
-        //                 println("Stop sprint!")
-        //                 player.setSprinting(false)
-        //                 e.setCancelled(true)
-        //             }
-        //         }
-        //     }
-        // }
-    }
+    //     //     // disable sprint if gun is no sprint
+    //     //     val itemMainHand = equipment.itemInMainHand
+    //     //     if ( itemMainHand.type == XC.config.materialGun ) {
+    //     //         getGunFromItem(itemMainHand)?.let { gun -> 
+    //     //             if ( gun.equipNoSprint ) {
+    //     //                 println("Stop sprint!")
+    //     //                 player.setSprinting(false)
+    //     //                 e.setCancelled(true)
+    //     //             }
+    //     //         }
+    //     //     }
+    //     // }
+    // }
 
     @EventHandler(ignoreCancelled = true)
     public fun onDropItem(e: PlayerDropItemEvent) {
@@ -268,11 +245,8 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     @EventHandler(ignoreCancelled = true)
     public fun onItemSwapHand(e: PlayerSwapHandItemsEvent) {
         val player = e.player
-        val equipment = player.equipment
-        if ( equipment == null ) return
-
-        val itemMainHand = equipment.getItemInMainHand()
-        getGunFromItem(itemMainHand)?.let { gun -> 
+        
+        getGunInHand(player)?.let { gun -> 
             // Message.print(player, "Reloading...")
             XC.playerReloadRequests.add(PlayerGunReloadRequest(
                 player = player,
@@ -337,12 +311,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         }
         // right click: auto fire
         if ( action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK ) {
-            val equipment = player.equipment
-            if ( equipment == null ) return
-
-            val itemMainHand = equipment.itemInMainHand
-
-            getGunFromItem(itemMainHand)?.let { gun -> 
+            getGunInHand(player)?.let { gun -> 
                 // Message.print(player, "auto firing request")
                 if ( gun.autoFire ) {
                     XC.playerAutoFireRequests.add(PlayerAutoFireRequest(

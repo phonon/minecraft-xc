@@ -39,8 +39,6 @@ import org.bukkit.util.Vector
 import com.comphenix.protocol.ProtocolLibrary
 
 import phonon.xc.gun.*
-import phonon.xc.gun.getGunFromItem
-import phonon.xc.gun.crawl.*
 import phonon.xc.ammo.*
 import phonon.xc.utils.EnumArrayMap
 import phonon.xc.utils.mapToObject
@@ -53,6 +51,10 @@ import phonon.xc.utils.debug.DebugTimings
 import phonon.xc.utils.blockCrackAnimation.*
 import phonon.xc.utils.file.*
 import phonon.xc.utils.WorldGuard
+
+// TODO: in future need to select NMS version
+import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
+import phonon.xc.compatibility.v1_16_R3.gun.item.*
 
 
 /**
@@ -76,6 +78,14 @@ public object XC {
     internal var namespaceKeyItemBurstFireId: NamespacedKey? = null  // key for item reload id
     internal var namespaceKeyItemAutoFireId: NamespacedKey? = null  // key for item reload id
     internal var namespaceKeyItemCrawlToShootId: NamespacedKey? = null  // key for item reload id
+
+    internal var nbtKeyItemAmmo: String = ""            // raw nbt key string for item ammo value
+    internal var nbtKeyItemReloading: String = ""       // raw nbt key string for item is reloading (0 or 1)
+    internal var nbtKeyItemReloadId: String = ""        // raw nbt key string for item reload id
+    internal var nbtKeyItemReloadTimestamp: String = "" // raw nbt key string for item reload timestamp
+    internal var nbtKeyItemBurstFireId: String = ""     // raw nbt key for item reload id
+    internal var nbtKeyItemAutoFireId: String = ""      // raw nbt key for item reload id
+    internal var nbtKeyItemCrawlToShootId: String = ""  // raw nbt key for item reload id
 
     // ========================================================================
     // BUILT-IN ENGINE CONSTANTS
@@ -233,6 +243,19 @@ public object XC {
         XC.namespaceKeyItemBurstFireId = NamespacedKey(plugin, ITEM_KEY_BURST_FIRE_ID)
         XC.namespaceKeyItemAutoFireId = NamespacedKey(plugin, ITEM_KEY_AUTO_FIRE_ID)
         XC.namespaceKeyItemCrawlToShootId = NamespacedKey(plugin, ITEM_KEY_CRAWL_TO_SHOOT_ID)
+
+        // raw nbt keys
+        XC.nbtKeyItemAmmo = XC.namespaceKeyItemAmmo!!.toString()
+        XC.nbtKeyItemReloading = XC.namespaceKeyItemReloading!!.toString()
+        XC.nbtKeyItemReloadId = XC.namespaceKeyItemReloadId!!.toString()
+        XC.nbtKeyItemReloadTimestamp = XC.namespaceKeyItemReloadTimestamp!!.toString()
+        XC.nbtKeyItemBurstFireId = XC.namespaceKeyItemBurstFireId!!.toString()
+        XC.nbtKeyItemAutoFireId = XC.namespaceKeyItemAutoFireId!!.toString()
+        XC.nbtKeyItemCrawlToShootId =XC.namespaceKeyItemCrawlToShootId!!.toString()
+
+        println("nbtKeyItemReloadId = ${XC.nbtKeyItemReloadId}")
+        println("nbtKeyItemBurstFireId = ${XC.nbtKeyItemBurstFireId}")
+        println("nbtKeyItemAutoFireId = ${XC.nbtKeyItemAutoFireId}")
     }
 
     /**
@@ -627,6 +650,8 @@ public object XC {
     /**
      * This adds an aim down sights model to the player's offhand,
      * for aim down sights visual.
+     * 
+     * TODO: USE SET_SLOT PACKET INSTEAD OF A REAL ITEM!!!
      */
     internal fun createAimDownSightsOffhandModel(modelId: Int, player: Player) {
         // println("createAimDownSightsOffhandModel")
@@ -727,7 +752,7 @@ public object XC {
         gunAimDownSightsSystem(XC.playerAimDownSightsRequests)
         playerGunCleanupSystem(XC.PlayerGunCleanupRequests)
         gunItemCleanupSystem(XC.ItemGunCleanupRequests)
-        gunSelectSystem(XC.playerGunSelectRequests)
+        gunSelectSystem(XC.playerGunSelectRequests, timestamp)
         XC.autoFiringPackets = autoFireRequestSystem(XC.playerAutoFireRequests, XC.autoFiringPackets, timestamp) // do auto fire request before single/burst fire
         gunPlayerShootSystem(XC.playerShootRequests, timestamp)
         gunPlayerReloadSystem(XC.playerReloadRequests, timestamp)
