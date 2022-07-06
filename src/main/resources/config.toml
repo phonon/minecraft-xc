@@ -21,6 +21,15 @@ recovery_rate = 0.2
 [block_damage]
 explosion = false
 
+# material types for custom items, must match a Material exactly
+[material]
+gun = "WARPED_FUNGUS_ON_A_STICK"
+aim_down_sights = "CARROT_ON_A_STICK"
+melee = "IRON_HORSE_ARMOR"
+misc = "GOLDEN_HORSE_ARMOR"
+ammo = "LEATHER_HORSE_ARMOR"
+armor = "LEATHER_HORSE_ARMOR"
+
 # ADVANCED ENGINE CONFIG
 # generally dont touch these...
 
@@ -32,11 +41,6 @@ players_before_pipelined_sway = 4
 [crawl]
 only_allowed_on_crawl_weapons = true
 
-# material types for custom items, must match a Material exactly
-[material]
-gun = "WARPED_FUNGUS_ON_A_STICK"
-aim_down_sights = "CARROT_ON_A_STICK"
-melee = "IRON_HORSE_ARMOR"
-misc = "GOLDEN_HORSE_ARMOR"
-ammo = "LEATHER_HORSE_ARMOR"
-armor = "LEATHER_HORSE_ARMOR"
+# debug stuff
+[debug]
+do_timings_default = false # default state for whether to do debug timings

@@ -302,6 +302,7 @@ public object XC {
         }
 
         XC.config = config
+        XC.doDebugTimings = config.defaultDoDebugTimings
 
         // load guns
         val filesAmmo = listDirFiles(config.pathFilesAmmo)

@@ -74,9 +74,12 @@ public data class Config(
 
     // stops player crawling when switching to a non-crawl to shoot weapon
     public val crawlOnlyAllowedOnCrawlWeapons: Boolean = false,
-
+    
     // number of players before pipelined sway system enabled
     public val playersBeforePipelinedSway: Int = 4,
+
+    // debug timings default value
+    public val defaultDoDebugTimings: Boolean = false,
 ) {
 
     companion object {
@@ -145,8 +148,11 @@ public data class Config(
             // block damage config
             toml.getBoolean("block_damage.explosion")?.let { configOptions["blockDamageExplosion"] = it }
             
-            // block damage config
+            // sway config
             toml.getLong("sway.players_before_pipelined_sway")?.let { configOptions["playersBeforePipelinedSway"] = it.toInt() }
+            
+            // default debug timings config
+            toml.getBoolean("debug.do_timings_default")?.let { configOptions["defaultDoDebugTimings"] = it }
 
             return mapToObject(configOptions, Config::class)
         }
