@@ -157,6 +157,10 @@ public object XC {
     // ID counter for crawl to shoot request.
     internal var crawlToShootIdCounter: Int = 0
 
+    // id counters for crawl refresh "load balancing"
+    internal var crawlRefreshTick0Count: Int = 0
+    internal var crawlRefreshTick1Count: Int = 0
+
     // player death message storage, death event checks this for custom messages
     internal val playerDeathMessages: HashMap<UUID, String> = HashMap()
 
@@ -253,9 +257,12 @@ public object XC {
         XC.nbtKeyItemAutoFireId = XC.namespaceKeyItemAutoFireId!!.toString()
         XC.nbtKeyItemCrawlToShootId =XC.namespaceKeyItemCrawlToShootId!!.toString()
 
-        println("nbtKeyItemReloadId = ${XC.nbtKeyItemReloadId}")
-        println("nbtKeyItemBurstFireId = ${XC.nbtKeyItemBurstFireId}")
-        println("nbtKeyItemAutoFireId = ${XC.nbtKeyItemAutoFireId}")
+        // reset counters
+        XC.crawlRefreshTick0Count = 0
+        XC.crawlRefreshTick1Count = 0
+
+        // reset queues
+        // TODO
     }
 
     /**

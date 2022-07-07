@@ -70,6 +70,8 @@ internal data class BurstFire(
     val itemMeta: ItemMeta,
     // re-used persistent data container
     val itemData: PersistentDataContainer,
+    // inventory slot, used for cleanup if needed
+    val inventorySlot: Int,
     // total length of time player has been firing
     val totalTime: Double,
     // tick counter since last fired, used for timing firing rate in projectiles/tick
@@ -96,6 +98,8 @@ internal data class AutoFire(
     val itemMeta: ItemMeta,
     // re-used persistent data container
     val itemData: PersistentDataContainer,
+    // inventory slot, used for cleanup if needed
+    val inventorySlot: Int,
     // total length of time player has been firing
     val totalTime: Double,
     // tick counter since last fired, used for timing firing rate in projectiles/tick
@@ -146,11 +150,11 @@ internal value class PlayerAimDownSightsRequest(
 )
 
 /**
- * Data for request to cleanup a player.
+ * Data for request to cleanup a player's gun.
  */
-@JvmInline
-internal value class PlayerGunCleanupRequest(
+internal data class PlayerGunCleanupRequest(
     val player: Player,
+    val inventorySlot: Int = -1, // if -1, get item in main hand. else, get item in slot
 )
 
 /**
@@ -216,8 +220,21 @@ private fun cleanupGunMeta(
         itemData.remove(XC.namespaceKeyItemReloadTimestamp!!)
     }
 
-    // reset model cleanup
+    // RESET MODEL TO PROPER STATE:
+
+    // current ammo
     val ammoCurrent = itemData.get(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER) ?: 0
+
+    // if this has an auto fire id or burst fire id
+    if ( itemData.has(XC.namespaceKeyItemAutoFireId!!, PersistentDataType.INTEGER) ) {
+        itemData.remove(XC.namespaceKeyItemAutoFireId!!)
+        itemMeta.setLore(gun.getItemDescriptionForAmmo(ammoCurrent))
+    }
+    if ( itemData.has(XC.namespaceKeyItemBurstFireId!!, PersistentDataType.INTEGER) ) {
+        itemData.remove(XC.namespaceKeyItemBurstFireId!!)
+        itemMeta.setLore(gun.getItemDescriptionForAmmo(ammoCurrent))
+    }
+
     return setGunItemMetaModel(itemMeta, gun, ammoCurrent, aimdownsights)
 }
 
@@ -361,13 +378,18 @@ internal fun gunAimDownSightsSystem(requests: ArrayList<PlayerAimDownSightsReque
  */
 internal fun playerGunCleanupSystem(requests: ArrayList<PlayerGunCleanupRequest>) {
     for ( request in requests ) {
-        val player = request.player
+        val (player, inventorySlotToCleanup) = request
 
         // Do redundant player main hand is gun check here
         // since events could override the first shoot event, causing
         // inventory slot or item to change
         val equipment = player.getInventory()
-        val inventorySlot = equipment.getHeldItemSlot()
+        val inventorySlot = if ( inventorySlotToCleanup == -1 ) {
+            equipment.getHeldItemSlot()
+        } else {
+            inventorySlotToCleanup
+        }
+
         val item = equipment.getItem(inventorySlot)
         if ( item == null ) {
             continue
@@ -564,7 +586,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
         }
 
         // check if still under shoot delay
-        val shootDelay = XC.playerShootDelay[player.getUniqueId()]
+        val shootDelay = XC.playerShootDelay[playerId]
         if ( shootDelay != null && timestamp < shootDelay.timestampCanShoot ) {
             continue
         }
@@ -615,18 +637,18 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
 
             // shoot delay
             val timestampShootDelay = timestamp + gun.shootDelayMillis
-            XC.playerShootDelay[player.getUniqueId()] = ShootDelay(
+            XC.playerShootDelay[playerId] = ShootDelay(
                 timestampDelayAfterShoot = timestampShootDelay,
                 timestampCanShoot = timestampShootDelay,
             )
             
         } else if ( fireMode == GunSingleFireMode.BURST ) {
             // add burst packet if not already burst firing
-            if ( !XC.burstFiringPackets.contains(player.getUniqueId()) ) {
+            if ( !XC.burstFiringPackets.contains(playerId) ) {
                 val ammo = itemData.get(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER) ?: 0
                 val burstFireId = XC.newBurstFireId()
 
-                XC.burstFiringPackets[player.getUniqueId()] = BurstFire(
+                XC.burstFiringPackets[playerId] = BurstFire(
                     id = burstFireId,
                     player = player,
                     gun = gun,
@@ -634,6 +656,7 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
                     item = item,
                     itemMeta = itemMeta,
                     itemData = itemData,
+                    inventorySlot = inventorySlot,
                     totalTime = 0.0,
                     ticksSinceFired = 0,
                     remainingCount = gun.burstFireCount,
@@ -662,10 +685,30 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
     val random = ThreadLocalRandom.current()
 
     for ( (playerId, request) in requests ) {
-        val (id, player, gun, ammo, item, itemMeta, itemData, totalTime, ticksSinceFired, remainingCount) = request
+        val (
+            id,
+            player,
+            gun,
+            ammo,
+            item,
+            itemMeta,
+            itemData,
+            inventorySlot,
+            totalTime,
+            ticksSinceFired,
+            remainingCount,
+        ) = request
 
-        // check if player main hand item burst fire id matches
-        if ( id != checkHandMaterialAndGetNbtIntKey(player, XC.config.materialGun, XC.nbtKeyItemBurstFireId) ) {
+        val equipment = player.getInventory()
+        val currInventorySlot = equipment.getHeldItemSlot()
+
+        // check if player main hand item auto fire id matches
+        if ( player.isDead() ||
+            !player.isOnline() ||
+            currInventorySlot != inventorySlot ||
+            id != checkHandMaterialAndGetNbtIntKey(player, XC.config.materialGun, XC.nbtKeyItemBurstFireId)
+        ) {
+            // no cleanup here: event handlers should pick up this event and clean gun if possible
             continue
         }
 
@@ -679,6 +722,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
                 item = item,
                 itemMeta = itemMeta,
                 itemData = itemData,
+                inventorySlot = inventorySlot,
                 totalTime = totalTime + 1,
                 ticksSinceFired = ticksSinceFired - 1,
                 remainingCount = remainingCount,
@@ -705,19 +749,16 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
             ))
 
             if ( !gun.ammoIgnore ) {
+                // clean up item
+                itemData.remove(XC.namespaceKeyItemBurstFireId!!)
+                val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+                item.setItemMeta(newItemMeta)
+                equipment.setItem(currInventorySlot, item)
                 continue
             }
         }
 
         val newAmmo = max(0, ammo - 1)
-
-        // update player item: set new ammo and set model
-        val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, newAmmo, useAimDownSights(player))        
-        item.setItemMeta(newItemMeta)
-
-        val equipment = player.getInventory()
-        val inventorySlot = equipment.getHeldItemSlot()
-        equipment.setItem(inventorySlot, item)
 
         // fires projectiles
         doSingleShot(
@@ -734,20 +775,32 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
 
         // continue sequence if have ammo and burst has remaining shots
         if ( remainingCount > 1 && ( newAmmo > 0 || gun.ammoIgnore ) ) {
+            // just update ammo data
+            itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, newAmmo)
+            item.setItemMeta(itemMeta)
+            equipment.setItem(inventorySlot, item)
+
             nextTickRequests[playerId] = BurstFire(
                 id = id,
                 player = player,
                 gun = gun,
                 ammo = newAmmo,
                 item = item,
-                itemMeta = newItemMeta,
+                itemMeta = itemMeta,
                 itemData = itemData,
+                inventorySlot = inventorySlot,
                 totalTime = totalTime + 1,
                 ticksSinceFired = gun.burstFireDelayTicks,
                 remainingCount = remainingCount - 1,
             )
         } else {
             // burst done.
+
+            // clean up item
+            itemData.remove(XC.namespaceKeyItemBurstFireId!!)
+            val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+            item.setItemMeta(newItemMeta)
+            equipment.setItem(currInventorySlot, item)
 
             // add shooting delay
             val timestampShootDelay = timestamp + gun.shootDelayMillis
@@ -844,6 +897,7 @@ internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, a
                 item = item,
                 itemMeta = itemMeta,
                 itemData = itemData,
+                inventorySlot = inventorySlot,
                 totalTime = 0.0,
                 ticksSinceFired = 0,
                 ticksSinceLastRequest = 0,
@@ -862,20 +916,50 @@ internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, a
 /**
  * Player automatic fire shooting system. Return a new hashmap
  * of auto fire packets for next tick.
+ * 
+ * From benchmarking with spark, biggest time is spent setting
+ * item lore. Since we except this to be running every tick for
+ * many players, we will defer setting item lore until
+ * player stops auto firing or is cancelled.
  */
 internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, AutoFire> {
     val nextTickRequests = HashMap<UUID, AutoFire>()
     val random = ThreadLocalRandom.current()
     
     for ( (playerId, request) in requests ) {
-        val (id, player, gun, ammo, item, itemMeta, itemData, totalTime, ticksSinceFired, ticksSinceLastRequest) = request
+        val (
+            id,
+            player,
+            gun,
+            ammo,
+            item,
+            itemMeta,
+            itemData,
+            inventorySlot,
+            totalTime,
+            ticksSinceFired,
+            ticksSinceLastRequest,
+        ) = request
 
-        if ( ticksSinceLastRequest >= XC.config.autoFireMaxTicksSinceLastRequest ) {
-            continue
-        }
+        val equipment = player.getInventory()
+        val currInventorySlot = equipment.getHeldItemSlot()
 
         // check if player main hand item auto fire id matches
-        if ( id != checkHandMaterialAndGetNbtIntKey(player, XC.config.materialGun, XC.nbtKeyItemAutoFireId) ) {
+        if ( player.isDead() ||
+            !player.isOnline() ||
+            currInventorySlot != inventorySlot ||
+            id != checkHandMaterialAndGetNbtIntKey(player, XC.config.materialGun, XC.nbtKeyItemAutoFireId)
+        ) {
+            // no cleanup here: event handlers should pick up this event and clean gun if possible
+            continue
+        }
+        
+        if ( ticksSinceLastRequest >= XC.config.autoFireMaxTicksSinceLastRequest ) {
+            // clean up item
+            itemData.remove(XC.namespaceKeyItemAutoFireId!!)
+            val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+            item.setItemMeta(newItemMeta)
+            equipment.setItem(currInventorySlot, item)
             continue
         }
 
@@ -889,6 +973,7 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
                 item = item,
                 itemMeta = itemMeta,
                 itemData = itemData,
+                inventorySlot = inventorySlot,
                 totalTime = totalTime + 1,
                 ticksSinceFired = ticksSinceFired - 1,
                 ticksSinceLastRequest = ticksSinceLastRequest + 1,
@@ -915,20 +1000,17 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
             ))
 
             if ( !gun.ammoIgnore ) {
+                // clean up item
+                itemData.remove(XC.namespaceKeyItemAutoFireId!!)
+                val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+                item.setItemMeta(newItemMeta)
+                equipment.setItem(currInventorySlot, item)
                 continue
             }
         }
 
         val newAmmo = max(0, ammo - 1)
 
-        // update player item: set new ammo and set model
-        val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, newAmmo, useAimDownSights(player))        
-        item.setItemMeta(newItemMeta)
-    
-        val equipment = player.getInventory()
-        val inventorySlot = equipment.getHeldItemSlot()
-        equipment.setItem(inventorySlot, item)
-        
         // fires projectiles
         doSingleShot(
             player,
@@ -944,18 +1026,30 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
 
         // continue sequence if have ammo and burst has remaining shots
         if ( gun.ammoIgnore || newAmmo > 0 ) {
+            // update ammo data
+            itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, newAmmo)
+            item.setItemMeta(itemMeta)
+            equipment.setItem(inventorySlot, item)
+
             nextTickRequests[playerId] = AutoFire(
                 id = id,
                 player = player,
                 gun = gun,
                 ammo = newAmmo,
                 item = item,
-                itemMeta = newItemMeta,
+                itemMeta = itemMeta,
                 itemData = itemData,
+                inventorySlot = inventorySlot,
                 totalTime = totalTime + 1,
                 ticksSinceFired = gun.autoFireDelayTicks,
                 ticksSinceLastRequest = ticksSinceLastRequest + 1,
             )
+        } else {
+            // clean up item
+            itemData.remove(XC.namespaceKeyItemAutoFireId!!)
+            val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+            item.setItemMeta(newItemMeta)
+            equipment.setItem(currInventorySlot, item)
         }
 
     }

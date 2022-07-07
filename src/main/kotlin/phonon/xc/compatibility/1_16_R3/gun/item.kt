@@ -74,6 +74,24 @@ public fun getGunInHand(player: Player): Gun? {
 }
 
 /**
+ * Return gun if player holding a gun in main hand.
+ * This uses raw NMS to check item tags.
+ */
+public fun getGunInSlot(player: Player, slot: Int): Gun? {
+    val craftPlayer = player as CraftPlayer
+    val nmsPlayer = craftPlayer.getHandle()
+    val nmsItem = nmsPlayer.inventory.getItem(slot)
+    
+    // println("itemInHand: $nmsItem")
+
+    if ( nmsItem != null ) {
+        return getGunFromNMSItemStack(nmsItem)
+    }
+
+    return null
+}
+
+/**
  * Return gun mapped from item's custom model id.
  * Return null if id out of range or if no gun mapped.
  * 

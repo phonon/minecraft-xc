@@ -17,6 +17,8 @@ import org.bukkit.event.block.Action
 import org.bukkit.event.entity.EntityDeathEvent
 import org.bukkit.event.entity.EntityToggleSwimEvent
 import org.bukkit.event.entity.EntityPickupItemEvent
+import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.player.PlayerJoinEvent
@@ -223,16 +225,20 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         val player = e.player
         val inventory = player.getInventory()
 
-        // remove any aim down sights models
-        XC.removeAimDownSightsOffhandModel(player)
+        // check if previous slot was a gun
+        val previousSlot = e.getPreviousSlot()
+        getGunInSlot(player, previousSlot)?.let { gun -> 
+            XC.PlayerGunCleanupRequests.add(PlayerGunCleanupRequest(
+                player = player,
+                inventorySlot = previousSlot,
+            ))
 
-        val mainHandSlot = e.getNewSlot()
-        val itemMainHand = inventory.getItem(mainHandSlot)
-        if ( itemMainHand == null ) {
-            return
+            // remove any aim down sights models
+            XC.removeAimDownSightsOffhandModel(player)
         }
 
-        getGunFromItem(itemMainHand)?.let { gun -> 
+        val mainHandSlot = e.getNewSlot()
+        getGunInSlot(player, mainHandSlot)?.let { gun -> 
             XC.playerGunSelectRequests.add(PlayerGunSelectRequest(
                 player = player,
             ))
@@ -344,4 +350,11 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         // }
     }
 
+	/**
+	 * Required for handling right click attacking entity, route to gun handler event
+	 */
+	@EventHandler
+	public fun onHit(e: EntityDamageByEntityEvent) {
+        // println("onHit")
+    }
 }

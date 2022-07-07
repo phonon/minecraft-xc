@@ -12,6 +12,7 @@ import org.tomlj.Toml
 import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.Particle
+import org.bukkit.entity.Player
 import org.bukkit.entity.Entity
 import org.bukkit.util.Vector
 import phonon.xc.gun.getGunHitEntityHandler
@@ -74,6 +75,23 @@ public enum class GunType {
     ;
 }
 
+/**
+ * Interface for sending fake aim down sights item models to client.
+ * Wrapper for different NMS version internal packet handling.
+ */
+public interface AimDownSightsModel {
+    /**
+     * Send packet to player creating an aim down sights model
+     * in their offhand.
+     */
+    public fun create(player: Player)
+
+    /**
+     * Send packet to player removing aim down sights model
+     * if item is in their offhand.
+     */
+    public fun destroy(player: Player)
+}
 
 /**
  * Common gun object used by all guns.
