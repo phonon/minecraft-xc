@@ -316,7 +316,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             }
         }
         // right click: auto fire
-        if ( action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK ) {
+        else if ( action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK ) {
             getGunInHand(player)?.let { gun -> 
                 // Message.print(player, "auto firing request")
                 if ( gun.autoFire ) {
@@ -336,19 +336,19 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         // println("onInteractAtEntityEvent")
     }
     
-    @EventHandler
-    public fun onAnimation(e: PlayerAnimationEvent) {
-        // println("onAnimation")
-        // val player = e.player
-        // val equipment = player.equipment
-        // if ( equipment == null ) return
+    // @EventHandler
+    // public fun onAnimation(e: PlayerAnimationEvent) {
+    //     // println("onAnimation")
+    //     // val player = e.player
+    //     // val equipment = player.equipment
+    //     // if ( equipment == null ) return
 
-        // val itemMainHand = equipment.itemInMainHand
-        // if ( itemMainHand.type == XC.config.materialGun ) {
-        //     Message.print(player, "Firing")
-        //     XC.shootGun(player, XC.gunDebug)
-        // }
-    }
+    //     // val itemMainHand = equipment.itemInMainHand
+    //     // if ( itemMainHand.type == XC.config.materialGun ) {
+    //     //     Message.print(player, "Firing")
+    //     //     XC.shootGun(player, XC.gunDebug)
+    //     // }
+    // }
 
 	/**
 	 * Required for handling right click attacking entity, route to gun handler event
@@ -356,5 +356,17 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 	@EventHandler
 	public fun onHit(e: EntityDamageByEntityEvent) {
         // println("onHit")
+        val damager = e.getDamager()
+		if ( damager is Player ) {
+			val player: Player = damager
+            
+            getGunInHand(player)?.let { gun -> 
+                XC.playerShootRequests.add(PlayerGunShootRequest(
+                    player = player,
+                ))
+            }
+
+            // TODO: melee weapon damage adjust
+        }
     }
 }
