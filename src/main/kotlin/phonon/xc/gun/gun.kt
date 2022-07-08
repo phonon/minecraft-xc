@@ -9,6 +9,7 @@ import java.nio.file.Files
 import java.util.logging.Logger
 import kotlin.math.min
 import org.tomlj.Toml
+import org.bukkit.Color
 import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.Particle
@@ -185,6 +186,13 @@ public data class Gun(
     public val projectileArmorReduction: Double = 0.5,
     public val projectileResistanceReduction: Double = 0.5,
     public val projectileDamageType: DamageType = DamageType.BULLET,
+
+    // projectile particle config
+    public val projectileParticleType: Particle = Particle.REDSTONE,
+    public val projectileParticleSize: Float = 0.35f,
+    public val projectileParticleColor: Color = Color.WHITE,
+    public val projectileParticleSpacing: Double = 1.5,
+    public val projectileParticleForceRender: Boolean = true,
 
     // explosion damage and radius and falloff (unused if no explosion)
     public val explosionDamage: Double = 8.0,
@@ -423,6 +431,24 @@ public data class Gun(
                     }
                 }
 
+                // projectile particles
+                toml.getTable("projectile.particles")?.let { particles ->
+                    particles.getString("type")?.let { ty -> properties["projectileParticleType"] = Particle.valueOf(ty) }
+
+                    // parse particle color RGB integer array [r, g, b]
+                    particles.getArray("color")?.let { arr ->
+                        properties["projectileParticleColor"] = Color.fromRGB(
+                            arr.getLong(0).toInt().coerceIn(0, 255),
+                            arr.getLong(1).toInt().coerceIn(0, 255),
+                            arr.getLong(2).toInt().coerceIn(0, 255),
+                        )
+                    }
+
+                    particles.getDouble("size")?.let { properties["projectileParticleSize"] = it.toFloat() }
+                    particles.getDouble("spacing")?.let { properties["projectileParticleSpacing"] = it }
+                    particles.getBoolean("force_render")?.let { properties["projectileParticleForceRender"] = it }
+                }
+
                 // explosion
                 toml.getTable("explosion")?.let { explosion ->
                     explosion.getDouble("damage")?.let { properties["explosionDamage"] = it }
@@ -448,6 +474,7 @@ public data class Gun(
                         try {
                             Particle.valueOf(ty)
                         } catch ( err: Exception ) {
+                            err.printStackTrace()
                             Particle.EXPLOSION_LARGE
                         }
                     } ?: Particle.EXPLOSION_LARGE

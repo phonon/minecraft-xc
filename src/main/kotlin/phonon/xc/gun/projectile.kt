@@ -345,10 +345,11 @@ public class ProjectileSystem(public val world: World) {
             }
 
             // bullet trails particle effects
+            val gun = projectile.gun
             XC.particleBulletTrailQueue.add(ParticleBulletTrail(
                 world = world,
-                particle = Particle.REDSTONE,
-                particleData = Particle.DustOptions(Color.WHITE, 0.4f),
+                particle = gun.projectileParticleType,
+                particleData = Particle.DustOptions(gun.projectileParticleColor, gun.projectileParticleSize),
                 xStart = projectile.x.toDouble(),
                 yStart = projectile.y.toDouble(),
                 zStart = projectile.z.toDouble(),
@@ -358,8 +359,8 @@ public class ProjectileSystem(public val world: World) {
                 length = min(projectile.distToNext, raytraceResult.distance).toDouble(),
                 netDistance = projectile.distance.toDouble(),
                 minDistance = 4.0,
-                spacing = 1.0,
-                force = true,
+                spacing = gun.projectileParticleSpacing,
+                force = gun.projectileParticleForceRender,
             ))
 
             // decide if projectile still valid after this update tick

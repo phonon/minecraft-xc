@@ -69,7 +69,11 @@ public class TaskSpawnParticleBulletTrails(
 ): Runnable {
     override fun run() {
         for ( p in particles ) {
-            val particleData = p.particleData
+            val particleData = if ( p.particle == Particle.REDSTONE ) {
+                p.particleData
+            } else {
+                null
+            }
             var x = p.xStart
             var y = p.yStart
             var z = p.zStart
@@ -81,34 +85,19 @@ public class TaskSpawnParticleBulletTrails(
             var dist = p.netDistance
             while ( r < p.length ) {
                 if ( dist > p.minDistance ) {
-                    if ( particleData != null ) {
-                        p.world.spawnParticle(
-                            p.particle,
-                            x,
-                            y,
-                            z,
-                            1,
-                            0.0, // offset.x
-                            0.0, // offset.y
-                            0.0, // offset.z
-                            0.0, // extra
-                            particleData,
-                            p.force,
-                        )
-                    } else {
-                        p.world.spawnParticle(
-                            p.particle,
-                            x,
-                            y,
-                            z,
-                            1,
-                            0.0, // offset.x
-                            0.0, // offset.y
-                            0.0, // offset.z
-                            0.0, // extra
-                            p.force,
-                        )
-                    }
+                    p.world.spawnParticle(
+                        p.particle,
+                        x,
+                        y,
+                        z,
+                        1,
+                        0.0, // offset.x
+                        0.0, // offset.y
+                        0.0, // offset.z
+                        0.0, // extra
+                        particleData,
+                        p.force,
+                    )
                 }
 
                 x += dx

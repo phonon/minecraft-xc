@@ -331,10 +331,10 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         }
     }
 
-    @EventHandler
-    public fun onInteractAt(e: PlayerInteractAtEntityEvent) {
-        // println("onInteractAtEntityEvent")
-    }
+    // @EventHandler
+    // public fun onInteractAt(e: PlayerInteractAtEntityEvent) {
+    //     // println("onInteractAtEntityEvent")
+    // }
     
     // @EventHandler
     // public fun onAnimation(e: PlayerAnimationEvent) {

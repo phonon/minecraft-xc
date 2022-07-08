@@ -26,7 +26,7 @@ public class AimDownSightsModelPacketManager(
 ): AimDownSightsModel {
     
     override fun create(player: Player) {
-
+        
     }
 
     override fun destroy(player: Player) {
