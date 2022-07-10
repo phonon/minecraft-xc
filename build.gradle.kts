@@ -70,7 +70,6 @@ configurations {
     }
 }
 
-sourceSets.main.get().compileClasspath
 
 dependencies {
     // Align versions of all Kotlin components

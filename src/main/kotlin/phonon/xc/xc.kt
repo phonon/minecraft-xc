@@ -158,6 +158,7 @@ public object XC {
     internal var crawlToShootIdCounter: Int = 0
 
     // id counters for crawl refresh "load balancing"
+    // hard coded for only 2 ticks
     internal var crawlRefreshTick0Count: Int = 0
     internal var crawlRefreshTick1Count: Int = 0
 
@@ -458,6 +459,34 @@ public object XC {
         val id = XC.crawlToShootIdCounter
         XC.crawlToShootIdCounter = max(0, id + 1)
         return id
+    }
+
+    /**
+     * Assign a crawl refresh id.
+     * E.g. for two allowed tick assignments,
+     * each refresh system tick counts 0..1..0..1..0..
+     * If the `crawling.id == refresh tick id`, then refresh
+     * will run. Assign each crawling id to the refresh tick
+     * that currently has the LEAST number of crawling ids.
+     */
+    internal fun newCrawlRefreshId(): Int {
+        if ( XC.crawlRefreshTick0Count < XC.crawlRefreshTick1Count ) {
+            return 0
+        } else {
+            return 1
+        }
+    }
+
+    /**
+     * Frees crawl refresh id.
+     * Decrement the index for this tick id.
+     */
+    internal fun freeCrawlRefreshId(index: Int) {
+        if ( index == 0 ) {
+            XC.crawlRefreshTick0Count = max(0, XC.crawlRefreshTick0Count - 1)
+        } else {
+            XC.crawlRefreshTick1Count = max(0, XC.crawlRefreshTick1Count - 1)
+        }
     }
 
     /**

@@ -163,15 +163,17 @@ private val FAKE_BLOCK_DATA = Material.BARRIER.createBlockData()
  * Crawl position state for a player.
  */
 public data class Crawling(
+    val tickId: Int,               // tick id this crawling is assigned to
     val player: Player,
     val initialLocation: Location, // initial location
-    val prevLocationX: Double,   // location on previous tick
-    val prevLocationY: Double,   // location on previous tick
-    val prevLocationZ: Double,   // location on previous tick
+    val prevLocationX: Double,     // location on previous tick
+    val prevLocationY: Double,     // location on previous tick
+    val prevLocationZ: Double,     // location on previous tick
     val blAboveX: Int,
     val blAboveY: Int,
     val blAboveZ: Int,
     val blAboveMaterial: Material,
+    val useBarrierBlock: Boolean,  // whether to use a barrier block
     val boxEntity: BoxEntity?,
 ) {
     /**
@@ -196,8 +198,11 @@ public data class Crawling(
         val yHeightInBlock = newLocation.getY() - Math.floor(newLocation.getY())
         
         val newBlAboveMaterial = player.getWorld().getBlockAt(newBlAboveX, newBlAboveY, newBlAboveZ).getType()
+        
+        // only use barrier block if player < 0.5 height in block and block above is air
+        val useBarrierBlock = yHeightInBlock < 0.5 && newBlAboveMaterial == Material.AIR
 
-        val boxEntityOrNull = if ( yHeightInBlock < 0.5 && newBlAboveMaterial == Material.AIR ) {
+        val boxEntityOrNull = if ( useBarrierBlock ) {
             // block above can be set to a fake barrier
             sendFakeBlockPacket(player, newBlAboveX, newBlAboveY, newBlAboveZ, FAKE_BLOCK_DATA)
 
@@ -236,6 +241,7 @@ public data class Crawling(
         }
     
         return Crawling(
+            tickId = this.tickId,
             player = this.player,
             initialLocation = this.initialLocation,
             prevLocationX = newLocation.getX(),
@@ -245,8 +251,17 @@ public data class Crawling(
             blAboveY = newBlAboveY,
             blAboveZ = newBlAboveZ,
             blAboveMaterial = newBlAboveMaterial,
+            useBarrierBlock = useBarrierBlock,
             boxEntity = boxEntityOrNull,
         )
+    }
+
+    public fun refreshBlock() {
+        // re-send barrier block to player
+        // block above can be set to a fake barrier
+        if ( this.useBarrierBlock ) {
+            sendFakeBlockPacket(this.player, this.blAboveX, this.blAboveY, this.blAboveZ, FAKE_BLOCK_DATA)
+        }
     }
 
     public fun cleanup() {
@@ -272,8 +287,11 @@ public fun forceCrawl(player: Player): Crawling {
     val yHeightInBlock = playerLocation.getY() - Math.floor(playerLocation.getY())
     
     val blAboveMaterial = player.getWorld().getBlockAt(blAboveX, blAboveY, blAboveZ).getType()
-    
-    val boxEntityOrNull = if ( yHeightInBlock < 0.5 && blAboveMaterial == Material.AIR ) {
+
+    // only use barrier block if player < 0.5 height in block and block above is air
+    val useBarrierBlock = yHeightInBlock < 0.5 && blAboveMaterial == Material.AIR
+
+    val boxEntityOrNull = if ( useBarrierBlock ) {
         // block above can be set to a fake barrier
         sendFakeBlockPacket(player, blAboveX, blAboveY, blAboveZ, FAKE_BLOCK_DATA)
 
@@ -297,6 +315,7 @@ public fun forceCrawl(player: Player): Crawling {
     }
 
     return Crawling(
+        tickId = XC.newCrawlRefreshId(),
         player = player,
         initialLocation = playerLocation,
         prevLocationX = playerLocation.getX(),
@@ -306,6 +325,7 @@ public fun forceCrawl(player: Player): Crawling {
         blAboveY = blAboveY,
         blAboveZ = blAboveZ,
         blAboveMaterial = blAboveMaterial,
+        useBarrierBlock = useBarrierBlock,
         boxEntity = boxEntityOrNull,
     )
 }
@@ -493,14 +513,34 @@ public fun stopCrawlSystem(requests: List<CrawlStop>): ArrayList<CrawlStop> {
 }
 
 /**
+ * This ticks between 0..1..0..1.. to indicate which
+ * tick the crawl refresh system is using.
+ * This is done to do a shitty "load balancing" of player
+ * crawl refresh tasks, so they are divided between two separate
+ * ticks for performance. Each Crawling object is assigned to
+ * one of these ticks, and refresh system will only match if
+ * tick matches.
+ */
+private var crawlRefreshTickCounter = 0
+
+/**
  * Update tick for all crawling players.
  * Returns new HashMap with updated crawl state for players.
  */
 public fun crawlRefreshSystem(requests: HashMap<UUID, Crawling>): HashMap<UUID, Crawling> {
     val newCrawlingState = HashMap<UUID, Crawling>()
+    
+    // update crawl refresh tick counter (oscillate between 0,1,0,1,...)
+    crawlRefreshTickCounter = if ( crawlRefreshTickCounter == 0 ) {
+        1
+    } else {
+        0
+    }
 
     for ( (playerId, prevCrawlState) in requests ) {
-        val (player,
+        val (
+            tickId,
+            player,
             initialLocation,
             prevLocationX,
             prevLocationY,
@@ -515,35 +555,36 @@ public fun crawlRefreshSystem(requests: HashMap<UUID, Crawling>): HashMap<UUID, 
         // not needed, toggle event should cancel stop swimming event
         // player.setSwimming(true)
 
-        // TODO: periodically send barrier update packet
-        // TODO
-        // TODO
-        // TODO
-        // TODO
-        // TODO
-        // TODO
-        // TODO
-        // TODO
+        // if == refresh counter, do full refresh system
+        if ( tickId == crawlRefreshTickCounter ) {
 
-        // if player location has changed or block above changed, send crawl update packet
-        val currLocation = player.getLocation()
-        val currBlockAboveMaterial = currLocation.world?.getBlockAt(blAboveX, blAboveY, blAboveZ)?.getType() ?: Material.AIR
-        newCrawlingState[player.getUniqueId()] = if ( 
-            currLocation.x != prevLocationX ||
-            currLocation.y != prevLocationY ||
-            currLocation.z != prevLocationZ ||
-            currBlockAboveMaterial != prevBlAboveMaterial
-        ) {
-            // if travelled too far from initial location (e.g. water bucket or falling down)
-            // cancel crawl next tick
-            if ( initialLocation.distance(currLocation) > 1.0 ) {
-                XC.crawlStopQueue.add(CrawlStop(player))
+            // if player location has changed or block above changed, send crawl update packet
+            val currLocation = player.getLocation()
+            val currBlockAboveMaterial = currLocation.world?.getBlockAt(blAboveX, blAboveY, blAboveZ)?.getType() ?: Material.AIR
+            newCrawlingState[player.getUniqueId()] = if (
+                currLocation.x != prevLocationX ||
+                currLocation.y != prevLocationY ||
+                currLocation.z != prevLocationZ ||
+                currBlockAboveMaterial != prevBlAboveMaterial
+            ) {
+                // if travelled too far from initial location (e.g. water bucket or falling down)
+                // cancel crawl next tick
+                if ( initialLocation.distance(currLocation) > 1.0 ) {
+                    XC.crawlStopQueue.add(CrawlStop(player))
+                }
+
+                prevCrawlState.update(currLocation)
+            } else {
+                // just refresh block
+                prevCrawlState.refreshBlock()
+
+                prevCrawlState
             }
 
-            prevCrawlState.update(currLocation)
-        } else {
-            prevCrawlState
+        } else { // just copy crawl state to next tick
+            newCrawlingState[player.getUniqueId()] = prevCrawlState
         }
+        
 
         // if only allowed to crawl while using a crawl required weapon,
         // check if player using a crawl weapon.
