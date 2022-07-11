@@ -8,7 +8,7 @@ import org.bukkit.Location
 import com.sk89q.worldguard.WorldGuard
 import com.sk89q.worldedit.bukkit.BukkitAdapter
 import com.sk89q.worldguard.protection.flags.Flags
-
+import com.sk89q.worldguard.protection.flags.StateFlag
 
 public object WorldGuard {
     /**
@@ -18,7 +18,8 @@ public object WorldGuard {
         val regionContainer = WorldGuard.getInstance().getPlatform().getRegionContainer()
         val query = regionContainer.createQuery()
         val regions = query.getApplicableRegions(BukkitAdapter.adapt(loc))
-        if ( !regions.testState(null, Flags.PVP) ) {
+        // this only blocks if region explicity denies (so pvp on by default)
+        if ( regions.queryState(null, Flags.PVP) == StateFlag.State.DENY ) {
             return false
         }
         return true
@@ -31,7 +32,8 @@ public object WorldGuard {
         val regionContainer = WorldGuard.getInstance().getPlatform().getRegionContainer()
         val query = regionContainer.createQuery()
         val regions = query.getApplicableRegions(BukkitAdapter.adapt(loc))
-        if ( !regions.testState(null, Flags.OTHER_EXPLOSION) ) {
+        // this only blocks if region explicity denies (so explosions on by default)
+        if ( regions.queryState(null, Flags.OTHER_EXPLOSION) == StateFlag.State.DENY ) {
             return false
         }
         return true
