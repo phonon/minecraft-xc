@@ -16,6 +16,10 @@ import org.bukkit.Particle
 import org.bukkit.entity.Player
 import org.bukkit.entity.Entity
 import org.bukkit.util.Vector
+import org.bukkit.inventory.ItemStack
+import org.bukkit.persistence.PersistentDataType
+import org.bukkit.persistence.PersistentDataContainer
+import phonon.xc.XC
 import phonon.xc.gun.getGunHitEntityHandler
 import phonon.xc.gun.getGunHitBlockHandler
 import phonon.xc.gun.noEntityHitHandler
@@ -282,6 +286,34 @@ public data class Gun(
             maxDistance = this.projectileMaxDistance,
         )
     }
+
+    /**
+     * Create a new ItemStack from gun properties.
+     */
+    public fun toItemStack(ammo: Int = Int.MAX_VALUE): ItemStack {
+        val item = ItemStack(XC.config.materialGun, 1)
+        val itemMeta = item.getItemMeta()
+        
+        // name
+        itemMeta.setDisplayName("${ChatColor.RESET}${this.itemName}")
+        
+        // model
+        itemMeta.setCustomModelData(this.itemModelDefault)
+
+        // ammo (IMPORTANT: actual ammo count used for shooting/reload logic)
+        val ammoCount = min(ammo, this.ammoMax)
+        val itemData = itemMeta.getPersistentDataContainer()
+        itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, min(ammoCount, this.ammoMax))
+        
+        // begin item description with ammo count
+        val itemDescription = this.getItemDescriptionForAmmo(ammo)
+        itemMeta.setLore(itemDescription.toList())
+
+        item.setItemMeta(itemMeta)
+
+        return item
+    }
+
     
     companion object {
         /**

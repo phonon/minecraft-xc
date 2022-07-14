@@ -221,7 +221,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         if ( gunId >= 0 && gunId < XC.MAX_GUN_CUSTOM_MODEL_ID ) {
             val gun = XC.guns[gunId]
             if ( gun != null ) {
-                val item = createItemFromGun(gun)
+                val item = gun.toItemStack()
                 player.getInventory().addItem(item)
             }
             return

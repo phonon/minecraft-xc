@@ -44,10 +44,12 @@ import phonon.xc.gun.PlayerAutoFireRequest
 import phonon.xc.gun.PlayerGunCleanupRequest
 import phonon.xc.gun.ItemGunCleanupRequest
 import phonon.xc.gun.AmmoInfoMessagePacket
+import phonon.xc.armor.PlayerWearHatRequest
 
 // TODO: in future need to select NMS version
 import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
 import phonon.xc.compatibility.v1_16_R3.gun.item.*
+import phonon.xc.compatibility.v1_16_R3.armor.item.*
 
 
 public class EventListener(val plugin: JavaPlugin): Listener {
@@ -327,6 +329,19 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                     // ignore block interact event
                     e.setUseInteractedBlock(Event.Result.DENY)
                 }
+
+                return
+            }
+
+            getHatInHand(player)?.let {
+                XC.wearHatRequests.add(PlayerWearHatRequest(
+                    player = player,
+                ))
+
+                // ignore block interact event
+                e.setUseInteractedBlock(Event.Result.DENY)
+
+                return
             }
         }
     }

@@ -185,38 +185,6 @@ public fun checkHandMaterialAndGetNbtIntKey(player: Player, material: Material, 
 
 
 /**
- * Create a new ItemStack from gun properties.
- */
-public fun createItemFromGun(
-    gun: Gun,
-    ammo: Int = Int.MAX_VALUE,
-): ItemStack {
-    val item = ItemStack(XC.config.materialGun, 1)
-    val itemMeta = item.getItemMeta()
-    
-    // name
-    itemMeta.setDisplayName("${ChatColor.RESET}${gun.itemName}")
-    
-    // model
-    itemMeta.setCustomModelData(gun.itemModelDefault)
-
-    // ammo (IMPORTANT: actual ammo count used for shooting/reload logic)
-    val ammoCount = min(ammo, gun.ammoMax)
-    val itemData = itemMeta.getPersistentDataContainer()
-    itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, min(ammoCount, gun.ammoMax))
-    
-    // begin item description with ammo count
-    val itemDescription: ArrayList<String> = arrayListOf("${ChatColor.GRAY}Ammo: ${ammoCount}/${gun.ammoMax}")
-    // append lore
-    gun.itemLore?.let { lore -> itemDescription.addAll(lore) }
-    itemMeta.setLore(itemDescription.toList())
-
-    item.setItemMeta(itemMeta)
-
-    return item
-}
-
-/**
  * Updates item metadata with gun lore and ammo.
  * Note: this does not update an item itself, this is a sub-function
  * for a client updating a gun item.

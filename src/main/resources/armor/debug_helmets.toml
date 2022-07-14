@@ -1,0 +1,37 @@
+# Debugging helmet config.
+# 
+# This supports arrays of multiple helmets in the same file,
+# since in most cases armor will be ~identical. So it's unnecessary
+# to split helmets into separate individual files.
+
+# HAT BLOCK 1
+[[hat]]
+id = 1
+model = 20
+armor = 2.0
+name = "Blahaj"
+lore = [
+    "trans rights r human rights",
+    ">,<",
+]
+
+# optional enchants
+[[hat.enchants]]
+protection = 1
+respiration = 2
+
+
+# HAT BLOCK 2
+[[hat]]
+id = 2
+model = 24
+armor = 4.0
+name = "Stahlhelm"
+lore = [
+    "Pure prussian engineering.",
+    "Here's how we can still win.",
+]
+
+# optional enchants
+[[hat.enchants]]
+blast_protection = 1

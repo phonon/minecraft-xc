@@ -38,8 +38,9 @@ import org.bukkit.util.Vector
 
 import com.comphenix.protocol.ProtocolLibrary
 
-import phonon.xc.gun.*
 import phonon.xc.ammo.*
+import phonon.xc.gun.*
+import phonon.xc.armor.*
 import phonon.xc.utils.EnumArrayMap
 import phonon.xc.utils.mapToObject
 import phonon.xc.utils.Hitbox
@@ -116,7 +117,7 @@ public object XC {
     internal var melee: Array<Gun?> = Array(MAX_MELEE_CUSTOM_MODEL_ID, { _ -> null })
     
     // custom hat (helmet) storage and lookup
-    internal var hats: Array<Gun?> = Array(MAX_HAT_CUSTOM_MODEL_ID, { _ -> null })
+    internal var hats: Array<Hat?> = Array(MAX_HAT_CUSTOM_MODEL_ID, { _ -> null })
     
     // ammo lookup
     internal var ammo: HashMap<Int, Ammo> = HashMap()
@@ -190,6 +191,9 @@ public object XC {
     internal val playerReloadCancelledTaskQueue: LinkedBlockingQueue<PlayerReloadCancelledTask> = LinkedBlockingQueue()
     internal val playerCrawlRequestFinishQueue: LinkedBlockingQueue<CrawlToShootRequestFinish> = LinkedBlockingQueue()
     internal val playerCrawlRequestCancelQueue: LinkedBlockingQueue<CrawlToShootRequestCancel> = LinkedBlockingQueue()
+
+    // hats
+    internal var wearHatRequests: ArrayList<PlayerWearHatRequest> = ArrayList()
 
     // ========================================================================
     // Async packet queues
@@ -767,6 +771,9 @@ public object XC {
 
         // timestamp for beginning update tick
         val timestamp = System.currentTimeMillis()
+
+        // wear hats
+        XC.wearHatRequests = wearHatSystem(XC.wearHatRequests)
 
         // run pipelined player movement check, for sway modifier
         val (playerNewSpeed, playerNewLocation) = playerSpeedSystem(XC.playerSpeed, XC.playerPreviousLocation)
