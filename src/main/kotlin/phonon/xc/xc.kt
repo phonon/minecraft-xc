@@ -361,7 +361,7 @@ public object XC {
                 if ( modelId >= 0 ) {
                     if ( modelId < MAX_GUN_CUSTOM_MODEL_ID ) {
                         if ( guns[modelId] != null ) {
-                            XC.logger!!.warning("Gun ${g.id} overwrites gun ${guns[modelId]!!.id}")
+                            XC.logger!!.warning("Gun ${g.itemName} (${g.id}) overwrites gun ${guns[modelId]!!.id}")
                         }
                         guns[modelId] = g
                     } else {

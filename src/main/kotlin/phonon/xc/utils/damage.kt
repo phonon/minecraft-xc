@@ -17,14 +17,15 @@ import org.bukkit.enchantments.Enchantment
  * damage based on type.
  */
 public enum class DamageType {
-    ARMOR_PIERCING, // armor piercing round, e.g. anti-tank rifle
+    ANTI_TANK_RIFLE,      // dedicated anti tank rifle damage type
+    ARMOR_PIERCING,       // armor piercing round, e.g. anti-tank rifle
     ARMOR_PIERCING_SHELL, // armor piercing shell, e.g. tank ap shell
-    BULLET,    // regular guns
-    EXPLOSIVE, // generic explosive like grenade
-    EXPLOSIVE_SHELL, // e.g. artillery or tank vehicle type damage
-    FIRE,      // fire, like flamethrower
-    MELEE,     // melee weapons
-    UNKNOWN,   // placeholder or none specified
+    BULLET,               // regular guns
+    EXPLOSIVE,            // generic explosive like grenade
+    EXPLOSIVE_SHELL,      // e.g. artillery or tank vehicle type damage
+    FIRE,                 // fire, like flamethrower
+    MELEE,                // melee weapons
+    UNKNOWN,              // placeholder or none specified
     ; // end enums
 
     companion object {
@@ -34,6 +35,7 @@ public enum class DamageType {
          */
         public fun match(name: String): DamageType? {
             return when (name.uppercase()) {
+                "ANTI_TANK_RIFLE" -> ANTI_TANK_RIFLE
                 "ARMOR_PIERCING" -> ARMOR_PIERCING
                 "ARMOR_PIERCING_SHELL" -> ARMOR_PIERCING_SHELL
                 "BULLET" -> BULLET
