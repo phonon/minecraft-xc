@@ -12,6 +12,8 @@ import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
+import org.bukkit.inventory.Inventory
+import org.bukkit.inventory.InventoryHolder
 import phonon.xc.XC
 import phonon.xc.utils.Message
 
@@ -21,12 +23,14 @@ import phonon.xc.compatibility.v1_16_R3.gun.item.*
 
 
 private val SUBCOMMANDS = listOf(
-    "ammo",
     "help",
     "reload",
+
+    "ammo",
+    "benchmark",
+    "browse",
     "timings",
     "debugtimings",
-    "benchmark",
     "gun",
     "gundebug",
     "hitbox",
@@ -56,7 +60,9 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         when ( arg ) {
             "help" -> printHelp(sender)
             "reload" -> reload(sender)
+
             "ammo"-> ammo(sender, args)
+            "browse" -> browse(sender, args)
             "gun" -> gun(sender, args)
             "timings" -> timings(sender)
             "debugtimings" -> debugTimings(sender)
@@ -76,6 +82,13 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
     }
 
     override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<String>): List<String> {
+        if ( args.size > 1 ) {
+            // handle specific subcommands
+            when ( args[0].lowercase() ) {
+                "browse" -> return listOf("ammo", "gun", "hat")
+            }
+        }
+
         return SUBCOMMANDS
     }
 
@@ -83,10 +96,12 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         Message.print(sender, "[xc] for Mineman 1.16.5")
         Message.print(sender, "/xc help: help")
         Message.print(sender, "/xc reload: reload plugin config and item configs")
-        Message.print(sender, "/xc timings: print debug timings")
-        Message.print(sender, "/xc debugtimings: toggle debug timings")
+
         Message.print(sender, "/xc benchmark: run projectile benchmark")
+        Message.print(sender, "/xc browse: view gun, hat, ammo items")
+        Message.print(sender, "/xc debugtimings: toggle debug timings")
         Message.print(sender, "/xc hitbox: visualize hitboxes")
+        Message.print(sender, "/xc timings: print debug timings")
         return
     }
 
@@ -98,6 +113,30 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         }
         else {
             Message.error(sender, "[xc] Only operators can reload")
+        }
+    }
+
+    private fun browse(sender: CommandSender?, args: Array<String>) {
+        val player = if ( sender is Player ) sender else null
+        if ( player === null ) {
+            // TODO: CONSOLE FORMAT: RUN /xc list [type] INSTEAD
+            Message.error(sender, "[xc] Only players ingame can use /xc browse")
+            return
+        }
+
+        if ( args.size < 2 ) {
+            Message.error(sender, "[xc] /xc browse [gun|hat|ammo]")
+            return
+        }
+
+        val type = args[1].lowercase()
+        when ( type ) {
+            "gun" -> player.openInventory(GunGui().getInventory())
+            "hat" -> player.openInventory(HatGui().getInventory())
+            "ammo" -> player.openInventory(AmmoGui().getInventory())
+            else -> {
+                Message.error(sender, "[xc] Invalid $type: /xc browse [gun|hat|ammo]")
+            }
         }
     }
 
@@ -190,7 +229,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         val ammoId = args[1].toInt()
         val ammo = XC.ammo[ammoId]
         if ( ammo != null ) {
-            val item = ammo.toItem()
+            val item = ammo.toItemStack()
             player.getInventory().addItem(item)
             return
         } else {
@@ -301,6 +340,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         Message.print(sender, "[xc] Must be run in-game by player")
     }
 
+
     /**
      * Debug command to get entity default bounding box sizes.
      * This loads a chunk, spawns all possible entities, waits
@@ -376,4 +416,74 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
 
     //     println("load chunks: ${dt / 1000}us")
     // }
+}
+
+
+private class AmmoGui(): InventoryHolder {
+    val inv: Inventory = Bukkit.createInventory(this, 54, "Ammo")
+    
+    override public fun getInventory(): Inventory {
+        var n = 0 // base index in array of guns for pagination
+        for ( id in XC.ammoIds ) {
+            val ammo = XC.ammo[id]
+            if ( ammo != null ) {
+                this.inv.setItem(n, ammo.toItemStack())
+
+                // inventory size cutoff
+                // TODO: pagination
+                n += 1
+                if ( n >= 54 ) {
+                    break
+                }
+            }
+        }
+
+        return this.inv
+    }
+}
+
+private class GunGui(): InventoryHolder {
+    val inv: Inventory = Bukkit.createInventory(this, 54, "Guns")
+    
+    override public fun getInventory(): Inventory {
+        var n = 0 // base index in array of guns for pagination
+        for ( id in XC.gunIds ) {
+            val gun = XC.guns[id]
+            if ( gun != null ) {
+                this.inv.setItem(n, gun.toItemStack())
+
+                // inventory size cutoff
+                // TODO: pagination
+                n += 1
+                if ( n >= 54 ) {
+                    break
+                }
+            }
+        }
+
+        return this.inv
+    }
+}
+
+private class HatGui(): InventoryHolder {
+    val inv: Inventory = Bukkit.createInventory(this, 54, "Hats")
+    
+    override public fun getInventory(): Inventory {
+        var n = 0 // base index in array of guns for pagination
+        for ( id in XC.hatIds ) {
+            val hat = XC.hats[id]
+            if ( hat != null ) {
+                this.inv.setItem(n, hat.toItemStack())
+
+                // inventory size cutoff
+                // TODO: pagination
+                n += 1
+                if ( n >= 54 ) {
+                    break
+                }
+            }
+        }
+
+        return this.inv
+    }
 }

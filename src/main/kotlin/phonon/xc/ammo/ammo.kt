@@ -26,7 +26,7 @@ public class Ammo(
     /**
      * Create a new ItemStack from ammo properties.
      */
-    public fun toItem(
+    public fun toItemStack(
         count: Int = 1,
     ): ItemStack {
         val item = ItemStack(XC.config.materialAmmo, count)
@@ -66,7 +66,7 @@ public class Ammo(
 
                 // item properties
                 toml.getTable("item")?.let { item -> 
-                    item.getString("name")?.let { properties["itemName"] = it }
+                    item.getString("name")?.let { properties["itemName"] = ChatColor.translateAlternateColorCodes('&', it) }
                     item.getArray("lore")?.let { properties["itemLore"] = it.toList().map { s -> s.toString() } }
                 }
 

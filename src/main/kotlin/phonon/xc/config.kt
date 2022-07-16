@@ -49,9 +49,9 @@ public data class Config(
     // material types for custom items
     public val materialGun: Material = Material.WARPED_FUNGUS_ON_A_STICK,
     public val materialAimDownSights: Material = Material.CARROT_ON_A_STICK, // phantom model for ads
-    public val materialMelee: Material = Material.IRON_HORSE_ARMOR,
+    public val materialMelee: Material = Material.IRON_SWORD,
     public val materialMisc: Material = Material.GOLDEN_HORSE_ARMOR,
-    public val materialAmmo: Material = Material.LEATHER_HORSE_ARMOR,
+    public val materialAmmo: Material = Material.IRON_HORSE_ARMOR,
     public val materialArmor: Material = Material.LEATHER_HORSE_ARMOR,
     
     // auto fire max ticks before stopping

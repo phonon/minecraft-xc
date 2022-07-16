@@ -16,7 +16,7 @@ lore = [
 ]
 
 # optional enchants
-[[hat.enchants]]
+[hat.enchants]
 protection = 1
 respiration = 2
 
@@ -33,5 +33,5 @@ lore = [
 ]
 
 # optional enchants
-[[hat.enchants]]
+[hat.enchants]
 blast_protection = 1

@@ -84,13 +84,13 @@ public data class Hat(
          * Return null list if any hat fails to parse.if something fails
          * or no file found.
          */
-        public fun fromToml(source: Path, logger: Logger? = null): List<Hat>? {
+        public fun listFromToml(source: Path, logger: Logger? = null): List<Hat>? {
             val hats = ArrayList<Hat>()
 
             try {
                 val toml = Toml.parse(source)
 
-                toml.getArray("hats")?.let { tomlHatArray ->
+                toml.getArray("hat")?.let { tomlHatArray ->
                     for ( i in 0 until tomlHatArray.size() ) {
                         val tomlHat = tomlHatArray.getTable(i)
 
@@ -99,7 +99,7 @@ public data class Hat(
 
                         // parse basic item properties
                         tomlHat.getLong("id")?.let { properties["id"] = it.toInt() }
-                        tomlHat.getString("name")?.let { properties["itemName"] = it }
+                        tomlHat.getString("name")?.let { properties["itemName"] = ChatColor.translateAlternateColorCodes('&', it) }
                         tomlHat.getLong("model")?.let { properties["itemModel"] = it.toInt() }
                         tomlHat.getArray("lore")?.let { properties["itemLore"] = it.toList().map { s -> s.toString() } }
                         tomlHat.getDouble("armor")?.let { properties["armor"] = it }

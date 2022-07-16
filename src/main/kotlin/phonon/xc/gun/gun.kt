@@ -334,7 +334,7 @@ public data class Gun(
 
                 // item properties
                 toml.getTable("item")?.let { item -> 
-                    item.getString("name")?.let { properties["itemName"] = it }
+                    item.getString("name")?.let { properties["itemName"] = ChatColor.translateAlternateColorCodes('&', it) }
                     item.getArray("lore")?.let { properties["itemLore"] = it.toList().map { s -> s.toString() } }
                 }
 

@@ -112,15 +112,19 @@ public object XC {
     
     // gun storage and lookup, 
     internal var guns: Array<Gun?> = Array(MAX_GUN_CUSTOM_MODEL_ID, { _ -> null }) 
+    internal var gunIds: IntArray = intArrayOf() // cached non null gun Ids
 
     // melee weapon storage and lookup
     internal var melee: Array<Gun?> = Array(MAX_MELEE_CUSTOM_MODEL_ID, { _ -> null })
-    
+    internal var meleeIds: IntArray = intArrayOf() // cached non null melee Ids
+
     // custom hat (helmet) storage and lookup
     internal var hats: Array<Hat?> = Array(MAX_HAT_CUSTOM_MODEL_ID, { _ -> null })
-    
+    internal var hatIds: IntArray = intArrayOf() // cached non null hat Ids
+
     // ammo lookup
     internal var ammo: HashMap<Int, Ammo> = HashMap()
+    internal var ammoIds: IntArray = intArrayOf() // cached non null ammo Ids
 
     // custom hitboxes for armor stand custom models, maps EntityId => HitboxSize
     internal var customModelHitboxes: HashMap<UUID, HitboxSize> = HashMap()
@@ -317,22 +321,33 @@ public object XC {
         XC.doDebugTimings = config.defaultDoDebugTimings
 
         // load guns
-        val filesAmmo = listDirFiles(config.pathFilesAmmo)
         val filesGuns = listDirFiles(config.pathFilesGun)
         val gunsLoaded: List<Gun> = filesGuns
             .map { file -> Gun.fromToml(config.pathFilesGun.resolve(file), XC.logger) }
             .filterNotNull()
+
+        val filesAmmo = listDirFiles(config.pathFilesAmmo)
         val ammoLoaded: List<Ammo> = filesAmmo
             .map { file -> Ammo.fromToml(config.pathFilesAmmo.resolve(file), XC.logger) }
             .filterNotNull()
         
+        val filesHats = listDirFiles(config.pathFilesArmor)
+        val hatsLoaded: List<Hat> = filesHats
+            .map { file -> Hat.listFromToml(config.pathFilesArmor.resolve(file), XC.logger) }
+            .filterNotNull()
+            .flatten() // this flattens a List<List<Hat>> -> List<Hat>
+        
         // map custom model ids => gun (NOTE: guns can overwrite each other!)
         val guns: Array<Gun?> = Array(MAX_GUN_CUSTOM_MODEL_ID, { _ -> null })
+        val validGunIds = mutableSetOf<Int>()
         for ( g in gunsLoaded ) {
             // special debug gun
             if ( g.id == -1 ) {
                 XC.gunDebug = g
             }
+
+            // add default gun model id to validGunIds (this overwrites duplicates)
+            validGunIds.add(g.itemModelDefault)
 
             // map regular guns custom model ids => gun
             val gunModels = arrayOf(
@@ -359,19 +374,37 @@ public object XC {
         // temporary: set gun 0 to debug gun
         guns[0] = XC.gunDebug
 
+        // map ammo id => ammo
         val ammo = HashMap<Int, Ammo>()
+        val validAmmoIds = mutableSetOf<Int>()
         for ( a in ammoLoaded ) {
             ammo[a.id] = a
+            validAmmoIds.add(a.id)
+        }
+        
+        // map hat id => hat
+        val hats: Array<Hat?> = Array(MAX_HAT_CUSTOM_MODEL_ID, { _ -> null })
+        val validHatIds = mutableSetOf<Int>()
+        for ( h in hatsLoaded ) {
+            hats[h.itemModel] = h
+            validHatIds.add(h.itemModel)
         }
 
         // set guns/ammos/etc...
-        XC.guns = guns
         XC.ammo = ammo
+        XC.ammoIds = validAmmoIds.toIntArray().sortedArray()
+        XC.guns = guns
+        XC.gunIds = validGunIds.toIntArray().sortedArray()
+        XC.hats = hats
+        XC.hatIds = validHatIds.toIntArray().sortedArray()
 
         // start new engine runnable
         val timeEnd = System.currentTimeMillis()
         val timeLoad = timeEnd - timeStart
         XC.logger?.info("Reloaded in ${timeLoad}ms")
+        XC.logger?.info("- Guns: ${validGunIds.size}")
+        XC.logger?.info("- Ammo: ${validAmmoIds.size}")
+        XC.logger?.info("- Hats: ${validHatIds.size}")
     }
 
     /**
@@ -379,7 +412,7 @@ public object XC {
      */
     internal fun reloadFinishAsync() {
         XC.cleanup()
-
+        // TODO
     }
 
     /**

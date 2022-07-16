@@ -313,9 +313,6 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             else if ( itemMainHand.type == XC.config.materialMisc ) {
                 // TODO: misc weapon behavior (grenade, etc.)
             }
-            else if ( itemMainHand.type == XC.config.materialArmor ) {
-                // TODO: put armor (helmet) on
-            }
         }
         // right click: auto fire
         else if ( action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK ) {

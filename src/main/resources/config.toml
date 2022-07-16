@@ -25,9 +25,9 @@ explosion = false
 [material]
 gun = "WARPED_FUNGUS_ON_A_STICK"
 aim_down_sights = "CARROT_ON_A_STICK"
-melee = "IRON_HORSE_ARMOR"
+melee = "IRON_SWORD"
 misc = "GOLDEN_HORSE_ARMOR"
-ammo = "LEATHER_HORSE_ARMOR"
+ammo = "IRON_HORSE_ARMOR"
 armor = "LEATHER_HORSE_ARMOR"
 
 # ADVANCED ENGINE CONFIG
