@@ -319,19 +319,21 @@ public class ProjectileSystem(public val world: World) {
 
                 // queue packets for block breaking animation
                 // and particles on block hit
-                val hitLoc = raytraceResult.location!!
-                val hitBlockData = hitBlock.getBlockData().clone()
-                XC.particleBulletImpactQueue.add(ParticleBulletImpact(
-                    world = world,
-                    count = XC.config.particleBulletImpactCount,
-                    x = hitLoc.x,
-                    y = hitLoc.y,
-                    z = hitLoc.z,
-                    blockData = hitBlockData,
-                    force = true,
-                ))
+                if ( projectile.gun.projectileBlockHitParticles ) {
+                    val hitLoc = raytraceResult.location!!
+                    val hitBlockData = hitBlock.getBlockData().clone()
+                    XC.particleBulletImpactQueue.add(ParticleBulletImpact(
+                        world = world,
+                        count = XC.config.particleBulletImpactCount,
+                        x = hitLoc.x,
+                        y = hitLoc.y,
+                        z = hitLoc.z,
+                        blockData = hitBlockData,
+                        force = true,
+                    ))
 
-                XC.blockCrackAnimationQueue.add(BlockCrackAnimation(world, hitBlock.x, hitBlock.y, hitBlock.z))
+                    XC.blockCrackAnimationQueue.add(BlockCrackAnimation(world, hitBlock.x, hitBlock.y, hitBlock.z))
+                }
             }
             
             // handle entity hit

@@ -111,6 +111,7 @@ size = 0.35
 color = [0, 255, 0] # [r,g,b] in 0-255
 spacing = 1.5
 force_render = true
+block_hit_particles = true # particles on block hit
 
 # Explosion damage properties. These are only used if the handler
 # for block or entity hit has an explosion effect.

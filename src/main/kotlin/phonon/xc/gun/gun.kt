@@ -202,6 +202,9 @@ public data class Gun(
     public val projectileParticleSpacing: Double = 1.5,
     public val projectileParticleForceRender: Boolean = true,
 
+    // flag for projectile block hit particles and crack animation
+    public val projectileBlockHitParticles: Boolean = true,
+
     // explosion damage and radius and falloff (unused if no explosion)
     public val explosionDamage: Double = 8.0,
     public val explosionMaxDistance: Double = 8.0,        // max distance for checking entities
@@ -512,6 +515,7 @@ public data class Gun(
                     particles.getDouble("size")?.let { properties["projectileParticleSize"] = it.toFloat() }
                     particles.getDouble("spacing")?.let { properties["projectileParticleSpacing"] = it }
                     particles.getBoolean("force_render")?.let { properties["projectileParticleForceRender"] = it }
+                    particles.getBoolean("block_hit_particles")?.let { properties["projectileBlockHitParticles"] = it }
                 }
 
                 // explosion
