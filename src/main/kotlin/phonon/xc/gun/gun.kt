@@ -7,16 +7,20 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
 import java.util.logging.Logger
+import java.util.UUID
 import kotlin.math.min
 import org.tomlj.Toml
 import org.bukkit.Color
 import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.Particle
+import org.bukkit.attribute.Attribute
+import org.bukkit.attribute.AttributeModifier
 import org.bukkit.entity.Player
 import org.bukkit.entity.Entity
 import org.bukkit.util.Vector
 import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.persistence.PersistentDataContainer
 import phonon.xc.XC
@@ -240,6 +244,32 @@ public data class Gun(
     // Each index is: loreWithAmmo[ammo] => List<String> item lore 
     public val itemDescriptionForAmmo: List<List<String>>
 
+    /**
+     * Convert this single/burst fire delay into an attribute modifier
+     * attack speed (to adjust the minecraft attack cooldown bar).
+     * 
+     * generic.attack_speed
+     *      Determines recharging rate of attack strength.
+     *      Value is the number of full-strength attacks per second. 
+     * 
+     * https://minecraft.fandom.com/wiki/Attribute#Attributes_for_players
+     * 
+     * Formula is (in seconds)
+     *     delay = 1s / generic_attack_speed = 1s / (4.0 + modifier)
+     * 
+     * We want to calculate modifier to get the desired delay:
+     *     shootDelayMillis = 1000 / (4.0 + modifier)
+     *     modifier = (1000 / shootDelayMillis) - 4.0
+     */
+    public val attackSpeedAttributeModifierValue: Double = (1000.0 / this.shootDelayMillis.toDouble()) - 4.0
+    public val attackSpeedAttributeModifier: AttributeModifier = AttributeModifier(
+        UUID.randomUUID(),
+        "gun.attackSpeed",
+        this.attackSpeedAttributeModifierValue,
+        AttributeModifier.Operation.ADD_NUMBER,
+        EquipmentSlot.HAND,
+    )
+
     init {
         // generate all possible item descriptions with different ammo values
         val itemDescriptionForAmmoBuf = ArrayList<List<String>>(this.ammoMax + 1)
@@ -308,6 +338,9 @@ public data class Gun(
         // begin item description with ammo count
         val itemDescription = this.getItemDescriptionForAmmo(ammo)
         itemMeta.setLore(itemDescription.toList())
+
+        // add item cooldown
+        itemMeta.addAttributeModifier(Attribute.GENERIC_ATTACK_SPEED, this.attackSpeedAttributeModifier)
 
         item.setItemMeta(itemMeta)
 

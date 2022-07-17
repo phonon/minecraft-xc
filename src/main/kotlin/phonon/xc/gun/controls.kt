@@ -16,7 +16,7 @@ import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.Material
-import org.bukkit.scheduler.BukkitRunnable
+import org.bukkit.attribute.Attribute
 import org.bukkit.entity.Player
 import org.bukkit.entity.Item
 import org.bukkit.inventory.Inventory
@@ -24,6 +24,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.persistence.PersistentDataContainer
+import org.bukkit.scheduler.BukkitRunnable
 import phonon.xc.XC
 import phonon.xc.utils.Message
 import phonon.xc.utils.sound.SoundPacket
@@ -234,6 +235,11 @@ private fun cleanupGunMeta(
         itemData.remove(XC.namespaceKeyItemBurstFireId!!)
         itemMeta.setLore(gun.getItemDescriptionForAmmo(ammoCurrent))
     }
+
+    // SET GUN ATTACK SPEED SETTING
+    // (to match gun shoot delay)
+    itemMeta.removeAttributeModifier(Attribute.GENERIC_ATTACK_SPEED)
+    itemMeta.addAttributeModifier(Attribute.GENERIC_ATTACK_SPEED, gun.attackSpeedAttributeModifier)
 
     return setGunItemMetaModel(itemMeta, gun, ammoCurrent, aimdownsights)
 }
