@@ -21,9 +21,10 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
+import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.entity.ProjectileLaunchEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
-import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.player.PlayerChangedMainHandEvent
 import org.bukkit.event.player.PlayerItemHeldEvent
 import org.bukkit.event.player.PlayerSwapHandItemsEvent
@@ -379,6 +380,17 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             }
 
             // TODO: melee weapon damage adjust
+        }
+    }
+
+    /**
+     * Disable snowball throwing because snowballs used as main
+     * gun ammo.
+     */
+    @EventHandler
+    public fun onProjectileThrownEvent(e: ProjectileLaunchEvent) {
+        if ( e.getEntity().getType() == EntityType.SNOWBALL ) {
+            e.setCancelled(true)
         }
     }
 }

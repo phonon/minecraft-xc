@@ -51,7 +51,7 @@ public data class Config(
     public val materialAimDownSights: Material = Material.CARROT_ON_A_STICK, // phantom model for ads
     public val materialMelee: Material = Material.IRON_SWORD,
     public val materialMisc: Material = Material.GOLDEN_HORSE_ARMOR,
-    public val materialAmmo: Material = Material.IRON_HORSE_ARMOR,
+    public val materialAmmo: Material = Material.SNOWBALL,
     public val materialArmor: Material = Material.LEATHER_HORSE_ARMOR,
     
     // auto fire max ticks before stopping
