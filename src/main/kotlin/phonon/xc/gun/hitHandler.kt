@@ -46,9 +46,10 @@ typealias GunHitBlockHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, L
  *  location: Location,
  *  target: Entity,
  *  source: Entity,
+ *  distance: Double,
  * ) -> Unit
  */
-typealias GunHitEntityHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, Location, Entity, Entity) -> Unit
+typealias GunHitEntityHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, Location, Entity, Entity, Double) -> Unit
 
 
 /**
@@ -77,7 +78,7 @@ public fun getGunHitEntityHandler(name: String): GunHitEntityHandler? {
 /**
  * Empty entity hit handler.
  */
-public val noEntityHitHandler: GunHitEntityHandler = {_, _, _, _, _ -> }
+public val noEntityHitHandler: GunHitEntityHandler = {_, _, _, _, _, _ -> }
 
 /**
  * Entity hit handler with damage (standard entity damage hit handler).
@@ -88,14 +89,22 @@ public val entityDamageHitHandler = fun(
     location: Location,
     target: Entity,
     source: Entity,
+    distance: Double,
 ) {
     if ( target is LivingEntity && target is Damageable ) {
         if ( target is Player && !XC.canPvpAt(location) ) {
             return
         }
 
+        // FOR DEBUGGING
+        // val baseDamage = gun.projectileDamageAtDistance(distance)
+        // println("baseDamage: $baseDamage, distance: $distance")
+
+        // final damage after 
+        // 1. gun damage drop: gun.damageAtDistance(distance)
+        // 2. applying armor/resistance
         val damage = damageAfterArmorAndResistance(
-            gun.projectileDamage,
+            gun.projectileDamageAtDistance(distance),
             target,
             gun.projectileArmorReduction,
             gun.projectileResistanceReduction,
@@ -127,6 +136,7 @@ public val entityExplosionHitHandler = fun(
     location: Location,
     target: Entity,
     source: Entity,
+    distance: Double,
 ) {
     // do main damage directly to target
     if ( target is LivingEntity && target is Damageable ) {
@@ -135,7 +145,7 @@ public val entityExplosionHitHandler = fun(
         }
 
         val damage = damageAfterArmorAndResistance(
-            gun.projectileDamage,
+            gun.projectileDamageAtDistance(distance),
             target,
             gun.projectileArmorReduction,
             gun.projectileResistanceReduction,

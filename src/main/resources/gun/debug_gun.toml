@@ -103,6 +103,8 @@ gravity = 0.025          # blocks/tick^2
 lifetime = 400           # ticks before despawning
 max_distance = 128.0     # distance before despawning
 damage_type = "BULLET"
+damage_min = 4.0           # min damage after distance damage drop
+damage_drop_distance = 0.0 # distance for damage drop
 
 # projectile particle trail properties
 [projectile.particles]

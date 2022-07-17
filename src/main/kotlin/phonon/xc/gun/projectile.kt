@@ -115,6 +115,7 @@ internal data class ProjectileHitEntity(
     val location: Location,
     val source: Entity,
     val gun: Gun,
+    val distance: Double,
 )
 
 
@@ -343,6 +344,7 @@ public class ProjectileSystem(public val world: World) {
                     location = raytraceResult.location!!,
                     source = projectile.source,
                     gun = projectile.gun,
+                    distance = projectile.distance.toDouble() + raytraceResult.distance,
                 ))
             }
 

@@ -9,6 +9,7 @@ import java.nio.file.Files
 import java.util.logging.Logger
 import java.util.UUID
 import kotlin.math.min
+import kotlin.math.max
 import org.tomlj.Toml
 import org.bukkit.Color
 import org.bukkit.ChatColor
@@ -194,6 +195,8 @@ public data class Gun(
     public val projectileArmorReduction: Double = 0.5,
     public val projectileResistanceReduction: Double = 0.5,
     public val projectileDamageType: DamageType = DamageType.BULLET,
+    public val projectileDamageMin: Double = 4.0,
+    public val projectileDamageDropDistance: Double = 0.0,
 
     // projectile particle config
     public val projectileParticleType: Particle = Particle.REDSTONE,
@@ -246,6 +249,13 @@ public data class Gun(
     // ammo string (e.g. "Ammo: 4/10") and item lore.
     // Each index is: loreWithAmmo[ammo] => List<String> item lore 
     public val itemDescriptionForAmmo: List<List<String>>
+
+    // damage drop multiplier
+    private val damageDropDistanceMultiplier = if ( this.projectileDamageDropDistance > 0.0 ) {
+        ( this.projectileDamage - this.projectileDamageMin ) / this.projectileDamageDropDistance
+    } else {
+        0.0
+    }
 
     /**
      * Convert this single/burst fire delay into an attribute modifier
@@ -348,6 +358,18 @@ public data class Gun(
         item.setItemMeta(itemMeta)
 
         return item
+    }
+
+    /**
+     * Calculate projectile damage at a distance after applying
+     * damage drop.
+     */
+    public fun projectileDamageAtDistance(distance: Double): Double {
+        return if ( this.damageDropDistanceMultiplier > 0.0 ) {
+            max(this.projectileDamageMin, this.projectileDamage - (distance * this.damageDropDistanceMultiplier))
+        } else {
+            this.projectileDamage
+        }
     }
 
     
@@ -497,6 +519,8 @@ public data class Gun(
                             logger?.warning("Unknown damage type: ${name}")
                         }
                     }
+                    projectile.getDouble("damage_min")?.let { properties["projectileDamageMin"] = it }
+                    projectile.getDouble("damage_drop_distance")?.let { properties["projectileDamageDropDistance"] = it }
                 }
 
                 // projectile particles

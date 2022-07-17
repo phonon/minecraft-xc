@@ -883,7 +883,7 @@ public object XC {
             }
 
             for ( hitEntity in hitEntitiesQueue ) {
-                hitEntity.gun.hitEntityHandler(hitboxes, hitEntity.gun, hitEntity.location, hitEntity.entity, hitEntity.source)
+                hitEntity.gun.hitEntityHandler(hitboxes, hitEntity.gun, hitEntity.location, hitEntity.entity, hitEntity.source, hitEntity.distance)
             }
         }
 
