@@ -44,3 +44,7 @@ only_allowed_on_crawl_weapons = true
 # debug stuff
 [debug]
 do_timings_default = false # default state for whether to do debug timings
+
+# experimental stuff
+[experimental]
+async_packets = true # sends most packets using an async task

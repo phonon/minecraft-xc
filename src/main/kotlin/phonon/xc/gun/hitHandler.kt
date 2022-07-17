@@ -216,6 +216,10 @@ public val blockFireHitHandler = fun(
     block: Block,
     source: Entity,
 ) {
+    if ( !XC.canCreateFireAt(location) ) {
+        return
+    }
+    
     if ( ThreadLocalRandom.current().nextDouble() < gun.hitBlockFireProbability ) {
         val blType = block.getType()
 

@@ -231,7 +231,7 @@ public data class Hitbox(
                 if ( playerEntity.isSneaking() ) {
                     ymax -= 0.3f
                 } else if ( playerEntity.isSwimming() ) {
-                    ymax = ymin + 0.5f
+                    ymax = ymin + 0.7f
                 }
             }
 

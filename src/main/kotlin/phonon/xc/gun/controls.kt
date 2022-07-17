@@ -798,7 +798,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
 
             // clean up item
             itemData.remove(XC.namespaceKeyItemBurstFireId!!)
-            val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+            val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, newAmmo, useAimDownSights(player))        
             item.setItemMeta(newItemMeta)
             equipment.setItem(currInventorySlot, item)
 
@@ -1047,7 +1047,7 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
         } else {
             // clean up item
             itemData.remove(XC.namespaceKeyItemAutoFireId!!)
-            val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+            val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, newAmmo, useAimDownSights(player))        
             item.setItemMeta(newItemMeta)
             equipment.setItem(currInventorySlot, item)
         }

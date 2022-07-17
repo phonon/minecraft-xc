@@ -553,6 +553,17 @@ public object XC {
     }
 
     /**
+     * Protection check if location allows fire.
+     */
+    internal fun canCreateFireAt(loc: Location): Boolean {
+        if ( XC.usingWorldGuard ) {
+            return WorldGuard.canCreateFireAt(loc)
+        }
+
+        return true
+    }
+
+    /**
      * Wrapper for System.nanoTime(), only runs call
      * if debug timings are on.
      */
@@ -897,31 +908,37 @@ public object XC {
         XC.recoilQueue = ArrayList()
         XC.blockCrackAnimationQueue = ArrayList()
 
-        Bukkit.getScheduler().runTaskAsynchronously(
-            XC.plugin!!,
-            TaskSpawnParticleBulletTrails(particleBulletTrails),
-        )
-        Bukkit.getScheduler().runTaskAsynchronously(
-            XC.plugin!!,
-            TaskSpawnParticleBulletImpacts(particleBulletImpacts),
-        )
-        Bukkit.getScheduler().runTaskAsynchronously(
-            XC.plugin!!,
-            TaskSpawnParticleExplosion(particleExplosions),
-        )
-        Bukkit.getScheduler().runTaskAsynchronously(
-            XC.plugin!!,
-            TaskAmmoInfoMessages(gunAmmoInfoMessages),
-        )
-        Bukkit.getScheduler().runTaskAsynchronously(
-            XC.plugin!!,
-            TaskSounds(soundPackets),
-        )
+        if ( XC.config.asyncPackets ) {
+            Bukkit.getScheduler().runTaskAsynchronously(
+                XC.plugin!!,
+                TaskSpawnParticleBulletTrails(particleBulletTrails),
+            )
+            Bukkit.getScheduler().runTaskAsynchronously(
+                XC.plugin!!,
+                TaskSpawnParticleBulletImpacts(particleBulletImpacts),
+            )
+            Bukkit.getScheduler().runTaskAsynchronously(
+                XC.plugin!!,
+                TaskSpawnParticleExplosion(particleExplosions),
+            )
+            Bukkit.getScheduler().runTaskAsynchronously(
+                XC.plugin!!,
+                TaskAmmoInfoMessages(gunAmmoInfoMessages),
+            )
+            Bukkit.getScheduler().runTaskAsynchronously(
+                XC.plugin!!,
+                TaskSounds(soundPackets),
+            )
+        }
+        else {
+            // sync
+            TaskSpawnParticleBulletTrails(particleBulletTrails).run()
+            TaskSpawnParticleBulletImpacts(particleBulletImpacts).run()
+            TaskSpawnParticleExplosion(particleExplosions).run()
+            TaskAmmoInfoMessages(gunAmmoInfoMessages).run()
+            TaskSounds(soundPackets).run()
+        }
 
-        // sync
-        // TaskSpawnParticleBulletTrails(particleBulletTrails).run()
-        // TaskSpawnParticleBulletImpacts(particleBulletImpacts).run()
-        // TaskAmmoInfoMessages(gunAmmoInfoMessages).run()
 
         // custom packets (only if ProtocolLib is available)
         if ( XC.usingProtocolLib ) {

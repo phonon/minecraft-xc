@@ -80,6 +80,9 @@ public data class Config(
 
     // debug timings default value
     public val defaultDoDebugTimings: Boolean = false,
+
+    // use async tasks to send packets to players
+    public val asyncPackets: Boolean = true,
 ) {
 
     companion object {
@@ -153,6 +156,9 @@ public data class Config(
             
             // default debug timings config
             toml.getBoolean("debug.do_timings_default")?.let { configOptions["defaultDoDebugTimings"] = it }
+
+            // random advanced options
+            toml.getBoolean("experimental.async_packets")?.let { configOptions["asyncPackets"] = it }
 
             return mapToObject(configOptions, Config::class)
         }

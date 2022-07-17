@@ -38,4 +38,18 @@ public object WorldGuard {
         }
         return true
     }
+
+    /**
+     * Check if region fire spread flag enabled.
+     */
+    public fun canCreateFireAt(loc: Location): Boolean {
+        val regionContainer = WorldGuard.getInstance().getPlatform().getRegionContainer()
+        val query = regionContainer.createQuery()
+        val regions = query.getApplicableRegions(BukkitAdapter.adapt(loc))
+        // this only blocks if region explicity denies (so fire on by default)
+        if ( regions.queryState(null, Flags.FIRE_SPREAD) == StateFlag.State.DENY ) {
+            return false
+        }
+        return true
+    }
 }

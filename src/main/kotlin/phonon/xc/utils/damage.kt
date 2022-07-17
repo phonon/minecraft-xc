@@ -80,7 +80,7 @@ public fun damageAfterArmorAndResistance(
     //     potionModifier -= magnitude * resistReductionFactor
     // }
 
-    return max(0.0, baseDamage - (armor * armorReductionFactor))
+    return max(1.0, baseDamage - (armor * armorReductionFactor))
 }
 
 
@@ -112,5 +112,5 @@ public fun explosionDamageAfterArmor(
         equipment.getBoots()?.getItemMeta()?.let { it -> totalBlastProtectionLevel += it.getEnchantLevel(Enchantment.PROTECTION_EXPLOSIONS).toDouble() }
     }
 
-    return max(0.0, baseDamage - (armor * armorReductionFactor) - (totalBlastProtectionLevel * blastProtReductionFactor))
+    return max(1.0, baseDamage - (armor * armorReductionFactor) - (totalBlastProtectionLevel * blastProtReductionFactor))
 }
