@@ -85,7 +85,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         if ( args.size > 1 ) {
             // handle specific subcommands
             when ( args[0].lowercase() ) {
-                "browse" -> return listOf("ammo", "gun", "hat")
+                "browse" -> return listOf("ammo", "gun", "hat", "melee", "throwable")
             }
         }
 
@@ -125,17 +125,19 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         }
 
         if ( args.size < 2 ) {
-            Message.error(sender, "[xc] /xc browse [gun|hat|ammo]")
+            Message.error(sender, "[xc] /xc browse [ammo|gun|hat|melee|throwable]")
             return
         }
 
         val type = args[1].lowercase()
         when ( type ) {
+            "ammo" -> player.openInventory(AmmoGui().getInventory())
             "gun" -> player.openInventory(GunGui().getInventory())
             "hat" -> player.openInventory(HatGui().getInventory())
-            "ammo" -> player.openInventory(AmmoGui().getInventory())
+            "melee" -> player.openInventory(MeleeGui().getInventory())
+            "throwable" -> player.openInventory(ThrowableGui().getInventory())
             else -> {
-                Message.error(sender, "[xc] Invalid $type: /xc browse [gun|hat|ammo]")
+                Message.error(sender, "[xc] Invalid $type: /xc browse [ammo|gun|hat|melee|throwable]")
             }
         }
     }
@@ -474,6 +476,52 @@ private class HatGui(): InventoryHolder {
             val hat = XC.hats[id]
             if ( hat != null ) {
                 this.inv.setItem(n, hat.toItemStack())
+
+                // inventory size cutoff
+                // TODO: pagination
+                n += 1
+                if ( n >= 54 ) {
+                    break
+                }
+            }
+        }
+
+        return this.inv
+    }
+}
+
+private class ThrowableGui(): InventoryHolder {
+    val inv: Inventory = Bukkit.createInventory(this, 54, "Throwable")
+    
+    override public fun getInventory(): Inventory {
+        var n = 0 // base index in array of throwables for pagination
+        for ( id in XC.throwableIds ) {
+            val th = XC.throwable[id]
+            if ( th != null ) {
+                this.inv.setItem(n, th.toItemStack())
+
+                // inventory size cutoff
+                // TODO: pagination
+                n += 1
+                if ( n >= 54 ) {
+                    break
+                }
+            }
+        }
+
+        return this.inv
+    }
+}
+
+private class MeleeGui(): InventoryHolder {
+    val inv: Inventory = Bukkit.createInventory(this, 54, "Melee")
+    
+    override public fun getInventory(): Inventory {
+        var n = 0 // base index in array of throwables for pagination
+        for ( id in XC.meleeIds ) {
+            val th = XC.melee[id]
+            if ( th != null ) {
+                this.inv.setItem(n, th.toItemStack())
 
                 // inventory size cutoff
                 // TODO: pagination

@@ -1,0 +1,34 @@
+# Debug melee weapon item.
+# Implements 1.8 style pvp where cooldown does not matter.
+# Shows all keys and properties.
+
+# Item properties
+[item]
+name = "melee_debug"
+lore = [
+    "This sword is for debugging.",
+    "Folded 1000x times nippon edge.",
+]
+
+# Visual models. Default is required (otherwise placeholder
+# will be used). Other models are optional, use -1 if they
+# do not exist.
+[model]
+default = 0     # normal model
+
+# TODO: block/entity hit handlers
+
+# Damage properties.
+[damage]
+damage = 8.0
+armor_reduction = 0.5
+blast_prot_reduction = 0.5
+damage_type = "MELEE"
+
+# sounds
+[sound]
+equip = "sword_equip"
+hit = "sword_hit"
+# alternative detailed mode to specify volume and pitch
+# equip = { name = "sword_equip", volume = 1.0, pitch = 1.0 } 
+# hit = { name = "sword_hit", volume = 1.0, pitch = 1.0 }

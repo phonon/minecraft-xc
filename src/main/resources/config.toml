@@ -3,11 +3,12 @@
 
 # folders within `plugins/xc` containing item configs
 [configs]
-gun = "gun"
 ammo = "ammo"
+armor = "armor"
+gun = "gun"
 melee = "melee"
 misc = "misc"
-armor = "armor"
+throwable = "throwable"
 
 # max number of ticks from last auto fire request before stopping
 [auto_fire]

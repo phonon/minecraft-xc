@@ -39,8 +39,10 @@ import org.bukkit.util.Vector
 import com.comphenix.protocol.ProtocolLibrary
 
 import phonon.xc.ammo.*
-import phonon.xc.gun.*
 import phonon.xc.armor.*
+import phonon.xc.gun.*
+import phonon.xc.melee.*
+import phonon.xc.throwable.*
 import phonon.xc.utils.EnumArrayMap
 import phonon.xc.utils.mapToObject
 import phonon.xc.utils.Hitbox
@@ -95,6 +97,7 @@ public object XC {
     public const val MAX_GUN_CUSTOM_MODEL_ID: Int = 1024   // max allowed gun item custom model id
     public const val MAX_MELEE_CUSTOM_MODEL_ID: Int = 1024 // max allowed melee item custom model id
     public const val MAX_HAT_CUSTOM_MODEL_ID: Int = 1024   // max allowed hat item custom model id
+    public const val MAX_THROWABLE_CUSTOM_MODEL_ID: Int = 1024   // max allowed hat item custom model id
     
     // namespaced keys
     public const val ITEM_KEY_AMMO: String = "ammo"           // ItemStack namespaced key for ammo count
@@ -112,15 +115,19 @@ public object XC {
     
     // gun storage and lookup, 
     internal var guns: Array<Gun?> = Array(MAX_GUN_CUSTOM_MODEL_ID, { _ -> null }) 
-    internal var gunIds: IntArray = intArrayOf() // cached non null gun Ids
+    internal var gunIds: IntArray = intArrayOf() // cached non null gun ids
 
     // melee weapon storage and lookup
-    internal var melee: Array<Gun?> = Array(MAX_MELEE_CUSTOM_MODEL_ID, { _ -> null })
-    internal var meleeIds: IntArray = intArrayOf() // cached non null melee Ids
+    internal var melee: Array<MeleeWeapon?> = Array(MAX_MELEE_CUSTOM_MODEL_ID, { _ -> null })
+    internal var meleeIds: IntArray = intArrayOf() // cached non null melee ids
 
     // custom hat (helmet) storage and lookup
     internal var hats: Array<Hat?> = Array(MAX_HAT_CUSTOM_MODEL_ID, { _ -> null })
-    internal var hatIds: IntArray = intArrayOf() // cached non null hat Ids
+    internal var hatIds: IntArray = intArrayOf() // cached non null hat ids
+
+    // melee weapon storage and lookup
+    internal var throwable: Array<ThrowableItem?> = Array(MAX_THROWABLE_CUSTOM_MODEL_ID, { _ -> null })
+    internal var throwableIds: IntArray = intArrayOf() // cached non null throwing item ids
 
     // ammo lookup
     internal var ammo: HashMap<Int, Ammo> = HashMap()
@@ -320,7 +327,8 @@ public object XC {
         XC.config = config
         XC.doDebugTimings = config.defaultDoDebugTimings
 
-        // load guns
+        // load from toml config files
+
         val filesGuns = listDirFiles(config.pathFilesGun)
         val gunsLoaded: List<Gun> = filesGuns
             .map { file -> Gun.fromToml(config.pathFilesGun.resolve(file), XC.logger) }
@@ -329,6 +337,16 @@ public object XC {
         val filesAmmo = listDirFiles(config.pathFilesAmmo)
         val ammoLoaded: List<Ammo> = filesAmmo
             .map { file -> Ammo.fromToml(config.pathFilesAmmo.resolve(file), XC.logger) }
+            .filterNotNull()
+
+        val filesMelee = listDirFiles(config.pathFilesMelee)
+        val meleeLoaded: List<MeleeWeapon> = filesMelee
+            .map { file -> MeleeWeapon.fromToml(config.pathFilesMelee.resolve(file), XC.logger) }
+            .filterNotNull()
+        
+        val filesThrowable = listDirFiles(config.pathFilesThrowable)
+        val throwableLoaded: List<ThrowableItem> = filesThrowable
+            .map { file -> ThrowableItem.fromToml(config.pathFilesThrowable.resolve(file), XC.logger) }
             .filterNotNull()
         
         val filesHats = listDirFiles(config.pathFilesArmor)
@@ -340,32 +358,32 @@ public object XC {
         // map custom model ids => gun (NOTE: guns can overwrite each other!)
         val guns: Array<Gun?> = Array(MAX_GUN_CUSTOM_MODEL_ID, { _ -> null })
         val validGunIds = mutableSetOf<Int>()
-        for ( g in gunsLoaded ) {
+        for ( item in gunsLoaded ) {
             // special debug gun
-            if ( g.id == -1 ) {
-                XC.gunDebug = g
+            if ( item.id == -1 ) {
+                XC.gunDebug = item
             }
 
             // add default gun model id to validGunIds (this overwrites duplicates)
-            validGunIds.add(g.itemModelDefault)
+            validGunIds.add(item.itemModelDefault)
 
             // map regular guns custom model ids => gun
             val gunModels = arrayOf(
-                g.itemModelDefault,
-                g.itemModelEmpty,
-                g.itemModelReload,
-                g.itemModelAimDownSights,
+                item.itemModelDefault,
+                item.itemModelEmpty,
+                item.itemModelReload,
+                item.itemModelAimDownSights,
             )
 
             for ( modelId in gunModels ) {
                 if ( modelId >= 0 ) {
                     if ( modelId < MAX_GUN_CUSTOM_MODEL_ID ) {
                         if ( guns[modelId] != null ) {
-                            XC.logger!!.warning("Gun ${g.itemName} (${g.id}) overwrites gun ${guns[modelId]!!.id}")
+                            XC.logger!!.warning("Gun ${item.itemName} (${item.id}) overwrites gun ${guns[modelId]!!.id}")
                         }
-                        guns[modelId] = g
+                        guns[modelId] = item
                     } else {
-                        XC.logger!!.warning("Gun ${g.id} has invalid custom model id: ${modelId}")
+                        XC.logger!!.warning("Gun ${item.id} has invalid custom model id: ${modelId} (max allowed is ${MAX_GUN_CUSTOM_MODEL_ID})")
                     }
                 }
             }
@@ -374,6 +392,56 @@ public object XC {
         // temporary: set gun 0 to debug gun
         guns[0] = XC.gunDebug
 
+        // map melee ids => melee weapon
+        val melee: Array<MeleeWeapon?> = Array(MAX_MELEE_CUSTOM_MODEL_ID, { _ -> null })
+        val validMeleeIds = mutableSetOf<Int>()
+        for ( item in meleeLoaded ) {
+            // map all custom model ids => item
+            val models = arrayOf(
+                item.itemModelDefault,
+            )
+
+            validMeleeIds.add(item.itemModelDefault)
+
+            for ( modelId in models ) {
+                if ( modelId >= 0 ) {
+                    if ( modelId < MAX_MELEE_CUSTOM_MODEL_ID ) {
+                        if ( melee[modelId] != null ) {
+                            XC.logger!!.warning("Melee weapon ${item.itemName} overwrites ${melee[modelId]!!.itemModelDefault}")
+                        }
+                        melee[modelId] = item
+                    } else {
+                        XC.logger!!.warning("Melee weapon ${item.itemName} has invalid custom model id: ${modelId} (max allowed is ${MAX_MELEE_CUSTOM_MODEL_ID})")
+                    }
+                }
+            }
+        }
+
+        // map throwable ids => throwable weapon
+        val throwable: Array<ThrowableItem?> = Array(MAX_THROWABLE_CUSTOM_MODEL_ID, { _ -> null })
+        val validThrowableIds = mutableSetOf<Int>()
+        for ( item in throwableLoaded ) {
+            // map all custom model ids => item
+            val models = arrayOf(
+                item.itemModelDefault,
+                item.itemModelReady,
+            )
+
+            validThrowableIds.add(item.itemModelDefault)
+
+            for ( modelId in models ) {
+                if ( modelId >= 0 ) {
+                    if ( modelId < MAX_THROWABLE_CUSTOM_MODEL_ID ) {
+                        if ( throwable[modelId] != null ) {
+                            XC.logger!!.warning("Throwable ${item.itemName} overwrites ${throwable[modelId]!!.itemModelDefault}")
+                        }
+                        throwable[modelId] = item
+                    } else {
+                        XC.logger!!.warning("Throwable ${item.itemName} has invalid custom model id: ${modelId} (max allowed is ${MAX_THROWABLE_CUSTOM_MODEL_ID})")
+                    }
+                }
+            }
+        }
         // map ammo id => ammo
         val ammo = HashMap<Int, Ammo>()
         val validAmmoIds = mutableSetOf<Int>()
@@ -397,6 +465,10 @@ public object XC {
         XC.gunIds = validGunIds.toIntArray().sortedArray()
         XC.hats = hats
         XC.hatIds = validHatIds.toIntArray().sortedArray()
+        XC.melee = melee
+        XC.meleeIds = validMeleeIds.toIntArray().sortedArray()
+        XC.throwable = throwable
+        XC.throwableIds = validThrowableIds.toIntArray().sortedArray()
 
         // start new engine runnable
         val timeEnd = System.currentTimeMillis()
@@ -404,6 +476,8 @@ public object XC {
         XC.logger?.info("Reloaded in ${timeLoad}ms")
         XC.logger?.info("- Guns: ${validGunIds.size}")
         XC.logger?.info("- Ammo: ${validAmmoIds.size}")
+        XC.logger?.info("- Melee: ${validMeleeIds.size}")
+        XC.logger?.info("- Throwable: ${validThrowableIds.size}")
         XC.logger?.info("- Hats: ${validHatIds.size}")
     }
 

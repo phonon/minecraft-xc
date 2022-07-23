@@ -1,0 +1,55 @@
+# Debug throwable item (e.g. grenade, molotov, etc.).
+# Shows all keys and properties.
+
+# Item properties
+[item]
+name = "grenade_debug"
+lore = [
+    "This grenade is for debugging.",
+    "Trust the plan.",
+]
+
+# Visual models. Default is required (otherwise placeholder
+# will be used). Other models are optional, use -1 if they
+# do not exist.
+[model]
+default = 0     # normal model
+ready = -1      # when first click -> item readies to throw
+
+# throwable settings
+[throw]
+cooldown = 1000       # cooldown between throwing items in milliseconds
+speed = 2.0           # velocity of thrown item
+time_to_explode = 100 # time to explode (in ticks)
+
+# TODO: block/entity hit handlers
+
+
+# Explosion damage properties. These are only used if the handler
+# for block or entity hit has an explosion effect.
+[explosion]
+damage = 8.0
+max_distance = 8.0
+radius = 1.0
+falloff = 2.0
+armor_reduction = 0.5
+blast_prot_reduction = 0.5
+damage_type = "EXPLOSIVE_SHELL"
+block_damage_power = 2.0
+fire_ticks = 0
+
+# Explosion particle settings
+[explosion.particles]
+type = "EXPLOSION_NORMAL"
+count = 8
+random_x = 0.5
+random_y = 0.5
+random_z = 0.5
+
+# sounds
+[sound]
+ready = "grenade_ready"
+throw = "grenade_throw"
+# alternative detailed mode to specify volume and pitch
+# ready = { name = "grenade_ready", volume = 1.0, pitch = 1.0 } 
+# throw = { name = "grenade_throw", volume = 1.0, pitch = 1.0 }

@@ -31,11 +31,12 @@ import phonon.xc.utils.blockCollisionHandlers
  */
 public data class Config(
     // paths to item config folders
-    public val pathFilesGun: Path = Paths.get("plugins", "xc", "gun"),
     public val pathFilesAmmo: Path = Paths.get("plugins", "xc", "ammo"),
+    public val pathFilesArmor: Path = Paths.get("plugins", "xc", "armor"),
+    public val pathFilesGun: Path = Paths.get("plugins", "xc", "gun"),
     public val pathFilesMelee: Path = Paths.get("plugins", "xc", "melee"),
     public val pathFilesMisc: Path = Paths.get("plugins", "xc", "misc"),
-    public val pathFilesArmor: Path = Paths.get("plugins", "xc", "armor"),
+    public val pathFilesThrowable: Path = Paths.get("plugins", "xc", "throwable"),
 
     // flag that entity targetable
     public val entityTargetable: EnumArrayMap<EntityType, Boolean> = Hitbox.defaultEntityTargetable(),
@@ -100,11 +101,12 @@ public data class Config(
             // item config folder paths
             toml.getTable("configs")?.let { configsPaths -> 
                 val pluginDataFolder = XC.plugin!!.getDataFolder().getPath()
-                configsPaths.getString("gun")?.let { path -> configOptions["pathFilesGun"] = Paths.get(pluginDataFolder, path) }
                 configsPaths.getString("ammo")?.let { path -> configOptions["pathFilesAmmo"] = Paths.get(pluginDataFolder, path) }
+                configsPaths.getString("armor")?.let { path -> configOptions["pathFilesArmor"] = Paths.get(pluginDataFolder, path) }
+                configsPaths.getString("gun")?.let { path -> configOptions["pathFilesGun"] = Paths.get(pluginDataFolder, path) }
                 configsPaths.getString("melee")?.let { path -> configOptions["pathFilesMelee"] = Paths.get(pluginDataFolder, path) }
                 configsPaths.getString("misc")?.let { path -> configOptions["pathFilesMisc"] = Paths.get(pluginDataFolder, path) }
-                configsPaths.getString("armor")?.let { path -> configOptions["pathFilesArmor"] = Paths.get(pluginDataFolder, path) }
+                configsPaths.getString("throwable")?.let { path -> configOptions["pathFilesThrowable"] = Paths.get(pluginDataFolder, path) }
             }
 
             // materials
