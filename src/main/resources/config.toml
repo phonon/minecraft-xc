@@ -27,7 +27,7 @@ explosion = false
 gun = "WARPED_FUNGUS_ON_A_STICK"
 aim_down_sights = "CARROT_ON_A_STICK"
 melee = "IRON_SWORD"
-misc = "GOLDEN_HORSE_ARMOR"
+throwable = "GOLDEN_HORSE_ARMOR"
 ammo = "SNOWBALL"
 armor = "LEATHER_HORSE_ARMOR"
 

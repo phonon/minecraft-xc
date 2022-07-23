@@ -25,6 +25,7 @@ import org.bukkit.craftbukkit.v1_16_R3.util.CraftMagicNumbers
 
 import phonon.xc.XC
 import phonon.xc.armor.*
+import phonon.xc.compatibility.v1_16_R3.item.getCustomItemUnchecked
 
 
 // bukkit persistent data container (pdc) key
@@ -73,3 +74,22 @@ public fun getHatInHand(player: Player): Hat? {
 
     return null
 }
+
+/**
+ * Return hat from player's main hand item, without
+ * checking if the material is correct.
+ */
+public fun getHatInHandUnchecked(player: Player): Hat? {
+    val craftPlayer = player as CraftPlayer
+    val nmsPlayer = craftPlayer.getHandle()
+    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    
+    // println("itemInHand: $nmsItem")
+
+    if ( nmsItem != null ) {
+        return getCustomItemUnchecked(nmsItem, XC.hats, XC.MAX_HAT_CUSTOM_MODEL_ID)
+    }
+
+    return null
+}
+

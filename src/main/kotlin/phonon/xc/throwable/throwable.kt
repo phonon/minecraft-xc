@@ -60,7 +60,7 @@ public data class ThrowableItem(
      * Create a new ItemStack from properties.
      */
     public fun toItemStack(): ItemStack {
-        val item = ItemStack(XC.config.materialMisc, 1)
+        val item = ItemStack(XC.config.materialThrowable, 1)
         val itemMeta = item.getItemMeta()
         
         // name

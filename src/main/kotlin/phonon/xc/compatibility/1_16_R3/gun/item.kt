@@ -25,6 +25,7 @@ import org.bukkit.craftbukkit.v1_16_R3.util.CraftMagicNumbers
 
 import phonon.xc.XC
 import phonon.xc.gun.*
+import phonon.xc.compatibility.v1_16_R3.item.getCustomItemUnchecked
 
 // bukkit persistent data container (pdc) key
 // pdc is stored in a nested table in item main tags
@@ -68,6 +69,26 @@ public fun getGunInHand(player: Player): Gun? {
 
     if ( nmsItem != null ) {
         return getGunFromNMSItemStack(nmsItem)
+    }
+
+    return null
+}
+
+/**
+ * Return gun player is holding in hand from item's 
+ * custom model id, without checking if item material is 
+ * the gun material type. Used in situations where code has already
+ * checked if material is valid.
+ */
+public fun getGunInHandUnchecked(player: Player): Gun? {
+    val craftPlayer = player as CraftPlayer
+    val nmsPlayer = craftPlayer.getHandle()
+    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    
+    // println("itemInHand: $nmsItem")
+
+    if ( nmsItem != null ) {
+        return getCustomItemUnchecked(nmsItem, XC.guns, XC.MAX_GUN_CUSTOM_MODEL_ID)
     }
 
     return null

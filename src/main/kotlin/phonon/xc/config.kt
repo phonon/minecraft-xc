@@ -48,12 +48,12 @@ public data class Config(
     public val blockCollision: EnumArrayMap<Material, BlockCollisionHandler> = blockCollisionHandlers(),
     
     // material types for custom items
-    public val materialGun: Material = Material.WARPED_FUNGUS_ON_A_STICK,
     public val materialAimDownSights: Material = Material.CARROT_ON_A_STICK, // phantom model for ads
-    public val materialMelee: Material = Material.IRON_SWORD,
-    public val materialMisc: Material = Material.GOLDEN_HORSE_ARMOR,
     public val materialAmmo: Material = Material.SNOWBALL,
     public val materialArmor: Material = Material.LEATHER_HORSE_ARMOR,
+    public val materialGun: Material = Material.WARPED_FUNGUS_ON_A_STICK,
+    public val materialMelee: Material = Material.IRON_SWORD,
+    public val materialThrowable: Material = Material.GOLDEN_HORSE_ARMOR,
     
     // auto fire max ticks before stopping
     public val autoFireMaxTicksSinceLastRequest: Int = 4,
@@ -125,9 +125,9 @@ public data class Config(
                     logger?.warning("[material.melee] Invalid material: ${s}")
                 }
             }
-            toml.getString("material.misc")?.let { s ->
-                Material.getMaterial(s)?.let { configOptions["materialMisc"] = it } ?: run {
-                    logger?.warning("[material.misc] Invalid material: ${s}")
+            toml.getString("material.throwable")?.let { s ->
+                Material.getMaterial(s)?.let { configOptions["materialThrowable"] = it } ?: run {
+                    logger?.warning("[material.throwable] Invalid material: ${s}")
                 }
             }
             toml.getString("material.ammo")?.let { s ->

@@ -99,6 +99,14 @@ public object XC {
     public const val MAX_HAT_CUSTOM_MODEL_ID: Int = 1024   // max allowed hat item custom model id
     public const val MAX_THROWABLE_CUSTOM_MODEL_ID: Int = 1024   // max allowed hat item custom model id
     
+    // item types (using int const instead of enum)
+    public const val ITEM_TYPE_INVALID: Int = -1
+    public const val ITEM_TYPE_AMMO: Int = 0
+    public const val ITEM_TYPE_GUN: Int = 1
+    public const val ITEM_TYPE_MELEE: Int = 2
+    public const val ITEM_TYPE_THROWABLE: Int = 3
+    public const val ITEM_TYPE_HAT: Int = 4
+
     // namespaced keys
     public const val ITEM_KEY_AMMO: String = "ammo"           // ItemStack namespaced key for ammo count
     public const val ITEM_KEY_RELOADING: String = "reloading" // ItemStack namespaced key for gun reloading
