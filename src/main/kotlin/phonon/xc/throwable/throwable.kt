@@ -14,6 +14,7 @@ import org.tomlj.Toml
 import org.bukkit.Color
 import org.bukkit.ChatColor
 import org.bukkit.Particle
+import org.bukkit.Sound
 import org.bukkit.inventory.ItemStack
 import phonon.xc.XC
 import phonon.xc.utils.mapToObject
@@ -38,7 +39,7 @@ public data class ThrowableItem(
 
     // cooldown between throwing any throwable items
     public val throwCooldownMillis: Long = 1000,
-    public val throwSpeed: Double = 2.0,
+    public val throwSpeed: Double = 1.0,
 
     // time before exploding in ticks (~20 ticks/s)
     public val timeToExplode: Int = 100,
@@ -54,6 +55,17 @@ public data class ThrowableItem(
     public val explosionBlockDamagePower: Float = 0f,     // explosion block damage power level
     public val explosionFireTicks: Int = 0,               // if explosion should set targets on fire
     public val explosionParticles: ParticlePacket = ParticlePacket.placeholderExplosion(),
+
+    // handlers
+    public val onTimerExpiredHandler: ThrowableTimerExpiredHandler = noTimerExpiredHandler,
+    public val onBlockHitHandler: ThrowableBlockHitHandler = noBlockHitHandler,
+    public val onEntityHitHandler: ThrowableEntityHitHandler = noEntityHitHandler,
+
+    // sounds
+    public val soundReady: String = "minecraft:block.lever.click",
+    public val soundThrow: String = "minecraft:entity.arrow.shoot",
+    public val soundImpact: String = "minecraft:block.glass.break", // for hit entity or block handler
+    public val soundExplosion: String = "minecraft:entity.generic.explode", // for explosion handler
 ) {
 
     /**

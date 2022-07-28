@@ -26,6 +26,8 @@ import org.bukkit.craftbukkit.v1_16_R3.util.CraftMagicNumbers
 import phonon.xc.XC
 import phonon.xc.gun.*
 import phonon.xc.compatibility.v1_16_R3.item.getCustomItemUnchecked
+import phonon.xc.compatibility.v1_16_R3.item.GetNMSItemStack
+
 
 // bukkit persistent data container (pdc) key
 // pdc is stored in a nested table in item main tags
@@ -133,20 +135,8 @@ public fun getGunFromItem(item: ItemStack): Gun? {
     return null
 }
 
-private object GetNMSItemStack {
-    val privField = CraftItemStack::class.java.getDeclaredField("handle")
-
-    init {
-        privField.setAccessible(true)
-    }
-
-    public fun get(item: CraftItemStack): NMSItemStack {
-        return privField.get(item) as NMSItemStack
-    }
-}
-
 internal fun getGunFromItemNMS(item: ItemStack): Gun? {
-    val nmsItem = GetNMSItemStack.get(item as CraftItemStack)
+    val nmsItem = GetNMSItemStack.from(item as CraftItemStack)
     return getGunFromNMSItemStack(nmsItem)
 }
 

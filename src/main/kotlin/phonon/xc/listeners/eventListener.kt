@@ -46,11 +46,14 @@ import phonon.xc.gun.PlayerGunCleanupRequest
 import phonon.xc.gun.ItemGunCleanupRequest
 import phonon.xc.gun.AmmoInfoMessagePacket
 import phonon.xc.armor.PlayerWearHatRequest
+import phonon.xc.throwable.ReadyThrowableRequest
+import phonon.xc.throwable.ThrowThrowableRequest
 
 // TODO: in future need to select NMS version
 import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
 import phonon.xc.compatibility.v1_16_R3.gun.item.*
 import phonon.xc.compatibility.v1_16_R3.armor.item.*
+import phonon.xc.compatibility.v1_16_R3.throwable.item.*
 import phonon.xc.compatibility.v1_16_R3.item.getItemTypeInHand
 
 
@@ -295,9 +298,9 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             return
         }
 
-        // left click: single fire or burst
         if ( action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK ) {
             when ( getItemTypeInHand(player) ) {
+                // gun left click: single fire or burst
                 XC.ITEM_TYPE_GUN -> {
                     getGunInHandUnchecked(player)?.let { gun -> 
                         // Message.print(player, "Trying to shoot")
@@ -310,14 +313,22 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                     }
                 }
 
+                // throwable left click: readies throwable
                 XC.ITEM_TYPE_THROWABLE -> {
+                    getThrowableInHandUnchecked(player)?.let {
+                        XC.readyThrowableRequests.add(ReadyThrowableRequest(
+                            player = player,
+                        ))
 
+                        // ignore block interact event
+                        e.setUseInteractedBlock(Event.Result.DENY)
+                    }
                 }
             }
         }
-        // right click: auto fire
         else if ( action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK ) {
             when ( getItemTypeInHand(player) ) {
+                // gun right click: auto fire
                 XC.ITEM_TYPE_GUN -> {
                     getGunInHandUnchecked(player)?.let { gun -> 
                         // Message.print(player, "auto firing request")
@@ -331,11 +342,20 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                         }
                     }
                 }
-
+                
+                // throwable right click: throw item
                 XC.ITEM_TYPE_THROWABLE -> {
-                    
+                    getThrowableInHandUnchecked(player)?.let {
+                        XC.throwThrowableRequests.add(ThrowThrowableRequest(
+                            player = player,
+                        ))
+
+                        // ignore block interact event
+                        e.setUseInteractedBlock(Event.Result.DENY)
+                    }
                 }
 
+                // hat right click: wear
                 XC.ITEM_TYPE_HAT -> {
                     getHatInHandUnchecked(player)?.let {
                         XC.wearHatRequests.add(PlayerWearHatRequest(
@@ -344,8 +364,6 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
                         // ignore block interact event
                         e.setUseInteractedBlock(Event.Result.DENY)
-
-                        return
                     }
                 }
             }

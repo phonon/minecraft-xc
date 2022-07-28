@@ -78,17 +78,19 @@ public object XC {
     internal var namespaceKeyItemReloading: NamespacedKey? = null // key for item is reloading (0 or 1)
     internal var namespaceKeyItemReloadId: NamespacedKey? = null  // key for item reload id
     internal var namespaceKeyItemReloadTimestamp: NamespacedKey? = null  // key for item reload timestamp
-    internal var namespaceKeyItemBurstFireId: NamespacedKey? = null  // key for item reload id
-    internal var namespaceKeyItemAutoFireId: NamespacedKey? = null  // key for item reload id
-    internal var namespaceKeyItemCrawlToShootId: NamespacedKey? = null  // key for item reload id
+    internal var namespaceKeyItemBurstFireId: NamespacedKey? = null  // key for item burst firing id
+    internal var namespaceKeyItemAutoFireId: NamespacedKey? = null  // key for item auto firing id
+    internal var namespaceKeyItemCrawlToShootId: NamespacedKey? = null  // key for item crawl to shoot id
+    internal var namespaceKeyItemThrowableId: NamespacedKey? = null  // key for item throwable id
 
     internal var nbtKeyItemAmmo: String = ""            // raw nbt key string for item ammo value
     internal var nbtKeyItemReloading: String = ""       // raw nbt key string for item is reloading (0 or 1)
     internal var nbtKeyItemReloadId: String = ""        // raw nbt key string for item reload id
     internal var nbtKeyItemReloadTimestamp: String = "" // raw nbt key string for item reload timestamp
-    internal var nbtKeyItemBurstFireId: String = ""     // raw nbt key for item reload id
-    internal var nbtKeyItemAutoFireId: String = ""      // raw nbt key for item reload id
-    internal var nbtKeyItemCrawlToShootId: String = ""  // raw nbt key for item reload id
+    internal var nbtKeyItemBurstFireId: String = ""     // raw nbt key for item burst firing id
+    internal var nbtKeyItemAutoFireId: String = ""      // raw nbt key for item auto firing id
+    internal var nbtKeyItemCrawlToShootId: String = ""  // raw nbt key for crawl to shoot id
+    internal var nbtKeyItemThrowableId: String = ""     // raw nbt key for throwable id
 
     // ========================================================================
     // BUILT-IN ENGINE CONSTANTS
@@ -115,6 +117,7 @@ public object XC {
     public const val ITEM_KEY_BURST_FIRE_ID: String = "burstId"  // ItemStack namespaced key for gun burst fire id
     public const val ITEM_KEY_AUTO_FIRE_ID: String = "autoId"  // ItemStack namespaced key for gun auto fire id
     public const val ITEM_KEY_CRAWL_TO_SHOOT_ID: String = "crawlId"  // ItemStack namespaced key for gun crawl to shoot request id
+    public const val ITEM_KEY_THROWABLE_ID: String = "throwId"  // ItemStack namespaced key for a ready throwable item
     
     // ========================================================================
     // STORAGE
@@ -182,6 +185,9 @@ public object XC {
     internal var crawlRefreshTick0Count: Int = 0
     internal var crawlRefreshTick1Count: Int = 0
 
+    // id counter for throwable items (when they are readied)
+    internal var throwableIdCounter: Int = 0
+
     // player death message storage, death event checks this for custom messages
     internal val playerDeathMessages: HashMap<UUID, String> = HashMap()
 
@@ -205,6 +211,12 @@ public object XC {
     internal var crawling: HashMap<UUID, Crawling> = HashMap()
     internal var crawlToShootRequestQueue: ArrayList<CrawlToShootRequest> = ArrayList()
     internal val crawlingAndReadyToShoot: HashMap<UUID, Boolean> = HashMap() // map of players => is crawling and ready to shoot
+    // throwable systems
+    internal var readyThrowableRequests: ArrayList<ReadyThrowableRequest> = ArrayList()
+    internal var throwThrowableRequests: ArrayList<ThrowThrowableRequest> = ArrayList()
+    internal var readyThrowables: HashMap<Int, ReadyThrowable> = HashMap()
+    // per-world throwables
+    internal var thrownThrowables: HashMap<UUID, ArrayList<ThrownThrowable>> = HashMap()
     // task finish queues
     internal val playerReloadTaskQueue: LinkedBlockingQueue<PlayerReloadTask> = LinkedBlockingQueue()
     internal val playerReloadCancelledTaskQueue: LinkedBlockingQueue<PlayerReloadCancelledTask> = LinkedBlockingQueue()
@@ -271,7 +283,8 @@ public object XC {
         XC.namespaceKeyItemBurstFireId = NamespacedKey(plugin, ITEM_KEY_BURST_FIRE_ID)
         XC.namespaceKeyItemAutoFireId = NamespacedKey(plugin, ITEM_KEY_AUTO_FIRE_ID)
         XC.namespaceKeyItemCrawlToShootId = NamespacedKey(plugin, ITEM_KEY_CRAWL_TO_SHOOT_ID)
-
+        XC.namespaceKeyItemThrowableId = NamespacedKey(plugin, ITEM_KEY_THROWABLE_ID)
+        
         // raw nbt keys
         XC.nbtKeyItemAmmo = XC.namespaceKeyItemAmmo!!.toString()
         XC.nbtKeyItemReloading = XC.namespaceKeyItemReloading!!.toString()
@@ -280,6 +293,7 @@ public object XC {
         XC.nbtKeyItemBurstFireId = XC.namespaceKeyItemBurstFireId!!.toString()
         XC.nbtKeyItemAutoFireId = XC.namespaceKeyItemAutoFireId!!.toString()
         XC.nbtKeyItemCrawlToShootId =XC.namespaceKeyItemCrawlToShootId!!.toString()
+        XC.nbtKeyItemThrowableId = XC.namespaceKeyItemThrowableId!!.toString()
 
         // reset counters
         XC.crawlRefreshTick0Count = 0
@@ -317,9 +331,10 @@ public object XC {
         val timeStart = System.currentTimeMillis()
         XC.cleanup()
 
-        // create projectile systems for each world
+        // create projectile and throwable systems for each world
         Bukkit.getWorlds().forEach { world ->
             XC.projectileSystems.put(world.getUID(), ProjectileSystem(world))
+            XC.thrownThrowables.put(world.getUID(), ArrayList())
         }
         
         // reload main plugin config
@@ -508,6 +523,7 @@ public object XC {
 
         // re-create new projectile systems for each world
         XC.projectileSystems.clear()
+        XC.thrownThrowables.clear()
     }
 
     /**
@@ -606,6 +622,23 @@ public object XC {
         } else {
             XC.crawlRefreshTick1Count = max(0, XC.crawlRefreshTick1Count - 1)
         }
+    }
+
+    /**
+     * Create new throwable id from global counter.
+     * 
+     * Note: throwable ids are used inside the map
+     *      XC.readyThrowable[throwId] -> ReadyThrowable
+     * It's technically possible for this to overflow and overwrite.
+     * But extremely unlikely, since throwables have a lifetime and
+     * should be removed from this map before 
+     * Integer.MAX_VALUE new throwables are created to overflow and
+     * overwrite the key.
+     */
+    internal fun newThrowableId(): Int {
+        val id = XC.throwableIdCounter
+        XC.throwableIdCounter = max(0, id + 1)
+        return id
     }
 
     /**
@@ -931,7 +964,15 @@ public object XC {
         XC.playerRecoil = recoilRecoverySystem(XC.playerRecoil)
         XC.crawlToShootRequestQueue = requestCrawlToShootSystem(XC.crawlToShootRequestQueue, timestamp)
 
+        // ready and throw throwable systems
+        // (tick for thrown throwable objects done with projectiles)
+        XC.readyThrowableRequests = requestReadyThrowableSystem(XC.readyThrowableRequests)
+        XC.throwThrowableRequests = requestThrowThrowableSystem(XC.throwThrowableRequests)
+        XC.readyThrowables = tickReadyThrowableSystem(XC.readyThrowables)
+
         // create new request arrays
+        // TODO: in future, have systems just emit the new array list
+        // which is what the newer systems do
         XC.playerAimDownSightsRequests = ArrayList()
         XC.playerGunSelectRequests = ArrayList()
         XC.playerShootRequests = ArrayList()
@@ -953,7 +994,7 @@ public object XC {
         val tProjectileSystem = XC.debugNanoTime() // timing probe
 
         // update projectile systems for each world
-        for ( projSys in this.projectileSystems.values ) {
+        for ( (worldId, projSys) in this.projectileSystems ) {
             val (hitboxes, hitBlocksQueue, hitEntitiesQueue) = projSys.update()
             
             // handle hit blocks and entities
@@ -967,7 +1008,11 @@ public object XC {
             for ( hitEntity in hitEntitiesQueue ) {
                 hitEntity.gun.hitEntityHandler(hitboxes, hitEntity.gun, hitEntity.location, hitEntity.entity, hitEntity.source, hitEntity.distance)
             }
+
+            // per-world throwable tick systems (needs hitboxes)
+            XC.thrownThrowables[worldId] = tickThrownThrowableSystem(XC.thrownThrowables[worldId] ?: listOf())
         }
+
 
         // ================================================
         // SCHEDULE ALL ASYNC TASKS (particles, packets)

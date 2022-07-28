@@ -71,3 +71,19 @@ public fun <T> getCustomItemUnchecked(
 
     return null
 }
+
+/**
+ * Internal helper to get NMS item stack from a bukkit CraftItemStack.
+ * Requires reflection to access private NMS item stack handle.
+ */
+internal object GetNMSItemStack {
+    val privField = CraftItemStack::class.java.getDeclaredField("handle")
+
+    init {
+        privField.setAccessible(true)
+    }
+
+    public fun from(item: CraftItemStack): NMSItemStack {
+        return privField.get(item) as NMSItemStack
+    }
+}
