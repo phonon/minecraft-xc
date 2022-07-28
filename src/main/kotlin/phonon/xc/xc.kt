@@ -197,8 +197,8 @@ public object XC {
     internal var playerShootRequests: ArrayList<PlayerGunShootRequest> = ArrayList()
     internal var playerAutoFireRequests: ArrayList<PlayerAutoFireRequest> = ArrayList()
     internal var playerReloadRequests: ArrayList<PlayerGunReloadRequest> = ArrayList()
-    internal var PlayerGunCleanupRequests: ArrayList<PlayerGunCleanupRequest> = ArrayList()
-    internal var ItemGunCleanupRequests: ArrayList<ItemGunCleanupRequest> = ArrayList()
+    internal var playerGunCleanupRequests: ArrayList<PlayerGunCleanupRequest> = ArrayList()
+    internal var itemGunCleanupRequests: ArrayList<ItemGunCleanupRequest> = ArrayList()
     internal var playerUseCustomWeaponRequests: ArrayList<Player> = ArrayList()
     // burst firing queue: map entity uuid -> burst fire state
     internal var burstFiringPackets: HashMap<UUID, BurstFire> = HashMap()
@@ -214,6 +214,7 @@ public object XC {
     // throwable systems
     internal var readyThrowableRequests: ArrayList<ReadyThrowableRequest> = ArrayList()
     internal var throwThrowableRequests: ArrayList<ThrowThrowableRequest> = ArrayList()
+    internal var droppedThrowables: ArrayList<DroppedThrowable> = ArrayList()
     internal var readyThrowables: HashMap<Int, ReadyThrowable> = HashMap()
     // per-world throwables
     internal var thrownThrowables: HashMap<UUID, ArrayList<ThrownThrowable>> = HashMap()
@@ -953,8 +954,8 @@ public object XC {
 
         // run gun controls systems
         gunAimDownSightsSystem(XC.playerAimDownSightsRequests)
-        playerGunCleanupSystem(XC.PlayerGunCleanupRequests)
-        gunItemCleanupSystem(XC.ItemGunCleanupRequests)
+        playerGunCleanupSystem(XC.playerGunCleanupRequests)
+        gunItemCleanupSystem(XC.itemGunCleanupRequests)
         gunSelectSystem(XC.playerGunSelectRequests, timestamp)
         XC.autoFiringPackets = autoFireRequestSystem(XC.playerAutoFireRequests, XC.autoFiringPackets, timestamp) // do auto fire request before single/burst fire
         gunPlayerShootSystem(XC.playerShootRequests, timestamp)
@@ -968,6 +969,7 @@ public object XC {
         // (tick for thrown throwable objects done with projectiles)
         XC.readyThrowableRequests = requestReadyThrowableSystem(XC.readyThrowableRequests)
         XC.throwThrowableRequests = requestThrowThrowableSystem(XC.throwThrowableRequests)
+        XC.droppedThrowables = droppedThrowableSystem(XC.droppedThrowables)
         XC.readyThrowables = tickReadyThrowableSystem(XC.readyThrowables)
 
         // create new request arrays
@@ -978,8 +980,8 @@ public object XC {
         XC.playerShootRequests = ArrayList()
         XC.playerAutoFireRequests = ArrayList()
         XC.playerReloadRequests = ArrayList()
-        XC.PlayerGunCleanupRequests = ArrayList()
-        XC.ItemGunCleanupRequests = ArrayList()    
+        XC.playerGunCleanupRequests = ArrayList()
+        XC.itemGunCleanupRequests = ArrayList()    
         XC.playerUseCustomWeaponRequests = ArrayList()
         
         // finish gun reloading tasks

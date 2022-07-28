@@ -4,7 +4,9 @@
 
 package phonon.xc.compatibility.v1_16_R3.item
 
+import org.bukkit.Material
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
 import net.minecraft.server.v1_16_R3.NBTTagCompound
 import net.minecraft.server.v1_16_R3.ItemStack as NMSItemStack
 import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftItemStack
@@ -86,4 +88,92 @@ internal object GetNMSItemStack {
     public fun from(item: CraftItemStack): NMSItemStack {
         return privField.get(item) as NMSItemStack
     }
+}
+
+/**
+ * 
+ * For a bukkit ItemStack
+ * 1. Check if material matches input
+ * 2. get integer NBT key for input tag
+ * 
+ * If either fails, return -1
+ * 
+ * Bukkit PersistentDataContainer keys are stored in a table
+ * keyed by "PublicBukkitValues", which is accessible from
+ * CraftMetaItem.BUKKIT_CUSTOM_TAG.NBT
+ * 
+ * See:
+ * https://hub.spigotmc.org/stash/users/aquazus/repos/craftbukkit/browse/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java
+ */
+public fun getItemIntDataIfMaterialMatches(
+    item: ItemStack,
+    material: Material,
+    key: String,
+): Int {
+    if ( item.type == material ) {
+        try {
+            val nmsItem = GetNMSItemStack.from(item as CraftItemStack)
+            if ( nmsItem != null ) {
+                val tag: NBTTagCompound? = nmsItem.getTag()
+                // println("tags = $tag")
+                // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
+                if ( tag != null && tag.hasKey(BUKKIT_CUSTOM_TAG) ) {
+                    // persistent data container holder NBTTagCompound
+                    val pdc = tag.getCompound(BUKKIT_CUSTOM_TAG)!!
+                    if ( pdc.hasKeyOfType(key, NBT_TAG_INT) ) {
+                        return pdc.getInt(key)
+                    }
+                }
+            }
+        } catch ( err: Exception ) {
+            err.printStackTrace()
+            XC.logger?.severe("Failed to get item NBT key: $err")
+        }
+    }
+
+    return -1
+}
+
+/**
+ * Internal helper to find player inventory slot for a custom item
+ * with matching material and matching integer NBT key.
+ * Return -1 if item not found in inventory
+ * 
+ * Use case:
+ * - For throwables, when they expire in player's inventory, controls
+ * system must search the inventory for the item's slot, then remove that item.
+ * The item must match material and nbt key.
+ */
+internal fun getInventorySlotForCustomItemWithNbtKey(
+    player: Player,
+    material: Material,
+    nbtKey: String,
+    value: Int,
+): Int {
+    val craftPlayer = player as CraftPlayer
+    val nmsPlayer = craftPlayer.getHandle()
+    val nmsInventory = nmsPlayer.inventory
+    
+    // remove first item found matching
+    val items = nmsInventory.getContents()
+    for ( slot in 0 until items.size ) {
+        val nmsItem = items[slot]
+        if ( nmsItem != null && CraftMagicNumbers.getMaterial(nmsItem.getItem()) == material ) {
+            // check for nbt key
+            val tag: NBTTagCompound? = nmsItem.getTag()
+            // println("tags = $tag")
+            // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
+            if ( tag != null && tag.hasKey(BUKKIT_CUSTOM_TAG) ) {
+                // persistent data container holder NBTTagCompound
+                val pdc = tag.getCompound(BUKKIT_CUSTOM_TAG)!!
+                if ( pdc.hasKeyOfType(nbtKey, NBT_TAG_INT) ) {
+                    if ( pdc.getInt(nbtKey) == value ) {
+                        return slot
+                    }
+                }
+            }
+        }
+    }
+
+    return -1
 }

@@ -26,6 +26,8 @@ import org.bukkit.scheduler.BukkitRunnable
 import phonon.xc.XC
 import phonon.xc.utils.Message
 
+import phonon.xc.compatibility.v1_16_R3.item.getInventorySlotForCustomItemWithNbtKey
+import phonon.xc.compatibility.v1_16_R3.item.getItemIntDataIfMaterialMatches
 import phonon.xc.compatibility.v1_16_R3.throwable.item.*
 
 private val ERROR_MESSAGE_THROWABLE_NOT_READY = "${ChatColor.DARK_RED}First ready throwable with [LEFT MOUSE]"
@@ -45,6 +47,14 @@ internal value class ReadyThrowableRequest(
 @JvmInline
 internal value class ThrowThrowableRequest(
     val player: Player,
+)
+
+/**
+ * Data for controls request to throw a throwable.
+ */
+internal data class DroppedThrowable(
+    val player: Player,
+    val itemEntity: ItemEntity,
 )
 
 /**
@@ -150,7 +160,7 @@ internal fun requestReadyThrowableSystem(requests: List<ReadyThrowableRequest>):
         try {
             val world = player.getWorld()
             val location = player.getLocation()
-            world.playSound(location, throwable.soundReady, 1f, 1f);
+            world.playSound(location, throwable.soundReady, 1f, 1f)
         } catch ( e: Exception ) {
             e.printStackTrace()
             XC.logger?.severe("Failed to play sound: ${throwable.soundReady}")
@@ -205,8 +215,8 @@ internal fun requestThrowThrowableSystem(requests: List<ThrowThrowableRequest>):
         val direction = location.getDirection()
         val itemEntity = world.dropItem(location, item)
 
-        itemEntity.setPickupDelay(Integer.MAX_VALUE);
-        itemEntity.setVelocity(direction.multiply(throwable.throwSpeed));
+        itemEntity.setPickupDelay(Integer.MAX_VALUE)
+        itemEntity.setVelocity(direction.multiply(throwable.throwSpeed))
 
         equipment.setItem(inventorySlot, null)
         
@@ -237,10 +247,68 @@ internal fun requestThrowThrowableSystem(requests: List<ThrowThrowableRequest>):
         // play throw sound
         // playing sound can fail if sound string formatted improperly
         try {
-            world.playSound(location, throwable.soundThrow, 1f, 1f);
+            world.playSound(location, throwable.soundThrow, 1f, 1f)
         } catch ( e: Exception ) {
             e.printStackTrace()
             XC.logger?.severe("Failed to play sound: ${throwable.soundThrow}")
+        }
+    }
+
+    return ArrayList()
+}
+
+
+/**
+ * System for handling player dropping throwable items. If throwable
+ * was a readied throwable, must add it to ThrownThrowables.
+ */
+internal fun droppedThrowableSystem(requests: List<DroppedThrowable>): ArrayList<DroppedThrowable> {
+    for ( request in requests ) {
+        val (player, itemEntity) = request
+        val item = itemEntity.getItemStack()
+
+        // check if item is a readied throwable
+        val throwId = getItemIntDataIfMaterialMatches(
+            item,
+            XC.config.materialThrowable,
+            XC.nbtKeyItemThrowableId,
+        )
+        
+        if ( throwId == -1 ) { // skip if not readied throwable
+            continue
+        }
+
+        val throwable = getThrowableFromItem(item)
+        if ( throwable == null ) {
+            continue
+        }
+
+        val world = itemEntity.getWorld()
+        val location = itemEntity.getLocation()
+
+        // make item impossible to pick up
+        itemEntity.setPickupDelay(Integer.MAX_VALUE)
+
+        // get current ticks elapsed from ready throwable tracking (this should always exist...)
+        val ticksElapsed = XC.readyThrowables[throwId]?.ticksElapsed ?: 0
+        // remove ready throwable tracking
+        XC.readyThrowables.remove(throwId)
+
+        // create thrown throwable tracking
+        XC.thrownThrowables[world.getUID()]?.let { throwables ->
+            throwables.add(ThrownThrowable(
+                throwable = throwable,
+                id = throwId,
+                ticksElapsed = ticksElapsed,
+                entity = itemEntity,
+                thrower = player,
+                prevLocX = location.x,
+                prevLocY = location.y,
+                prevLocZ = location.z,
+                velX = 0.0,
+                velY = 0.0,
+                velZ = 0.0,
+            ))
         }
     }
 
@@ -272,6 +340,24 @@ internal fun tickReadyThrowableSystem(requests: Map<Int, ReadyThrowable>): HashM
         if ( ticksElapsed >= throwable.timeToExplode ) {
             // timerExpiredHandler(holder, throwId)
             println("READY THROWABLE EXPIRED")
+            
+            // remove from player inventory
+            val slot = getInventorySlotForCustomItemWithNbtKey(
+                holder,
+                XC.config.materialThrowable,
+                XC.nbtKeyItemThrowableId,
+                throwId,
+            )
+            if ( slot != -1 ) {
+                val equipment = holder.getInventory()
+                equipment.setItem(slot, null)
+            }
+
+            // damage holder
+            if ( throwable.damageHolderOnTimerExpired > 0.0 ) {
+                holder.damage(throwable.damageHolderOnTimerExpired, null)
+                holder.setNoDamageTicks(0)
+            }
 
             continue
         }

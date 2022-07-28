@@ -48,6 +48,7 @@ import phonon.xc.gun.AmmoInfoMessagePacket
 import phonon.xc.armor.PlayerWearHatRequest
 import phonon.xc.throwable.ReadyThrowableRequest
 import phonon.xc.throwable.ThrowThrowableRequest
+import phonon.xc.throwable.DroppedThrowable
 
 // TODO: in future need to select NMS version
 import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
@@ -94,7 +95,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         // if player leaves and is holding a gun or custom wep,
         // do reload cleanup
         getGunInHand(player)?.let { gun -> 
-            XC.PlayerGunCleanupRequests.add(PlayerGunCleanupRequest(
+            XC.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
             ))
         }
@@ -112,7 +113,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         // if player dies and is holding a gun or custom wep,
         // do reload cleanup
         getGunInHand(player)?.let { gun -> 
-            XC.PlayerGunCleanupRequests.add(PlayerGunCleanupRequest(
+            XC.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
             ))
         }
@@ -195,14 +196,31 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         // remove invalid aim down sights model item
         if ( XC.isAimDownSightsModel(item) ) {
             itemEntity.remove()
-        }
+        } else {
+            when ( item.type ) {
+                // gun drop item: cleanup
+                XC.config.materialGun -> {
+                    getGunFromItem(item)?.let {
+                        XC.itemGunCleanupRequests.add(ItemGunCleanupRequest(
+                            itemEntity = itemEntity,
+                            onDrop = true,
+                        ))
+                    }
+                }
 
-        getGunFromItem(item)?.let { gun -> 
-            XC.ItemGunCleanupRequests.add(ItemGunCleanupRequest(
-                itemEntity = itemEntity,
-                onDrop = true,
-            ))
+                // throwable drop item: cancel and do throw request
+                XC.config.materialThrowable -> {
+                    getThrowableFromItem(item)?.let {
+                        XC.droppedThrowables.add(DroppedThrowable(
+                            player = e.player,
+                            itemEntity = itemEntity,
+                        ))
+                    }
+                }
+            }
         }
+        
+        
     }
     
 
@@ -217,7 +235,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         }
         
         getGunFromItem(item)?.let { gun -> 
-            XC.ItemGunCleanupRequests.add(ItemGunCleanupRequest(
+            XC.itemGunCleanupRequests.add(ItemGunCleanupRequest(
                 itemEntity = itemEntity,
                 onDrop = false,
             ))
@@ -235,7 +253,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         // check if previous slot was a gun
         val previousSlot = e.getPreviousSlot()
         getGunInSlot(player, previousSlot)?.let { gun -> 
-            XC.PlayerGunCleanupRequests.add(PlayerGunCleanupRequest(
+            XC.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
                 inventorySlot = previousSlot,
             ))

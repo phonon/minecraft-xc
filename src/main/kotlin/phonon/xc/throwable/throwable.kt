@@ -44,6 +44,9 @@ public data class ThrowableItem(
     // time before exploding in ticks (~20 ticks/s)
     public val timeToExplode: Int = 100,
 
+    // damage holder if timer expires before throwing if > 0
+    public val damageHolderOnTimerExpired: Double = 20.0,
+
     // explosion damage and radius and falloff (unused if no explosion)
     public val explosionDamage: Double = 8.0,
     public val explosionMaxDistance: Double = 8.0,        // max distance for checking entities
