@@ -523,7 +523,8 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>, timest
 
 
 /**
- * Player shooting system
+ * Player single/burst fire shooting system.
+ * Handles [LEFT MOUSE] click firing.
  */
 internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, timestamp: Long) {
     val random = ThreadLocalRandom.current()
@@ -822,6 +823,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
 
 /**
  * Automatic fire request system. Initiate or refresh an auto fire sequence.
+ * Handles [RIGHT MOUSE] hold firing system.
  */
 internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, autoFiring: HashMap<UUID, AutoFire>, timestamp: Long): HashMap<UUID, AutoFire> {
     val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests

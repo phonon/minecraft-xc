@@ -305,14 +305,13 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         val player = e.getPlayer()
         val action = e.getAction()
 
-        // println("ON PLAYER INTERACT EVENT: ${action}")
+        // println("ON PLAYER INTERACT EVENT: ${action} (hand=${e.getHand()}) (use=${e.useInteractedBlock()})")
 
         // ignores off hand event, physical events, or cancelled block interact event
         // this event runs twice, 2nd main hand event is cancelled block interact event
         // ISSUE: when crawling, having the interacted block is glitchy???
         // TODO: INVESTIGATE DEAD ZONES
-        if ( e.getHand() != EquipmentSlot.HAND || action == Action.PHYSICAL || ( action == Action.RIGHT_CLICK_BLOCK && e.useInteractedBlock() == Event.Result.DENY ) ) {
-        // if ( e.getHand() != EquipmentSlot.HAND || action == Action.PHYSICAL ) {
+        if ( e.getHand() != EquipmentSlot.HAND || action == Action.PHYSICAL ) {
             return
         }
 
@@ -388,10 +387,74 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         }
     }
 
-    // @EventHandler
-    // public fun onInteractAt(e: PlayerInteractAtEntityEvent) {
-    //     // println("onInteractAtEntityEvent")
-    // }
+    /**
+     * Certain entities do not trigger a PlayerInteractEvent when right clicking them.
+     * These are entities with special handling for right click (not exhaustive):
+     * - ArmorStand
+     * - Villager
+     * - Horse
+     * 
+     * These specific entities require PlayerInteractAtEntityEvent handling for
+     * right clicks.
+     */
+    @EventHandler
+    public fun onInteractAt(e: PlayerInteractAtEntityEvent) {
+        // println("onInteractAtEntityEvent ${e.getRightClicked()}")
+
+        // only main hand right click
+        if ( e.getHand() != EquipmentSlot.HAND ) {
+            return
+        }
+
+        val clickedEntityType = e.getRightClicked().type
+        if ( clickedEntityType == EntityType.ARMOR_STAND ||
+            clickedEntityType == EntityType.HORSE ||
+            clickedEntityType == EntityType.VILLAGER
+        ) {
+            val player = e.getPlayer()
+            
+            when ( getItemTypeInHand(player) ) {
+                // gun right click: auto fire
+                XC.ITEM_TYPE_GUN -> {
+                    getGunInHandUnchecked(player)?.let { gun -> 
+                        // Message.print(player, "auto firing request")
+                        if ( gun.autoFire ) {
+                            XC.playerAutoFireRequests.add(PlayerAutoFireRequest(
+                                player = player,
+                            ))
+
+                            // ignore interact event
+                            e.setCancelled(true)
+                        }
+                    }
+                }
+                
+                // throwable right click: throw item
+                XC.ITEM_TYPE_THROWABLE -> {
+                    getThrowableInHandUnchecked(player)?.let {
+                        XC.throwThrowableRequests.add(ThrowThrowableRequest(
+                            player = player,
+                        ))
+
+                        // ignore interact event
+                        e.setCancelled(true)
+                    }
+                }
+
+                // hat right click: wear
+                XC.ITEM_TYPE_HAT -> {
+                    getHatInHandUnchecked(player)?.let {
+                        XC.wearHatRequests.add(PlayerWearHatRequest(
+                            player = player,
+                        ))
+
+                        // ignore interact event
+                        e.setCancelled(true)
+                    }
+                }
+            }
+        }
+    }
     
     // @EventHandler
     // public fun onAnimation(e: PlayerAnimationEvent) {
@@ -417,10 +480,24 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 		if ( damager is Player ) {
 			val player: Player = damager
             
-            getGunInHand(player)?.let { gun -> 
-                XC.playerShootRequests.add(PlayerGunShootRequest(
-                    player = player,
-                ))
+            when ( getItemTypeInHand(player) ) {
+                // gun left click: single fire or burst
+                XC.ITEM_TYPE_GUN -> {
+                    getGunInHandUnchecked(player)?.let { gun -> 
+                        XC.playerShootRequests.add(PlayerGunShootRequest(
+                            player = player,
+                        ))
+                    }
+                }
+
+                // throwable left click: readies throwable
+                XC.ITEM_TYPE_THROWABLE -> {
+                    getThrowableInHandUnchecked(player)?.let {
+                        XC.readyThrowableRequests.add(ReadyThrowableRequest(
+                            player = player,
+                        ))
+                    }
+                }
             }
 
             // TODO: melee weapon damage adjust
