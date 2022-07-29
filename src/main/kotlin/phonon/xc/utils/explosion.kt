@@ -60,6 +60,7 @@ public fun createExplosion(
     blastProtReduction: Double, // damage/blast protection
     damageType: DamageType,
     blockDamagePower: Float,
+    fireTicks: Int, // number of ticks to set targets on fire
     particles: ParticlePacket?,
 ) {
     // check if region allows explosions
@@ -102,6 +103,10 @@ public fun createExplosion(
                             
                             target.damage(damage, null)
                             target.setNoDamageTicks(0)
+
+                            if ( fireTicks > 0 ) {
+                                target.setFireTicks(fireTicks)
+                            }
                         }
                         
                         // emit event for external plugins to read

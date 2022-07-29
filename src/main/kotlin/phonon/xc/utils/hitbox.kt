@@ -66,7 +66,19 @@ public data class Hitbox(
     // so this is NOT a sphere bound radius
     public val radiusMin: Float,
 ) {
-    
+    /**
+     * Check if hitbox contains a point.
+     */
+    public fun contains(
+        x: Float,
+        y: Float,
+        z: Float,
+    ): Boolean {
+        return x >= xmin && x <= xmax &&
+            y >= ymin && y <= ymax &&
+            z >= zmin && z <= zmax
+    }
+
     /**
      * Return ray-AABB intersection using slab method, based on:
      * https://tavianator.com/cgit/dimension.git/tree/libdimension/bvh/bvh.c#n196

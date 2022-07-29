@@ -180,6 +180,7 @@ public val entityExplosionHitHandler = fun(
         gun.explosionBlastProtReduction,
         gun.explosionDamageType,
         gun.explosionBlockDamagePower,
+        gun.explosionFireTicks,
         gun.explosionParticles,
     )
 }
@@ -212,6 +213,7 @@ public val blockExplosionHitHandler = fun(
         gun.explosionBlastProtReduction,
         gun.explosionDamageType,
         gun.explosionBlockDamagePower,
+        gun.explosionFireTicks,
         gun.explosionParticles,
     )
 }

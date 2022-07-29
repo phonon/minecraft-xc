@@ -47,6 +47,13 @@ public data class ThrowableItem(
     // damage holder if timer expires before throwing if > 0
     public val damageHolderOnTimerExpired: Double = 20.0,
 
+    // damage if thrown object hits target
+    public val throwDamage: Double = 0.0,
+    public val throwDamageArmorReduction: Double = 0.25,
+    public val throwDamageResistanceReduction: Double = 0.25,
+    public val throwDamageType: DamageType = DamageType.EXPLOSIVE,
+    public val throwFireTicks: Int = 0,
+
     // explosion damage and radius and falloff (unused if no explosion)
     public val explosionDamage: Double = 8.0,
     public val explosionMaxDistance: Double = 8.0,        // max distance for checking entities
@@ -70,6 +77,10 @@ public data class ThrowableItem(
     public val soundImpact: String = "minecraft:block.glass.break", // for hit entity or block handler
     public val soundExplosion: String = "minecraft:entity.generic.explode", // for explosion handler
 ) {
+    // flags for handlers, used in thrown throwable tick loop
+    // to enable handling for block and entity hit detection 
+    public val hasBlockHitHandler: Boolean = onBlockHitHandler !== noBlockHitHandler
+    public val hasEntityHitHandler: Boolean = onEntityHitHandler !== noEntityHitHandler
 
     /**
      * Create a new ItemStack from properties.
@@ -121,6 +132,45 @@ public data class ThrowableItem(
                     th.getLong("cooldown")?.let { properties["throwCooldownMillis"] = it }
                     th.getDouble("speed")?.let { properties["throwSpeed"] = it }
                     th.getLong("time_to_explode")?.let { properties["timeToExplode"] = it.toInt() }
+                    th.getDouble("damage")?.let { properties["throwDamage"] = it }
+                    th.getDouble("damage_armor_reduction")?.let { properties["throwDamageArmorReduction"] = it }
+                    th.getDouble("damage_resist_reduction")?.let { properties["throwDamageResistanceReduction"] = it }
+                    th.getLong("damage_fire_ticks")?.let { properties["throwFireTicks"] = it.toInt() }
+                    th.getString("damage_type")?.let { name ->
+                        val damageType = DamageType.match(name)
+                        if ( damageType != null ) {
+                            properties["throwDamageType"] = damageType
+                        } else {
+                            logger?.warning("Unknown damage type: ${name}")
+                        }
+                    }
+                }
+
+                // handlers
+                toml.getTable("handlers")?.let { handlers ->
+                    handlers.getString("timer_expired")?.let { handlerName ->
+                        val handler = getThrowableTimerExpiredHandler(handlerName)
+                        if ( handler == null ) {
+                            logger?.warning("Unknown throwable timer expired handler: ${handlerName}")
+                        }
+                        properties["onTimerExpiredHandler"] = handler ?: noTimerExpiredHandler
+                    }
+
+                    handlers.getString("block_hit")?.let { handlerName ->
+                        val handler = getThrowableBlockHitHandler(handlerName)
+                        if ( handler == null ) {
+                            logger?.warning("Unknown throwable block hit handler: ${handlerName}")
+                        }
+                        properties["onBlockHitHandler"] = handler ?: noBlockHitHandler
+                    }
+
+                    handlers.getString("entity_hit")?.let { handlerName ->
+                        val handler = getThrowableEntityHitHandler(handlerName)
+                        if ( handler == null ) {
+                            logger?.warning("Unknown throwable entity hit handler: ${handlerName}")
+                        }
+                        properties["onEntityHitHandler"] = handler ?: noEntityHitHandler
+                    }
                 }
 
                 // explosion
@@ -132,6 +182,7 @@ public data class ThrowableItem(
                     explosion.getDouble("armor_reduction")?.let { properties["explosionArmorReduction"] = it }
                     explosion.getDouble("blast_prot_reduction")?.let { properties["explosionBlastProtReduction"] = it }
                     explosion.getLong("fire_ticks")?.let { properties["explosionFireTicks"] = it.toInt() }
+                    explosion.getDouble("block_damage_power")?.let { properties["explosionBlockDamagePower"] = it.toFloat() }
                     explosion.getString("damage_type")?.let { name ->
                         val damageType = DamageType.match(name)
                         if ( damageType != null ) {
@@ -140,7 +191,6 @@ public data class ThrowableItem(
                             logger?.warning("Unknown damage type: ${name}")
                         }
                     }
-                    explosion.getDouble("block_damage_power")?.let { properties["explosionBlockDamagePower"] = it.toFloat() }
                 }
 
                 // explosion particles
@@ -164,6 +214,14 @@ public data class ThrowableItem(
                         randomY = randomY,
                         randomZ = randomZ
                     )
+                }
+
+                // sounds
+                toml.getTable("sound")?.let { item -> 
+                    item.getString("ready")?.let { properties["soundReady"] = it }
+                    item.getString("throw")?.let { properties["soundThrow"] = it }
+                    item.getString("impact")?.let { properties["soundImpact"] = it }
+                    item.getString("explosion")?.let { properties["soundExplosion"] = it }
                 }
                 
                 return mapToObject(properties, ThrowableItem::class)

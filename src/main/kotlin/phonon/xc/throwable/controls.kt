@@ -9,6 +9,8 @@ import java.util.concurrent.ThreadLocalRandom
 import java.util.UUID
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.floor
+import kotlin.math.sqrt
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.Location
@@ -25,6 +27,9 @@ import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.scheduler.BukkitRunnable
 import phonon.xc.XC
 import phonon.xc.utils.Message
+import phonon.xc.utils.ChunkCoord
+import phonon.xc.utils.ChunkCoord3D
+import phonon.xc.utils.Hitbox
 
 import phonon.xc.compatibility.v1_16_R3.item.getInventorySlotForCustomItemWithNbtKey
 import phonon.xc.compatibility.v1_16_R3.item.getItemIntDataIfMaterialMatches
@@ -69,6 +74,17 @@ internal data class ReadyThrowable(
 )
 
 /**
+ * Data for throwable that expired. Used to delay running throwable
+ * expired handler, since it must be run after hitboxes are
+ * calculated.
+ */
+internal data class ExpiredThrowable(
+    val throwable: ThrowableItem, // throwable type
+    val location: Location,       // location of entity when throwable expired
+    val entity: Entity,           // source entity holding throwable that expired
+)
+
+/**
  * Data for a throwable that has been thrown from a player.
  * This is now tracks an item entity in the world.
  */
@@ -76,15 +92,14 @@ internal data class ThrownThrowable(
     val throwable: ThrowableItem,
     val id: Int,            // item key id for this throwable
     val ticksElapsed: Int,  // current # of ticks passed
-    val entity: ItemEntity, // entity for this throwable
+    val itemEntity: ItemEntity, // entity for this throwable
     val thrower: Entity,    // thrower of this throwable (used to track kill source)
-    // position + velocity: used to project forward to detect block hit
-    val prevLocX: Double,
-    val prevLocY: Double,
-    val prevLocZ: Double,
-    val velX: Double, // current velocity in X direction
-    val velY: Double, // current velocity in Y direction
-    val velZ: Double, // current velocity in Z direction
+    // position: used to project forward to detect block hit
+    // NO LONGER NEEDED: velocity for Item entity is accurate, so can project
+    // next motion state with just instantaneous pos/vel during system tick.
+    // val prevLocX: Double,
+    // val prevLocY: Double,
+    // val prevLocZ: Double,
 )
 
 /**
@@ -233,14 +248,11 @@ internal fun requestThrowThrowableSystem(requests: List<ThrowThrowableRequest>):
                 throwable = throwable,
                 id = throwId,
                 ticksElapsed = ticksElapsed,
-                entity = itemEntity,
+                itemEntity = itemEntity,
                 thrower = player,
-                prevLocX = location.x,
-                prevLocY = location.y,
-                prevLocZ = location.z,
-                velX = 0.0,
-                velY = 0.0,
-                velZ = 0.0,
+                // prevLocX = location.x,
+                // prevLocY = location.y,
+                // prevLocZ = location.z,
             ))
         }
 
@@ -300,14 +312,11 @@ internal fun droppedThrowableSystem(requests: List<DroppedThrowable>): ArrayList
                 throwable = throwable,
                 id = throwId,
                 ticksElapsed = ticksElapsed,
-                entity = itemEntity,
+                itemEntity = itemEntity,
                 thrower = player,
-                prevLocX = location.x,
-                prevLocY = location.y,
-                prevLocZ = location.z,
-                velX = 0.0,
-                velY = 0.0,
-                velZ = 0.0,
+                // prevLocX = location.x,
+                // prevLocY = location.y,
+                // prevLocZ = location.z,
             ))
         }
     }
@@ -337,10 +346,7 @@ internal fun tickReadyThrowableSystem(requests: Map<Int, ReadyThrowable>): HashM
         ) = th
 
         // check if past lifetime: if so, remove and do timer expired handler
-        if ( ticksElapsed >= throwable.timeToExplode ) {
-            // timerExpiredHandler(holder, throwId)
-            println("READY THROWABLE EXPIRED")
-            
+        if ( ticksElapsed >= throwable.timeToExplode ) {            
             // remove from player inventory
             val slot = getInventorySlotForCustomItemWithNbtKey(
                 holder,
@@ -359,6 +365,13 @@ internal fun tickReadyThrowableSystem(requests: Map<Int, ReadyThrowable>): HashM
                 holder.setNoDamageTicks(0)
             }
 
+            // queue expired throwable handler
+            XC.expiredThrowables[holder.getWorld().getUID()]?.add(ExpiredThrowable(
+                throwable = throwable,
+                location = holder.location,
+                entity = holder,
+            ))
+
             continue
         }
         else {
@@ -376,13 +389,84 @@ internal fun tickReadyThrowableSystem(requests: Map<Int, ReadyThrowable>): HashM
     return newThrowables
 }
 
+
 /**
  * System for ticking throwable after it has been thrown.
  * Handle impact checking, lifetime, and explosions.
  * 
  * Returns new list of thrown throwables that need to be ticked.
  */
-internal fun tickThrownThrowableSystem(requests: List<ThrownThrowable>): ArrayList<ThrownThrowable> {
+internal fun handleExpiredThrowableSystem(
+    requests: List<ExpiredThrowable>,
+    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+): ArrayList<ExpiredThrowable> {
+    for ( th in requests ) {
+        val (
+            throwable,
+            location,
+            entity,
+        ) = th
+
+        // queue timer expired handler
+        throwable.onTimerExpiredHandler(
+            hitboxes,
+            throwable,
+            location,
+            entity,
+        )
+    }
+
+    return ArrayList()
+}
+
+/**
+ * System for gathering all visited chunks for thrown throwables.
+ * This is needed for throwable entity hit detection and explosions
+ */
+internal fun getThrownThrowableVisitedChunksSystem(
+    requests: List<ThrownThrowable>,
+):  LinkedHashSet<ChunkCoord> {
+    val visitedChunks = LinkedHashSet<ChunkCoord>()
+
+    for ( th in requests ) {
+        // unpack
+        val itemEntity = th.itemEntity
+        val world = itemEntity.getWorld()
+        val location = itemEntity.location
+
+        // get item entity's mineman chunk coords (divides by 16)
+        val cx = floor(location.x).toInt() shr 4
+        val cz = floor(location.z).toInt() shr 4
+        
+        // add 1 chunk margin in case hitboxes spans multiple chunks
+        val cxmin = cx - 1
+        val czmin = cz - 1
+        val cxmax = cx + 1
+        val czmax = cz + 1
+        
+        for ( cx in cxmin..cxmax ) {
+            for ( cz in czmin..czmax ) {
+                // only add if chunk loaded
+                if ( world.isChunkLoaded(cx, cz) ) {
+                    visitedChunks.add(ChunkCoord(cx, cz))
+                }
+            }
+        }
+    }
+    
+    return visitedChunks
+}
+
+/**
+ * System for ticking throwable after it has been thrown.
+ * Handle impact checking, lifetime, and explosions.
+ * 
+ * Returns new list of thrown throwables that need to be ticked.
+ */
+internal fun tickThrownThrowableSystem(
+    requests: List<ThrownThrowable>,
+    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+): ArrayList<ThrownThrowable> {
     val newThrowables = ArrayList<ThrownThrowable>()
 
     for ( th in requests ) {
@@ -391,46 +475,158 @@ internal fun tickThrownThrowableSystem(requests: List<ThrownThrowable>): ArrayLi
             throwable,
             throwId,
             ticksElapsed,
-            entity,
+            itemEntity,
             thrower,
-            prevLocX,
-            prevLocY,
-            prevLocZ,
-            velX,
-            velY,
-            velZ,
+            // prevLocX,
+            // prevLocY,
+            // prevLocZ,
         ) = th
 
-        val currLocation = entity.getLocation()
-        val currLocX = currLocation.x
-        val currLocY = currLocation.y
-        val currLocZ = currLocation.z
-        val currVelX = (currLocX - prevLocX)
-        val currVelY = (currLocY - prevLocY)
-        val currVelZ = (currLocZ - prevLocZ)
+        val currLocation = itemEntity.getLocation()
 
         // check if past lifetime: if so, remove and do timer expired handler
-        if ( ticksElapsed >= throwable.timeToExplode || !entity.isValid() ) {
-            // timerExpiredHandler(holder, throwId)
-            println("THROWN THROWABLE EXPIRED")
-            entity.remove()
+        if ( ticksElapsed >= throwable.timeToExplode || !itemEntity.isValid() ) {
+            itemEntity.remove()
+
+            // run handler
+            throwable.onTimerExpiredHandler(
+                hitboxes,
+                throwable,
+                currLocation,
+                thrower,
+            )
 
             continue
         }
         else {
+
+            // do block hit handling: projects forward to next tick position
+            // and determines if that is inside a solid block.
+            // do this first to help prevent false detection for hitting entities
+            // behind partially empty blocks
+            if ( throwable.hasBlockHitHandler ) {
+                val world = itemEntity.getWorld()
+                val currLocX = currLocation.x
+                val currLocY = currLocation.y
+                val currLocZ = currLocation.z
+
+                // not needed: unlike Player entity, getVelocity() is accurate here
+                // val currVelX = (currLocX - prevLocX)
+                // val currVelY = (currLocY - prevLocY)
+                // val currVelZ = (currLocZ - prevLocZ)
+
+                val itemEntityVel = itemEntity.getVelocity()
+
+                val velX = itemEntityVel.x
+                val velY = itemEntityVel.y - 0.04
+                val velZ = itemEntityVel.z
+
+                val nextLocX = currLocX + velX
+                val nextLocY = currLocY + velY // gravity
+                val nextLocZ = currLocZ + velZ
+
+                // for debugging: needed to verify currLoc and projected nextLoc are same
+                // println("currLoc = ($currLocX, $currLocY, $currLocZ)")
+                // println("itemEntityVel = (${itemEntityVel.x}, ${itemEntityVel.y}, ${itemEntityVel.z})")
+                // println("currVel = (${currVelX}, ${currVelY}, ${currVelZ})")
+                // println("nextLoc = ($nextLocX, $nextLocY, $nextLocZ)")
+
+                val nextBlx = floor(nextLocX).toInt()
+                val nextBly = floor(nextLocY).toInt()
+                val nextBlz = floor(nextLocZ).toInt()
+
+                val bl = world.getBlockAt(nextBlx, nextBly, nextBlz)
+                
+                if ( bl.type != Material.AIR ) {
+                    val distance = sqrt(velX * velX + velY * velY + velZ * velZ)
+                    val dirX = velX / distance
+                    val dirY = velY / distance
+                    val dirZ = velZ / distance
+
+                    // check if movement path intersects into solid block
+                    val hitDistance = XC.config.blockCollision[bl.type](
+                        bl,
+                        currLocX.toFloat(),
+                        currLocY.toFloat(),
+                        currLocZ.toFloat(),
+                        dirX.toFloat(),
+                        dirY.toFloat(),
+                        dirZ.toFloat(),
+                        distance.toFloat(),
+                    )
+
+                    if ( hitDistance != Float.MAX_VALUE ) { // hit found
+                        val hitDist = hitDistance.toDouble()
+                        val hitBlock = bl
+                        val hitBlockLocation = Location(
+                            world,
+                            currLocX + hitDist * dirX,
+                            currLocY + hitDist * dirY,
+                            currLocZ + hitDist * dirZ,
+                        )
+                        
+                        itemEntity.remove()
+
+                        throwable.onBlockHitHandler(
+                            hitboxes,
+                            throwable,
+                            hitBlockLocation,
+                            hitBlock,
+                            thrower,
+                        )
+
+                        continue
+                    }
+                }
+            }
+
+            // entity hit handling:
+            // detect if current location is inside an entity
+            if ( throwable.hasEntityHitHandler ) {
+                val currLocX = currLocation.x
+                val currLocY = currLocation.y
+                val currLocZ = currLocation.z
+
+                // get chunk
+                val cx = floor(currLocX).toInt() shr 4
+                val cy = floor(currLocY).toInt() shr 4
+                val cz = floor(currLocZ).toInt() shr 4
+
+                hitboxes[ChunkCoord3D(cx, cy, cz)]?.let { hbs ->
+                    for ( hitbox in hbs ) {
+                        // skip if hitbox is thrower
+                        if ( hitbox.entity === thrower ) {
+                            continue
+                        }
+
+                        if ( hitbox.contains(currLocX.toFloat(), currLocY.toFloat(), currLocZ.toFloat()) ) {
+                            itemEntity.remove()
+
+                            throwable.onEntityHitHandler(
+                                hitboxes,
+                                throwable,
+                                currLocation,
+                                hitbox.entity,
+                                thrower,
+                            )
+
+                            continue
+                        }
+                    }
+                }
+            }
+
+            
             // else, push into new throwables map
             newThrowables.add(ThrownThrowable(
                 throwable = throwable,
                 id = throwId,
                 ticksElapsed = ticksElapsed + 1,
-                entity = entity,
+                itemEntity = itemEntity,
                 thrower = thrower,
-                prevLocX = currLocX,
-                prevLocY = currLocY,
-                prevLocZ = currLocZ,
-                velX = currVelX,
-                velY = currVelY,
-                velZ = currVelZ,
+                // prevLocX = currLocX,
+                // prevLocY = currLocY,
+                // prevLocZ = currLocZ,
             ))
         }
     }

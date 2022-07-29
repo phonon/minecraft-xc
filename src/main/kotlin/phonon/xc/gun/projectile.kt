@@ -200,9 +200,15 @@ public class ProjectileSystem(public val world: World) {
     }
     
     /**
-     * Projectiles update on each tick. 
+     * Projectiles update on each tick.
+     * 
+     * Takes an input set of chunks `visitedChunks` to force system to gather entity
+     * hitboxes in these chunks. This is used for throwables and other systems
+     * that do their own collision tests, but also need to gather entity hitboxes.
      */
-    internal fun update(): ProjectileSystemUpdate {
+    internal fun update(
+        visitedChunks: LinkedHashSet<ChunkCoord>, // to force gathering entity hitboxes in these chunks
+    ): ProjectileSystemUpdate {
         // Push all waiting async projectiles
         if ( !this.projectileCreateQueue.isEmpty()) {
             this.projectileCreateQueue.drainTo(this.projectiles)
@@ -217,7 +223,6 @@ public class ProjectileSystem(public val world: World) {
         // calls and avoids duplicating scanning chunk entities multiple
         // times for multiple projectiles. `hitboxes` contains all entity
         // hitboxes that intersect with the 3d chunk.
-        val visitedChunks = LinkedHashSet<ChunkCoord>()
         val hitboxes = HashMap<ChunkCoord3D, ArrayList<Hitbox>>() 
 
         // Use linearized bullet dynamics to calculate next position

@@ -217,6 +217,7 @@ public data class Gun(
     public val explosionBlastProtReduction: Double = 1.0, // damage/blast protection
     public val explosionDamageType: DamageType = DamageType.EXPLOSIVE_SHELL,
     public val explosionBlockDamagePower: Float = 0f,     // explosion block damage power level
+    public val explosionFireTicks: Int = 0,               // if explosion should set targets on fire
     public val explosionParticles: ParticlePacket = ParticlePacket.placeholderExplosion(),
 
     // handler on block hit
@@ -550,6 +551,7 @@ public data class Gun(
                     explosion.getDouble("falloff")?.let { properties["explosionFalloff"] = it }
                     explosion.getDouble("armor_reduction")?.let { properties["explosionArmorReduction"] = it }
                     explosion.getDouble("blast_prot_reduction")?.let { properties["explosionBlastProtReduction"] = it }
+                    explosion.getLong("fire_ticks")?.let { properties["explosionFireTicks"] = it.toInt() }
                     explosion.getString("damage_type")?.let { name ->
                         val damageType = DamageType.match(name)
                         if ( damageType != null ) {

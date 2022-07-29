@@ -18,12 +18,21 @@ ready = -1      # when first click -> item readies to throw
 
 # throwable settings
 [throw]
-cooldown = 1000       # cooldown between throwing items in milliseconds
-speed = 2.0           # velocity of thrown item
-time_to_explode = 100 # time to explode (in ticks)
+cooldown = 1000                 # cooldown between throwing items in milliseconds
+speed = 2.0                     # velocity of thrown item
+time_to_explode = 100           # time to explode (in ticks)
+damage_holder_on_expired = 20.0 # damage to holder when timer expires
+damage = 0.0                    # damage when hitting an entity (only if hit handler is not none)
+damage_armor_reduction = 0.25   # damage on entity hit armor reduction
+damage_resist_reduction = 0.25  # damage on entity hit resistance reduction
+damage_type = "EXPLOSIVE"       # damage type on entity hit
+damage_fire_ticks = 0           # damage fire ticks after hit
 
-# TODO: block/entity hit handlers
-
+# handlers (timer expired, block hit, entity hit)
+[handlers]
+timer_expired = "explosion"
+block_hit = "none"
+entity_hit = "none"
 
 # Explosion damage properties. These are only used if the handler
 # for block or entity hit has an explosion effect.
@@ -32,24 +41,26 @@ damage = 8.0
 max_distance = 8.0
 radius = 1.0
 falloff = 2.0
-armor_reduction = 0.5
-blast_prot_reduction = 0.5
-damage_type = "EXPLOSIVE_SHELL"
-block_damage_power = 2.0
+armor_reduction = 0.25
+blast_prot_reduction = 0.25
+damage_type = "EXPLOSIVE"
+block_damage_power = 0.0
 fire_ticks = 0
 
 # Explosion particle settings
 [explosion.particles]
-type = "EXPLOSION_NORMAL"
+type = "EXPLOSION_LARGE"
 count = 8
-random_x = 0.5
-random_y = 0.5
-random_z = 0.5
+random_x = 1.5
+random_y = 1.5
+random_z = 1.5
 
 # sounds
 [sound]
-ready = "grenade_ready"
-throw = "grenade_throw"
+ready = "grenade.ready"
+throw = "grenade.throw"
+impact = "grenade.impact"
+explosion = "grenade.explosion"
 # alternative detailed mode to specify volume and pitch
-# ready = { name = "grenade_ready", volume = 1.0, pitch = 1.0 } 
-# throw = { name = "grenade_throw", volume = 1.0, pitch = 1.0 }
+# ready = { name = "grenade.ready", volume = 1.0, pitch = 1.0 } 
+# throw = { name = "grenade.throw", volume = 1.0, pitch = 1.0 }

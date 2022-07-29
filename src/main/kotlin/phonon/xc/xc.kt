@@ -217,6 +217,7 @@ public object XC {
     internal var droppedThrowables: ArrayList<DroppedThrowable> = ArrayList()
     internal var readyThrowables: HashMap<Int, ReadyThrowable> = HashMap()
     // per-world throwables
+    internal var expiredThrowables: HashMap<UUID, ArrayList<ExpiredThrowable>> = HashMap()
     internal var thrownThrowables: HashMap<UUID, ArrayList<ThrownThrowable>> = HashMap()
     // task finish queues
     internal val playerReloadTaskQueue: LinkedBlockingQueue<PlayerReloadTask> = LinkedBlockingQueue()
@@ -336,6 +337,7 @@ public object XC {
         Bukkit.getWorlds().forEach { world ->
             XC.projectileSystems.put(world.getUID(), ProjectileSystem(world))
             XC.thrownThrowables.put(world.getUID(), ArrayList())
+            XC.expiredThrowables.put(world.getUID(), ArrayList())
         }
         
         // reload main plugin config
@@ -525,6 +527,7 @@ public object XC {
         // re-create new projectile systems for each world
         XC.projectileSystems.clear()
         XC.thrownThrowables.clear()
+        XC.expiredThrowables.clear()
     }
 
     /**
@@ -966,7 +969,8 @@ public object XC {
         XC.crawlToShootRequestQueue = requestCrawlToShootSystem(XC.crawlToShootRequestQueue, timestamp)
 
         // ready and throw throwable systems
-        // (tick for thrown throwable objects done with projectiles)
+        // (tick for thrown throwable objects done with projectiles
+        // because hitboxes needed)
         XC.readyThrowableRequests = requestReadyThrowableSystem(XC.readyThrowableRequests)
         XC.throwThrowableRequests = requestThrowThrowableSystem(XC.throwThrowableRequests)
         XC.droppedThrowables = droppedThrowableSystem(XC.droppedThrowables)
@@ -997,7 +1001,12 @@ public object XC {
 
         // update projectile systems for each world
         for ( (worldId, projSys) in this.projectileSystems ) {
-            val (hitboxes, hitBlocksQueue, hitEntitiesQueue) = projSys.update()
+            // first gather visited chunks for throwable items
+            // (for potential explosion/entity hit calculations)
+            val visitedChunks = XC.thrownThrowables[worldId]?.let { throwables -> getThrownThrowableVisitedChunksSystem(throwables) } ?: LinkedHashSet()
+
+            // run projectile system
+            val (hitboxes, hitBlocksQueue, hitEntitiesQueue) = projSys.update(visitedChunks)
             
             // handle hit blocks and entities
             // if ( hitBlocksQueue.size > 0 ) println("HIT BLOCKS: ${hitBlocksQueue}")
@@ -1012,7 +1021,8 @@ public object XC {
             }
 
             // per-world throwable tick systems (needs hitboxes)
-            XC.thrownThrowables[worldId] = tickThrownThrowableSystem(XC.thrownThrowables[worldId] ?: listOf())
+            XC.expiredThrowables[worldId] = handleExpiredThrowableSystem(XC.expiredThrowables[worldId] ?: listOf(), hitboxes)
+            XC.thrownThrowables[worldId] = tickThrownThrowableSystem(XC.thrownThrowables[worldId] ?: listOf(), hitboxes)
         }
 
 
