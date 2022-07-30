@@ -4,6 +4,8 @@
 
 package phonon.xc.listeners
 
+import java.time.LocalDateTime
+import java.text.MessageFormat
 import org.bukkit.ChatColor
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.entity.Player
@@ -19,9 +21,11 @@ import org.bukkit.event.entity.EntityToggleSwimEvent
 import org.bukkit.event.entity.EntityPickupItemEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
 import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.event.entity.ProjectileLaunchEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
@@ -37,6 +41,7 @@ import org.bukkit.event.player.PlayerAnimationEvent
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent 
 import phonon.xc.XC
 import phonon.xc.utils.Message
+import phonon.xc.utils.death.PlayerDeathRecord
 import phonon.xc.gun.PlayerAimDownSightsRequest
 import phonon.xc.gun.PlayerGunSelectRequest
 import phonon.xc.gun.PlayerGunReloadRequest
@@ -121,9 +126,127 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         // ==========================================================
         // CUSTOM DEATH MESSAGE HANDLING
         // ==========================================================
-        // TODO
-        // TODO
-        // TODO
+        // check if custom death message exists
+        val playerId = player.getUniqueId()
+
+        val customDeathEvent = XC.deathEvents.remove(playerId)
+        if ( customDeathEvent != null ) {
+            // unpack death event from a weapon
+            val (
+                player,
+                killer,
+                weaponType,
+                weaponId,
+            ) = customDeathEvent
+
+            // println("CUSTOM DEATH EVENT:")
+            // println("player: $player")
+            // println("killer: $killer")
+            // println("weaponType: $weaponType")
+            // println("weaponId: $weaponId")
+
+            // try to get weapon death message
+            val playerName = player.getName()
+            val killerName = killer.getName()
+            var deathMessage = ""
+            var deathCause = ""
+
+            try {
+                when ( weaponType ) {
+                    XC.ITEM_TYPE_GUN -> {
+                        XC.guns[weaponId]?.let { weapon -> 
+                            deathCause = weapon.itemName
+                            deathMessage = MessageFormat.format(
+                                weapon.deathMessage,
+                                playerName,
+                                killerName,
+                                weapon.itemName,
+                            )
+                            e.setDeathMessage(deathMessage)
+                        }
+                    }
+                    
+                    XC.ITEM_TYPE_THROWABLE -> {
+                        XC.throwable[weaponId]?.let { weapon -> 
+                            deathCause = weapon.itemName
+                            deathMessage = MessageFormat.format(
+                                weapon.deathMessage,
+                                playerName,
+                                killerName,
+                                weapon.itemName,
+                            )
+                            e.setDeathMessage(deathMessage)
+                        }
+                    }
+                }
+            } catch ( err: Exception ) {
+                err.printStackTrace()
+                XC.logger?.severe("Failed to get death message for weapon: type=$weaponType id=$weaponId")
+            }
+
+            // create death record
+            XC.playerDeathRecords.add(PlayerDeathRecord(
+                timestamp = LocalDateTime.now(),
+                playerName = playerName,
+                playerUUID = playerId.toString(),
+                killerName = killerName,
+                killerUUID = killer.getUniqueId().toString(),
+                deathCause = deathCause,
+                deathMessage = deathMessage,
+            ))
+
+        }
+        else {
+            val playerName = player.getName()
+            var deathCause = "unknown"
+            var deathMessage = ""
+            // TODO: can we even find these?
+            val killerName = ""
+            val killerUUID = ""
+
+            // try to get death cause. for explosions + wither poison, do special messages
+            val lastDamageEvent = player.getLastDamageCause()
+            if ( lastDamageEvent != null ) {
+                val damageCause = lastDamageEvent.getCause()
+
+                if ( damageCause == DamageCause.BLOCK_EXPLOSION || damageCause == DamageCause.ENTITY_EXPLOSION ) {
+                    deathMessage = MessageFormat.format(
+                        XC.config.deathMessageExplosion,
+                        playerName,
+                    )
+                    e.setDeathMessage(deathMessage)
+                }
+                else if ( damageCause == DamageCause.WITHER ) {
+                    deathMessage = MessageFormat.format(
+                        XC.config.deathMessageWither,
+                        playerName,
+                    )
+                    e.setDeathMessage(deathMessage)
+                } else {
+                    deathMessage = e.getDeathMessage() ?: ""
+                }
+            } else {
+                deathMessage = e.getDeathMessage() ?: ""
+            }
+
+            XC.playerDeathRecords.add(PlayerDeathRecord(
+                timestamp = LocalDateTime.now(),
+                playerName = playerName,
+                playerUUID = playerId.toString(),
+                killerName = killerName,
+                killerUUID = killerUUID,
+                deathCause = deathCause,
+                deathMessage = deathMessage,
+            ))
+        }
+    }
+
+    @EventHandler
+    public fun onPlayerRespawn(e: PlayerRespawnEvent) {
+        // clears any redundant death event messages that may have
+        // accumulated on the player
+        val playerId = e.player.getUniqueId()
+        XC.deathEvents.remove(playerId)
     }
 
     @EventHandler
@@ -470,15 +593,15 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     //     // }
     // }
 
-	/**
-	 * Required for handling right click attacking entity, route to gun handler event
-	 */
-	@EventHandler
-	public fun onHit(e: EntityDamageByEntityEvent) {
+    /**
+     * Required for handling right click attacking entity, route to gun handler event
+     */
+    @EventHandler
+    public fun onHit(e: EntityDamageByEntityEvent) {
         // println("onHit")
         val damager = e.getDamager()
-		if ( damager is Player ) {
-			val player: Player = damager
+        if ( damager is Player ) {
+            val player: Player = damager
             
             when ( getItemTypeInHand(player) ) {
                 // gun left click: single fire or burst

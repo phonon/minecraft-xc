@@ -25,6 +25,10 @@ empty = -1      # no more ammo left
 reload = -1     # while reloading
 ads = -1        # while using aim down sights (ADS uses offhand model)
 
+# death message
+[death]
+message = "{0} was shot by {1} using {2}"
+
 # Equiped properties
 [equip]
 delay = 500     # delay before can fire gun [ms]

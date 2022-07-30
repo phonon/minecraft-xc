@@ -54,6 +54,7 @@ import phonon.xc.utils.debug.DebugTimings
 import phonon.xc.utils.blockCrackAnimation.*
 import phonon.xc.utils.file.*
 import phonon.xc.utils.WorldGuard
+import phonon.xc.utils.death.*
 
 // TODO: in future need to select NMS version
 import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
@@ -165,6 +166,15 @@ public object XC {
     // map of players => previous location
     internal var playerPreviousLocation: HashMap<UUID, Location> = HashMap()
     
+    // map of players => custom death messages
+    internal val deathEvents: HashMap<UUID, XcPlayerDeathEvent> = HashMap()
+
+    // list of saved death events for statistics
+    internal var playerDeathRecords: ArrayList<PlayerDeathRecord> = ArrayList()
+
+    // counter for running player death record saving
+    internal var playerDeathRecordSaveCounter: Int = 0
+
     // When gun item reloads, it gets assigned a unique id from this counter.
     // When reload is complete, gun item id is checked with this to make sure
     // player did not swap items during reload that plugin failed to catch.
@@ -313,6 +323,9 @@ public object XC {
         for ( (playerId, crawlState) in crawling ) {
             crawlState.cleanup()
         }
+
+        // flush death stats save
+        TaskSavePlayerDeathRecords(XC.playerDeathRecords, XC.config.playerDeathLogSaveDir).run()
         
         XC.plugin = null
         XC.logger = null
@@ -523,6 +536,11 @@ public object XC {
         XC.guns.fill(null)
         XC.melee.fill(null)
         XC.hats.fill(null)
+        
+        // clear death message and stats tracking
+        TaskSavePlayerDeathRecords(XC.playerDeathRecords, XC.config.playerDeathLogSaveDir).run()
+        XC.playerDeathRecords = ArrayList()
+        XC.deathEvents.clear()
 
         // re-create new projectile systems for each world
         XC.projectileSystems.clear()
@@ -1098,6 +1116,23 @@ public object XC {
             // sync
             // TaskBroadcastBlockCrackAnimations(ProtocolLibrary.getProtocolManager(), blockCrackAnimations).run()
         }
+
+        // save kill/death stats system
+        XC.playerDeathRecordSaveCounter -= 1
+        if ( XC.playerDeathRecordSaveCounter <= 0 ) {
+            XC.playerDeathRecordSaveCounter = XC.config.playerDeathRecordSaveInterval
+            
+            if ( XC.playerDeathRecords.size > 0 ) {
+                val deathRecords = XC.playerDeathRecords
+                XC.playerDeathRecords = ArrayList()
+
+                Bukkit.getScheduler().runTaskAsynchronously(
+                    XC.plugin!!,
+                    TaskSavePlayerDeathRecords(deathRecords, XC.config.playerDeathLogSaveDir),
+                )
+            }
+        }
+
         
         // timings
         if ( XC.doDebugTimings ) {

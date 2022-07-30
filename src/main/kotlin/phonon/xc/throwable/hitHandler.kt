@@ -24,6 +24,7 @@ import phonon.xc.XC
 import phonon.xc.utils.damage.*
 import phonon.xc.utils.ChunkCoord3D
 import phonon.xc.utils.Hitbox
+import phonon.xc.utils.death.XcPlayerDeathEvent
 import phonon.xc.utils.explosion.createExplosion
 import phonon.xc.event.XCProjectileDamageEvent
 
@@ -126,6 +127,8 @@ public val timerExpiredExplosionHandler = fun(
         throwable.explosionBlockDamagePower,
         throwable.explosionFireTicks,
         throwable.explosionParticles,
+        XC.ITEM_TYPE_THROWABLE,
+        throwable.itemModelDefault,
     )
 }
 
@@ -157,6 +160,16 @@ public val entityDamageHitHandler = fun(
             throwable.throwDamageArmorReduction,
             throwable.throwDamageResistanceReduction,
         )
+
+        if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+            XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                player = target,
+                killer = source,
+                weaponType = XC.ITEM_TYPE_THROWABLE,
+                weaponId = throwable.itemModelDefault,
+            )
+        }
+
         target.damage(damage, null)
         target.setNoDamageTicks(0)
 
@@ -192,6 +205,16 @@ public val entityExplosionHitHandler = fun(
             throwable.throwDamageArmorReduction,
             throwable.throwDamageResistanceReduction,
         )
+
+        if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+            XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                player = target,
+                killer = source,
+                weaponType = XC.ITEM_TYPE_THROWABLE,
+                weaponId = throwable.itemModelDefault,
+            )
+        }
+
         target.damage(damage, null)
         target.setNoDamageTicks(0)
 
@@ -219,6 +242,8 @@ public val entityExplosionHitHandler = fun(
         throwable.explosionBlockDamagePower,
         throwable.explosionFireTicks,
         throwable.explosionParticles,
+        XC.ITEM_TYPE_THROWABLE,
+        throwable.itemModelDefault,
     )
 }
 
@@ -252,5 +277,7 @@ public val blockExplosionHitHandler = fun(
         throwable.explosionBlockDamagePower,
         throwable.explosionFireTicks,
         throwable.explosionParticles,
+        XC.ITEM_TYPE_THROWABLE,
+        throwable.itemModelDefault,
     )
 }

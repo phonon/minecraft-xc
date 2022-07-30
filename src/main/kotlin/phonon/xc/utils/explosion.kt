@@ -10,6 +10,7 @@ import kotlin.math.max
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Entity
+import org.bukkit.entity.Player
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Damageable
 import phonon.xc.XC
@@ -18,6 +19,7 @@ import phonon.xc.utils.ChunkCoord3D
 import phonon.xc.utils.Hitbox
 import phonon.xc.utils.damage.DamageType
 import phonon.xc.utils.damage.explosionDamageAfterArmor
+import phonon.xc.utils.death.XcPlayerDeathEvent
 import phonon.xc.utils.particle.ParticlePacket
 import phonon.xc.utils.particle.ParticleExplosion
 
@@ -62,6 +64,8 @@ public fun createExplosion(
     blockDamagePower: Float,
     fireTicks: Int, // number of ticks to set targets on fire
     particles: ParticlePacket?,
+    weaponType: Int, // metadata for player death tracking
+    weaponId: Int,   // metadata for player death tracking
 ) {
     // check if region allows explosions
     if ( !XC.canExplodeAt(location) ) {
@@ -100,6 +104,15 @@ public fun createExplosion(
                                 armorReduction,
                                 blastProtReduction,
                             )
+
+                            if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+                                XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                                    player = target,
+                                    killer = source,
+                                    weaponType = weaponType,
+                                    weaponId = weaponId,
+                                )
+                            }
                             
                             target.damage(damage, null)
                             target.setNoDamageTicks(0)

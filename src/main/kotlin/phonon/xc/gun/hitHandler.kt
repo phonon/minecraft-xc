@@ -24,6 +24,7 @@ import phonon.xc.XC
 import phonon.xc.utils.damage.*
 import phonon.xc.utils.ChunkCoord3D
 import phonon.xc.utils.Hitbox
+import phonon.xc.utils.death.XcPlayerDeathEvent
 import phonon.xc.utils.explosion.createExplosion
 import phonon.xc.event.XCProjectileDamageEvent
 
@@ -109,6 +110,16 @@ public val entityDamageHitHandler = fun(
             gun.projectileArmorReduction,
             gun.projectileResistanceReduction,
         )
+
+        if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+            XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                player = target,
+                killer = source,
+                weaponType = XC.ITEM_TYPE_GUN,
+                weaponId = gun.itemModelDefault,
+            )
+        }
+        
         target.damage(damage, null)
         target.setNoDamageTicks(0)
 
@@ -150,6 +161,16 @@ public val entityExplosionHitHandler = fun(
             gun.projectileArmorReduction,
             gun.projectileResistanceReduction,
         )
+
+        if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+            XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                player = target,
+                killer = source,
+                weaponType = XC.ITEM_TYPE_GUN,
+                weaponId = gun.itemModelDefault,
+            )
+        }
+
         target.damage(damage, null)
         target.setNoDamageTicks(0)
 
@@ -182,6 +203,8 @@ public val entityExplosionHitHandler = fun(
         gun.explosionBlockDamagePower,
         gun.explosionFireTicks,
         gun.explosionParticles,
+        XC.ITEM_TYPE_GUN,
+        gun.itemModelDefault,
     )
 }
 
@@ -215,6 +238,8 @@ public val blockExplosionHitHandler = fun(
         gun.explosionBlockDamagePower,
         gun.explosionFireTicks,
         gun.explosionParticles,
+        XC.ITEM_TYPE_GUN,
+        gun.itemModelDefault,
     )
 }
 

@@ -71,6 +71,10 @@ public data class Config(
     public val particleBulletTrailMinDistance: Double = 0.3,
     public val particleBulletImpactCount: Int = 12,
 
+    // death messages (note: single quote must be '')
+    public val deathMessageExplosion: String = "{0} was guro''d in an explosion",
+    public val deathMessageWither: String = "{0} suffocated in poison gas",
+
     // ADVANCED
 
     // stops player crawling when switching to a non-crawl to shoot weapon
@@ -84,6 +88,13 @@ public data class Config(
 
     // use async tasks to send packets to players
     public val asyncPackets: Boolean = true,
+
+    // how often in ticks to schedule saving player death stats
+    // default = 1 minute
+    public val playerDeathRecordSaveInterval: Int = 20*60,
+
+    // path to save player deaths stats to
+    public val playerDeathLogSaveDir: String = "plugins/xc/logs",
 ) {
 
     companion object {
@@ -156,11 +167,20 @@ public data class Config(
             // sway config
             toml.getLong("sway.players_before_pipelined_sway")?.let { configOptions["playersBeforePipelinedSway"] = it.toInt() }
             
+            // player death messages and death record saving
+            toml.getTable("deaths")?.let { deaths ->
+                deaths.getString("message_explosion")?.let { configOptions["deathMessageExplosion"] = it }
+                deaths.getString("message_wither")?.let { configOptions["deathMessageWither"] = it }
+                deaths.getString("log_save_dir")?.let { configOptions["playerDeathLogSaveDir"] = it }
+                deaths.getLong("save_interval")?.let { configOptions["playerDeathRecordSaveInterval"] = it.toInt() }
+            }
+
             // default debug timings config
             toml.getBoolean("debug.do_timings_default")?.let { configOptions["defaultDoDebugTimings"] = it }
 
             // random advanced options
             toml.getBoolean("experimental.async_packets")?.let { configOptions["asyncPackets"] = it }
+
 
             return mapToObject(configOptions, Config::class)
         }

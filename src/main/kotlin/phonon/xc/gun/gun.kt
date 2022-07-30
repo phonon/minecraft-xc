@@ -124,6 +124,9 @@ public data class Gun(
     public val itemModelReload: Int = -1,     // when gun is reloading
     public val itemModelAimDownSights: Int = -1, // when using iron sights
 
+    // death message
+    public val deathMessage: String = "{0} was shot by {1} using {2}",
+
     // equiped properties
     // slowness while equiped (if > 0)
     public val equipDelayMillis: Long = 500, // delay before player can fire after selecting weapon
@@ -403,6 +406,11 @@ public data class Gun(
                     model.getLong("empty")?.let { properties["itemModelEmpty"] = it.toInt() }
                     model.getLong("reload")?.let { properties["itemModelReload"] = it.toInt() }
                     model.getLong("ads")?.let { properties["itemModelAimDownSights"] = it.toInt()}
+                }
+
+                // death message
+                toml.getTable("death")?.let { death -> 
+                    death.getString("message")?.let { properties["deathMessage"] = it }
                 }
 
                 // sounds

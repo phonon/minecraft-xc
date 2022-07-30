@@ -36,6 +36,9 @@ public data class ThrowableItem(
     public val itemLore: List<String> = listOf(),
     public val itemModelDefault: Int = 0,     // default normal model (custom model data id)
     public val itemModelReady: Int = -1,      // when throwable is "primed" (e.g. grenade pin out)
+    
+    // death message (note: single quote must be '')
+    public val deathMessage: String = "{0} was guro''d by {1} using a {2}",
 
     // cooldown between throwing any throwable items
     public val throwCooldownMillis: Long = 1000,
@@ -127,6 +130,11 @@ public data class ThrowableItem(
                     model.getLong("ready")?.let { properties["itemModelReady"] = it.toInt() }
                 }
                 
+                // death message
+                toml.getTable("death")?.let { death -> 
+                    death.getString("message")?.let { properties["deathMessage"] = it }
+                }
+
                 // throw
                 toml.getTable("throw")?.let { th ->
                     th.getLong("cooldown")?.let { properties["throwCooldownMillis"] = it }
