@@ -32,7 +32,7 @@ public data class MeleeWeapon(
     // damage
     public val damage: Double = 8.0,
     public val damageArmorReduction: Double = 0.5,     // reduction per armor point
-    public val damageBlastProtReduction: Double = 1.0, // reduction per blast protection level
+    public val damageResistanceReduction: Double = 1.0, // reduction per resistance protection level
     public val damageType: DamageType = DamageType.MELEE,
 ) {
 
@@ -84,7 +84,7 @@ public data class MeleeWeapon(
                 toml.getTable("damage")?.let { d ->
                     d.getDouble("damage")?.let { properties["damage"] = it }
                     d.getDouble("armor_reduction")?.let { properties["damageArmorReduction"] = it }
-                    d.getDouble("resist_reduction")?.let { properties["damageBlastProtReduction"] = it }
+                    d.getDouble("resist_reduction")?.let { properties["damageResistanceReduction"] = it }
                     d.getString("damage_type")?.let { name ->
                         val damageType = DamageType.match(name)
                         if ( damageType != null ) {

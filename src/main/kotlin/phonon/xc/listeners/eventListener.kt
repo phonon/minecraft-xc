@@ -11,6 +11,8 @@ import org.bukkit.attribute.Attribute
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.entity.Player
 import org.bukkit.entity.EntityType
+import org.bukkit.entity.LivingEntity
+import org.bukkit.entity.Damageable
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -41,8 +43,7 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerAnimationEvent
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent 
 import phonon.xc.XC
-import phonon.xc.utils.Message
-import phonon.xc.utils.death.PlayerDeathRecord
+import phonon.xc.armor.PlayerWearHatRequest
 import phonon.xc.gun.PlayerAimDownSightsRequest
 import phonon.xc.gun.PlayerGunSelectRequest
 import phonon.xc.gun.PlayerGunReloadRequest
@@ -51,16 +52,20 @@ import phonon.xc.gun.PlayerAutoFireRequest
 import phonon.xc.gun.PlayerGunCleanupRequest
 import phonon.xc.gun.ItemGunCleanupRequest
 import phonon.xc.gun.AmmoInfoMessagePacket
-import phonon.xc.armor.PlayerWearHatRequest
 import phonon.xc.throwable.ReadyThrowableRequest
 import phonon.xc.throwable.ThrowThrowableRequest
 import phonon.xc.throwable.DroppedThrowable
+import phonon.xc.utils.Message
+import phonon.xc.utils.death.PlayerDeathRecord
+import phonon.xc.utils.death.XcPlayerDeathEvent
+import phonon.xc.utils.damage.damageAfterArmorAndResistance
 
 // TODO: in future need to select NMS version
 import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
 import phonon.xc.compatibility.v1_16_R3.gun.item.*
 import phonon.xc.compatibility.v1_16_R3.armor.item.*
 import phonon.xc.compatibility.v1_16_R3.throwable.item.*
+import phonon.xc.compatibility.v1_16_R3.melee.item.getMeleeInHandUnchecked
 import phonon.xc.compatibility.v1_16_R3.item.getItemTypeInHand
 import phonon.xc.compatibility.v1_16_R3.item.setItemArmorNMS
 
@@ -618,9 +623,36 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                         ))
                     }
                 }
-            }
 
-            // TODO: melee weapon damage adjust
+                // melee weapon damage adjustment
+                XC.ITEM_TYPE_MELEE -> {
+                    getMeleeInHandUnchecked(player)?.let { weapon ->
+                        val target = e.getEntity()
+                        if ( target is LivingEntity && target is Damageable ) {
+                            // melee damage handler
+                            val damage = damageAfterArmorAndResistance(
+                                weapon.damage,
+                                target,
+                                weapon.damageArmorReduction,
+                                weapon.damageResistanceReduction,
+                            )
+                            
+                            // println("NEW MELEE DAMAGE base=${weapon.damage} final=$damage")
+
+                            if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+                                XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                                    player = target,
+                                    killer = player,
+                                    weaponType = XC.ITEM_TYPE_MELEE,
+                                    weaponId = weapon.itemModelDefault,
+                                )
+                            }
+
+                            e.setDamage(damage)
+                        }
+                    }
+                }
+            }
         }
     }
 
