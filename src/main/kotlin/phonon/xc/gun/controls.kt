@@ -18,7 +18,8 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.attribute.Attribute
 import org.bukkit.entity.Player
-import org.bukkit.entity.Item
+import org.bukkit.entity.Item as ItemEntity
+import org.bukkit.entity.EntityType
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
@@ -30,6 +31,7 @@ import phonon.xc.utils.Message
 import phonon.xc.utils.sound.SoundPacket
 import phonon.xc.utils.recoil.RecoilPacket
 import phonon.xc.utils.progressBar10
+import phonon.xc.utils.entityMountEyeHeightOffset
 
 // TODO: in future need to select NMS version
 import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
@@ -162,7 +164,7 @@ internal data class PlayerGunCleanupRequest(
  * Data for request to cleanup an item stack.
  */
 internal data class ItemGunCleanupRequest(
-    val itemEntity: Item,
+    val itemEntity: ItemEntity,
     val onDrop: Boolean,
 )
 
@@ -278,6 +280,9 @@ private fun doSingleShot(
         loc.clone().add(0.0, player.eyeHeight, 0.0)
     }
     val shootDirection = loc.direction.clone()
+
+    // adjust shoot position if player is on a vehicle
+    player.getVehicle()?.let { v -> shootPosition.y += entityMountEyeHeightOffset(v.type) }
 
     val sway = calculateSway(player, gun, XC.playerSpeed[player.getUniqueId()] ?: 0.0)
     // println("sway = $sway")
@@ -1507,9 +1512,20 @@ private fun doRecoil(
     val newRecoilMultiplier = min(1.0, currRecoilMultiplier + recoilRamp)
     XC.playerRecoil[playerId] = newRecoilMultiplier
 
+    // needed for adjusting recoil when player riding an entity
+    // these are experimentally measured in game
+    var isInVehicle = false
+    var mountOffsetY = 0.0
+    player.getVehicle()?.let { v ->
+        isInVehicle = true
+        mountOffsetY = entityMountEyeHeightOffset(v.type)
+    }
+
     // recoil handling:
     XC.recoilQueue.add(RecoilPacket(
         player = player,
+        isInVehicle = isInVehicle,
+        mountOffsetY = mountOffsetY,
         recoilVertical = recoilVertical,
         recoilHorizontal = recoilHorizontal,
         multiplier = newRecoilMultiplier,

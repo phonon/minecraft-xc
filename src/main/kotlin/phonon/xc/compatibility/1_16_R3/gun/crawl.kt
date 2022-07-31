@@ -457,6 +457,11 @@ public fun startCrawlSystem(requests: List<CrawlStart>): ArrayList<CrawlStart> {
             continue
         }
 
+        // unmount if player inside a vehicle
+        if ( player.isInsideVehicle() ) {
+            player.leaveVehicle()
+        }
+
         // println("START CRAWL $player")
         // println("CURRENT WALK SPEED: ${player.getWalkSpeed()}")
 
