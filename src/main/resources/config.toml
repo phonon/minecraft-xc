@@ -31,6 +31,45 @@ throwable = "GOLDEN_HORSE_ARMOR"
 ammo = "SNOWBALL"
 armor = "LEATHER_HORSE_ARMOR"
 
+# death messages and death stats recording
+# {0} = player name
+[deaths]
+message_explosion = "{0} was guro''d in an explosion"
+message_wither = "{0} suffocated in poison gas"
+log_save_dir = "plugins/xc/logs"
+save_interval = 1200 # in ticks
+
+# armor value enforcement
+# ensure all armor pieces have these values
+[armor]
+enforce = false
+
+[armor.values]
+leather_boots = 3
+leather_chestplate = 5
+leather_helmet = 4
+leather_leggings = 4
+golden_boots = 3
+golden_chestplate = 5
+golden_helmet = 4
+golden_leggings = 4
+chainmail_boots = 3t/
+chainmail_chestplate = 5
+chainmail_helmet = 4
+chainmail_leggings = 4
+iron_boots = 3
+iron_chestplate = 5
+iron_helmet = 4
+iron_leggings = 4
+diamond_boots = 3
+diamond_chestplate = 5
+diamond_helmet = 4
+diamond_leggings = 4
+netherite_boots = 4
+netherite_chestplate = 6
+netherite_helmet = 5
+netherite_leggings = 5
+
 # ADVANCED ENGINE CONFIG
 # generally dont touch these...
 
@@ -41,14 +80,6 @@ players_before_pipelined_sway = 4
 # crawl config
 [crawl]
 only_allowed_on_crawl_weapons = true
-
-# death messages and death stats recording
-# {0} = player name
-[deaths]
-message_explosion = "{0} was guro''d in an explosion"
-message_wither = "{0} suffocated in poison gas"
-log_save_dir = "plugins/xc/logs"
-save_interval = 1200 # in ticks
 
 # debug stuff
 [debug]

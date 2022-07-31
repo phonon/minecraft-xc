@@ -141,7 +141,6 @@ tasks {
 
         classifier = ""
         configurations = mutableListOf(project.configurations.named("resolvableImplementation").get())
-        relocate("com.google", "phonon.xc.shadow.gson")
     }
 }
 

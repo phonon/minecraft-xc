@@ -7,6 +7,7 @@ package phonon.xc.listeners
 import java.time.LocalDateTime
 import java.text.MessageFormat
 import org.bukkit.ChatColor
+import org.bukkit.attribute.Attribute
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.entity.Player
 import org.bukkit.entity.EntityType
@@ -61,6 +62,7 @@ import phonon.xc.compatibility.v1_16_R3.gun.item.*
 import phonon.xc.compatibility.v1_16_R3.armor.item.*
 import phonon.xc.compatibility.v1_16_R3.throwable.item.*
 import phonon.xc.compatibility.v1_16_R3.item.getItemTypeInHand
+import phonon.xc.compatibility.v1_16_R3.item.setItemArmorNMS
 
 
 public class EventListener(val plugin: JavaPlugin): Listener {
@@ -247,11 +249,6 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         // accumulated on the player
         val playerId = e.player.getUniqueId()
         XC.deathEvents.remove(playerId)
-    }
-
-    @EventHandler
-    public fun onPlayerChangeArmor(e: PlayerArmorChangeEvent) {
-
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -635,6 +632,42 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     public fun onProjectileThrownEvent(e: ProjectileLaunchEvent) {
         if ( e.getEntity().getType() == EntityType.SNOWBALL ) {
             e.setCancelled(true)
+        }
+    }
+
+    /**
+     * Handler for when player changes armor.
+     * Enforce server-side armor values (so we can re-balance armors
+     * on server-side).
+     */
+    @EventHandler
+    public fun onPlayerChangeArmor(e: PlayerArmorChangeEvent) {
+        if ( XC.config.armorEnforce ) {
+            val item = e.getNewItem()
+            if ( item != null ) {
+                val player = e.getPlayer()
+                val armorValue = XC.config.armorValues[item.type]
+                if ( armorValue != null ) {
+                    when ( e.getSlotType() ) {
+                        PlayerArmorChangeEvent.SlotType.CHEST -> {
+                            val itemModified = setItemArmorNMS(item, armorValue, "chest", 1, 1)
+                            player.getInventory().setChestplate(itemModified)
+                        }
+                        PlayerArmorChangeEvent.SlotType.FEET -> {
+                            val itemModified = setItemArmorNMS(item, armorValue, "feet", 1, 2)
+                            player.getInventory().setBoots(itemModified)
+                        }
+                        PlayerArmorChangeEvent.SlotType.HEAD -> {
+                            val itemModified = setItemArmorNMS(item, armorValue, "head", 2, 1)
+                            player.getInventory().setHelmet(itemModified)
+                        }
+                        PlayerArmorChangeEvent.SlotType.LEGS -> {
+                            val itemModified = setItemArmorNMS(item, armorValue, "legs", 2, 2)
+                            player.getInventory().setLeggings(itemModified)
+                        }
+                    }
+                }
+            }
         }
     }
 }

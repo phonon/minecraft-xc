@@ -75,6 +75,10 @@ public data class Config(
     public val deathMessageExplosion: String = "{0} was guro''d in an explosion",
     public val deathMessageWither: String = "{0} suffocated in poison gas",
 
+    // armor settings
+    public val armorEnforce: Boolean = false, // enforce server-side armor values
+    public val armorValues: EnumMap<Material, Int> = EnumMap<Material, Int>(Material::class.java), // armor values
+
     // ADVANCED
 
     // stops player crawling when switching to a non-crawl to shoot weapon
@@ -173,6 +177,24 @@ public data class Config(
                 deaths.getString("message_wither")?.let { configOptions["deathMessageWither"] = it }
                 deaths.getString("log_save_dir")?.let { configOptions["playerDeathLogSaveDir"] = it }
                 deaths.getLong("save_interval")?.let { configOptions["playerDeathRecordSaveInterval"] = it.toInt() }
+            }
+
+            // armor enforcement settings
+            toml.getTable("armor")?.let { armor ->
+                armor.getBoolean("enforce")?.let { configOptions["armorEnforce"] = it }
+                armor.getTable("values")?.let { armorValues ->
+                    val values = EnumMap<Material, Int>(Material::class.java)
+                    for ( key in armorValues.keySet() ) {
+                        Material.matchMaterial(key)?.let { mat ->
+                            armorValues.getLong(key)?.let { it ->
+                                values[mat] = it.toInt()
+                            }
+                        } ?: run {
+                            logger?.warning("[armor.values] Invalid material: ${key}")
+                        }
+                    }
+                    configOptions["armorValues"] = values
+                }
             }
 
             // default debug timings config

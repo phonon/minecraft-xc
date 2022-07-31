@@ -8,6 +8,9 @@ import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import net.minecraft.server.v1_16_R3.NBTTagCompound
+import net.minecraft.server.v1_16_R3.NBTTagList
+import net.minecraft.server.v1_16_R3.NBTTagString
+import net.minecraft.server.v1_16_R3.NBTTagInt
 import net.minecraft.server.v1_16_R3.ItemStack as NMSItemStack
 import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftItemStack
 import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer
@@ -102,6 +105,13 @@ internal object GetNMSItemStack {
  * keyed by "PublicBukkitValues", which is accessible from
  * CraftMetaItem.BUKKIT_CUSTOM_TAG.NBT
  * 
+ * NOTE: in some cases the cast "item as CraftItemStack" is unsafe...
+ * If item is not a CraftItemStack.
+ * This can occur in events that create a purely bukkit ItemStack.
+ * When interacting with player inventory, they are all implementations
+ * of CraftItemStack.
+ * But for safety...may need to fix this cast...
+ * 
  * See:
  * https://hub.spigotmc.org/stash/users/aquazus/repos/craftbukkit/browse/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java
  */
@@ -176,4 +186,54 @@ internal fun getInventorySlotForCustomItemWithNbtKey(
     }
 
     return -1
+}
+
+/**
+ * Set an item stack's armor attribute using NMS.
+ * https://www.spigotmc.org/threads/tutorial-the-complete-guide-to-itemstack-nbttags-attributes.131458/
+ * 
+ * Return new item stack with new armor
+ * 
+ * NOTE:
+ * in 1.16.X
+ * NBTTagString.a(str) is the static constructor
+ * This is same for all NBTTag_____ objects.
+ */
+internal fun setItemArmorNMS(
+    item: ItemStack,
+    armor: Int,
+    slot: String,
+    uuidLeast: Int,
+    uuidMost: Int,
+): ItemStack {
+    val nmsItem = CraftItemStack.asNMSCopy(item)
+    if ( nmsItem != null ) {
+        val tag: NBTTagCompound = if ( nmsItem.hasTag() ) {
+            nmsItem.getTag()!!
+        } else {
+            NBTTagCompound()
+        }
+
+        // attribute modifiers are an nbt tag list
+        val attributeModifiers = NBTTagList()
+
+        val armorTag = NBTTagCompound()
+        armorTag.set("AttributeName", NBTTagString.a("generic.armor"))
+        armorTag.set("Name", NBTTagString.a("generic.armor"))
+        armorTag.set("Amount", NBTTagInt.a(armor))
+        armorTag.set("Slot", NBTTagString.a(slot))
+        armorTag.set("Operation", NBTTagInt.a(0))
+        armorTag.set("UUIDLeast", NBTTagInt.a(uuidLeast))
+        armorTag.set("UUIDMost", NBTTagInt.a(uuidMost))
+
+        attributeModifiers.add(armorTag)
+        tag.set("AttributeModifiers", attributeModifiers)
+
+        nmsItem.setTag(tag)
+        
+        return CraftItemStack.asBukkitCopy(nmsItem)
+    }
+
+    // failed to set armor
+    return item
 }
