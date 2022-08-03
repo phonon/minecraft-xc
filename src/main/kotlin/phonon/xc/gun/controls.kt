@@ -369,7 +369,7 @@ internal fun gunAimDownSightsSystem(requests: ArrayList<PlayerAimDownSightsReque
     
                 if ( isShift ) {
                     itemMeta.setCustomModelData(gun.itemModelAimDownSights)
-                    XC.createAimDownSightsOffhandModel(gun.itemModelAimDownSights, player)
+                    XC.createAimDownSightsOffhandModel(gun, player)
                 } else {
                     itemMeta.setCustomModelData(gun.itemModelDefault)
                     XC.removeAimDownSightsOffhandModel(player)
@@ -521,7 +521,7 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>, timest
 
         // if player is aim down sights, add offhand model
         if ( ammo > 0 && aimDownSights ) {
-            XC.createAimDownSightsOffhandModel(gun.itemModelAimDownSights, player)
+            XC.createAimDownSightsOffhandModel(gun, player)
         }
     }
 }
@@ -1282,7 +1282,7 @@ internal fun doGunReload(tasks: ArrayList<PlayerReloadTask>) {
         
         // if player is aim down sights, add offhand model
         if ( aimDownSights ) {
-            XC.createAimDownSightsOffhandModel(gun.itemModelAimDownSights, player)
+            XC.createAimDownSightsOffhandModel(gun, player)
         }
 
         // send ammo reloaded message

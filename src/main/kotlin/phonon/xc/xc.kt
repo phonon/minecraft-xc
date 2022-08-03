@@ -875,30 +875,27 @@ public object XC {
      * 
      * TODO: USE SET_SLOT PACKET INSTEAD OF A REAL ITEM!!!
      */
-    internal fun createAimDownSightsOffhandModel(modelId: Int, player: Player) {
+    internal fun createAimDownSightsOffhandModel(gun: Gun, player: Player) {
         // println("createAimDownSightsOffhandModel")
         val equipment = player.getInventory()
         
         // drop current offhand item
         val itemOffhand = equipment.getItemInOffHand()
         if ( itemOffhand != null && itemOffhand.type != Material.AIR ) {
+            // drop offhand item in world and remove item in offhand
+            player.getWorld().dropItem(player.getLocation(), itemOffhand)
+            equipment.setItemInOffHand(null)
+            
+            // DEPRECATED
             // if this is an existing aim down sights model, ignore (ADS models can be glitchy)
-            val itemMeta = itemOffhand.getItemMeta()
-            if ( itemOffhand.type != XC.config.materialAimDownSights || ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() >= XC.MAX_GUN_CUSTOM_MODEL_ID ) ) {
-                player.getWorld().dropItem(player.getLocation(), itemOffhand)
-            }
+            // val itemMeta = itemOffhand.getItemMeta()
+            // if ( itemOffhand.type != XC.config.materialAimDownSights || ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() >= XC.MAX_GUN_CUSTOM_MODEL_ID ) ) {
+            //     player.getWorld().dropItem(player.getLocation(), itemOffhand)
+            // }
         }
 
         // create new offhand item
-        val item = ItemStack(XC.config.materialAimDownSights, 1)
-        val itemMeta = item.getItemMeta()
-
-        itemMeta.setDisplayName("Aim down sights")
-        itemMeta.setCustomModelData(modelId)
-
-        item.setItemMeta(itemMeta)
-
-        equipment.setItemInOffHand(item)
+        gun.aimDownSightsModel.create(player)
     }
 
     /**
@@ -910,6 +907,39 @@ public object XC {
         
         // remove offhand item if its an aim down sights model
         val itemOffhand = equipment.getItemInOffHand()
+        if ( itemOffhand == null || itemOffhand.type == Material.AIR ) { // no real item here, send packet removing fake ads item
+            AimDownSightsModel.destroy(player)
+        }
+    }
+
+    /**
+     * Create aim down sights model using a real item.
+     * Deprecated because using pure packets to make a fake item.
+     * No real item is created in offhand, so this is unnecessary.
+     */
+    @Deprecated(message = "Use PacketPlayOutSetSlot instead of a real ItemStack")
+    private fun createAimDownSightsOffhandModelItemStack(gun: Gun): ItemStack {
+        val item = ItemStack(XC.config.materialAimDownSights, 1)
+        val itemMeta = item.getItemMeta()
+
+        itemMeta.setDisplayName("Aim down sights")
+        itemMeta.setCustomModelData(gun.itemModelAimDownSights)
+
+        item.setItemMeta(itemMeta)
+
+        return item
+    }
+    
+
+    /**
+     * Remove aim down sights item stack in offhand.
+     * Deprecated because using pure packets, no real item is created.
+     */
+    @Deprecated(message = "Use PacketPlayOutSetSlot instead of a real ItemStack")
+    private fun removeAimDownSightsOffhandModelItemStack(player: Player) {
+        // println("removeAimDownSightsOffhandModelItemStack")
+        val equipment = player.getInventory()
+        val itemOffhand = equipment.getItemInOffHand()
         if ( itemOffhand != null && itemOffhand.type == XC.config.materialAimDownSights ) {
             val itemMeta = itemOffhand.getItemMeta()
             if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() < XC.MAX_GUN_CUSTOM_MODEL_ID ) {
@@ -917,6 +947,7 @@ public object XC {
             }
         }
     }
+
 
     /**
      * Return true if item stack is an aim down sights model.

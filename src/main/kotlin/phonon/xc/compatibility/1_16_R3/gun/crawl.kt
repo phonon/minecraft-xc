@@ -791,7 +791,7 @@ public fun finishCrawlToShootRequestSystem(requests: List<CrawlToShootRequestFin
             item.setItemMeta(itemMeta)
             equipment.setItem(inventorySlot, item)
 
-            XC.createAimDownSightsOffhandModel(gun.itemModelAimDownSights, player)
+            XC.createAimDownSightsOffhandModel(gun, player)
         }
 
         // mark player ready to shoot

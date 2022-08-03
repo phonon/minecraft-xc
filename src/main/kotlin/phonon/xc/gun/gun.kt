@@ -33,6 +33,9 @@ import phonon.xc.utils.mapToObject
 import phonon.xc.utils.damage.DamageType
 import phonon.xc.utils.particle.ParticlePacket
 
+// TODO: abstract out nms
+import phonon.xc.compatibility.v1_16_R3.gun.AimDownSightsModelPacketManager
+
 
 /**
  * Put cap on max ammo allowed in a gun.
@@ -96,11 +99,16 @@ public interface AimDownSightsModel {
      */
     public fun create(player: Player)
 
-    /**
-     * Send packet to player removing aim down sights model
-     * if item is in their offhand.
-     */
-    public fun destroy(player: Player)
+    
+    companion object {
+        /**
+         * Send packet to player removing aim down sights model
+         * if item is in their offhand.
+         */
+        public fun destroy(player: Player) {
+            AimDownSightsModelPacketManager.destroy(player)
+        }
+    }
 }
 
 /**
@@ -286,6 +294,9 @@ public data class Gun(
         AttributeModifier.Operation.ADD_NUMBER,
         EquipmentSlot.HAND,
     )
+
+    // aim down sights handler
+    public val aimDownSightsModel: AimDownSightsModel = AimDownSightsModelPacketManager(this, XC.config.materialAimDownSights)
 
     init {
         // generate all possible item descriptions with different ammo values
