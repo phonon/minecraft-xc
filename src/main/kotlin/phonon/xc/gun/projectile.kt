@@ -9,6 +9,7 @@ import kotlin.math.min
 import kotlin.math.max
 import kotlin.math.floor
 import kotlin.math.ceil
+import kotlin.math.sqrt
 import org.bukkit.Bukkit
 import org.bukkit.World
 import org.bukkit.Location
@@ -57,7 +58,7 @@ public data class Projectile(
     // bullet gravity
     val gravity: Float = 0.0125f,
     // hit sphere bound radius for proximity based entity collision (e.g. flak guns)
-    val proximity: Float = 4.0f
+    val proximity: Float = 0.0f,
 ) {
     // current lifetime in ticks
     var lifetime: Int = 0
@@ -713,28 +714,82 @@ private fun runProjectileRaytrace(
     for ( coord in chunksVisited ) {
         val hitboxList = hitboxes[coord]
         if ( hitboxList != null ) {
-            for ( hitbox in hitboxList ) {
-                val hitDistance = hitbox.intersectsRayLocation(
-                    x0,
-                    y0,
-                    z0,
-                    invDirX,
-                    invDirY,
-                    invDirZ,
-                )
+            // normal projectile (non-proximity) handling:
+            // raycast each hitbox in the chunk and return closest
+            if ( projectile.proximity <= 0.0 ) {
+                for ( hitbox in hitboxList ) {
+                    val hitDistance = hitbox.intersectsRayLocation(
+                        x0,
+                        y0,
+                        z0,
+                        invDirX,
+                        invDirY,
+                        invDirZ,
+                    )
 
-                // choose this new entity if hit and distance is closer than previous hit
-                if ( hitDistance != null && hitDistance < hitEntityDistance && hitDistance < maxEntityDist ) {
-                    // make sure this is not entity shooter or its vehicle or shooter's passenger
-                    if ( hitbox.entity !== projectile.source && hitbox.entity !== projectile.source.vehicle && !projectile.source.getPassengers().contains(hitbox.entity) ) {
-                        hitEntity = hitbox.entity
-                        hitEntityDistance = hitDistance
+                    // choose this new entity if hit and distance is closer than previous hit
+                    if ( hitDistance != null && hitDistance < hitEntityDistance && hitDistance < maxEntityDist ) {
+                        // make sure this is not entity shooter or its vehicle or shooter's passenger
+                        if ( hitbox.entity !== projectile.source && hitbox.entity !== projectile.source.vehicle && !projectile.source.getPassengers().contains(hitbox.entity) ) {
+                            hitEntity = hitbox.entity
+                            hitEntityDistance = hitDistance
+                        }
                     }
                 }
-            }
 
-            if ( hitEntity != null ) {
-                break
+                if ( hitEntity != null ) {
+                    break
+                }
+            }
+            // proxmity projectile handling:
+            // find first target whose hitbox distance to projectile line < projectile.proximity
+            else {
+                for ( hitbox in hitboxList ) {
+                    // 1. finds shortest distance from hitbox center to ray line
+                    // then subtract radiusMin to adjust by minimum bounding sphere radius of the hitbox
+                    // this determines if hitbox is < proxmity at some point along its raycast path this tick.
+                    // let projectile line be:
+                    //     line = a + t * n 
+                    //          = (x0, y0, z0) + t * (dirX, dirY, dirZ)
+                    // let (p - a) be vector from hitbox center p to line point a
+                    // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Vector_formulation
+                    val pxax = hitbox.xcenter - x0
+                    val pyay = hitbox.ycenter - y0
+                    val pzaz = hitbox.zcenter - z0
+                    
+                    // dot product (p - a) . n
+                    val paDotN = pxax * dirX + pyay * dirY + pzaz * dirZ
+                    
+                    val dAlongLineX = paDotN * dirX
+                    val dAlongLineY = paDotN * dirY
+                    val dAlongLineZ = paDotN * dirZ
+
+                    // shortest distance components from hitbox center normal to line
+                    val dNormalLineX = pxax - dAlongLineX
+                    val dNormalLineY = pyay - dAlongLineY
+                    val dNormalLineZ = pzaz - dAlongLineZ
+            
+                    val distToProjectileLine = sqrt((dNormalLineX * dNormalLineX) + (dNormalLineY * dNormalLineY) + (dNormalLineZ * dNormalLineZ)) - hitbox.radiusMin
+
+                    // if dist to line within projectile proximity, continue:
+                    if ( distToProjectileLine < projectile.proximity ) {
+                        // 2. hitDistance is how far along line to reach the point of shortest distance
+                        val hitDistance = sqrt((dAlongLineX * dAlongLineX) + (dAlongLineY * dAlongLineY) + (dAlongLineZ * dAlongLineZ))
+                        
+                        // choose this new entity if hit and distance is closer than previous hit
+                        if ( hitDistance < hitEntityDistance && hitDistance < maxEntityDist ) {
+                            // make sure this is not entity shooter or its vehicle or shooter's passenger
+                            if ( hitbox.entity !== projectile.source && hitbox.entity !== projectile.source.vehicle && !projectile.source.getPassengers().contains(hitbox.entity) ) {
+                                hitEntity = hitbox.entity
+                                hitEntityDistance = hitDistance
+                            }
+                        }
+                    }
+                }
+
+                if ( hitEntity != null ) {
+                    break
+                }
             }
         }
     }

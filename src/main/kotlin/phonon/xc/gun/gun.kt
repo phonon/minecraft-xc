@@ -200,6 +200,9 @@ public data class Gun(
 
     // max projectile distance in blocks before despawning
     public val projectileMaxDistance: Float = 128.0f, // = view distance of 8 chunks
+    
+    // proximity projectiles, like flak gun rounds, explode when < distance from target
+    public val projectileProximity: Float = 0.0f, // distance in blocks
 
     // main projectile damage
     public val projectileDamage: Double = 4.0,
@@ -342,6 +345,7 @@ public data class Gun(
             gravity = this.projectileGravity,
             maxLifetime = this.projectileLifetime,
             maxDistance = this.projectileMaxDistance,
+            proximity = this.projectileProximity,
         )
     }
 
@@ -531,6 +535,7 @@ public data class Gun(
                     projectile.getDouble("gravity")?.let { properties["projectileGravity"] = it.toFloat() }
                     projectile.getLong("lifetime")?.let { properties["projectileLifetime"] = it.toInt() }
                     projectile.getDouble("max_distance")?.let { properties["projectileMaxDistance"] = it.toFloat() }
+                    projectile.getDouble("proximity")?.let { properties["projectileProximity"] = it.toFloat() }
                     projectile.getString("damage_type")?.let { name ->
                         val damageType = DamageType.match(name)
                         if ( damageType != null ) {

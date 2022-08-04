@@ -177,6 +177,37 @@ public data class Hitbox(
         val dy = y - this.ycenter
         val dz = z - this.zcenter
         return sqrt((dx * dx) + (dy * dy) + (dz * dz))
+    
+    }
+    /**
+     * Return distance to line from (ax, ay, az) point and
+     * line direction vector components (nx, ny, nz), where
+     *     line = (ax, ay, az) + t * (nx, ny, nz).
+     * https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Vector_formulation
+     */
+    public fun distanceToLine(
+        // line point (ax, ay, az)
+        ax: Float,
+        ay: Float,
+        az: Float,
+        // line normalized direction vector (nx, ny, nz)
+        nx: Float,
+        ny: Float,
+        nz: Float,
+    ): Float {
+        val pxax = this.xcenter - ax
+        val pyay = this.ycenter - ay
+        val pzaz = this.zcenter - az
+        
+        // dot product (p - a) . n
+        val paDotN = pxax * nx + pyay * ny + pzaz * nz
+
+        // shortest distance compoennts from hitbox center to line
+        val dx = pxax - paDotN * nx
+        val dy = pyay - paDotN * ny
+        val dz = pzaz - paDotN * nz
+
+        return sqrt((dx * dx) + (dy * dy) + (dz * dz))
     }
 
     /**

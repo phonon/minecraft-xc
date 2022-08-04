@@ -297,6 +297,8 @@ private fun doSingleShot(
             shootDirZ += random.nextDouble(-sway, sway)
         }
 
+        // creating projectile here manually since shoot direction
+        // is modulated by random sway
         val projectile = Projectile(
             gun = gun,
             source = player,
@@ -310,6 +312,7 @@ private fun doSingleShot(
             gravity = gun.projectileGravity,
             maxLifetime = gun.projectileLifetime,
             maxDistance = gun.projectileMaxDistance,
+            proximity = gun.projectileProximity,
         )
 
         projectileSystem.addProjectile(projectile)
