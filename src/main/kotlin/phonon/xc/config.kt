@@ -79,6 +79,11 @@ public data class Config(
     public val armorEnforce: Boolean = false, // enforce server-side armor values
     public val armorValues: EnumMap<Material, Int> = EnumMap<Material, Int>(Material::class.java), // armor values
 
+    // global sound effect settings
+    public val soundOnHitEnabled: Boolean = true, // flag t oplay sound when shooting entity
+    public val soundOnHit: String = "",           // sound to play when successfully hitting entity
+    public val soundOnHitVolume: Float = 1.0f,    // volume of sound when successfully hitting entity
+
     // ADVANCED
 
     // stops player crawling when switching to a non-crawl to shoot weapon
@@ -177,6 +182,13 @@ public data class Config(
                 deaths.getString("message_wither")?.let { configOptions["deathMessageWither"] = it }
                 deaths.getString("log_save_dir")?.let { configOptions["playerDeathLogSaveDir"] = it }
                 deaths.getLong("save_interval")?.let { configOptions["playerDeathRecordSaveInterval"] = it.toInt() }
+            }
+
+            // global sound effects
+            toml.getTable("sound")?.let { sound ->
+                sound.getString("on_hit")?.let { configOptions["soundOnHit"] = it }
+                sound.getBoolean("on_hit_enabled")?.let { configOptions["soundOnHitEnabled"] = it }
+                sound.getDouble("on_hit_volume")?.let { configOptions["soundOnHitVolume"] = it.toFloat() }
             }
 
             // armor enforcement settings

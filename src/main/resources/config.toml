@@ -39,6 +39,12 @@ message_wither = "{0} suffocated in poison gas"
 log_save_dir = "plugins/xc/logs"
 save_interval = 1200 # in ticks
 
+# global sound effects
+[sound]
+on_hit = "minecraft:entity.experience_orb.pickup"
+on_hit_enabled = true
+on_hit_volume = 1.0
+
 # armor value enforcement
 # ensure all armor pieces have these values
 [armor]

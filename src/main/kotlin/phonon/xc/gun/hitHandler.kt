@@ -111,13 +111,22 @@ public val entityDamageHitHandler = fun(
             gun.projectileResistanceReduction,
         )
 
-        if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-            XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
-                player = target,
-                killer = source,
-                weaponType = XC.ITEM_TYPE_GUN,
-                weaponId = gun.itemModelDefault,
-            )
+        // player specific target handling
+        if ( target is Player ) {
+            // custom death event
+            if ( target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+                XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                    player = target,
+                    killer = source,
+                    weaponType = XC.ITEM_TYPE_GUN,
+                    weaponId = gun.itemModelDefault,
+                )
+            }
+
+            // play sound for shooter indicating succesful player hit
+            if ( XC.config.soundOnHitEnabled && source is Player ) {
+                source.playSound(source.getLocation(), XC.config.soundOnHit, XC.config.soundOnHitVolume, 1.0f)
+            }
         }
         
         target.damage(damage, null)
@@ -162,13 +171,22 @@ public val entityExplosionHitHandler = fun(
             gun.projectileResistanceReduction,
         )
 
-        if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-            XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
-                player = target,
-                killer = source,
-                weaponType = XC.ITEM_TYPE_GUN,
-                weaponId = gun.itemModelDefault,
-            )
+        // player specific target handling
+        if ( target is Player ) {
+            // custom death event
+            if ( target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+                XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                    player = target,
+                    killer = source,
+                    weaponType = XC.ITEM_TYPE_GUN,
+                    weaponId = gun.itemModelDefault,
+                )
+            }
+
+            // play sound for shooter indicating succesful player hit
+            if ( XC.config.soundOnHitEnabled && source is Player ) {
+                source.playSound(source.getLocation(), XC.config.soundOnHit, XC.config.soundOnHitVolume, 1.0f)
+            }
         }
 
         target.damage(damage, null)

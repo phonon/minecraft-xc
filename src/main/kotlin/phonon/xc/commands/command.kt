@@ -109,7 +109,8 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         val player = if ( sender is Player ) sender else null
         if ( player === null || player.isOp() ) {
             Message.print(sender, "[xc] Reloading...")
-            XC.reload(async = true)
+            XC.reload(async = false)
+            Message.print(sender, "[xc] Reloaded")
         }
         else {
             Message.error(sender, "[xc] Only operators can reload")
