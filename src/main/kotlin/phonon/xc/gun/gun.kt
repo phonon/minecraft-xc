@@ -32,6 +32,7 @@ import phonon.xc.gun.noBlockHitHandler
 import phonon.xc.utils.mapToObject
 import phonon.xc.utils.damage.DamageType
 import phonon.xc.utils.particle.ParticlePacket
+import phonon.xc.utils.toml.toIntArray
 
 // TODO: abstract out nms
 import phonon.xc.compatibility.v1_16_R3.gun.AimDownSightsModelPacketManager
@@ -152,11 +153,13 @@ public data class Gun(
     public val singleFireMode: GunSingleFireMode = GunSingleFireMode.SINGLE,
     public val burstFireCount: Int = 3,
     public val burstFireDelayTicks: Int = 2,
+    public val burstFireDelayTickPattern: IntArray = intArrayOf(), // pattern of delay ticks
     public val shootDelayMillis: Long = 500,
 
     // automatic fire rate properties
     public val autoFire: Boolean = false,     // automatic weapon
     public val autoFireDelayTicks: Int = 2,   // auto fire rate in ticks
+    public val autoFireDelayTickPattern: IntArray = intArrayOf(), // pattern of delay ticks
     public val autoFireSlowness: Int = 2,     // auto fire slowness level
 
     // ammo
@@ -264,6 +267,10 @@ public data class Gun(
     // ammo string (e.g. "Ammo: 4/10") and item lore.
     // Each index is: loreWithAmmo[ammo] => List<String> item lore 
     public val itemDescriptionForAmmo: List<List<String>>
+
+    // use firing delay patterns (different delays between shots)
+    public val useBurstFireDelayTickPattern: Boolean = burstFireDelayTickPattern.size > 0
+    public val useAutoFireDelayTickPattern: Boolean = autoFireDelayTickPattern.size > 0
 
     // damage drop multiplier
     private val damageDropDistanceMultiplier = if ( this.projectileDamageDropDistance > 0.0 ) {
@@ -472,15 +479,27 @@ public data class Gun(
                         }
                     }
                     shoot.getLong("burst_count")?.let { properties["burstFireCount"] = it.toInt() }
-                    shoot.getLong("burst_delay")?.let { properties["burstFireDelayTicks"] = it.toInt() }
                     shoot.getLong("delay")?.let { properties["shootDelayMillis"] = it }
+                    
+                    // parse either array or single value for delay ticks
+                    if ( shoot.isArray("burst_delay") ) {
+                        shoot.getArray("burst_delay")?.let { properties["burstFireDelayTickPattern"] = it.toIntArray() }
+                    } else {
+                        shoot.getLong("burst_delay")?.let { properties["burstFireDelayTicks"] = it.toInt() }
+                    }
                 }
 
                 // [right-click] automatic fire
                 toml.getTable("automatic")?.let { auto ->
                     auto.getBoolean("enabled")?.let { properties["autoFire"] = it }
-                    auto.getLong("delay_ticks")?.let { properties["autoFireDelayTicks"] = it.toInt() }
                     auto.getLong("slowness")?.let { properties["autoFireSlowness"] = it.toInt() }
+
+                    // parse either array or single value for delay ticks
+                    if ( auto.isArray("delay_ticks") ) {
+                        auto.getArray("delay_ticks")?.let { properties["autoFireDelayTickPattern"] = it.toIntArray() }
+                    } else {
+                        auto.getLong("delay_ticks")?.let { properties["autoFireDelayTicks"] = it.toInt() }
+                    }
                 }
 
                 // sway

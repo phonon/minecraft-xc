@@ -78,9 +78,11 @@ internal data class BurstFire(
     // total length of time player has been firing
     val totalTime: Double,
     // tick counter since last fired, used for timing firing rate in projectiles/tick
-    val ticksSinceFired: Int,
+    val ticksCooldown: Int,
     // number of shots remaining in this burst fire packet
     val remainingCount: Int,
+    // next index in gun delay pattern array (for guns that use delay patterns)
+    val delayPatternIndex: Int,
 )
 
 /**
@@ -106,9 +108,11 @@ internal data class AutoFire(
     // total length of time player has been firing
     val totalTime: Double,
     // tick counter since last fired, used for timing firing rate in projectiles/tick
-    val ticksSinceFired: Int,
+    val ticksCooldown: Int,
     // tick counter since last auto fire request packet
     val ticksSinceLastRequest: Int,
+    // next index in gun delay pattern array (for guns that use delay patterns)
+    val delayPatternIndex: Int,
 )
 
 /**
@@ -673,8 +677,9 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
                     itemData = itemData,
                     inventorySlot = inventorySlot,
                     totalTime = 0.0,
-                    ticksSinceFired = 0,
+                    ticksCooldown = 0,
                     remainingCount = gun.burstFireCount,
+                    delayPatternIndex = 0,
                 )
 
                 // set item in hand's burst fire id
@@ -710,8 +715,9 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
             itemData,
             inventorySlot,
             totalTime,
-            ticksSinceFired,
+            ticksCooldown,
             remainingCount,
+            delayPatternIndex,
         ) = request
 
         val equipment = player.getInventory()
@@ -728,7 +734,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
         }
 
         // decrement burst delay
-        if ( ticksSinceFired > 0 ) {
+        if ( ticksCooldown > 0 ) {
             nextTickRequests[playerId] = BurstFire(
                 id = id,
                 player = player,
@@ -739,8 +745,9 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
                 itemData = itemData,
                 inventorySlot = inventorySlot,
                 totalTime = totalTime + 1,
-                ticksSinceFired = ticksSinceFired - 1,
+                ticksCooldown = ticksCooldown - 1,
                 remainingCount = remainingCount,
+                delayPatternIndex = delayPatternIndex,
             )
             continue
         }
@@ -795,6 +802,15 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
             item.setItemMeta(itemMeta)
             equipment.setItem(inventorySlot, item)
 
+            // next firing cooldown and delay pattern index
+            var nextDelayPatternIndex = delayPatternIndex
+            val cooldown = if ( gun.useBurstFireDelayTickPattern ) {
+                nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.burstFireDelayTickPattern.size) // required here to avoid modulo 0
+                gun.burstFireDelayTickPattern[delayPatternIndex]
+            } else {
+                gun.burstFireDelayTicks
+            }
+
             nextTickRequests[playerId] = BurstFire(
                 id = id,
                 player = player,
@@ -805,8 +821,9 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
                 itemData = itemData,
                 inventorySlot = inventorySlot,
                 totalTime = totalTime + 1,
-                ticksSinceFired = gun.burstFireDelayTicks,
+                ticksCooldown = cooldown,
                 remainingCount = remainingCount - 1,
+                delayPatternIndex = nextDelayPatternIndex,
             )
         } else {
             // burst done.
@@ -915,8 +932,9 @@ internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, a
                 itemData = itemData,
                 inventorySlot = inventorySlot,
                 totalTime = 0.0,
-                ticksSinceFired = 0,
+                ticksCooldown = 0,
                 ticksSinceLastRequest = 0,
+                delayPatternIndex = 0,
             )
             
             // set item in hand's auto fire id
@@ -953,8 +971,9 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
             itemData,
             inventorySlot,
             totalTime,
-            ticksSinceFired,
+            ticksCooldown,
             ticksSinceLastRequest,
+            delayPatternIndex,
         ) = request
 
         val equipment = player.getInventory()
@@ -980,7 +999,7 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
         }
 
         // decrement auto fire delay
-        if ( ticksSinceFired > 0 ) {
+        if ( ticksCooldown > 0 ) {
             nextTickRequests[playerId] = AutoFire(
                 id = id,
                 player = player,
@@ -991,8 +1010,9 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
                 itemData = itemData,
                 inventorySlot = inventorySlot,
                 totalTime = totalTime + 1,
-                ticksSinceFired = ticksSinceFired - 1,
+                ticksCooldown = ticksCooldown - 1,
                 ticksSinceLastRequest = ticksSinceLastRequest + 1,
+                delayPatternIndex = delayPatternIndex,
             )
             continue
         }
@@ -1047,6 +1067,15 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
             item.setItemMeta(itemMeta)
             equipment.setItem(inventorySlot, item)
 
+            // next firing cooldown
+            var nextDelayPatternIndex = delayPatternIndex
+            val cooldown = if ( gun.useAutoFireDelayTickPattern ) {
+                nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.autoFireDelayTickPattern.size) // required here to avoid modulo 0
+                gun.autoFireDelayTickPattern[delayPatternIndex]
+            } else {
+                gun.autoFireDelayTicks
+            }
+
             nextTickRequests[playerId] = AutoFire(
                 id = id,
                 player = player,
@@ -1057,8 +1086,9 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
                 itemData = itemData,
                 inventorySlot = inventorySlot,
                 totalTime = totalTime + 1,
-                ticksSinceFired = gun.autoFireDelayTicks,
+                ticksCooldown = cooldown,
                 ticksSinceLastRequest = ticksSinceLastRequest + 1,
+                delayPatternIndex = nextDelayPatternIndex,
             )
         } else {
             // clean up item

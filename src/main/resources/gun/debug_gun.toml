@@ -55,13 +55,13 @@ time = 1500
 [shoot]
 fire_mode = "single" # "single" or "burst"
 burst_count = 3 # number of shots in a burst
-burst_delay = 2 # ticks between burst fire
+burst_delay = 2 # ticks between burst fire, either single value or array like [2, 2, 1]
 delay = 500 # Delay between [left-click] semi-auto mode shooting in milliseconds
 
 # [right-click] Automatic fire settings
 [automatic]
 enabled = true     # if auto mode [right-click] is enabled
-delay_ticks = 2    # delay between shots in ticks
+delay_ticks = 2    # delay between shots in ticks, either single value or array like [2, 2, 1]
 slowness = 1       # slowness while using auto mode
 
 # sway: projectile randomness depending on player motion state
