@@ -336,7 +336,7 @@ private fun doSingleShot(
  * System to aim down sights. This modifies player's gun item model if they
  * have aim down sights enabled.
  */
-internal fun gunAimDownSightsSystem(requests: ArrayList<PlayerAimDownSightsRequest>) {
+internal fun gunAimDownSightsSystem(requests: ArrayList<PlayerAimDownSightsRequest>): ArrayList<PlayerAimDownSightsRequest> {
     for ( request in requests ) {
         val player = request.player
 
@@ -387,6 +387,8 @@ internal fun gunAimDownSightsSystem(requests: ArrayList<PlayerAimDownSightsReque
             }
         }
     }
+
+    return ArrayList()
 }
 
 /**
@@ -394,7 +396,7 @@ internal fun gunAimDownSightsSystem(requests: ArrayList<PlayerAimDownSightsReque
  * - reload flags
  * - aim down sights models
  */
-internal fun playerGunCleanupSystem(requests: ArrayList<PlayerGunCleanupRequest>) {
+internal fun playerGunCleanupSystem(requests: ArrayList<PlayerGunCleanupRequest>): ArrayList<PlayerGunCleanupRequest> {
     for ( request in requests ) {
         val (player, inventorySlotToCleanup) = request
 
@@ -428,12 +430,14 @@ internal fun playerGunCleanupSystem(requests: ArrayList<PlayerGunCleanupRequest>
         item.setItemMeta(newItemMeta)
         equipment.setItem(inventorySlot, item)
     }
+
+    return ArrayList()
 }
 
 /**
  * System to cleanup reload flags when item is dropped.
  */
-internal fun gunItemCleanupSystem(requests: ArrayList<ItemGunCleanupRequest>) {
+internal fun gunItemCleanupSystem(requests: ArrayList<ItemGunCleanupRequest>): ArrayList<ItemGunCleanupRequest> {
     for ( request in requests ) {
         val (itemEntity, onDrop) = request
         val item = itemEntity.getItemStack()
@@ -461,6 +465,8 @@ internal fun gunItemCleanupSystem(requests: ArrayList<ItemGunCleanupRequest>) {
         item.setItemMeta(newItemMeta)
         itemEntity.setItemStack(item)
     }
+
+    return ArrayList()
 }
 
 /**
@@ -469,7 +475,7 @@ internal fun gunItemCleanupSystem(requests: ArrayList<ItemGunCleanupRequest>) {
  * 2. Add shooting delay if swapping from another gun.
  * 3. Send ammo info to player.
  */
-internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>, timestamp: Long) {
+internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>, timestamp: Long): ArrayList<PlayerGunSelectRequest> {
     for ( request in requests ) {
         val player = request.player
         val playerId = player.getUniqueId()
@@ -531,6 +537,8 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>, timest
             XC.createAimDownSightsOffhandModel(gun, player)
         }
     }
+
+    return ArrayList()
 }
 
 
@@ -538,7 +546,7 @@ internal fun gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>, timest
  * Player single/burst fire shooting system.
  * Handles [LEFT MOUSE] click firing.
  */
-internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, timestamp: Long) {
+internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, timestamp: Long): ArrayList<PlayerGunShootRequest> {
     val random = ThreadLocalRandom.current()
     val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
 
@@ -574,7 +582,9 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
         val loc = player.location
         val world = loc.world
         val projectileSystem = XC.projectileSystems[world.getUID()]
-        if ( projectileSystem == null ) return
+        if ( projectileSystem == null ) {
+            continue
+        }
 
         var itemMeta = item.getItemMeta()
         val itemData = itemMeta.getPersistentDataContainer()
@@ -689,10 +699,12 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
             }
         } else { // fireMode == GunSingleFireMode.NONE
             // no-op
-            return
+            continue
         }
 
     }
+
+    return ArrayList()
 }
 
 
@@ -1129,7 +1141,7 @@ internal fun recoilRecoverySystem(playerRecoil: HashMap<UUID, Double>): HashMap<
 /**
  * Player reload request system
  */
-internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>, timestamp: Long) {
+internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>, timestamp: Long): ArrayList<PlayerGunReloadRequest> {
     for ( request in requests ) {
         val player = request.player
         val playerId = player.getUniqueId()
@@ -1270,6 +1282,8 @@ internal fun gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>, 
         // runs every 2 ticks = 100 ms
         reloadTask.runTaskTimerAsynchronously(XC.plugin!!, 0L, 1L)
     }
+
+    return ArrayList()
 }
 
 /**
