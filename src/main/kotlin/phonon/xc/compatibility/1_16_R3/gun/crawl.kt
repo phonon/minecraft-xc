@@ -10,6 +10,8 @@
  *   HOWEVER, shulker HEAD will NEVER BE INVISIBLE so looks ugly...
  * https://github.com/Gecolay/GSit/blob/main/v1_17_R1/src/main/java/dev/geco/gsit/mcv/v1_17_R1/objects/GCrawl.java
  * https://github.com/Gecolay/GSit/blob/main/v1_17_R1/src/main/java/dev/geco/gsit/mcv/v1_17_R1/objects/BoxEntity.java
+ * 
+ * TODO: instantly kills player if jumping and using
  */
 
 package phonon.xc.compatibility.v1_16_R3.gun.crawl
@@ -465,10 +467,6 @@ public fun startCrawlSystem(requests: List<CrawlStart>): ArrayList<CrawlStart> {
         // println("START CRAWL $player")
         // println("CURRENT WALK SPEED: ${player.getWalkSpeed()}")
 
-        // SLOWNESS_EFFECT.apply(player)
-        NO_JUMP_EFFECT.apply(player)
-        player.setWalkSpeed(0.0f)
-
         // send packet that cancels slowness fov change
         // NOT NEEDED WHEN USING player.setWalkSpeed(0.0f)
         // resetFovPacket(player)
@@ -477,6 +475,13 @@ public fun startCrawlSystem(requests: List<CrawlStart>): ArrayList<CrawlStart> {
 
         // start fake swimming motion
         player.setSwimming(true)
+
+        // NOTE: adding no jump effect causes damage to player when they are forced down
+        // there is an event that must detect and cancel this damage.
+        // use the player isSwimming() check to proceed with that cancel
+        // SLOWNESS_EFFECT.apply(player)
+        NO_JUMP_EFFECT.apply(player)
+        player.setWalkSpeed(0.0f)
     }
 
     return ArrayList(4)
@@ -574,7 +579,7 @@ public fun crawlRefreshSystem(requests: HashMap<UUID, Crawling>): HashMap<UUID, 
             ) {
                 // if travelled too far from initial location (e.g. water bucket or falling down)
                 // cancel crawl next tick
-                if ( initialLocation.distance(currLocation) > 1.0 ) {
+                if ( initialLocation.distance(currLocation) > 1.5 ) {
                     XC.crawlStopQueue.add(CrawlStop(player))
                 }
 

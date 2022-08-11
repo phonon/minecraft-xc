@@ -41,6 +41,7 @@ import org.bukkit.event.player.PlayerToggleSprintEvent
 import org.bukkit.event.player.PlayerInteractAtEntityEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerAnimationEvent
+import org.bukkit.potion.PotionEffectType
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent 
 import phonon.xc.XC
 import phonon.xc.armor.PlayerWearHatRequest
@@ -697,6 +698,35 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                             val itemModified = setItemArmorNMS(item, armorValue, "legs", 2, 2)
                             player.getInventory().setLeggings(itemModified)
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Entity damage event.
+     * For cancelling fall damage when jumping then activating crawl.
+     * Minecraft bug? When jump then crawl, it pushes players to ground
+     * causing massive fall damage. With NO JUMP potion effect, fall damage
+     * is amplified to >100 so player instantly dies.
+     * This event handler detects and cancels this fall damage event when
+     * player is trying to crawl after jumping or falling.
+     */
+    @EventHandler
+    public fun onDamage(e: EntityDamageEvent) {
+        if ( e.getCause() == DamageCause.FALL ) {
+            val player = e.getEntity()
+            if ( player is Player ) {
+                // println("FALL DAMAGE: isSwimming=${player.isSwimming()}, damage=${e.getDamage()}")
+
+                // if player swimming and has NO JUMP effect, assume this is a
+                // crawl fall damage event bug, and cancel damage
+                if ( player.isSwimming() ) {
+                    val noJumpEffect = player.getPotionEffect(PotionEffectType.JUMP)
+                    if ( noJumpEffect != null && noJumpEffect.getAmplifier() == -128 ) {
+                        // println("CANCEL FALL DAMAGE")
+                        e.setCancelled(true)
                     }
                 }
             }
