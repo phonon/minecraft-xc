@@ -10,18 +10,6 @@ melee = "melee"
 misc = "misc"
 throwable = "throwable"
 
-# max number of ticks from last auto fire request before stopping
-[auto_fire]
-max_ticks_since_last_request = 4
-
-# recoil recovery rate per tick
-[recoil]
-recovery_rate = 0.2
-
-# block damage
-[block_damage]
-explosion = false
-
 # material types for custom items, must match a Material exactly
 [material]
 gun = "WARPED_FUNGUS_ON_A_STICK"
@@ -38,6 +26,17 @@ message_explosion = "{0} was guro''d in an explosion"
 message_wither = "{0} suffocated in poison gas"
 log_save_dir = "plugins/xc/logs"
 save_interval = 1200 # in ticks
+
+# gun related global configs
+[gun]
+auto_fire_max_ticks_since_last_request = 4 # max number of ticks from last auto fire request before stopping
+recoil_recovery_rate = 0.2 # recoil recovery rate per tick
+auto_reload_guns = true # automatically reload guns when ammo = 0
+auto_fire_ticks_before_reload = 2 # number of ticks with auto guns before auto-reload happens
+
+# block damage
+[block_damage]
+explosion = false
 
 # global sound effects
 [sound]

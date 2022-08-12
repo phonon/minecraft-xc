@@ -65,6 +65,8 @@ internal data class BurstFire(
     val player: Player,
     // gun
     val gun: Gun,
+    // original ammo, used for auto-reload
+    val originalAmmo: Int,
     // current ammo
     val ammo: Int,
     // re-used item stack
@@ -113,6 +115,8 @@ internal data class AutoFire(
     val ticksSinceLastRequest: Int,
     // next index in gun delay pattern array (for guns that use delay patterns)
     val delayPatternIndex: Int,
+    // ticks to keep try firing before starting auto reload
+    val ticksBeforeReload: Int,
 )
 
 /**
@@ -639,6 +643,9 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
                 ))
 
                 if ( !gun.ammoIgnore ) {
+                    if ( XC.config.autoReloadGuns ) {
+                        XC.playerReloadRequests.add(PlayerGunReloadRequest(player))
+                    }
                     continue
                 }
             }
@@ -675,12 +682,26 @@ internal fun gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, ti
             // add burst packet if not already burst firing
             if ( !XC.burstFiringPackets.contains(playerId) ) {
                 val ammo = itemData.get(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER) ?: 0
+                
+                // // auto-reload instead of firing when empty
+                // // MOVED to inside burstFireSystem so that
+                // // players can hear the burst clicks before reload
+                // if ( ammo <= 0 ) {
+                //     if ( !gun.ammoIgnore ) {
+                //         if ( XC.config.autoReloadGuns ) {
+                //             XC.playerReloadRequests.add(PlayerGunReloadRequest(player))
+                //         }
+                //         continue
+                //     }
+                // }
+                
                 val burstFireId = XC.newBurstFireId()
 
                 XC.burstFiringPackets[playerId] = BurstFire(
                     id = burstFireId,
                     player = player,
                     gun = gun,
+                    originalAmmo = ammo,
                     ammo = ammo,
                     item = item,
                     itemMeta = itemMeta,
@@ -721,6 +742,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
             id,
             player,
             gun,
+            originalAmmo,
             ammo,
             item,
             itemMeta,
@@ -751,6 +773,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
                 id = id,
                 player = player,
                 gun = gun,
+                originalAmmo = originalAmmo,
                 ammo = ammo,
                 item = item,
                 itemMeta = itemMeta,
@@ -783,11 +806,45 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
             ))
 
             if ( !gun.ammoIgnore ) {
-                // clean up item
-                itemData.remove(XC.namespaceKeyItemBurstFireId!!)
-                val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
-                item.setItemMeta(newItemMeta)
-                equipment.setItem(currInventorySlot, item)
+                // finish sequence before stopping
+                if ( remainingCount > 0 ) {
+                    // next firing cooldown and delay pattern index
+                    var nextDelayPatternIndex = delayPatternIndex
+                    val cooldown = if ( gun.useBurstFireDelayTickPattern ) {
+                        nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.burstFireDelayTickPattern.size) // required here to avoid modulo 0
+                        gun.burstFireDelayTickPattern[delayPatternIndex]
+                    } else {
+                        gun.burstFireDelayTicks
+                    }
+
+                    nextTickRequests[playerId] = BurstFire(
+                        id = id,
+                        player = player,
+                        gun = gun,
+                        originalAmmo = originalAmmo,
+                        ammo = 0,
+                        item = item,
+                        itemMeta = itemMeta,
+                        itemData = itemData,
+                        inventorySlot = inventorySlot,
+                        totalTime = totalTime + 1,
+                        ticksCooldown = cooldown,
+                        remainingCount = remainingCount - 1,
+                        delayPatternIndex = nextDelayPatternIndex,
+                    )
+                } else {
+                    // clean up item
+                    itemData.remove(XC.namespaceKeyItemBurstFireId!!)
+                    val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+                    item.setItemMeta(newItemMeta)
+                    equipment.setItem(currInventorySlot, item)
+
+                    // queue auto-reload (only if ammo = 0 when fired)
+                    if ( XC.config.autoReloadGuns && originalAmmo <= 0 ) {
+                        XC.playerReloadRequests.add(PlayerGunReloadRequest(player))
+                    }
+                }
+
                 continue
             }
         }
@@ -807,8 +864,8 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
         // recoil packet
         doRecoil(player, gun.recoilSingleHorizontal, gun.recoilSingleVertical, gun.recoilSingleFireRamp)
 
-        // continue sequence if have ammo and burst has remaining shots
-        if ( remainingCount > 1 && ( newAmmo > 0 || gun.ammoIgnore ) ) {
+        // continue sequence if burst has remaining shots
+        if ( remainingCount > 1 ) {
             // just update ammo data
             itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, newAmmo)
             item.setItemMeta(itemMeta)
@@ -827,6 +884,7 @@ internal fun burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long
                 id = id,
                 player = player,
                 gun = gun,
+                originalAmmo = originalAmmo,
                 ammo = newAmmo,
                 item = item,
                 itemMeta = itemMeta,
@@ -947,6 +1005,7 @@ internal fun autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, a
                 ticksCooldown = 0,
                 ticksSinceLastRequest = 0,
                 delayPatternIndex = 0,
+                ticksBeforeReload = XC.config.autoFireTicksBeforeReload,
             )
             
             // set item in hand's auto fire id
@@ -986,6 +1045,7 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
             ticksCooldown,
             ticksSinceLastRequest,
             delayPatternIndex,
+            ticksBeforeReload,
         ) = request
 
         val equipment = player.getInventory()
@@ -1025,6 +1085,7 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
                 ticksCooldown = ticksCooldown - 1,
                 ticksSinceLastRequest = ticksSinceLastRequest + 1,
                 delayPatternIndex = delayPatternIndex,
+                ticksBeforeReload = ticksBeforeReload,
             )
             continue
         }
@@ -1048,11 +1109,44 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
             ))
 
             if ( !gun.ammoIgnore ) {
-                // clean up item
-                itemData.remove(XC.namespaceKeyItemAutoFireId!!)
-                val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
-                item.setItemMeta(newItemMeta)
-                equipment.setItem(currInventorySlot, item)
+                if ( ticksBeforeReload > 0 ) { // decrement ticks first
+                    // next firing cooldown
+                    var nextDelayPatternIndex = delayPatternIndex
+                    val cooldown = if ( gun.useAutoFireDelayTickPattern ) {
+                        nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.autoFireDelayTickPattern.size) // required here to avoid modulo 0
+                        gun.autoFireDelayTickPattern[delayPatternIndex]
+                    } else {
+                        gun.autoFireDelayTicks
+                    }
+
+                    nextTickRequests[playerId] = AutoFire(
+                        id = id,
+                        player = player,
+                        gun = gun,
+                        ammo = 0,
+                        item = item,
+                        itemMeta = itemMeta,
+                        itemData = itemData,
+                        inventorySlot = inventorySlot,
+                        totalTime = totalTime + 1,
+                        ticksCooldown = cooldown,
+                        ticksSinceLastRequest = ticksSinceLastRequest + 1,
+                        delayPatternIndex = nextDelayPatternIndex,
+                        ticksBeforeReload = ticksBeforeReload - 1,
+                    )
+                } else {
+                    // clean up item
+                    itemData.remove(XC.namespaceKeyItemAutoFireId!!)
+                    val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+                    item.setItemMeta(newItemMeta)
+                    equipment.setItem(currInventorySlot, item)
+                    
+                    // queue auto-reload
+                    if ( XC.config.autoReloadGuns ) {
+                        XC.playerReloadRequests.add(PlayerGunReloadRequest(player))
+                    }
+                }
+
                 continue
             }
         }
@@ -1101,6 +1195,7 @@ internal fun autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, Au
                 ticksCooldown = cooldown,
                 ticksSinceLastRequest = ticksSinceLastRequest + 1,
                 delayPatternIndex = nextDelayPatternIndex,
+                ticksBeforeReload = ticksBeforeReload,
             )
         } else {
             // clean up item

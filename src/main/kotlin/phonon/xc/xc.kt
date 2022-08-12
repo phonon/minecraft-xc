@@ -202,11 +202,13 @@ public object XC {
     internal val playerDeathMessages: HashMap<UUID, String> = HashMap()
 
     // queue of player controls requests
+    // Note: do reload before shoot. Shoot request when ammo <= 0 queue
+    // a new reload request, which should be handled next tick
     internal var playerAimDownSightsRequests: ArrayList<PlayerAimDownSightsRequest> = ArrayList()
     internal var playerGunSelectRequests: ArrayList<PlayerGunSelectRequest> = ArrayList()
+    internal var playerReloadRequests: ArrayList<PlayerGunReloadRequest> = ArrayList()
     internal var playerShootRequests: ArrayList<PlayerGunShootRequest> = ArrayList()
     internal var playerAutoFireRequests: ArrayList<PlayerAutoFireRequest> = ArrayList()
-    internal var playerReloadRequests: ArrayList<PlayerGunReloadRequest> = ArrayList()
     internal var playerGunCleanupRequests: ArrayList<PlayerGunCleanupRequest> = ArrayList()
     internal var itemGunCleanupRequests: ArrayList<ItemGunCleanupRequest> = ArrayList()
     // burst firing queue: map entity uuid -> burst fire state
@@ -1008,13 +1010,16 @@ public object XC {
         XC.playerGunCleanupRequests = playerGunCleanupSystem(XC.playerGunCleanupRequests)
         XC.itemGunCleanupRequests = gunItemCleanupSystem(XC.itemGunCleanupRequests)
         XC.playerGunSelectRequests = gunSelectSystem(XC.playerGunSelectRequests, timestamp)
+        XC.playerReloadRequests = gunPlayerReloadSystem(XC.playerReloadRequests, timestamp)
         XC.autoFiringPackets = autoFireRequestSystem(XC.playerAutoFireRequests, XC.autoFiringPackets, timestamp) // do auto fire request before single/burst fire
         XC.playerShootRequests = gunPlayerShootSystem(XC.playerShootRequests, timestamp)
-        XC.playerReloadRequests = gunPlayerReloadSystem(XC.playerReloadRequests, timestamp)
         XC.burstFiringPackets = burstFireSystem(XC.burstFiringPackets, timestamp)
         XC.autoFiringPackets = autoFireSystem(XC.autoFiringPackets)
         XC.playerRecoil = recoilRecoverySystem(XC.playerRecoil)
         XC.crawlToShootRequestQueue = requestCrawlToShootSystem(XC.crawlToShootRequestQueue, timestamp)
+
+        // queues that need to be manually re-created (cannot easily return tuples in kotlin/java)
+        XC.playerAutoFireRequests = ArrayList()
 
         // ready and throw throwable systems
         // (tick for thrown throwable objects done with projectiles

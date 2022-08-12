@@ -55,11 +55,22 @@ public data class Config(
     public val materialMelee: Material = Material.IRON_SWORD,
     public val materialThrowable: Material = Material.GOLDEN_HORSE_ARMOR,
     
+    // ============================================================
+    // GUN HANDLING/CONTROLS CONFIG 
+    
     // auto fire max ticks before stopping
     public val autoFireMaxTicksSinceLastRequest: Int = 4,
 
     // recoil recovery rate per tick
     public val recoilRecoveryRate: Double = 0.2,
+    
+    // auto reload guns when empty and player fires
+    public val autoReloadGuns: Boolean = true,
+    
+    // how many auto fire ticks to wait before starting auto-reload
+    public val autoFireTicksBeforeReload: Int = 2,
+
+    // ============================================================
 
     // block damage
     public val blockDamageExplosion: Boolean = true,
@@ -160,12 +171,18 @@ public data class Config(
                     logger?.warning("[material.armor] Invalid material: ${s}")
                 }
             }
-            
-            // auto fire max ticks since last request config
-            toml.getLong("auto_fire.max_ticks_since_last_request")?.let { configOptions["autoFireMaxTicksSinceLastRequest"] = it.toInt() }
-            
-            // recoil recovery rate
-            toml.getDouble("recoil.recovery_rate")?.let { configOptions["recoilRecoveryRate"] = it }
+
+            // gun configs
+            toml.getTable("gun")?.let { gunConfig ->
+                // auto fire max ticks since last request config
+                gunConfig.getLong("auto_fire_max_ticks_since_last_request")?.let { configOptions["autoFireMaxTicksSinceLastRequest"] = it.toInt() }
+                // recoil recovery rate
+                gunConfig.getDouble("recoil_recovery_rate")?.let { configOptions["recoilRecoveryRate"] = it }
+                // auto reload guns
+                gunConfig.getBoolean("auto_reload_guns")?.let { configOptions["autoReloadGuns"] = it }
+                // auto fire ticks before auto reload
+                gunConfig.getLong("auto_fire_ticks_before_reload")?.let { configOptions["autoFireTicksBeforeReload"] = it.toInt() }
+            }
             
             // crawl config
             toml.getBoolean("crawl.only_allowed_on_crawl_weapons")?.let { configOptions["crawlOnlyAllowedOnCrawlWeapons"] = it }
