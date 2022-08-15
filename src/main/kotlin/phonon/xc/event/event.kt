@@ -61,7 +61,7 @@ public data class XCExplosionDamageEvent(
     public val damage: Double, // base damage, not modified by armor
     public val damageType: DamageType,
     public val distance: Double, // distance from explosion center
-    public val source: Entity,
+    public val source: Entity?,
 ): Event(), Cancellable {
     // event cancelled
     private var cancelled: Boolean = false

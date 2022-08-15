@@ -25,6 +25,7 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
+import org.bukkit.Material
 
 
 /**
@@ -32,9 +33,10 @@ import org.bukkit.entity.Player
  */
 public data class XcPlayerDeathEvent(
     val player: Player,
-    val killer: Entity,
+    val killer: Entity?,
     val weaponType: Int, // use XC.ITEM_TYPE_*
     val weaponId: Int,   // to get weapon id in array
+    val weaponMaterial: Material, // used for weapons attached to a material (e.g. landmine)
 )
 
 /**

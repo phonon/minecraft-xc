@@ -41,6 +41,7 @@ import com.comphenix.protocol.ProtocolLibrary
 import phonon.xc.ammo.*
 import phonon.xc.armor.*
 import phonon.xc.gun.*
+import phonon.xc.landmine.*
 import phonon.xc.melee.*
 import phonon.xc.throwable.*
 import phonon.xc.utils.EnumArrayMap
@@ -109,6 +110,7 @@ public object XC {
     public const val ITEM_TYPE_MELEE: Int = 2
     public const val ITEM_TYPE_THROWABLE: Int = 3
     public const val ITEM_TYPE_HAT: Int = 4
+    public const val ITEM_TYPE_LANDMINE: Int = 5
 
     // namespaced keys
     public const val ITEM_KEY_AMMO: String = "ammo"           // ItemStack namespaced key for ammo count
@@ -125,7 +127,7 @@ public object XC {
     // ========================================================================
     internal var config: Config = Config()
     
-    // gun storage and lookup, 
+    // gun storage and lookup
     internal var guns: Array<Gun?> = Array(MAX_GUN_CUSTOM_MODEL_ID, { _ -> null }) 
     internal var gunIds: IntArray = intArrayOf() // cached non null gun ids
 
@@ -144,6 +146,9 @@ public object XC {
     // ammo lookup
     internal var ammo: HashMap<Int, Ammo> = HashMap()
     internal var ammoIds: IntArray = intArrayOf() // cached non null ammo Ids
+
+    // landmine storage: material => landmine properties lookup
+    internal var landmines: EnumMap<Material, Landmine> = EnumMap(Material::class.java)
 
     // custom hitboxes for armor stand custom models, maps EntityId => HitboxSize
     internal var customModelHitboxes: HashMap<UUID, HitboxSize> = HashMap()
@@ -227,9 +232,13 @@ public object XC {
     internal var throwThrowableRequests: ArrayList<ThrowThrowableRequest> = ArrayList()
     internal var droppedThrowables: ArrayList<DroppedThrowable> = ArrayList()
     internal var readyThrowables: HashMap<Int, ReadyThrowable> = HashMap()
-    // per-world throwables
+    // per-world throwables queues
     internal var expiredThrowables: HashMap<UUID, ArrayList<ExpiredThrowable>> = HashMap()
     internal var thrownThrowables: HashMap<UUID, ArrayList<ThrownThrowable>> = HashMap()
+    // landmine systems
+    internal var landmineActivationRequests: ArrayList<LandmineActivationRequest> = ArrayList()
+    internal var landmineFinishUseRequests: ArrayList<LandmineFinishUseRequest> = ArrayList()
+    internal var landmineExplosions: HashMap<UUID, ArrayList<LandmineExplosionRequest>> = HashMap() // per world landmine explosion queues
     // task finish queues
     internal val playerReloadTaskQueue: LinkedBlockingQueue<PlayerReloadTask> = LinkedBlockingQueue()
     internal val playerReloadCancelledTaskQueue: LinkedBlockingQueue<PlayerReloadCancelledTask> = LinkedBlockingQueue()
@@ -352,6 +361,7 @@ public object XC {
             XC.projectileSystems.put(world.getUID(), ProjectileSystem(world))
             XC.thrownThrowables.put(world.getUID(), ArrayList())
             XC.expiredThrowables.put(world.getUID(), ArrayList())
+            XC.landmineExplosions.put(world.getUID(), ArrayList())
         }
         
         // reload main plugin config
@@ -394,6 +404,11 @@ public object XC {
             .map { file -> Hat.listFromToml(config.pathFilesArmor.resolve(file), XC.logger) }
             .filterNotNull()
             .flatten() // this flattens a List<List<Hat>> -> List<Hat>
+        
+        val filesLandmine = listDirFiles(config.pathFilesLandmine)
+        val landminesLoaded: List<Landmine> = filesLandmine
+            .map { file -> Landmine.fromToml(config.pathFilesLandmine.resolve(file), XC.logger) }
+            .filterNotNull()
         
         // map custom model ids => gun (NOTE: guns can overwrite each other!)
         val guns: Array<Gun?> = Array(MAX_GUN_CUSTOM_MODEL_ID, { _ -> null })
@@ -498,6 +513,15 @@ public object XC {
             validHatIds.add(h.itemModel)
         }
 
+        // add landmines to enum map
+        val landmines: EnumMap<Material, Landmine> = EnumMap(Material::class.java)
+        for ( l in landminesLoaded ) {
+            if ( l.material in landmines ) {
+                XC.logger!!.warning("Landmine ${l.itemName} overwrites ${landmines[l.material]!!.itemName}")
+            }
+            landmines[l.material] = l
+        }
+
         // set guns/ammos/etc...
         XC.ammo = ammo
         XC.ammoIds = validAmmoIds.toIntArray().sortedArray()
@@ -509,6 +533,7 @@ public object XC {
         XC.meleeIds = validMeleeIds.toIntArray().sortedArray()
         XC.throwable = throwable
         XC.throwableIds = validThrowableIds.toIntArray().sortedArray()
+        XC.landmines = landmines
 
         // start new engine runnable
         val timeEnd = System.currentTimeMillis()
@@ -519,6 +544,7 @@ public object XC {
         XC.logger?.info("- Melee: ${validMeleeIds.size}")
         XC.logger?.info("- Throwable: ${validThrowableIds.size}")
         XC.logger?.info("- Hats: ${validHatIds.size}")
+        XC.logger?.info("- Landmines: ${landmines.size}")
     }
 
     /**
@@ -547,6 +573,7 @@ public object XC {
         XC.projectileSystems.clear()
         XC.thrownThrowables.clear()
         XC.expiredThrowables.clear()
+        XC.landmineExplosions.clear()
     }
 
     /**
@@ -1028,6 +1055,11 @@ public object XC {
         XC.throwThrowableRequests = requestThrowThrowableSystem(XC.throwThrowableRequests)
         XC.droppedThrowables = droppedThrowableSystem(XC.droppedThrowables)
         XC.readyThrowables = tickReadyThrowableSystem(XC.readyThrowables)
+
+        // landmine systems
+        // (explosion handling done after hitboxes created in projectiles update block)
+        XC.landmineFinishUseRequests = landmineFinishUseSystem(XC.landmineFinishUseRequests) // note: finish using tick N-1 requests
+        XC.landmineActivationRequests = landmineActivationSystem(XC.landmineActivationRequests)
         
         // finish gun reloading tasks
         val tReloadSystem = XC.debugNanoTime() // timing probe
@@ -1045,6 +1077,7 @@ public object XC {
             // first gather visited chunks for throwable items
             // (for potential explosion/entity hit calculations)
             val visitedChunks = XC.thrownThrowables[worldId]?.let { throwables -> getThrownThrowableVisitedChunksSystem(throwables) } ?: LinkedHashSet()
+            XC.landmineExplosions[worldId]?.let { explosions -> visitedChunks.addAll(getLandmineExplosionVisitedChunksSystem(explosions)) }
 
             // run projectile system
             val (hitboxes, hitBlocksQueue, hitEntitiesQueue) = projSys.update(visitedChunks)
@@ -1064,8 +1097,10 @@ public object XC {
             // per-world throwable tick systems (needs hitboxes)
             XC.expiredThrowables[worldId] = handleExpiredThrowableSystem(XC.expiredThrowables[worldId] ?: listOf(), hitboxes)
             XC.thrownThrowables[worldId] = tickThrownThrowableSystem(XC.thrownThrowables[worldId] ?: listOf(), hitboxes)
-        }
 
+            // per-world landmine tick systems (needs hitboxes)
+            XC.landmineExplosions[worldId] = landmineHandleExplosionSystem(XC.landmineExplosions[worldId] ?: listOf(), hitboxes)
+        }
 
         // ================================================
         // SCHEDULE ALL ASYNC TASKS (particles, packets)

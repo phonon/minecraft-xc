@@ -19,17 +19,18 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.Event
 import org.bukkit.event.block.Action
+import org.bukkit.event.block.BlockRedstoneEvent
 import org.bukkit.event.entity.EntityDeathEvent
 import org.bukkit.event.entity.EntityToggleSwimEvent
 import org.bukkit.event.entity.EntityPickupItemEvent
 import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause
+import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.entity.ProjectileLaunchEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
-import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.player.PlayerRespawnEvent
-import org.bukkit.event.entity.ProjectileLaunchEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerChangedMainHandEvent
@@ -53,6 +54,7 @@ import phonon.xc.gun.PlayerAutoFireRequest
 import phonon.xc.gun.PlayerGunCleanupRequest
 import phonon.xc.gun.ItemGunCleanupRequest
 import phonon.xc.gun.AmmoInfoMessagePacket
+import phonon.xc.landmine.LandmineActivationRequest
 import phonon.xc.throwable.ReadyThrowableRequest
 import phonon.xc.throwable.ThrowThrowableRequest
 import phonon.xc.throwable.DroppedThrowable
@@ -145,6 +147,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                 killer,
                 weaponType,
                 weaponId,
+                weaponMaterial,
             ) = customDeathEvent
 
             // println("CUSTOM DEATH EVENT:")
@@ -155,7 +158,8 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
             // try to get weapon death message
             val playerName = player.getName()
-            val killerName = killer.getName()
+            val killerName = killer?.getName() ?: "None"
+            val killerUUID = killer?.getUniqueId().toString() ?: "None"
             var deathMessage = ""
             var deathCause = ""
 
@@ -186,6 +190,18 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                             e.setDeathMessage(deathMessage)
                         }
                     }
+
+                    XC.ITEM_TYPE_LANDMINE -> {
+                        XC.landmines[weaponMaterial]?.let { weapon -> 
+                            deathCause = weapon.itemName
+                            deathMessage = MessageFormat.format(
+                                weapon.deathMessage,
+                                playerName,
+                                weapon.itemName,
+                            )
+                            e.setDeathMessage(deathMessage)
+                        }
+                    }
                 }
             } catch ( err: Exception ) {
                 err.printStackTrace()
@@ -198,7 +214,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                 playerName = playerName,
                 playerUUID = playerId.toString(),
                 killerName = killerName,
-                killerUUID = killer.getUniqueId().toString(),
+                killerUUID = killerUUID,
                 deathCause = deathCause,
                 deathMessage = deathMessage,
             ))
@@ -343,6 +359,8 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                         ))
                     }
                 }
+
+                else -> {}
             }
         }
         
@@ -646,6 +664,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                                     killer = player,
                                     weaponType = XC.ITEM_TYPE_MELEE,
                                     weaponId = weapon.itemModelDefault,
+                                    weaponMaterial = XC.config.materialMelee,
                                 )
                             }
 
@@ -729,6 +748,24 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                         e.setCancelled(true)
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Block activation for landmine event handling.
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public fun onLandmineBlockActivation(event: BlockRedstoneEvent) {
+        val block = event.block
+
+        // pressure plate land mine, queue landmine activation handling
+        XC.landmines[block.type]?.let { landmine ->
+            if ( event.getNewCurrent() > XC.config.landmineMinRedstoneCurrent ) {
+                XC.landmineActivationRequests.add(LandmineActivationRequest(
+                    block = block,
+                    landmine = landmine,
+                ))
             }
         }
     }

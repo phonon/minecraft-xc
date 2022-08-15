@@ -9,6 +9,7 @@ import kotlin.math.floor
 import kotlin.math.max
 import org.bukkit.Bukkit
 import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.entity.LivingEntity
@@ -53,7 +54,7 @@ public fun baseExplosionDamage(
 public fun createExplosion(
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     location: Location,
-    source: Entity,
+    source: Entity?,
     maxDistance: Double,
     damage: Double,
     radius: Double,
@@ -66,6 +67,7 @@ public fun createExplosion(
     particles: ParticlePacket?,
     weaponType: Int, // metadata for player death tracking
     weaponId: Int,   // metadata for player death tracking
+    weaponMaterial: Material, // metadata for player death tracking
 ) {
     // check if region allows explosions
     if ( !XC.canExplodeAt(location) ) {
@@ -111,6 +113,7 @@ public fun createExplosion(
                                     killer = source,
                                     weaponType = weaponType,
                                     weaponId = weaponId,
+                                    weaponMaterial = weaponMaterial,
                                 )
                             }
                             

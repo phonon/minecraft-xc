@@ -34,6 +34,7 @@ public data class Config(
     public val pathFilesAmmo: Path = Paths.get("plugins", "xc", "ammo"),
     public val pathFilesArmor: Path = Paths.get("plugins", "xc", "armor"),
     public val pathFilesGun: Path = Paths.get("plugins", "xc", "gun"),
+    public val pathFilesLandmine: Path = Paths.get("plugins", "xc", "landmine"),
     public val pathFilesMelee: Path = Paths.get("plugins", "xc", "melee"),
     public val pathFilesMisc: Path = Paths.get("plugins", "xc", "misc"),
     public val pathFilesThrowable: Path = Paths.get("plugins", "xc", "throwable"),
@@ -69,7 +70,13 @@ public data class Config(
     
     // how many auto fire ticks to wait before starting auto-reload
     public val autoFireTicksBeforeReload: Int = 2,
+    
+    // ============================================================
+    // LANDMINE CONFIG
 
+    // landmine settings
+    public val landmineMinRedstoneCurrent: Int = 5,
+    
     // ============================================================
 
     // block damage
@@ -135,6 +142,7 @@ public data class Config(
                 configsPaths.getString("ammo")?.let { path -> configOptions["pathFilesAmmo"] = Paths.get(pluginDataFolder, path) }
                 configsPaths.getString("armor")?.let { path -> configOptions["pathFilesArmor"] = Paths.get(pluginDataFolder, path) }
                 configsPaths.getString("gun")?.let { path -> configOptions["pathFilesGun"] = Paths.get(pluginDataFolder, path) }
+                configsPaths.getString("landmine")?.let { path -> configOptions["pathFilesLandmine"] = Paths.get(pluginDataFolder, path) }
                 configsPaths.getString("melee")?.let { path -> configOptions["pathFilesMelee"] = Paths.get(pluginDataFolder, path) }
                 configsPaths.getString("misc")?.let { path -> configOptions["pathFilesMisc"] = Paths.get(pluginDataFolder, path) }
                 configsPaths.getString("throwable")?.let { path -> configOptions["pathFilesThrowable"] = Paths.get(pluginDataFolder, path) }
@@ -182,6 +190,11 @@ public data class Config(
                 gunConfig.getBoolean("auto_reload_guns")?.let { configOptions["autoReloadGuns"] = it }
                 // auto fire ticks before auto reload
                 gunConfig.getLong("auto_fire_ticks_before_reload")?.let { configOptions["autoFireTicksBeforeReload"] = it.toInt() }
+            }
+            
+            // landmine config
+            toml.getTable("landmine")?.let { landmineConfig ->
+                landmineConfig.getLong("min_redstone_current")?.let { configOptions["landmineMinRedstoneCurrent"] = it.toInt() }
             }
             
             // crawl config

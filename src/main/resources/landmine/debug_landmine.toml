@@ -1,0 +1,39 @@
+# Debug landmine item
+# Shows all keys and properties.
+
+# ingame material
+material = "WARPED_PRESSURE_PLATE"
+
+# Item properties
+[item]
+name = "landmine_debug"
+lore = [
+    "This landmine is for debugging.",
+    "Trust the plan.",
+]
+
+# Explosion damage properties.
+[explosion]
+damage = 40.0
+max_distance = 4.0
+radius = 4.0
+falloff = 4.0
+armor_reduction = 0.25
+blast_prot_reduction = 0.25
+damage_type = "EXPLOSIVE"
+block_damage_power = 0.0
+fire_ticks = 0
+
+# Explosion particle settings
+[explosion.particles]
+type = "EXPLOSION_LARGE"
+count = 8
+random_x = 1.5
+random_y = 1.5
+random_z = 1.5
+
+# sounds
+[sound]
+explosion = "minecraft:entity.generic.explode"
+# alternative detailed mode to specify volume and pitch
+# explosion = { name = "grenade.ready", volume = 1.0, pitch = 1.0 } 

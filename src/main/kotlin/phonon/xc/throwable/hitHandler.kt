@@ -129,6 +129,7 @@ public val timerExpiredExplosionHandler = fun(
         throwable.explosionParticles,
         XC.ITEM_TYPE_THROWABLE,
         throwable.itemModelDefault,
+        XC.config.materialThrowable,
     )
 }
 
@@ -167,6 +168,7 @@ public val entityDamageHitHandler = fun(
                 killer = source,
                 weaponType = XC.ITEM_TYPE_THROWABLE,
                 weaponId = throwable.itemModelDefault,
+                weaponMaterial = XC.config.materialThrowable,
             )
         }
 
@@ -212,6 +214,7 @@ public val entityExplosionHitHandler = fun(
                 killer = source,
                 weaponType = XC.ITEM_TYPE_THROWABLE,
                 weaponId = throwable.itemModelDefault,
+                weaponMaterial = XC.config.materialThrowable,
             )
         }
 
@@ -244,6 +247,7 @@ public val entityExplosionHitHandler = fun(
         throwable.explosionParticles,
         XC.ITEM_TYPE_THROWABLE,
         throwable.itemModelDefault,
+        XC.config.materialThrowable,
     )
 }
 
@@ -279,5 +283,6 @@ public val blockExplosionHitHandler = fun(
         throwable.explosionParticles,
         XC.ITEM_TYPE_THROWABLE,
         throwable.itemModelDefault,
+        XC.config.materialThrowable,
     )
 }

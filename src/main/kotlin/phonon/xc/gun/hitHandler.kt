@@ -120,6 +120,7 @@ public val entityDamageHitHandler = fun(
                     killer = source,
                     weaponType = XC.ITEM_TYPE_GUN,
                     weaponId = gun.itemModelDefault,
+                    weaponMaterial = XC.config.materialGun,
                 )
             }
 
@@ -180,6 +181,7 @@ public val entityExplosionHitHandler = fun(
                     killer = source,
                     weaponType = XC.ITEM_TYPE_GUN,
                     weaponId = gun.itemModelDefault,
+                    weaponMaterial = XC.config.materialGun,
                 )
             }
 
@@ -223,6 +225,7 @@ public val entityExplosionHitHandler = fun(
         gun.explosionParticles,
         XC.ITEM_TYPE_GUN,
         gun.itemModelDefault,
+        XC.config.materialGun,
     )
 }
 
@@ -258,6 +261,7 @@ public val blockExplosionHitHandler = fun(
         gun.explosionParticles,
         XC.ITEM_TYPE_GUN,
         gun.itemModelDefault,
+        XC.config.materialGun,
     )
 }
 
