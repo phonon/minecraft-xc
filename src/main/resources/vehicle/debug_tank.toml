@@ -10,7 +10,7 @@ name = "debug_tank"
 [transform]
 
 # handles player's input controls for land movement
-[land_movement]
+[land_movement_controls]
 acceleration = 0.05
 speed_max_forward = 0.3
 speed_max_reverse = 0.2

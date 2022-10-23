@@ -44,20 +44,31 @@ public data class VehiclePrototype(
     val elements: Array<VehicleElementPrototype>,
 ) {
     companion object {
-        public fun fromTomlFile(source: Path, logger: Logger? = null): VehiclePrototype {
-            val toml = Toml.parse(source)
+        /**
+         * Try to load a vehicle prototype from a toml file.
+         * If any of the internal elements fails to parse, this will
+         * print an error and return a null.
+         */
+        public fun fromTomlFile(source: Path, logger: Logger? = null): VehiclePrototype? {
+            try {
+                val toml = Toml.parse(source)
 
-            val name = toml.getString("name") ?: ""
+                val name = toml.getString("name") ?: ""
 
-            // if this contains an elements table, parse each element
-            // else, parse entire doc as single toml table
-            val elements: Array<VehicleElementPrototype> = toml.getArray("elements")?.let { elems ->
-                ( 0 until elems.size() )
-                .map { i -> VehicleElementPrototype.fromToml(elems.getTable(i)) }
-                .toTypedArray()
-            } ?: arrayOf(VehicleElementPrototype.fromToml(toml))
+                // if this contains an elements table, parse each element
+                // else, parse entire doc as single toml table
+                val elements: Array<VehicleElementPrototype> = toml.getArray("element")?.let { elems ->
+                    ( 0 until elems.size() )
+                    .map { i -> VehicleElementPrototype.fromToml(elems.getTable(i), logger) }
+                    .toTypedArray()
+                } ?: arrayOf(VehicleElementPrototype.fromToml(toml, logger))
 
-            return VehiclePrototype(name, elements)
+                return VehiclePrototype(name, elements)
+            } catch (e: Exception) {
+                logger?.warning("Failed to parse landmine file: ${source.toString()}, ${e}")
+                e.printStackTrace()
+                return null
+            }
         }
     }
 }
@@ -99,6 +110,7 @@ public data class VehicleElementPrototype(
             val keys = toml.keySet()
             for ( k in keys ) {
                 when ( k ) {
+                    "name", "parent" -> continue
                     "fuel" -> {
                         layout.add(VehicleComponentType.FUEL)
                         fuel = FuelComponent.fromToml(toml.getTable(k)!!, logger)
@@ -127,6 +139,7 @@ public data class VehicleElementPrototype(
                         layout.add(VehicleComponentType.TRANSFORM)
                         transform = TransformComponent.fromToml(toml.getTable(k)!!, logger)
                     }
+                    else -> logger?.warning("Unknown key in vehicle element $name: $k")
                 }
             }
             

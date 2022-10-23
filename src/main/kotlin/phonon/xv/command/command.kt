@@ -21,6 +21,7 @@ import phonon.xv.util.Message
 private val SUBCOMMANDS = listOf(
     "help",
     "reload",
+    "prototype",
 )
 
 /**
@@ -43,6 +44,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         when ( arg ) {
             "help" -> printHelp(sender)
             "reload" -> reload(sender)
+            "prototype" -> prototype(sender, args)
 
             else -> {
                 Message.error(sender, "Invalid /xc subcommand, use /xc help")
@@ -56,8 +58,18 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         if ( args.size > 1 ) {
             // handle specific subcommands
             when ( args[0].lowercase() ) {
-                
+                "prototype" -> {
+                    if ( args.size == 2 ) {
+                        if ( sender is Player && !sender.isOp() ) { // only let ops use
+                            return listOf()
+                        }
+
+                        return XV.vehiclePrototypeNames
+                    }
+                }
             }
+
+            return listOf()
         }
 
         return SUBCOMMANDS
@@ -81,6 +93,52 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         }
     }
 
-    
+    /**
+     * Debug print prototypes. Usage:
+     * /xv prototype: print out list of all prototype names
+     * /xv prototype [name]: print out a prototype name, print all its vehicle elements
+     */
+    private fun prototype(sender: CommandSender?, args: Array<String>) {
+        // Only let op use this command ingame
+        // TODO: give permissions node to view this data
+        val player = if ( sender is Player ) sender else null
+        if ( player !== null && !player.isOp() ) {
+            Message.error(sender, "[xv] Only operators can use this command")
+            return
+        }
+
+        if ( args.size == 1 ) {
+            Message.print(sender, "[xv] Prototypes:")
+            for ( (name, prototype) in XV.vehiclePrototypes ) {
+                Message.print(sender, "  - ${name}")
+            }
+        }
+        else if ( args.size == 2 ) {
+            val name = args[1]
+            val prototype = XV.vehiclePrototypes[name]
+            if ( prototype === null ) {
+                Message.error(sender, "[xv] Prototype ${name} not found")
+            }
+            else {
+                Message.print(sender, "[xv] Prototype '${name}':")
+                for ( element in prototype.elements ) {
+                    Message.print(sender, "  - ${element.name}")
+
+                    if ( element.parent !== null ) {
+                        Message.print(sender, "    - Parent: ${element.parent}")
+                    }
+
+                    for ( ty in element.layout ) {
+                        Message.print(sender, "    - ${ty}")
+                    }
+                }
+            }
+        }
+        else {
+            Message.error(sender, "[xv] Invalid usage")
+            Message.error(sender, "[xv] /xv prototype: print out list of all prototype names and # of elements")
+            Message.error(sender, "[xv] /xv prototype [name]: print out a prototype and its vehicle elements")
+        }
+    }
 }
 

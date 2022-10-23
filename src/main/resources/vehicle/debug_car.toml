@@ -10,7 +10,7 @@ name = "debug_car"
 [transform]
 
 # handles player's input controls for land movement
-[land_movement]
+[land_movement_controls]
 acceleration = 0.1
 speed_max_forward = 0.4
 speed_max_reverse = 0.3

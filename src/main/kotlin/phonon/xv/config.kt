@@ -19,7 +19,7 @@ import org.bukkit.Material
 import org.bukkit.entity.EntityType
 import org.tomlj.Toml
 import phonon.xv.util.mapToObject
-
+import phonon.xv.util.toml.getNumberAs
 
 /**
  * Immutable XV config
@@ -34,12 +34,12 @@ public data class Config(
     // culling system parameters
     val cullingEnabled: Boolean = false,
     val cullingPeriod: Int = 200,
-    val cullingBorderMinX: Int = -1000,
-    val cullingBorderMinY: Int = -1,
-    val cullingBorderMinZ: Int = -1000,
-    val cullingBorderMaxX: Int = 1000,
-    val cullingBorderMaxY: Int = 300,
-    val cullingBorderMaxZ: Int = 1000,
+    val cullingBorderMinX: Double = -1000.0,
+    val cullingBorderMinY: Double = -1.0,
+    val cullingBorderMinZ: Double = -1000.0,
+    val cullingBorderMaxX: Double = 1000.0,
+    val cullingBorderMaxY: Double = 300.0,
+    val cullingBorderMaxZ: Double = 1000.0,
     
     // paths to vehicle configs
     val pathFilesVehicles: Path = Paths.get("plugins", "xv", "vehicle"),
@@ -67,7 +67,7 @@ public data class Config(
 
             // world
             toml.getTable("world")?.let { world -> 
-                world.getDouble("sea_level")?.let { configOptions["seaLevel"] = it }
+                world.getNumberAs<Double>("sea_level")?.let { configOptions["seaLevel"] = it }
             }
 
             // material
@@ -83,12 +83,12 @@ public data class Config(
             toml.getTable("culling")?.let { culling -> 
                 culling.getBoolean("enabled")?.let { configOptions["cullingEnabled"] = it }
                 culling.getLong("period")?.let { configOptions["cullingPeriod"] = it.toInt() }
-                culling.getDouble("border_min_x")?.let { configOptions["cullingBorderMinX"] = it }
-                culling.getDouble("border_min_y")?.let { configOptions["cullingBorderMinY"] = it }
-                culling.getDouble("border_min_z")?.let { configOptions["cullingBorderMinZ"] = it }
-                culling.getDouble("border_max_x")?.let { configOptions["cullingBorderMaxX"] = it }
-                culling.getDouble("border_max_y")?.let { configOptions["cullingBorderMaxY"] = it }
-                culling.getDouble("border_max_z")?.let { configOptions["cullingBorderMaxZ"] = it }
+                culling.getNumberAs<Double>("border_min_x")?.let { configOptions["cullingBorderMinX"] = it }
+                culling.getNumberAs<Double>("border_min_y")?.let { configOptions["cullingBorderMinY"] = it }
+                culling.getNumberAs<Double>("border_min_z")?.let { configOptions["cullingBorderMinZ"] = it }
+                culling.getNumberAs<Double>("border_max_x")?.let { configOptions["cullingBorderMaxX"] = it }
+                culling.getNumberAs<Double>("border_max_y")?.let { configOptions["cullingBorderMaxY"] = it }
+                culling.getNumberAs<Double>("border_max_z")?.let { configOptions["cullingBorderMaxZ"] = it }
             }
 
             // paths

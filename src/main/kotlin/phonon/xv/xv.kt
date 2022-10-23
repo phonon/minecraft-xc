@@ -22,7 +22,9 @@ import org.bukkit.scheduler.BukkitTask
 import org.bukkit.scheduler.BukkitRunnable
 import phonon.xv.system.*
 import phonon.xv.core.ComponentsStorage
+import phonon.xv.core.VehiclePrototype
 import phonon.xv.common.UserInput
+import phonon.xv.util.file.listDirFiles
 
 /**
  * XV engine global state.
@@ -38,6 +40,10 @@ public object XV {
     // ========================================================================
     internal var config: Config = Config()
     
+    // vehicle base prototypes
+    internal var vehiclePrototypes: Map<String, VehiclePrototype> = mapOf()
+    internal var vehiclePrototypeNames: List<String> = listOf() // for tab completion
+
     // components
     internal val storage: ComponentsStorage = ComponentsStorage()
 
@@ -72,11 +78,42 @@ public object XV {
      */
     internal fun reload() {
         val timeStart = System.currentTimeMillis()
+
+        // load main plugin config
+        val pathConfigToml = Paths.get(XV.plugin!!.getDataFolder().getPath(), "config.toml")
+        val config = if ( Files.exists(pathConfigToml) ) {
+            Config.fromToml(pathConfigToml, XV.logger)
+        } else {
+            XV.logger!!.info("Creating default config.toml")
+            XV.plugin!!.saveResource("config.toml", false)
+            Config()
+        }
+
+        XV.config = config
+
+        // load vehicle config files
+
+        // wtf why isnt it saving this shit automatically??
+        listOf(
+            "vehicle/debug_car.toml",
+            "vehicle/debug_multi_turret.toml",
+            "vehicle/debug_tank.toml",
+        ).forEach { p -> XV.plugin!!.saveResource(p, false) }
+
+        val vehiclePrototypes: Map<String, VehiclePrototype> = listDirFiles(config.pathFilesVehicles)
+            .map { f -> VehiclePrototype.fromTomlFile(config.pathFilesVehicles.resolve(f), XV.logger) }
+            .filterNotNull()
+            .map { v -> v.name to v }
+            .toMap()
+        
+        XV.vehiclePrototypes = vehiclePrototypes
+        XV.vehiclePrototypeNames = vehiclePrototypes.keys.toList()
         
         // finish: print stats
         val timeEnd = System.currentTimeMillis()
         val timeLoad = timeEnd - timeStart
         XV.logger?.info("Reloaded in ${timeLoad}ms")
+        XV.logger?.info("- Prototypes: ${vehiclePrototypes.size}")
     }
 
     /**

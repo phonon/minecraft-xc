@@ -4,7 +4,9 @@ import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.entity.Player
 import phonon.xv.core.VehicleComponent
+import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
+import phonon.xv.util.toml.*
 
 
 /**
@@ -64,6 +66,8 @@ public data class LandMovementControlsComponent(
         -1.2, 0.0, -2.0,
     ),
 ): VehicleComponent {
+    override val type = VehicleComponentType.LAND_MOVEMENT_CONTROLS
+
     // player controller for vehicle
     var player: Player? = null
     // current motion state
@@ -78,22 +82,22 @@ public data class LandMovementControlsComponent(
             val properties = HashMap<String, Any>()
 
             // translational motion
-            toml.getDouble("acceleration")?.let { properties["acceleration"] = it }
-            toml.getDouble("deceleration_multiplier")?.let { properties["decelerationMultiplier"] = it }
-            toml.getDouble("speed_max_forward")?.let { properties["speedMaxForward"] = it }
-            toml.getDouble("speed_max_reverse")?.let { properties["speedMaxReverse"] = it }
+            toml.getNumberAs<Double>("acceleration")?.let { properties["acceleration"] = it }
+            toml.getNumberAs<Double>("deceleration_multiplier")?.let { properties["decelerationMultiplier"] = it }
+            toml.getNumberAs<Double>("speed_max_forward")?.let { properties["speedMaxForward"] = it }
+            toml.getNumberAs<Double>("speed_max_reverse")?.let { properties["speedMaxReverse"] = it }
             
             // rotational motion
-            toml.getDouble("yaw_rotation_acceleration")?.let { properties["yawRotationAcceleration"] = it }
-            toml.getDouble("yaw_rotation_deceleration_multiplier")?.let { properties["yawRotationDecelerationMultiplier"] = it }
-            toml.getDouble("yaw_rotation_speed_max")?.let { properties["yawRotationSpeedMax"] = it }
+            toml.getNumberAs<Double>("yaw_rotation_acceleration")?.let { properties["yawRotationAcceleration"] = it }
+            toml.getNumberAs<Double>("yaw_rotation_deceleration_multiplier")?.let { properties["yawRotationDecelerationMultiplier"] = it }
+            toml.getNumberAs<Double>("yaw_rotation_speed_max")?.let { properties["yawRotationSpeedMax"] = it }
 
             // contact points
             toml.getArray("contact_points")?.let { arr ->
                 // need to manually parse array of 12 double points
                 val points = DoubleArray(12)
                 for ( i in 0 until 12 ) {
-                    points[i] = arr.getDouble(i)
+                    points[i] = arr.getNumberAs<Double>(i)
                 }
                 properties["contactPoints"] = points
             }

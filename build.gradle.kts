@@ -76,6 +76,8 @@ dependencies {
 
     // toml parsing library
     compileOnly("org.tomlj:tomlj:1.0.0")
+    // TODO: remove toml shadowing after adding xc dependency for side-loading
+    configurations["resolvableImplementation"]("org.tomlj:tomlj:1.0.0")
 
     // protocol lib (for packets)
     // compileOnly("com.comphenix.protocol:ProtocolLib:4.5.0")

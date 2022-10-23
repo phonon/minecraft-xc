@@ -57,7 +57,8 @@ public enum class VehicleComponentType {
  * Component interface
  */
 public interface VehicleComponent {
-
+    // Vehicle component type enum.
+    val type: VehicleComponentType
 }
 
 

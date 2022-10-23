@@ -4,7 +4,9 @@ import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.entity.Entity
 import phonon.xv.core.VehicleComponent
+import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
+import phonon.xv.util.toml.*
 
 
 /**
@@ -22,6 +24,8 @@ public data class ModelComponent(
     // armor stand entity
     var armorstand: Entity? = null,
 ): VehicleComponent {
+    override val type = VehicleComponentType.MODEL
+    
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): ModelComponent {
@@ -29,15 +33,15 @@ public data class ModelComponent(
             val properties = HashMap<String, Any>()
 
             toml.getArray("offset")?.let { arr ->
-                properties["offsetX"] = arr.getDouble(0)
-                properties["offsetY"] = arr.getDouble(1)
-                properties["offsetZ"] = arr.getDouble(2)
+                properties["offsetX"] = arr.getNumberAs<Double>(0)
+                properties["offsetY"] = arr.getNumberAs<Double>(1)
+                properties["offsetZ"] = arr.getNumberAs<Double>(2)
             }
             
             toml.getArray("hitbox")?.let { arr ->
-                properties["hitboxX"] = arr.getDouble(0)
-                properties["hitboxY"] = arr.getDouble(1)
-                properties["hitboxZ"] = arr.getDouble(2)
+                properties["hitboxX"] = arr.getNumberAs<Double>(0)
+                properties["hitboxY"] = arr.getNumberAs<Double>(1)
+                properties["hitboxZ"] = arr.getNumberAs<Double>(2)
             }
 
             return mapToObject(properties, ModelComponent::class)

@@ -4,7 +4,9 @@ import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.World
 import phonon.xv.core.VehicleComponent
+import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
+import phonon.xv.util.toml.*
 
 /**
  * Contains a vehicle elements world position and rotation.
@@ -17,8 +19,10 @@ public data class TransformComponent(
     val offsetY: Double = 0.0,
     val offsetZ: Double = 0.0,
     // minecraft world, immutable, don't allow moving between worlds :^(
-    val world: World?,
+    val world: World? = null,
 ): VehicleComponent {
+    override val type = VehicleComponentType.TRANSFORM
+
     // world position
     var x: Double = 0.0
     var y: Double = 0.0
@@ -43,9 +47,9 @@ public data class TransformComponent(
             val properties = HashMap<String, Any>()
 
             toml.getArray("offset")?.let { arr ->
-                properties["offsetX"] = arr.getDouble(0)
-                properties["offsetY"] = arr.getDouble(1)
-                properties["offsetZ"] = arr.getDouble(2)
+                properties["offsetX"] = arr.getNumberAs<Double>(0)
+                properties["offsetY"] = arr.getNumberAs<Double>(1)
+                properties["offsetZ"] = arr.getNumberAs<Double>(2)
             }
 
             return mapToObject(properties, TransformComponent::class)

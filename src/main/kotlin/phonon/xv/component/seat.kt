@@ -4,7 +4,9 @@ import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.entity.Entity
 import phonon.xv.core.VehicleComponent
+import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
+import phonon.xv.util.toml.*
 
 /**
  * Represents an ArmorStand player seat
@@ -17,7 +19,7 @@ public data class SeatComponent(
     // armor stand entity
     var armorstand: Entity? = null,
 ): VehicleComponent {
-
+    override val type = VehicleComponentType.SEAT
 
     companion object {
         @Suppress("UNUSED_PARAMETER")
@@ -26,9 +28,9 @@ public data class SeatComponent(
             val properties = HashMap<String, Any>()
 
             toml.getArray("offset")?.let { arr ->
-                properties["offsetX"] = arr.getDouble(0)
-                properties["offsetY"] = arr.getDouble(1)
-                properties["offsetZ"] = arr.getDouble(2)
+                properties["offsetX"] = arr.getNumberAs<Double>(0)
+                properties["offsetY"] = arr.getNumberAs<Double>(1)
+                properties["offsetZ"] = arr.getNumberAs<Double>(2)
             }
 
             return mapToObject(properties, SeatComponent::class)
