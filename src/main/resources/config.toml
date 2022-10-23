@@ -1,0 +1,38 @@
+# XV Config
+# Vehicle plugin for miney man
+
+[world]
+sea_level = 63 # global sea level, used by some systems
+
+# material types for custom items, must match a Material exactly
+[material]
+vehicle = "IRON_HORSE_ARMOR"
+
+# culling system: destroy vehicles outside of border
+[culling]
+enabled = false
+period = 200 # how often in ticks
+border_min_x = -1000
+border_min_y = -1
+border_min_z = -1000
+border_max_x = 1000
+border_max_y = 300
+border_max_z = 1000
+
+
+# =========================================================
+# ADVANCED ENGINE CONFIG
+# =========================================================
+# generally dont need to touch these...
+
+# folders within `plugins/xv` containing item configs
+[paths]
+vehicle = "vehicle" # vehicle configs
+save = "save.json"  # save state
+backup = "backup"   # backup save states
+
+# save settings
+[save]
+period = 200 # how often in ticks to run save
+pipeline_length = 2 # how many ticks to split vehicle save into
+backup_period = 18000 # how often in ticks to save a long-term backup, default = 15 min
