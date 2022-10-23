@@ -12,6 +12,10 @@ import phonon.xv.util.mapToObject
  * Vehicles are rigid bodies, so no scale.
  */
 public data class TransformComponent(
+    // offset from parent element
+    val offsetX: Double = 0.0,
+    val offsetY: Double = 0.0,
+    val offsetZ: Double = 0.0,
     // minecraft world, immutable, don't allow moving between worlds :^(
     val world: World?,
 ): VehicleComponent {
@@ -35,8 +39,16 @@ public data class TransformComponent(
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): TransformComponent {
-            // currently nothing to parse
-            return TransformComponent(world = null)
+            // map with keys as constructor property names
+            val properties = HashMap<String, Any>()
+
+            toml.getArray("offset")?.let { arr ->
+                properties["offsetX"] = arr.getDouble(0)
+                properties["offsetY"] = arr.getDouble(1)
+                properties["offsetZ"] = arr.getDouble(2)
+            }
+
+            return mapToObject(properties, TransformComponent::class)
         }
     }
 }

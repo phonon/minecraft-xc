@@ -13,13 +13,13 @@ import phonon.xv.component.*
 import phonon.xv.core.*
 
 
-public class ArchetypeTest {
+public class ArchetypeTest() {
 
     /**
      * Test iterating an archetype
      */
     @Test
-    fun resize() {
+    fun iterator() {
         // manually insert archetypes
         val components = ComponentsStorage()
         components.archetypes.add(ArchetypeStorage(
@@ -54,16 +54,24 @@ public class ArchetypeTest {
         }
 
         // manually insert fuel components, then test iter across archetypes
+        // this needs to be changed when archetypes are properly implemented
         components.archetypes[1].fuel!!.add(FuelComponent(1.0, 1.0))
         components.archetypes[1].fuel!!.add(FuelComponent(2.0, 2.0))
+        components.archetypes[1].size = 2
         components.archetypes[2].fuel!!.add(FuelComponent(3.0, 3.0))
+        components.archetypes[2].size = 1
 
         val fuelExpected = listOf(1.0, 2.0, 3.0)
+        var count = 0
 
         for ( (i, v) in ComponentTuple1.query<FuelComponent>(components).withIndex() ) {
+            // println("i: $i, v: $v")
             val (_, fuel) = v
             assertEquals(fuelExpected[i], fuel.current)
+            count += 1
         }
+
+        assertEquals(3, count, "ComponentTuple Iterator should have 3 elements")
     }
 
 }

@@ -70,7 +70,7 @@ public object XV {
      * Re-initialize storages and re-load config.
      * TODO: async
      */
-    internal fun reload(async: Boolean = false) {
+    internal fun reload() {
         val timeStart = System.currentTimeMillis()
         
         // finish: print stats

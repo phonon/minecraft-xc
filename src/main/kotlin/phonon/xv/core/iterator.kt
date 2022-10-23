@@ -107,7 +107,7 @@ class ComponentTuple1Iterator<
         // initialize with first valid archetype
         if ( validArchetypes.size > 0 ) {
             val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
+            currElementCount = archetype.size
             currElementIds = archetype.elements
             currStorageA = getStorageA(archetype)
         }
@@ -118,22 +118,24 @@ class ComponentTuple1Iterator<
     }
 
     override fun next(): ComponentTuple1<A> {
-        // finished with this archetype, move to next
-        if ( elementIndex >= currElementCount ) {
-            currArchetypeIndex += 1
-            
-            val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
-            currElementIds = archetype.elements
-            currStorageA = getStorageA(archetype)
-
-            elementIndex = 0
-        }
-
         val id = currElementIds!![elementIndex]
         val a = currStorageA!![elementIndex]
         elementIndex += 1
 
+        // finished with this archetype, move to next
+        if ( elementIndex >= currElementCount ) {
+            currArchetypeIndex += 1
+            
+            if ( currArchetypeIndex < validArchetypes.size ) {
+                val archetype = validArchetypes[currArchetypeIndex]
+                currElementCount = archetype.size
+                currElementIds = archetype.elements
+                currStorageA = getStorageA(archetype)
+    
+                elementIndex = 0
+            }
+        }
+        
         return ComponentTuple1(id, a)
     }
 }
@@ -206,7 +208,7 @@ class ComponentTuple2Iterator<
         // initialize with first valid archetype
         if ( validArchetypes.size > 0 ) {
             val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
+            currElementCount = archetype.size
             currElementIds = archetype.elements
             currStorageA = getStorageA(archetype)
             currStorageB = getStorageB(archetype)
@@ -218,24 +220,26 @@ class ComponentTuple2Iterator<
     }
 
     override fun next(): ComponentTuple2<A, B> {
-        // finished with this archetype, move to next
-        if ( elementIndex >= currElementCount ) {
-            currArchetypeIndex += 1
-            
-            val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
-            currElementIds = archetype.elements
-            currStorageA = getStorageA(archetype)
-            currStorageB = getStorageB(archetype)
-
-            elementIndex = 0
-        }
-
         val id = currElementIds!![elementIndex]
         val a = currStorageA!![elementIndex]
         val b = currStorageB!![elementIndex]
         elementIndex += 1
 
+        // finished with this archetype, move to next
+        if ( elementIndex >= currElementCount ) {
+            currArchetypeIndex += 1
+            
+            if ( currArchetypeIndex < validArchetypes.size ) {
+                val archetype = validArchetypes[currArchetypeIndex]
+                currElementCount = archetype.size
+                currElementIds = archetype.elements
+                currStorageA = getStorageA(archetype)
+                currStorageB = getStorageB(archetype)
+    
+                elementIndex = 0
+            }
+        }
+        
         return ComponentTuple2(id, a, b)
     }
 }
@@ -317,7 +321,7 @@ class ComponentTuple3Iterator<
         // initialize with first valid archetype
         if ( validArchetypes.size > 0 ) {
             val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
+            currElementCount = archetype.size
             currElementIds = archetype.elements
             currStorageA = getStorageA(archetype)
             currStorageB = getStorageB(archetype)
@@ -330,26 +334,28 @@ class ComponentTuple3Iterator<
     }
 
     override fun next(): ComponentTuple3<A, B, C> {
-        // finished with this archetype, move to next
-        if ( elementIndex >= currElementCount ) {
-            currArchetypeIndex += 1
-            
-            val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
-            currElementIds = archetype.elements
-            currStorageA = getStorageA(archetype)
-            currStorageB = getStorageB(archetype)
-            currStorageC = getStorageC(archetype)
-
-            elementIndex = 0
-        }
-
         val id = currElementIds!![elementIndex]
         val a = currStorageA!![elementIndex]
         val b = currStorageB!![elementIndex]
         val c = currStorageC!![elementIndex]
         elementIndex += 1
 
+        // finished with this archetype, move to next
+        if ( elementIndex >= currElementCount ) {
+            currArchetypeIndex += 1
+            
+            if ( currArchetypeIndex < validArchetypes.size ) {
+                val archetype = validArchetypes[currArchetypeIndex]
+                currElementCount = archetype.size
+                currElementIds = archetype.elements
+                currStorageA = getStorageA(archetype)
+                currStorageB = getStorageB(archetype)
+                currStorageC = getStorageC(archetype)
+    
+                elementIndex = 0
+            }
+        }
+        
         return ComponentTuple3(id, a, b, c)
     }
 }
@@ -440,7 +446,7 @@ class ComponentTuple4Iterator<
         // initialize with first valid archetype
         if ( validArchetypes.size > 0 ) {
             val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
+            currElementCount = archetype.size
             currElementIds = archetype.elements
             currStorageA = getStorageA(archetype)
             currStorageB = getStorageB(archetype)
@@ -454,21 +460,6 @@ class ComponentTuple4Iterator<
     }
 
     override fun next(): ComponentTuple4<A, B, C, D> {
-        // finished with this archetype, move to next
-        if ( elementIndex >= currElementCount ) {
-            currArchetypeIndex += 1
-            
-            val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
-            currElementIds = archetype.elements
-            currStorageA = getStorageA(archetype)
-            currStorageB = getStorageB(archetype)
-            currStorageC = getStorageC(archetype)
-            currStorageD = getStorageD(archetype)
-
-            elementIndex = 0
-        }
-
         val id = currElementIds!![elementIndex]
         val a = currStorageA!![elementIndex]
         val b = currStorageB!![elementIndex]
@@ -476,6 +467,23 @@ class ComponentTuple4Iterator<
         val d = currStorageD!![elementIndex]
         elementIndex += 1
 
+        // finished with this archetype, move to next
+        if ( elementIndex >= currElementCount ) {
+            currArchetypeIndex += 1
+            
+            if ( currArchetypeIndex < validArchetypes.size ) {
+                val archetype = validArchetypes[currArchetypeIndex]
+                currElementCount = archetype.size
+                currElementIds = archetype.elements
+                currStorageA = getStorageA(archetype)
+                currStorageB = getStorageB(archetype)
+                currStorageC = getStorageC(archetype)
+                currStorageD = getStorageD(archetype)
+    
+                elementIndex = 0
+            }
+        }
+        
         return ComponentTuple4(id, a, b, c, d)
     }
 }
@@ -575,7 +583,7 @@ class ComponentTuple5Iterator<
         // initialize with first valid archetype
         if ( validArchetypes.size > 0 ) {
             val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
+            currElementCount = archetype.size
             currElementIds = archetype.elements
             currStorageA = getStorageA(archetype)
             currStorageB = getStorageB(archetype)
@@ -590,22 +598,6 @@ class ComponentTuple5Iterator<
     }
 
     override fun next(): ComponentTuple5<A, B, C, D, E> {
-        // finished with this archetype, move to next
-        if ( elementIndex >= currElementCount ) {
-            currArchetypeIndex += 1
-            
-            val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
-            currElementIds = archetype.elements
-            currStorageA = getStorageA(archetype)
-            currStorageB = getStorageB(archetype)
-            currStorageC = getStorageC(archetype)
-            currStorageD = getStorageD(archetype)
-            currStorageE = getStorageE(archetype)
-
-            elementIndex = 0
-        }
-
         val id = currElementIds!![elementIndex]
         val a = currStorageA!![elementIndex]
         val b = currStorageB!![elementIndex]
@@ -614,6 +606,24 @@ class ComponentTuple5Iterator<
         val e = currStorageE!![elementIndex]
         elementIndex += 1
 
+        // finished with this archetype, move to next
+        if ( elementIndex >= currElementCount ) {
+            currArchetypeIndex += 1
+            
+            if ( currArchetypeIndex < validArchetypes.size ) {
+                val archetype = validArchetypes[currArchetypeIndex]
+                currElementCount = archetype.size
+                currElementIds = archetype.elements
+                currStorageA = getStorageA(archetype)
+                currStorageB = getStorageB(archetype)
+                currStorageC = getStorageC(archetype)
+                currStorageD = getStorageD(archetype)
+                currStorageE = getStorageE(archetype)
+    
+                elementIndex = 0
+            }
+        }
+        
         return ComponentTuple5(id, a, b, c, d, e)
     }
 }
@@ -722,7 +732,7 @@ class ComponentTuple6Iterator<
         // initialize with first valid archetype
         if ( validArchetypes.size > 0 ) {
             val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
+            currElementCount = archetype.size
             currElementIds = archetype.elements
             currStorageA = getStorageA(archetype)
             currStorageB = getStorageB(archetype)
@@ -738,23 +748,6 @@ class ComponentTuple6Iterator<
     }
 
     override fun next(): ComponentTuple6<A, B, C, D, E, F> {
-        // finished with this archetype, move to next
-        if ( elementIndex >= currElementCount ) {
-            currArchetypeIndex += 1
-            
-            val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
-            currElementIds = archetype.elements
-            currStorageA = getStorageA(archetype)
-            currStorageB = getStorageB(archetype)
-            currStorageC = getStorageC(archetype)
-            currStorageD = getStorageD(archetype)
-            currStorageE = getStorageE(archetype)
-            currStorageF = getStorageF(archetype)
-
-            elementIndex = 0
-        }
-
         val id = currElementIds!![elementIndex]
         val a = currStorageA!![elementIndex]
         val b = currStorageB!![elementIndex]
@@ -764,6 +757,25 @@ class ComponentTuple6Iterator<
         val f = currStorageF!![elementIndex]
         elementIndex += 1
 
+        // finished with this archetype, move to next
+        if ( elementIndex >= currElementCount ) {
+            currArchetypeIndex += 1
+            
+            if ( currArchetypeIndex < validArchetypes.size ) {
+                val archetype = validArchetypes[currArchetypeIndex]
+                currElementCount = archetype.size
+                currElementIds = archetype.elements
+                currStorageA = getStorageA(archetype)
+                currStorageB = getStorageB(archetype)
+                currStorageC = getStorageC(archetype)
+                currStorageD = getStorageD(archetype)
+                currStorageE = getStorageE(archetype)
+                currStorageF = getStorageF(archetype)
+    
+                elementIndex = 0
+            }
+        }
+        
         return ComponentTuple6(id, a, b, c, d, e, f)
     }
 }

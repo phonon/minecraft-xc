@@ -74,7 +74,7 @@ class ComponentTuple{{ n }}Iterator<
         // initialize with first valid archetype
         if ( validArchetypes.size > 0 ) {
             val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
+            currElementCount = archetype.size
             currElementIds = archetype.elements
             {%- for ty in types %}
             currStorage{{ ty }} = getStorage{{ ty }}(archetype)
@@ -87,26 +87,28 @@ class ComponentTuple{{ n }}Iterator<
     }
 
     override fun next(): ComponentTuple{{ n }}<{{ types_list }}> {
-        // finished with this archetype, move to next
-        if ( elementIndex >= currElementCount ) {
-            currArchetypeIndex += 1
-            
-            val archetype = validArchetypes[currArchetypeIndex]
-            currElementCount = archetype.elements.size
-            currElementIds = archetype.elements
-            {%- for ty in types %}
-            currStorage{{ ty }} = getStorage{{ ty }}(archetype)
-            {%- endfor %}
-
-            elementIndex = 0
-        }
-
         val id = currElementIds!![elementIndex]
         {%- for ty in types %}
         val {{ ty.lower() }} = currStorage{{ ty }}!![elementIndex]
         {%- endfor %}
         elementIndex += 1
 
+        // finished with this archetype, move to next
+        if ( elementIndex >= currElementCount ) {
+            currArchetypeIndex += 1
+            
+            if ( currArchetypeIndex < validArchetypes.size ) {
+                val archetype = validArchetypes[currArchetypeIndex]
+                currElementCount = archetype.size
+                currElementIds = archetype.elements
+                {%- for ty in types %}
+                currStorage{{ ty }} = getStorage{{ ty }}(archetype)
+                {%- endfor %}
+    
+                elementIndex = 0
+            }
+        }
+        
         return ComponentTuple{{ n }}(id, {{ types_list.lower() }})
     }
 }

@@ -20,6 +20,7 @@ val OUTPUT_JAR_NAME = "xv"
 var target = ""
 
 plugins {
+    id("io.papermc.paperweight.userdev") version "1.3.8"
     // Apply the Kotlin JVM plugin to add support for Kotlin.
     id("org.jetbrains.kotlin.jvm") version "1.6.10"
     id("com.github.johnrengelman.shadow") version "7.0.0"
@@ -76,10 +77,6 @@ dependencies {
     // toml parsing library
     compileOnly("org.tomlj:tomlj:1.0.0")
 
-    // // bukkit, spigot mc 1.16.3
-    // compileOnly(files("./lib/spigot-1.16.5.jar"))
-    // compileOnly(files("./lib/craftbukkit-1.16.5.jar"))
-
     // protocol lib (for packets)
     // compileOnly("com.comphenix.protocol:ProtocolLib:4.5.0")
     // compileOnly(files("./lib/ProtocolLib.jar")) // local
@@ -94,15 +91,17 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test")
 
     // Use the Kotlin JUnit integration.
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
     if ( project.hasProperty("1.12") === true ) {
         compileOnly("com.destroystokyo.paper:paper-api:1.12.2-R0.1-SNAPSHOT")
         target = "1.12"
     } else if ( project.hasProperty("1.16") === true ) {
+        paperDevBundle("1.16.5-R0.1-SNAPSHOT")
         compileOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
         target = "1.16"
     } else if ( project.hasProperty("1.18") === true ) {
+        paperDevBundle("1.18.2-R0.1-SNAPSHOT")
         compileOnly("io.papermc.paper:paper-api:1.18.2-R0.1-SNAPSHOT")
         target = "1.18"
     }
@@ -139,6 +138,7 @@ tasks {
     }
     
     test {
+        useJUnitPlatform()
         testLogging.showStandardStreams = true
     }
 }

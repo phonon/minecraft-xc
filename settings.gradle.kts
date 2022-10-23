@@ -6,5 +6,11 @@
  * Detailed information about configuring a multi-project build in Gradle can be found
  * in the user manual at https://docs.gradle.org/6.0.1/userguide/multi_project_builds.html
  */
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven("https://repo.papermc.io/repository/maven-public/")
+    }
+}
 
 rootProject.name = "xv"

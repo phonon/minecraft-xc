@@ -71,7 +71,7 @@ public class ArchetypeStorage(
     val maxElements: Int,
 ) {
     public var size: Int = 0
-        private set // outside should never change size
+        // private set // TODO: when implemented, outside should never change size
     
     // map from vehicle element id => element's dense array index
     // TODO: replace with specialized Densemap
