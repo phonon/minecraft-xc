@@ -1,8 +1,11 @@
-
 package phonon.xv.component
 
+import java.util.logging.Logger
+import org.tomlj.TomlTable
 import org.bukkit.entity.Player
 import phonon.xv.core.VehicleComponent
+import phonon.xv.util.mapToObject
+
 
 /**
  * Land movement controls component.
@@ -66,4 +69,36 @@ public data class LandMovementControlsComponent(
     // current motion state
     var speed: Double = 0.0
     var yawRotationSpeed: Double = 0.0
+
+
+    companion object {
+        @Suppress("UNUSED_PARAMETER")
+        public fun fromToml(toml: TomlTable, _logger: Logger? = null): LandMovementControlsComponent {
+            // map with keys as constructor property names
+            val properties = HashMap<String, Any>()
+
+            // translational motion
+            toml.getDouble("acceleration")?.let { properties["acceleration"] = it }
+            toml.getDouble("deceleration_multiplier")?.let { properties["decelerationMultiplier"] = it }
+            toml.getDouble("speed_max_forward")?.let { properties["speedMaxForward"] = it }
+            toml.getDouble("speed_max_reverse")?.let { properties["speedMaxReverse"] = it }
+            
+            // rotational motion
+            toml.getDouble("yaw_rotation_acceleration")?.let { properties["yawRotationAcceleration"] = it }
+            toml.getDouble("yaw_rotation_deceleration_multiplier")?.let { properties["yawRotationDecelerationMultiplier"] = it }
+            toml.getDouble("yaw_rotation_speed_max")?.let { properties["yawRotationSpeedMax"] = it }
+
+            // contact points
+            toml.getArray("contact_points")?.let { arr ->
+                // need to manually parse array of 12 double points
+                val points = DoubleArray(12)
+                for ( i in 0 until 12 ) {
+                    points[i] = arr.getDouble(i)
+                }
+                properties["contactPoints"] = points
+            }
+
+            return mapToObject(properties, LandMovementControlsComponent::class)
+        }
+    }
 }

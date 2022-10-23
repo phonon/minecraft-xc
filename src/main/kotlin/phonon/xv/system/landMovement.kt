@@ -27,6 +27,7 @@ public fun systemLandMovement(
         LandMovementControlsComponent,
     >(storage) ) {
         // clear transform dirty flags
+        transform.positionDirty = false
         transform.yawDirty = false
 
         // update speed/turning from player input

@@ -13,14 +13,18 @@ https://jinja.palletsprojects.com/en/3.1.x/templates/
 # Mappings from ENUM => ComponentType
 components = {
     "FUEL": "FuelComponent",
+    "GUN_TURRET": "GunTurretComponent",
     "HEALTH": "HealthComponent",
     "LAND_MOVEMENT_CONTROLS": "LandMovementControlsComponent",
     "MODEL": "ModelComponent",
+    "SEAT": "SeatComponent",
     "TRANSFORM": "TransformComponent",
 }
 
+from dataclasses import dataclass
 import os
 import shutil
+from re import sub
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 DIR_TEMPLATES = os.path.join("scripts", "templates")
@@ -30,6 +34,32 @@ env = Environment(
     loader=FileSystemLoader(DIR_TEMPLATES),
     autoescape=select_autoescape()
 )
+
+def to_camelcase(s):
+    s = sub(r"(_|-)+", " ", s).title().replace(" ", "").replace("*","")
+    return "".join([s[0].lower(), s[1:]])
+
+@dataclass
+class ComponentType():
+    """Wrapper for component type data for template with more field
+    names:
+    - .enum: enum type name (in capital snake case, e.g. LAND_MOVEMENT_CONTROLS)
+    - .component: component class type name (e.g. LandMovementControlsComponent)
+    - .storage: component storage field archetype, prototype in camelCase (e.g. landMovementControls)
+    - .config_name: field name for toml config in snake case (e.g. land_movement_controls)
+    """
+    enum: str
+    component: str
+    storage: str
+    config_name: str
+
+    def __init__(self, enum, component):
+        self.enum = enum
+        self.component = component
+        self.storage = to_camelcase(enum)
+        self.config_name = enum.lower()
+
+components = [ComponentType(enum, component) for enum, component in components.items()]
 
 # ==================================================
 # archetype, prototype enum hard-codings

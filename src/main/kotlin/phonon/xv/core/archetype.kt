@@ -26,9 +26,11 @@ import phonon.xv.component.*
  */
 public enum class VehicleComponentType {
     FUEL,
+    GUN_TURRET,
     HEALTH,
     LAND_MOVEMENT_CONTROLS,
     MODEL,
+    SEAT,
     TRANSFORM,
     ;
 
@@ -39,9 +41,11 @@ public enum class VehicleComponentType {
         public inline fun <reified T: VehicleComponent> from(): VehicleComponentType {
             return when ( T::class ) {
                 FuelComponent::class -> VehicleComponentType.FUEL
+                GunTurretComponent::class -> VehicleComponentType.GUN_TURRET
                 HealthComponent::class -> VehicleComponentType.HEALTH
                 LandMovementControlsComponent::class -> VehicleComponentType.LAND_MOVEMENT_CONTROLS
                 ModelComponent::class -> VehicleComponentType.MODEL
+                SeatComponent::class -> VehicleComponentType.SEAT
                 TransformComponent::class -> VehicleComponentType.TRANSFORM
                 else -> throw Exception("Unknown component type")
             }
@@ -79,9 +83,11 @@ public class ArchetypeStorage(
     // dense packed components
     // only components in layout will be non-null
     public val fuel: ArrayList<FuelComponent>? = if ( layout.contains(VehicleComponentType.FUEL) ) ArrayList() else null
+    public val gunTurret: ArrayList<GunTurretComponent>? = if ( layout.contains(VehicleComponentType.GUN_TURRET) ) ArrayList() else null
     public val health: ArrayList<HealthComponent>? = if ( layout.contains(VehicleComponentType.HEALTH) ) ArrayList() else null
-    public val land_movement_controls: ArrayList<LandMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.LAND_MOVEMENT_CONTROLS) ) ArrayList() else null
+    public val landMovementControls: ArrayList<LandMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.LAND_MOVEMENT_CONTROLS) ) ArrayList() else null
     public val model: ArrayList<ModelComponent>? = if ( layout.contains(VehicleComponentType.MODEL) ) ArrayList() else null
+    public val seat: ArrayList<SeatComponent>? = if ( layout.contains(VehicleComponentType.SEAT) ) ArrayList() else null
     public val transform: ArrayList<TransformComponent>? = if ( layout.contains(VehicleComponentType.TRANSFORM) ) ArrayList() else null
     
 
@@ -103,9 +109,11 @@ public class ArchetypeStorage(
         public inline fun <reified T> accessor(): (ArchetypeStorage) -> ArrayList<T> {
             return when ( T::class ) {
                 FuelComponent::class -> { archetype -> archetype.fuel as ArrayList<T> }
+                GunTurretComponent::class -> { archetype -> archetype.gunTurret as ArrayList<T> }
                 HealthComponent::class -> { archetype -> archetype.health as ArrayList<T> }
-                LandMovementControlsComponent::class -> { archetype -> archetype.land_movement_controls as ArrayList<T> }
+                LandMovementControlsComponent::class -> { archetype -> archetype.landMovementControls as ArrayList<T> }
                 ModelComponent::class -> { archetype -> archetype.model as ArrayList<T> }
+                SeatComponent::class -> { archetype -> archetype.seat as ArrayList<T> }
                 TransformComponent::class -> { archetype -> archetype.transform as ArrayList<T> }
                 else -> throw Exception("Unknown component type")
             }

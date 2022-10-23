@@ -1,0 +1,16 @@
+# Simple vehicles do not have any duplicate components so
+# these only need a single element. In this case, we can
+# just write components directly in the config.
+# Parser will do a scan and recognize this only needs a
+# single anonymous element.
+
+name = "debug_car"
+
+# contains position, rotation, etc.
+[transform]
+
+# handles player's input controls for land movement
+[land_movement]
+acceleration = 0.1
+speed_max_forward = 0.4
+speed_max_reverse = 0.3

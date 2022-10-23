@@ -6,25 +6,22 @@ import org.bukkit.entity.Entity
 import phonon.xv.core.VehicleComponent
 import phonon.xv.util.mapToObject
 
-
 /**
- * Represents an ArmorStand model
+ * Represents an ArmorStand player seat
  */
-public data class ModelComponent(
+public data class SeatComponent(
     // armor stand local offset
     val offsetX: Double = 0.0,
     val offsetY: Double = 0.0,
     val offsetZ: Double = 0.0,
-    // hitbox size in blocks, at local position
-    val hitboxX: Double = 2.0,
-    val hitboxY: Double = 2.0,
-    val hitboxZ: Double = 2.0,
     // armor stand entity
     var armorstand: Entity? = null,
 ): VehicleComponent {
+
+
     companion object {
         @Suppress("UNUSED_PARAMETER")
-        public fun fromToml(toml: TomlTable, _logger: Logger? = null): ModelComponent {
+        public fun fromToml(toml: TomlTable, _logger: Logger? = null): SeatComponent {
             // map with keys as constructor property names
             val properties = HashMap<String, Any>()
 
@@ -33,14 +30,8 @@ public data class ModelComponent(
                 properties["offsetY"] = arr.getDouble(1)
                 properties["offsetZ"] = arr.getDouble(2)
             }
-            
-            toml.getArray("hitbox")?.let { arr ->
-                properties["hitboxX"] = arr.getDouble(0)
-                properties["hitboxY"] = arr.getDouble(1)
-                properties["hitboxZ"] = arr.getDouble(2)
-            }
 
-            return mapToObject(properties, ModelComponent::class)
+            return mapToObject(properties, SeatComponent::class)
         }
     }
 }

@@ -27,20 +27,87 @@
 
 package phonon.xv.core
 
+import java.nio.file.Path
 import java.util.EnumSet
+import java.util.logging.Logger
+import org.tomlj.Toml
+import org.tomlj.TomlTable
 import phonon.xv.component.*
 
 
 /**
- * Prototype contains a definition of a vehicle element's initial
- * components. Contains all possible components, but only the ones
- * in layout should be non-null.
+ * VehiclePrototype defines elements in a vehicle. Used as a base
+ * object to create new vehicles.
  */
 public data class VehiclePrototype(
+    val name: String,
+    val elements: Array<VehicleElementPrototype>,
+) {
+    companion object {
+        public fun fromTomlFile(source: Path, logger: Logger? = null): VehiclePrototype {
+            val toml = Toml.parse(source)
+
+            val name = toml.getString("name") ?: ""
+
+            // if this contains an elements table, parse each element
+            // else, parse entire doc as single toml table
+            val elements: Array<VehicleElementPrototype> = toml.getArray("elements")?.let { elems ->
+                ( 0 until elems.size() )
+                .map { i -> VehicleElementPrototype.fromToml(elems.getTable(i)) }
+                .toTypedArray()
+            } ?: arrayOf(VehicleElementPrototype.fromToml(toml))
+
+            return VehiclePrototype(name, elements)
+        }
+    }
+}
+
+/**
+ * VehicleElementPrototype defines a vehicle element's initial components.
+ * Contains all possible components, but only the ones in layout should
+ * be non-null.
+ */
+public data class VehicleElementPrototype(
+    val name: String,
+    val parent: String?,
     val layout: EnumSet<VehicleComponentType>,
-    {%- for en, component in components.items() %}
-    val {{ en.lower() }}: {{ component }}? = null,
+    {%- for c in components %}
+    val {{ c.storage }}: {{ c.component }}? = null,
     {%- endfor %}
 ) {
+    companion object {
+        public fun fromToml(toml: TomlTable, logger: Logger? = null): VehicleElementPrototype {
+            // element built-in properties
+            val name = toml.getString("name") ?: ""
+            val parent = toml.getString("parent")
+            
+            // all possible components to be parsed
+            {%- for c in components %}
+            var {{ c.storage }}: {{ c.component }}? = null
+            {%- endfor %}
 
+            // parse components from matching keys in toml
+            val layout = EnumSet.noneOf(VehicleComponentType::class.java)
+            val keys = toml.keySet()
+            for ( k in keys ) {
+                when ( k ) {
+                    {%- for c in components %}
+                    "{{ c.config_name }}" -> {
+                        layout.add(VehicleComponentType.{{ c.enum }})
+                        {{ c.storage }} = {{ c.component }}.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    {%- endfor %}
+                }
+            }
+            
+            return VehicleElementPrototype(
+                name,
+                parent,
+                layout,
+                {%- for c in components %}
+                {{ c.storage }},
+                {%- endfor %}
+            )
+        }
+    }
 }

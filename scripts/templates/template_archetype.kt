@@ -25,8 +25,8 @@ import phonon.xv.component.*
  * Note: keep in alphabetical order.
  */
 public enum class VehicleComponentType {
-    {%- for en in components.keys() %}
-    {{ en }},
+    {%- for c in components %}
+    {{ c.enum }},
     {%- endfor %}
     ;
 
@@ -36,8 +36,8 @@ public enum class VehicleComponentType {
          */
         public inline fun <reified T: VehicleComponent> from(): VehicleComponentType {
             return when ( T::class ) {
-                {%- for en, component in components.items() %}
-                {{ component }}::class -> VehicleComponentType.{{ en }}
+                {%- for c in components %}
+                {{ c.component }}::class -> VehicleComponentType.{{ c.enum }}
                 {%- endfor %}
                 else -> throw Exception("Unknown component type")
             }
@@ -74,8 +74,8 @@ public class ArchetypeStorage(
 
     // dense packed components
     // only components in layout will be non-null
-    {%- for en, component in components.items() %}
-    public val {{ en.lower() }}: ArrayList<{{ component }}>? = if ( layout.contains(VehicleComponentType.{{ en }}) ) ArrayList() else null
+    {%- for c in components %}
+    public val {{ c.storage }}: ArrayList<{{ c.component }}>? = if ( layout.contains(VehicleComponentType.{{ c.enum }}) ) ArrayList() else null
     {%- endfor %}
     
 
@@ -96,8 +96,8 @@ public class ArchetypeStorage(
         @Suppress("UNCHECKED_CAST")
         public inline fun <reified T> accessor(): (ArchetypeStorage) -> ArrayList<T> {
             return when ( T::class ) {
-                {%- for en, component in components.items() %}
-                {{ component }}::class -> { archetype -> archetype.{{ en.lower() }} as ArrayList<T> }
+                {%- for c in components %}
+                {{ c.component }}::class -> { archetype -> archetype.{{ c.storage }} as ArrayList<T> }
                 {%- endfor %}
                 else -> throw Exception("Unknown component type")
             }

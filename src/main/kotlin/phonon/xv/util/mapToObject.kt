@@ -13,6 +13,10 @@ import kotlin.reflect.KClass
  * have default values. This replaces Builder pattern.
  * Used in deserializing config files to generate objects,
  * with all-optional parameters.
+ * 
+ * Note: this is a slow function, so do not use in any hot paths.
+ * Only use for parsing configs which is only done at startup
+ * or reloads.
  */
 fun <T : Any> mapToObject(map: Map<String, Any>, clazz: KClass<T>) : T {
     // Get default constructor

@@ -1,8 +1,10 @@
 package phonon.xv.component
 
+import java.util.logging.Logger
+import org.tomlj.TomlTable
 import org.bukkit.World
 import phonon.xv.core.VehicleComponent
-
+import phonon.xv.util.mapToObject
 
 /**
  * Contains a vehicle elements world position and rotation.
@@ -11,7 +13,7 @@ import phonon.xv.core.VehicleComponent
  */
 public data class TransformComponent(
     // minecraft world, immutable, don't allow moving between worlds :^(
-    val world: World,
+    val world: World?,
 ): VehicleComponent {
     // world position
     var x: Double = 0.0
@@ -29,4 +31,12 @@ public data class TransformComponent(
 
     // flag that vehicle in water
     var inWater: Boolean = false
+
+    companion object {
+        @Suppress("UNUSED_PARAMETER")
+        public fun fromToml(toml: TomlTable, _logger: Logger? = null): TransformComponent {
+            // currently nothing to parse
+            return TransformComponent(world = null)
+        }
+    }
 }
