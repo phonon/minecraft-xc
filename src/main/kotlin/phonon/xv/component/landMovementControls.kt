@@ -49,13 +49,15 @@ import phonon.xv.util.toml.*
  * which needs a standard convention for point order.
  */
 public data class LandMovementControlsComponent(
+    // seat index that controls vehicle
+    val seatController: Int = 0,
     // translational speed parameters (all positive)
-    val acceleration: Double = 0.05,
+    val acceleration: Double = 0.02,
     val decelerationMultiplier: Double = 0.8,
     val speedMaxForward: Double = 0.4,
     val speedMaxReverse: Double = 0.3,
     // yaw turning rate parameters
-    val yawRotationAcceleration: Double = 0.02,
+    val yawRotationAcceleration: Double = 0.1,
     val yawRotationDecelerationMultiplier: Double = 0.5,
     val yawRotationSpeedMax: Double = 2.0,
     // contact points for ground detection
@@ -65,21 +67,20 @@ public data class LandMovementControlsComponent(
         1.2, 0.0, -2.0,
         -1.2, 0.0, -2.0,
     ),
+    // current motion state
+    var speed: Double = 0.0,
+    var yawRotationSpeed: Double = 0.0,
 ): VehicleComponent {
     override val type = VehicleComponentType.LAND_MOVEMENT_CONTROLS
-
-    // player controller for vehicle
-    var player: Player? = null
-    // current motion state
-    var speed: Double = 0.0
-    var yawRotationSpeed: Double = 0.0
-
 
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): LandMovementControlsComponent {
             // map with keys as constructor property names
             val properties = HashMap<String, Any>()
+
+            // seat controller
+            toml.getLong("seat_controller")?.let { properties["seatController"] = it.toInt() }
 
             // translational motion
             toml.getNumberAs<Double>("acceleration")?.let { properties["acceleration"] = it }

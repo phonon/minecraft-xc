@@ -9,8 +9,20 @@ name = "debug_tank"
 # contains position, rotation, etc.
 [transform]
 
+# armor stand model
+[model]
+seat_to_mount = 0 # seat mounted when clicked
+
+# seats, needed for controllable vehicle
+[seats]
+count = 1
+offsets = [
+    -0.7, 0.25, 0.0,
+]
+
 # handles player's input controls for land movement
 [land_movement_controls]
-acceleration = 0.05
+seat_controller = 0
+acceleration = 0.03
 speed_max_forward = 0.3
 speed_max_reverse = 0.2

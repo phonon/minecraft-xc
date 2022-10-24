@@ -10,9 +10,21 @@ name = "base"
 # main boat position, rotation, etc.
 [element.transform]
 
+# armor stand model
+[element.model]
+seat_to_mount = 0 # seat mounted when clicked
+
+# seats, needed for controllable vehicle
+[element.seats]
+count = 1
+offsets = [
+    0.0, 1.0, 0.0,
+]
+
 # handles player's input controls for land movement
 [element.land_movement_controls]
-acceleration = 0.05
+seat_controller = 0
+acceleration = 0.03
 speed_max_forward = 0.3
 speed_max_reverse = 0.2
 

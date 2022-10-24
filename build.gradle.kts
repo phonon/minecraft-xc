@@ -80,7 +80,7 @@ dependencies {
     configurations["resolvableImplementation"]("org.tomlj:tomlj:1.0.0")
 
     // protocol lib (for packets)
-    // compileOnly("com.comphenix.protocol:ProtocolLib:4.5.0")
+    compileOnly("com.comphenix.protocol:ProtocolLib:4.7.0")
     // compileOnly(files("./lib/ProtocolLib.jar")) // local
     
     // xc (combat core)

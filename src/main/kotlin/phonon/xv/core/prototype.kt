@@ -57,11 +57,11 @@ public data class VehiclePrototype(
 
                 // if this contains an elements table, parse each element
                 // else, parse entire doc as single toml table
-                val elements: Array<VehicleElementPrototype> = toml.getArray("element")?.let { elems ->
+                val elements: Array<VehicleElementPrototype> = toml.getArray("elements")?.let { elems ->
                     ( 0 until elems.size() )
-                    .map { i -> VehicleElementPrototype.fromToml(elems.getTable(i), logger) }
+                    .map { i -> VehicleElementPrototype.fromToml(elems.getTable(i)) }
                     .toTypedArray()
-                } ?: arrayOf(VehicleElementPrototype.fromToml(toml, logger))
+                } ?: arrayOf(VehicleElementPrototype.fromToml(toml))
 
                 return VehiclePrototype(name, elements)
             } catch (e: Exception) {
@@ -87,7 +87,7 @@ public data class VehicleElementPrototype(
     val health: HealthComponent? = null,
     val landMovementControls: LandMovementControlsComponent? = null,
     val model: ModelComponent? = null,
-    val seat: SeatComponent? = null,
+    val seats: SeatsComponent? = null,
     val transform: TransformComponent? = null,
 ) {
     companion object {
@@ -102,7 +102,7 @@ public data class VehicleElementPrototype(
             var health: HealthComponent? = null
             var landMovementControls: LandMovementControlsComponent? = null
             var model: ModelComponent? = null
-            var seat: SeatComponent? = null
+            var seats: SeatsComponent? = null
             var transform: TransformComponent? = null
 
             // parse components from matching keys in toml
@@ -131,15 +131,15 @@ public data class VehicleElementPrototype(
                         layout.add(VehicleComponentType.MODEL)
                         model = ModelComponent.fromToml(toml.getTable(k)!!, logger)
                     }
-                    "seat" -> {
-                        layout.add(VehicleComponentType.SEAT)
-                        seat = SeatComponent.fromToml(toml.getTable(k)!!, logger)
+                    "seats" -> {
+                        layout.add(VehicleComponentType.SEATS)
+                        seats = SeatsComponent.fromToml(toml.getTable(k)!!, logger)
                     }
                     "transform" -> {
                         layout.add(VehicleComponentType.TRANSFORM)
                         transform = TransformComponent.fromToml(toml.getTable(k)!!, logger)
                     }
-                    else -> logger?.warning("Unknown key in vehicle element $name: $k")
+                    else -> logger?.warning("Unknown key in vehicle element: $k")
                 }
             }
             
@@ -152,7 +152,7 @@ public data class VehicleElementPrototype(
                 health,
                 landMovementControls,
                 model,
-                seat,
+                seats,
                 transform,
             )
         }

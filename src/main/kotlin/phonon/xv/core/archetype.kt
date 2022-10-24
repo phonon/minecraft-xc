@@ -30,7 +30,7 @@ public enum class VehicleComponentType {
     HEALTH,
     LAND_MOVEMENT_CONTROLS,
     MODEL,
-    SEAT,
+    SEATS,
     TRANSFORM,
     ;
 
@@ -45,7 +45,7 @@ public enum class VehicleComponentType {
                 HealthComponent::class -> VehicleComponentType.HEALTH
                 LandMovementControlsComponent::class -> VehicleComponentType.LAND_MOVEMENT_CONTROLS
                 ModelComponent::class -> VehicleComponentType.MODEL
-                SeatComponent::class -> VehicleComponentType.SEAT
+                SeatsComponent::class -> VehicleComponentType.SEATS
                 TransformComponent::class -> VehicleComponentType.TRANSFORM
                 else -> throw Exception("Unknown component type")
             }
@@ -88,9 +88,23 @@ public class ArchetypeStorage(
     public val health: ArrayList<HealthComponent>? = if ( layout.contains(VehicleComponentType.HEALTH) ) ArrayList() else null
     public val landMovementControls: ArrayList<LandMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.LAND_MOVEMENT_CONTROLS) ) ArrayList() else null
     public val model: ArrayList<ModelComponent>? = if ( layout.contains(VehicleComponentType.MODEL) ) ArrayList() else null
-    public val seat: ArrayList<SeatComponent>? = if ( layout.contains(VehicleComponentType.SEAT) ) ArrayList() else null
+    public val seats: ArrayList<SeatsComponent>? = if ( layout.contains(VehicleComponentType.SEATS) ) ArrayList() else null
     public val transform: ArrayList<TransformComponent>? = if ( layout.contains(VehicleComponentType.TRANSFORM) ) ArrayList() else null
     
+    /**
+     * Remove all elements from archetype.
+     */
+    public fun clear() {
+        size = 0
+        lookup.clear()
+        fuel?.clear()
+        gunTurret?.clear()
+        health?.clear()
+        landMovementControls?.clear()
+        model?.clear()
+        seats?.clear()
+        transform?.clear()
+    }
 
     public companion object {
         /**
@@ -114,7 +128,7 @@ public class ArchetypeStorage(
                 HealthComponent::class -> { archetype -> archetype.health as ArrayList<T> }
                 LandMovementControlsComponent::class -> { archetype -> archetype.landMovementControls as ArrayList<T> }
                 ModelComponent::class -> { archetype -> archetype.model as ArrayList<T> }
-                SeatComponent::class -> { archetype -> archetype.seat as ArrayList<T> }
+                SeatsComponent::class -> { archetype -> archetype.seats as ArrayList<T> }
                 TransformComponent::class -> { archetype -> archetype.transform as ArrayList<T> }
                 else -> throw Exception("Unknown component type")
             }

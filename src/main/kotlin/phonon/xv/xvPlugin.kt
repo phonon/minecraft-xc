@@ -8,6 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.command.TabCompleter
 import org.bukkit.event.HandlerList
 import kotlin.system.measureTimeMillis
+import com.comphenix.protocol.ProtocolLibrary
 import phonon.xv.command.*
 import phonon.xv.listener.*
 
@@ -26,6 +27,7 @@ public class XVPlugin : JavaPlugin() {
 
         // register listeners
         pluginManager.registerEvents(EventListener(this), this)
+        ProtocolLibrary.getProtocolManager().addPacketListener(ControlsListener(this))
 
         // register commands
         this.getCommand("xv")?.setExecutor(Command(this))
@@ -49,7 +51,8 @@ public class XVPlugin : JavaPlugin() {
     override fun onDisable() {
         XV.stop()
         XV.onDisable()
-        HandlerList.unregisterAll(this);
+        HandlerList.unregisterAll(this)
+        ProtocolLibrary.getProtocolManager().removePacketListeners(this)
         logger.info("wtf i hate xeth now")
     }
 }

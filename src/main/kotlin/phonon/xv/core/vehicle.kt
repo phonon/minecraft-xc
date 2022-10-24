@@ -53,3 +53,11 @@ public data class VehicleElement(
 ) {
 
 }
+
+/**
+ * Data linking entity with its vehicle element.
+ */
+public data class EntityVehicleData(
+    val elementId: VehicleElementId,
+    val componentType: VehicleComponentType,
+)

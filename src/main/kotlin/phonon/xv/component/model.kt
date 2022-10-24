@@ -21,6 +21,8 @@ public data class ModelComponent(
     val hitboxX: Double = 2.0,
     val hitboxY: Double = 2.0,
     val hitboxZ: Double = 2.0,
+    // seat to mount when clicked
+    val seatToMount: Int = 0,
     // armor stand entity
     var armorstand: Entity? = null,
 ): VehicleComponent {
@@ -43,6 +45,8 @@ public data class ModelComponent(
                 properties["hitboxY"] = arr.getNumberAs<Double>(1)
                 properties["hitboxZ"] = arr.getNumberAs<Double>(2)
             }
+
+            toml.getLong("seat_to_mount")?.let { properties["seatToMount"] = it.toInt() }
 
             return mapToObject(properties, ModelComponent::class)
         }

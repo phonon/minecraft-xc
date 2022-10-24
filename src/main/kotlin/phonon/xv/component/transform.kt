@@ -20,21 +20,22 @@ public data class TransformComponent(
     val offsetZ: Double = 0.0,
     // minecraft world, immutable, don't allow moving between worlds :^(
     val world: World? = null,
+    // current world position
+    var x: Double = 0.0,
+    var y: Double = 0.0,
+    var z: Double = 0.0,
+    // rotation
+    var yaw: Double = 0.0,
+    var pitch: Double = 0.0,
 ): VehicleComponent {
     override val type = VehicleComponentType.TRANSFORM
 
-    // world position
-    var x: Double = 0.0
-    var y: Double = 0.0
-    var z: Double = 0.0
     var positionDirty: Boolean = false
 
-    // rotation
-    var yaw: Double = 0.0
-    var yawf: Float = 0f
-    var yawRad: Double = 0.0
-    var yawSin: Double = 0.0
-    var yawCos: Double = 0.0
+    var yawf: Float = yaw.toFloat()
+    var yawRad: Double = Math.toRadians(yaw)
+    var yawSin: Double = Math.sin(yawRad)
+    var yawCos: Double = Math.cos(yawRad)
     var yawDirty: Boolean = false
 
     // flag that vehicle in water

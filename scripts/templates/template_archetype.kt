@@ -79,6 +79,17 @@ public class ArchetypeStorage(
     public val {{ c.storage }}: ArrayList<{{ c.component }}>? = if ( layout.contains(VehicleComponentType.{{ c.enum }}) ) ArrayList() else null
     {%- endfor %}
     
+    /**
+     * Remove all elements from archetype.
+     */
+    public fun clear() {
+        size = 0
+        lookup.clear()
+
+        {%- for c in components %}
+        {{ c.storage }}?.clear()
+        {%- endfor %}
+    }
 
     public companion object {
         /**

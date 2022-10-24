@@ -17,7 +17,7 @@ components = {
     "HEALTH": "HealthComponent",
     "LAND_MOVEMENT_CONTROLS": "LandMovementControlsComponent",
     "MODEL": "ModelComponent",
-    "SEAT": "SeatComponent",
+    "SEATS": "SeatsComponent",
     "TRANSFORM": "TransformComponent",
 }
 

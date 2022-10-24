@@ -32,11 +32,15 @@ public fun systemUpdateModels(
                 transform.y != modelPos.y ||
                 transform.z != modelPos.z
             ) {
-                modelPos.x = transform.x
-                modelPos.y = transform.y
-                modelPos.z = transform.z
+                // world position = transformPosition + Rotation * localPosition
+                // using only yaw (in-plane) rotation, pitch not supported by
+                // default since complicates things a lot...
+                // TODO: either make separate components that support rotations: none, yaw, yawpitch, etc...
+                // or add flags into the current model component
+                modelPos.x = transform.x + transform.yawCos * model.offsetX - transform.yawSin * model.offsetZ
+                modelPos.y = transform.y + model.offsetY
+                modelPos.z = transform.z + transform.yawSin * model.offsetX + transform.yawCos * model.offsetZ
                 modelPos.yaw = transform.yawf
-
                 armorstand.teleport(modelPos)
             }
         }

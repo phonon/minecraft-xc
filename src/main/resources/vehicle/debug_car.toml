@@ -9,8 +9,23 @@ name = "debug_car"
 # contains position, rotation, etc.
 [transform]
 
+# armor stand model
+[model]
+seat_to_mount = 0 # seat mounted when clicked
+
+# seats, needed for controllable vehicle
+[seats]
+count = 4
+offsets = [
+    1.0, -0.75, 1.0,   # front left
+    -1.0, -0.75, 1.0,  # front right
+    1.0, -0.75, -1.0,  # back left
+    -1.0, -0.75, -1.0, # back right
+]
+
 # handles player's input controls for land movement
 [land_movement_controls]
-acceleration = 0.1
+seat_controller = 0
+acceleration = 0.05
 speed_max_forward = 0.4
 speed_max_reverse = 0.3

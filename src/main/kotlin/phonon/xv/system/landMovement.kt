@@ -13,6 +13,7 @@ import org.bukkit.entity.Player
 import phonon.xv.core.*
 import phonon.xv.common.UserInput
 import phonon.xv.component.LandMovementControlsComponent
+import phonon.xv.component.SeatsComponent
 import phonon.xv.component.TransformComponent
 
 /**
@@ -22,8 +23,9 @@ public fun systemLandMovement(
     storage: ComponentsStorage,
     userInputs: Map<UUID, UserInput>,
 ) {
-    for ( (_, transform, landMovement) in ComponentTuple2.query<
+    for ( (_, transform, seats, landMovement) in ComponentTuple3.query<
         TransformComponent,
+        SeatsComponent,
         LandMovementControlsComponent,
     >(storage) ) {
         // clear transform dirty flags
@@ -31,7 +33,7 @@ public fun systemLandMovement(
         transform.yawDirty = false
 
         // update speed/turning from player input
-        val player = landMovement.player
+        val player = seats.passengers[landMovement.seatController]
         if ( player !== null ) {
             // get user input
             val controls = userInputs[player.getUniqueId()] ?: UserInput()
@@ -73,7 +75,7 @@ public fun systemLandMovement(
 
             // TURNING ROTATION CONTROLS
             var controllingYaw = false
-            val newYawSpeed = if ( controls.left ) {
+            val newYawSpeed = if ( controls.right ) {
                 controllingYaw = true
                 val r = if ( landMovement.yawRotationSpeed < 0 ) {
                     // apply deceleration first if inversing current motion
@@ -82,7 +84,7 @@ public fun systemLandMovement(
                     landMovement.yawRotationSpeed
                 }
                 r + landMovement.yawRotationAcceleration
-            } else if ( controls.backward ) {
+            } else if ( controls.left ) {
                 controllingYaw = true
                 val r = if ( landMovement.yawRotationSpeed > 0 ) {
                     // apply deceleration first if inversing current motion

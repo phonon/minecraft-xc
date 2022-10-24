@@ -20,9 +20,8 @@ import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 import org.bukkit.scheduler.BukkitTask
 import org.bukkit.scheduler.BukkitRunnable
+import phonon.xv.core.*
 import phonon.xv.system.*
-import phonon.xv.core.ComponentsStorage
-import phonon.xv.core.VehiclePrototype
 import phonon.xv.common.UserInput
 import phonon.xv.util.file.listDirFiles
 
@@ -49,6 +48,13 @@ public object XV {
 
     // user input controls when mounted on entities
     internal val userInputs: HashMap<UUID, UserInput> = HashMap()
+
+    // entity uuid => vehicle element data
+    internal val entityVehicleData: HashMap<UUID, EntityVehicleData> = HashMap()
+
+    // player mount and dismount requests
+    internal var mountRequests: ArrayList<MountVehicleRequest> = ArrayList()
+    internal var dismountRequests: ArrayList<DismountVehicleRequest> = ArrayList()
 
     // ========================================================================
     // RUNNING TASKS
@@ -150,13 +156,48 @@ public object XV {
 
     /**
      * Main engine update, runs on each tick
+     * 
+     * TODO: EVENTUAL OPTIMIZATION
+     * We will have MANY systems, some of which will be extremely specific
+     * for vehicle combinations that may not even exist in configs.
+     * An optimization is to convert systems into a singleton functions
+     * with layout metadata and/or queries, e.g.
+     * 
+     * interface System {
+     *   val layout: EnumSet<VehicleComponentType>?  // describes what components needed
+     *   var valid: Boolean   // cache if system valid for current config archetypes
+     * 
+     *   fun execute() {
+     *     // existing system function
+     *   }
+     * }
+     * 
+     * object SystemLandMovement: System {
+     *    override val layout = EnumSet.of(
+     *        VehicleComponentType.TRANSFORM,
+     *        VehicleComponentType.MODEL,
+     *        VehicleComponentType.LAND_MOVEMENT_CONTROLS,
+     *   )
+     *   override val valid = true // engine will update this
+     *   
+     *   override fun execute() { ... }
+     * }
+     * 
+     * And eventually convert update into a Schedule object that is
+     * re-created each time engine is reloaded, which updates each
+     * system's metadata to turn off invalid systems.
      */
     internal fun update() {
+        // mount and dismount request handlers
+        mountRequests = systemMountVehicle(storage, mountRequests)
+        dismountRequests = systemDismountVehicle(storage, dismountRequests)
+
         // player vehicle movement controls
         systemLandMovement(storage, userInputs)
 
         // update vehicle models after transforms updated
         // MUST BE RUN AFTER ALL MOVEMENT CONTROLLERS
         systemUpdateModels(storage)
+        systemUpdateSeats(storage, userInputs)
     }
 }

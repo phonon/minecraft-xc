@@ -43,10 +43,44 @@ import org.bukkit.event.player.PlayerInteractAtEntityEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerAnimationEvent
 import org.bukkit.potion.PotionEffectType
-import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent 
+import org.spigotmc.event.entity.EntityDismountEvent
 import phonon.xv.XV
-
+import phonon.xv.system.MountVehicleRequest
+import phonon.xv.system.DismountVehicleRequest
 
 public class EventListener(val plugin: JavaPlugin): Listener {
+    @EventHandler(priority = EventPriority.NORMAL)
+    public fun onPlayerEntityInteract(event: PlayerInteractAtEntityEvent) {
+        val player = event.getPlayer()
+        val entity = event.getRightClicked()
+        val uuid = entity.getUniqueId()
+        val vehicleData = XV.entityVehicleData[uuid]
+        if ( vehicleData !== null ) {
+            XV.mountRequests.add(MountVehicleRequest(
+                player = player,
+                elementId = vehicleData.elementId,
+                componentType = vehicleData.componentType,
+            ))
+        }
+    }
 
+    /**
+     * Note: this fires when player logs off while riding a vehicle
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public fun onEntityDismount(event: EntityDismountEvent) {
+        val player = event.getEntity()
+        if ( player is Player ) {
+            val entity = event.getDismounted()
+            val uuid = entity.getUniqueId()
+            val vehicleData = XV.entityVehicleData[uuid]
+            if ( vehicleData !== null ) {
+                XV.dismountRequests.add(DismountVehicleRequest(
+                    player = player,
+                    elementId = vehicleData.elementId,
+                    componentType = vehicleData.componentType,
+                ))
+            }
+        }
+    }
 }
