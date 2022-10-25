@@ -67,6 +67,8 @@ public data class LandMovementControlsComponent(
         1.2, 0.0, -2.0,
         -1.2, 0.0, -2.0,
     ),
+
+    // @skipall
     // current motion state
     var speed: Double = 0.0,
     var yawRotationSpeed: Double = 0.0,

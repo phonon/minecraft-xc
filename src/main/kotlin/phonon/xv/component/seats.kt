@@ -14,10 +14,14 @@ import phonon.xv.util.toml.*
  * Represents a list of multiple ArmorStand player seats
  */
 public data class SeatsComponent(
-    val count: Int = 0,
+    // number of seats
+    val count: Int = 1,
     // armor stand local offsets in a packed array format
     // [x0, y0, z0, x1, y1, z1, ...]
-    val offsets: DoubleArray = doubleArrayOf(),
+    // size must equal 3*count
+    val offsets: DoubleArray = doubleArrayOf(
+        0.0, 0.0, 0.0,
+    ),
 ): VehicleComponent {
     override val type = VehicleComponentType.SEATS
     

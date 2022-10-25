@@ -14,15 +14,19 @@ import phonon.xv.util.toml.*
  */
 public data class ModelComponent(
     // armor stand local offset
-    val offsetX: Double = 0.0,
-    val offsetY: Double = 0.0,
-    val offsetZ: Double = 0.0,
+    // @prop offset = [0.0, 0.0, 0.0]
+    val offsetX: Double = 0.0, // @skip
+    val offsetY: Double = 0.0, // @skip
+    val offsetZ: Double = 0.0, // @skip
     // hitbox size in blocks, at local position
-    val hitboxX: Double = 2.0,
-    val hitboxY: Double = 2.0,
-    val hitboxZ: Double = 2.0,
+    // @prop hitbox = [2.0, 2.0, 2.0]
+    val hitboxX: Double = 2.0, // @skip
+    val hitboxY: Double = 2.0, // @skip
+    val hitboxZ: Double = 2.0, // @skip
     // seat to mount when clicked
     val seatToMount: Int = 0,
+
+    // @skipall
     // armor stand entity
     var armorstand: Entity? = null,
 ): VehicleComponent {

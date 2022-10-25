@@ -1,0 +1,16 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# Represents a list of multiple ArmorStand player seat
+
+[seats]
+
+# number of seats
+count = 1
+
+# armor stand local offsets in a packed array format
+# [x0, y0, z0, x1, y1, z1, ...]
+# size must equal 3*count
+offsets = [
+    0.0, 0.0, 0.0,
+]

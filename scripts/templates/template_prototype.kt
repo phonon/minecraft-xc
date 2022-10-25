@@ -83,7 +83,7 @@ public data class VehicleElementPrototype(
     val parent: String?,
     val layout: EnumSet<VehicleComponentType>,
     {%- for c in components %}
-    val {{ c.storage }}: {{ c.component }}? = null,
+    val {{ c.storage }}: {{ c.classname }}? = null,
     {%- endfor %}
 ) {
     companion object {
@@ -94,7 +94,7 @@ public data class VehicleElementPrototype(
             
             // all possible components to be parsed
             {%- for c in components %}
-            var {{ c.storage }}: {{ c.component }}? = null
+            var {{ c.storage }}: {{ c.classname }}? = null
             {%- endfor %}
 
             // parse components from matching keys in toml
@@ -106,7 +106,7 @@ public data class VehicleElementPrototype(
                     {%- for c in components %}
                     "{{ c.config_name }}" -> {
                         layout.add(VehicleComponentType.{{ c.enum }})
-                        {{ c.storage }} = {{ c.component }}.fromToml(toml.getTable(k)!!, logger)
+                        {{ c.storage }} = {{ c.classname }}.fromToml(toml.getTable(k)!!, logger)
                     }
                     {%- endfor %}
                     else -> logger?.warning("Unknown key in vehicle element: $k")

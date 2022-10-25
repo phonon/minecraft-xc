@@ -1,0 +1,15 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# Represents an ArmorStand mode
+
+[model]
+
+# armor stand local offset
+offset = [0.0, 0.0, 0.0]
+
+# hitbox size in blocks, at local position
+hitbox = [2.0, 2.0, 2.0]
+
+# seat to mount when clicked
+seat_to_mount = 0

@@ -1,0 +1,33 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# Mouse-controlled rotating gun turret.
+# 
+# Component made from two armor stands:
+# - Turret: yaw (y-plane) rotation only
+# - Barrel: up/down rotation only in-plane,
+#           forward direction = turret yaw
+# 
+# Contains LOCAL position/rotation offsets from base element transform.
+# Controls system functions should always use this in combination
+# with a TransformComponent as the base transform position.
+# 
+# This also internally manages rendering armor stand models
+# for turret and barrel
+
+[gun_turret]
+
+# turret local offset relative to transform
+turret_offset = [0.0, 1.0, 0.0]
+
+# max turret half arc in degrees.
+turret_yaw_max = 90
+
+# barrel local offset relative to transform (NOT turret)
+barrel_offset = [0.0, 1.0, 0.0]
+
+# min barrel pitch rotation in degs
+barrel_pitch_min = -15
+
+# max barrel pitch rotation in degs
+barrel_pitch_max = 45

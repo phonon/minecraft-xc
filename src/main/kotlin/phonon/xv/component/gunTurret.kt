@@ -24,15 +24,17 @@ import phonon.xv.util.toml.*
  */
 public data class GunTurretComponent(
     // turret local offset relative to transform
-    val turretX: Double = 0.0,
-    val turretY: Double = 1.0,
-    val turretZ: Double = 0.0,
+    // @prop turret_offset = [0.0, 1.0, 0.0]
+    val turretX: Double = 0.0, // @skip
+    val turretY: Double = 1.0, // @skip
+    val turretZ: Double = 0.0, // @skip
     // max turret half arc in degrees.
     val turretYawMax: Float = 90f,
     // barrel local offset relative to transform (NOT turret)
-    val barrelX: Double = 0.0,
-    val barrelY: Double = 1.0,
-    val barrelZ: Double = 0.0,
+    // @prop barrel_offset = [0.0, 1.0, 0.0]
+    val barrelX: Double = 0.0, // @skip
+    val barrelY: Double = 1.0, // @skip
+    val barrelZ: Double = 0.0, // @skip
     // min barrel pitch rotation in degs
     val barrelPitchMin: Float = -15f,
     // max barrel pitch rotation in degs

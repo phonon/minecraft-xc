@@ -18,3 +18,8 @@ lib
 
 # python venv
 venv
+
+# python cache
+__pycache__/
+*.py[cod]
+*$py.class

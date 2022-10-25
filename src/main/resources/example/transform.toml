@@ -1,0 +1,11 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# Contains a vehicle elements world position and rotation.
+# 
+# Vehicles are rigid bodies, so no scale
+
+[transform]
+
+# offset from parent element
+offset = [0.0, 0.0, 0.0]

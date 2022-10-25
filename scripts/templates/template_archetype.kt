@@ -37,7 +37,7 @@ public enum class VehicleComponentType {
         public inline fun <reified T: VehicleComponent> from(): VehicleComponentType {
             return when ( T::class ) {
                 {%- for c in components %}
-                {{ c.component }}::class -> VehicleComponentType.{{ c.enum }}
+                {{ c.classname }}::class -> VehicleComponentType.{{ c.enum }}
                 {%- endfor %}
                 else -> throw Exception("Unknown component type")
             }
@@ -76,7 +76,7 @@ public class ArchetypeStorage(
     // dense packed components
     // only components in layout will be non-null
     {%- for c in components %}
-    public val {{ c.storage }}: ArrayList<{{ c.component }}>? = if ( layout.contains(VehicleComponentType.{{ c.enum }}) ) ArrayList() else null
+    public val {{ c.storage }}: ArrayList<{{ c.classname }}>? = if ( layout.contains(VehicleComponentType.{{ c.enum }}) ) ArrayList() else null
     {%- endfor %}
     
     /**
@@ -109,7 +109,7 @@ public class ArchetypeStorage(
         public inline fun <reified T> accessor(): (ArchetypeStorage) -> ArrayList<T> {
             return when ( T::class ) {
                 {%- for c in components %}
-                {{ c.component }}::class -> { archetype -> archetype.{{ c.storage }} as ArrayList<T> }
+                {{ c.classname }}::class -> { archetype -> archetype.{{ c.storage }} as ArrayList<T> }
                 {%- endfor %}
                 else -> throw Exception("Unknown component type")
             }

@@ -15,12 +15,16 @@ import phonon.xv.util.toml.*
  */
 public data class TransformComponent(
     // offset from parent element
-    val offsetX: Double = 0.0,
-    val offsetY: Double = 0.0,
-    val offsetZ: Double = 0.0,
+    // @prop offset = [0.0, 0.0, 0.0]
+    val offsetX: Double = 0.0, // @skip
+    val offsetY: Double = 0.0, // @skip
+    val offsetZ: Double = 0.0, // @skip
+
+    // @skipall
+    // RUNTIME MOTION STATE BELOW
     // minecraft world, immutable, don't allow moving between worlds :^(
     val world: World? = null,
-    // current world position
+    // current world position @skip runtime state
     var x: Double = 0.0,
     var y: Double = 0.0,
     var z: Double = 0.0,
