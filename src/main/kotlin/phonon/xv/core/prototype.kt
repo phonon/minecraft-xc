@@ -88,6 +88,7 @@ public data class VehicleElementPrototype(
     val landMovementControls: LandMovementControlsComponent? = null,
     val model: ModelComponent? = null,
     val seats: SeatsComponent? = null,
+    val seatsRaycast: SeatsRaycastComponent? = null,
     val transform: TransformComponent? = null,
 ) {
     companion object {
@@ -103,6 +104,7 @@ public data class VehicleElementPrototype(
             var landMovementControls: LandMovementControlsComponent? = null
             var model: ModelComponent? = null
             var seats: SeatsComponent? = null
+            var seatsRaycast: SeatsRaycastComponent? = null
             var transform: TransformComponent? = null
 
             // parse components from matching keys in toml
@@ -135,6 +137,10 @@ public data class VehicleElementPrototype(
                         layout.add(VehicleComponentType.SEATS)
                         seats = SeatsComponent.fromToml(toml.getTable(k)!!, logger)
                     }
+                    "seats_raycast" -> {
+                        layout.add(VehicleComponentType.SEATS_RAYCAST)
+                        seatsRaycast = SeatsRaycastComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
                     "transform" -> {
                         layout.add(VehicleComponentType.TRANSFORM)
                         transform = TransformComponent.fromToml(toml.getTable(k)!!, logger)
@@ -153,6 +159,7 @@ public data class VehicleElementPrototype(
                 landMovementControls,
                 model,
                 seats,
+                seatsRaycast,
                 transform,
             )
         }

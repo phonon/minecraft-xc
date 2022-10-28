@@ -11,7 +11,6 @@ name = "debug_car"
 
 # armor stand model
 [model]
-seat_to_mount = 0 # seat mounted when clicked
 
 # seats, needed for controllable vehicle
 [seats]
@@ -22,6 +21,9 @@ offsets = [
     1.0, -0.75, -1.0,  # back left
     -1.0, -0.75, -1.0, # back right
 ]
+
+# use seat raycasting for mounting
+[seats_raycast]
 
 # handles player's input controls for land movement
 [land_movement_controls]

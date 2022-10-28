@@ -24,7 +24,7 @@ public data class ModelComponent(
     val hitboxY: Double = 2.0, // @skip
     val hitboxZ: Double = 2.0, // @skip
     // seat to mount when clicked
-    val seatToMount: Int = 0,
+    val seatToMount: Int = -1, // -1 for none
 
     // @skipall
     // armor stand entity

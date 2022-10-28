@@ -216,7 +216,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
 
         val loc = player.location
 
-        // manually injecting [transform, model, landMovement] into archetype
+        // manually injecting [transform, model, seats, seatsRaycast, landMovement] into archetype
         // to test the movement system
 
         for ( element in prototype.elements ) {
@@ -224,6 +224,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
                 VehicleComponentType.TRANSFORM,
                 VehicleComponentType.MODEL,
                 VehicleComponentType.SEATS,
+                VehicleComponentType.SEATS_RAYCAST,
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS,
             )
             XV.storage.addLayout(layout)
@@ -238,11 +239,16 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
                 // armorstand.getEquipment()!!.setHelmet(createModel(Tank.modelMaterial, this.modelDataBody))
                 armorstand.setRotation(loc.yaw, 0f)
                 
-                // temporary
+                // temporary: using single archetype, just pushing element id
+                // to the end of a single archetype array
+                val elementId = archetype.size
+
                 XV.entityVehicleData[armorstand.getUniqueId()] = EntityVehicleData(
-                    elementId = archetype.size,
+                    elementId = elementId,
                     componentType = VehicleComponentType.MODEL,
                 )
+                
+                archetype.elements[archetype.size] = elementId
                 
                 // need better way to inject initialization parameters
                 // also MAKE SURE its a copy(), not a reference to
@@ -255,6 +261,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
                     yaw = loc.yaw.toDouble(),
                 ))
                 archetype.seats!!.add(element.seats!!.copy())
+                archetype.seatsRaycast!!.add(element.seatsRaycast!!.copy())
                 archetype.model!!.add(element.model!!.copy(
                     armorstand = armorstand,
                 ))

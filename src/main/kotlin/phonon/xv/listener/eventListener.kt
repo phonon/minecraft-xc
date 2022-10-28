@@ -65,6 +65,39 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     }
 
     /**
+     * Notes:
+     * - when right clicking, PlayerInteractEvent runs for both hands.
+     * - client generates false LEFT_CLICK_AIR events, see
+     * https://hub.spigotmc.org/jira/browse/SPIGOT-1955
+     * https://hub.spigotmc.org/jira/browse/SPIGOT-5435?focusedCommentId=35082&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel
+     * https://hub.spigotmc.org/jira/browse/SPIGOT-3049
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public fun onInteract(e: PlayerInteractEvent) {
+        // println("onInteract")
+        val player = e.getPlayer()
+        val action = e.getAction()
+
+        // println("ON PLAYER INTERACT EVENT: ${action} (hand=${e.getHand()}) (use=${e.useInteractedBlock()})")
+
+        // ignores off hand event
+        if ( e.getHand() != EquipmentSlot.HAND ) {
+            return
+        }
+
+        if ( action == Action.LEFT_CLICK_AIR ||
+            action == Action.LEFT_CLICK_BLOCK ||
+            action == Action.RIGHT_CLICK_AIR ||
+            action == Action.RIGHT_CLICK_BLOCK
+        ) {
+            XV.mountRequests.add(MountVehicleRequest(
+                player = player,
+                doRaycast = true,
+            ))
+        }
+    }
+
+    /**
      * Note: this fires when player logs off while riding a vehicle
      */
     @EventHandler(priority = EventPriority.NORMAL)

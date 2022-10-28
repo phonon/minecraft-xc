@@ -20,6 +20,11 @@ offsets = [
     -0.7, 0.25, 0.0,
 ]
 
+# seat raycasting for mounting
+# TODO: should be removed, only here for testing because
+# only 1 archetype layout supported
+[seats_raycast]
+
 # handles player's input controls for land movement
 [land_movement_controls]
 seat_controller = 0

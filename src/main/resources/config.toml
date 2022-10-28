@@ -19,6 +19,11 @@ border_max_x = 1000
 border_max_y = 300
 border_max_z = 1000
 
+# seat raycast mounting
+[seat_raycast]
+chunk_range = 1
+distance = 2.5
+debug = false
 
 # =========================================================
 # ADVANCED ENGINE CONFIG

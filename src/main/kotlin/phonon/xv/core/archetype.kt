@@ -31,6 +31,7 @@ public enum class VehicleComponentType {
     LAND_MOVEMENT_CONTROLS,
     MODEL,
     SEATS,
+    SEATS_RAYCAST,
     TRANSFORM,
     ;
 
@@ -46,6 +47,7 @@ public enum class VehicleComponentType {
                 LandMovementControlsComponent::class -> VehicleComponentType.LAND_MOVEMENT_CONTROLS
                 ModelComponent::class -> VehicleComponentType.MODEL
                 SeatsComponent::class -> VehicleComponentType.SEATS
+                SeatsRaycastComponent::class -> VehicleComponentType.SEATS_RAYCAST
                 TransformComponent::class -> VehicleComponentType.TRANSFORM
                 else -> throw Exception("Unknown component type")
             }
@@ -89,6 +91,7 @@ public class ArchetypeStorage(
     public val landMovementControls: ArrayList<LandMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.LAND_MOVEMENT_CONTROLS) ) ArrayList() else null
     public val model: ArrayList<ModelComponent>? = if ( layout.contains(VehicleComponentType.MODEL) ) ArrayList() else null
     public val seats: ArrayList<SeatsComponent>? = if ( layout.contains(VehicleComponentType.SEATS) ) ArrayList() else null
+    public val seatsRaycast: ArrayList<SeatsRaycastComponent>? = if ( layout.contains(VehicleComponentType.SEATS_RAYCAST) ) ArrayList() else null
     public val transform: ArrayList<TransformComponent>? = if ( layout.contains(VehicleComponentType.TRANSFORM) ) ArrayList() else null
     
     /**
@@ -103,6 +106,7 @@ public class ArchetypeStorage(
         landMovementControls?.clear()
         model?.clear()
         seats?.clear()
+        seatsRaycast?.clear()
         transform?.clear()
     }
 
@@ -129,6 +133,7 @@ public class ArchetypeStorage(
                 LandMovementControlsComponent::class -> { archetype -> archetype.landMovementControls as ArrayList<T> }
                 ModelComponent::class -> { archetype -> archetype.model as ArrayList<T> }
                 SeatsComponent::class -> { archetype -> archetype.seats as ArrayList<T> }
+                SeatsRaycastComponent::class -> { archetype -> archetype.seatsRaycast as ArrayList<T> }
                 TransformComponent::class -> { archetype -> archetype.transform as ArrayList<T> }
                 else -> throw Exception("Unknown component type")
             }

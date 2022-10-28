@@ -40,7 +40,12 @@ public data class Config(
     val cullingBorderMaxX: Double = 1000.0,
     val cullingBorderMaxY: Double = 300.0,
     val cullingBorderMaxZ: Double = 1000.0,
-    
+
+    // seat raycasting system parameters
+    val seatRaycastChunkRange: Int = 1, // avoid increasing since this is O(n^3)
+    val seatRaycastDistance: Double = 2.0, // max distance can mount seat
+    val seatRaycastDebug: Boolean = false, // show AABBs for debug
+
     // paths to vehicle configs
     val pathFilesVehicles: Path = Paths.get("plugins", "xv", "vehicle"),
     // paths to vehicle save state and backups
@@ -89,6 +94,13 @@ public data class Config(
                 culling.getNumberAs<Double>("border_max_x")?.let { configOptions["cullingBorderMaxX"] = it }
                 culling.getNumberAs<Double>("border_max_y")?.let { configOptions["cullingBorderMaxY"] = it }
                 culling.getNumberAs<Double>("border_max_z")?.let { configOptions["cullingBorderMaxZ"] = it }
+            }
+
+            // seat raycasting
+            toml.getTable("seat_raycast")?.let { seatRaycast -> 
+                seatRaycast.getLong("chunk_range")?.let { configOptions["seatRaycastChunkRange"] = it.toInt() }
+                seatRaycast.getNumberAs<Double>("distance")?.let { configOptions["seatRaycastDistance"] = it }
+                seatRaycast.getBoolean("debug")?.let { configOptions["seatRaycastDebug"] = it }
             }
 
             // paths

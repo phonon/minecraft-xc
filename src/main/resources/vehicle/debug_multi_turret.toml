@@ -14,6 +14,9 @@ name = "base"
 [element.model]
 seat_to_mount = 0 # seat mounted when clicked
 
+# use seat raycasting for mounting
+[element.seats_raycast]
+
 # seats, needed for controllable vehicle
 [element.seats]
 count = 1

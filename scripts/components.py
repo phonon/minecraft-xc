@@ -13,6 +13,7 @@ components = {
     "LAND_MOVEMENT_CONTROLS": "LandMovementControlsComponent",
     "MODEL": "ModelComponent",
     "SEATS": "SeatsComponent",
+    "SEATS_RAYCAST": "SeatsRaycastComponent",
     "TRANSFORM": "TransformComponent",
 }
 

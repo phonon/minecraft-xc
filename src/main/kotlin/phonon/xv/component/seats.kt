@@ -11,12 +11,29 @@ import phonon.xv.util.mapToObject
 import phonon.xv.util.toml.*
 
 /**
- * Represents a list of multiple ArmorStand player seats
+ * This adds a list of player seats to the vehicle element.
+ * 
+ * For mounting the seats there are two systems:
+ * 1. Direct mounting a seat index by right clicking an armorstand
+ *    model in the vehicle element. Set with "mount_seat = INDEX"
+ *    property on any component with armorstand models.
+ * 2. Custom raycasting system. Add a [seats_raycast] component to
+ *    the vehicle elment. Each seat location is given a special hitbox.
+ * 
+ * For vehicles with only a single seat (e.g. a single driver bike),
+ * use method 1. Just use "mount_seat" on the main model of the 
+ * vehicle element. Method 1 will be more efficient for vehicles
+ * that only need 1 seat per armorstand model.
+ * 
+ * For vehicles with many seats (e.g. car with 4 seats) and only a
+ * single model, you must use method 2. Add a [seats_raycast] component
+ * to the vehicle element. If using 2, avoid using any "mount_seat"
+ * properties as these systems will conflict.
  */
 public data class SeatsComponent(
     // number of seats
     val count: Int = 1,
-    // armor stand local offsets in a packed array format
+    // seat local offsets in a packed array format
     // [x0, y0, z0, x1, y1, z1, ...]
     // size must equal 3*count
     val offsets: DoubleArray = doubleArrayOf(

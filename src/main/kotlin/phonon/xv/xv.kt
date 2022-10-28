@@ -157,6 +157,17 @@ public object XV {
     /**
      * Main engine update, runs on each tick
      * 
+     * TODO: MULTI-WORLD
+     * If we want vehicles in overworld, nether, end...
+     * Need to run each world simulation separately
+     * Make per world storages and request queues
+     *     World => {
+     *      storage: ComponentsStorage,
+     *      playerMountRequests: ArrayList<MountVehicleRequest>,
+     *      ...
+     *     }
+     * (Some stuff still shared, like global UserInputs)
+     * 
      * TODO: EVENTUAL OPTIMIZATION
      * We will have MANY systems, some of which will be extremely specific
      * for vehicle combinations that may not even exist in configs.
@@ -189,7 +200,7 @@ public object XV {
      */
     internal fun update() {
         // mount and dismount request handlers
-        mountRequests = systemMountVehicle(storage, mountRequests)
+        mountRequests = systemMountVehicle(storage, mountRequests) // filters direct interaction mounting
         dismountRequests = systemDismountVehicle(storage, dismountRequests)
 
         // player vehicle movement controls
@@ -199,5 +210,8 @@ public object XV {
         // MUST BE RUN AFTER ALL MOVEMENT CONTROLLERS
         systemUpdateModels(storage)
         systemUpdateSeats(storage, userInputs)
+
+        // seat raycast mounting
+        mountRequests = systemMountSeatRaycast(storage, mountRequests)
     }
 }

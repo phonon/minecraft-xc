@@ -12,4 +12,8 @@ offset = [0.0, 0.0, 0.0]
 hitbox = [2.0, 2.0, 2.0]
 
 # seat to mount when clicked
-seat_to_mount = 0
+seat_to_mount = -1
+//
+-1
+for
+none
