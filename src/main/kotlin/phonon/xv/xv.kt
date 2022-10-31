@@ -9,17 +9,8 @@ import java.nio.file.Files
 import java.util.UUID
 import java.util.logging.Logger
 import org.bukkit.Bukkit
-import org.bukkit.World
-import org.bukkit.Location
-import org.bukkit.Material
-import org.bukkit.NamespacedKey
-import org.bukkit.inventory.ItemStack
-import org.bukkit.entity.Entity
-import org.bukkit.entity.EntityType
-import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 import org.bukkit.scheduler.BukkitTask
-import org.bukkit.scheduler.BukkitRunnable
 import phonon.xv.core.*
 import phonon.xv.system.*
 import phonon.xv.common.UserInput
@@ -51,10 +42,14 @@ public object XV {
 
     // entity uuid => vehicle element data
     internal val entityVehicleData: HashMap<UUID, EntityVehicleData> = HashMap()
+    // element id => the prototype it was built off
+    internal val elementPrototypeData: HashMap<VehicleElementId, VehicleElementPrototype> = HashMap()
 
     // player mount and dismount requests
     internal var mountRequests: ArrayList<MountVehicleRequest> = ArrayList()
     internal var dismountRequests: ArrayList<DismountVehicleRequest> = ArrayList()
+    // vehicle creation requests
+    internal var createRequests: ArrayList<CreateVehicleRequest> = ArrayList()
 
     // ========================================================================
     // RUNNING TASKS
@@ -97,6 +92,9 @@ public object XV {
 
         XV.config = config
 
+        // clear current component/archetype storage
+        storage.clear()
+
         // load vehicle config files
 
         // wtf why isnt it saving this shit automatically??
@@ -109,7 +107,16 @@ public object XV {
         val vehiclePrototypes: Map<String, VehiclePrototype> = listDirFiles(config.pathFilesVehicles)
             .map { f -> VehiclePrototype.fromTomlFile(config.pathFilesVehicles.resolve(f), XV.logger) }
             .filterNotNull()
-            .map { v -> v.name to v }
+            .map { v -> // add layouts of each element prototype
+                // perhaps we can relegate this to when vehicles are spawned
+                // first vehicle to spawn w/ new layout gets ArchetypeStorage for that
+                // layout added on creation
+                v.elements.forEach { e ->
+                    if (!storage.lookup.containsKey(e.layout))
+                        storage.addLayout(e.layout)
+                }
+                v.name to v
+            }
             .toMap()
         
         XV.vehiclePrototypes = vehiclePrototypes
@@ -213,5 +220,8 @@ public object XV {
 
         // seat raycast mounting
         mountRequests = systemMountSeatRaycast(storage, mountRequests)
+
+        // create vehicle handlers
+        systemCreateVehicle(storage, createRequests, elementPrototypeData)
     }
 }

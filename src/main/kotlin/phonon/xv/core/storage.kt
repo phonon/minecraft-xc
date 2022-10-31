@@ -22,4 +22,15 @@ public class ComponentsStorage {
             this.lookup[layout] = index
         }
     }
+
+    // delete all component + archetype storage
+    // make sure you dont have dangling vehicles
+    // when you call
+    public fun clear() {
+        lookup.clear()
+        archetypes.clear()
+        // TODO
+        // I imagine there's some extra stuff that needs to be done
+        // to clean up each ArchetypeStorage
+    }
 }
