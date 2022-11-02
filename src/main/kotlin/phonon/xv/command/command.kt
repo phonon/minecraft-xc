@@ -228,7 +228,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS,
             )
             XV.storage.addLayout(layout)
-            val archetype = XV.storage.archetypes[XV.storage.lookup[layout]!!]!!
+            val archetype = XV.storage.lookup[layout]!!
             
             // only create vehicle for ptotoypes with [transform, model, landMovement]
             // TODO: a more generalized creation, likely needs codegen + delegation

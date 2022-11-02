@@ -2,9 +2,8 @@ package phonon.xv.system
 
 import org.bukkit.Location
 import org.bukkit.entity.Player
+import phonon.xv.XV
 import phonon.xv.core.ComponentsStorage
-import phonon.xv.core.VehicleElementId
-import phonon.xv.core.VehicleElementPrototype
 import phonon.xv.core.VehiclePrototype
 
 public data class CreateVehicleRequest(
@@ -22,15 +21,17 @@ public data class CreateVehicleRequest(
 
 public fun systemCreateVehicle(
         storage: ComponentsStorage,
-        requests: List<CreateVehicleRequest>,
-        elementPrototypeData: Map<VehicleElementId, VehicleElementPrototype>
+        requests: List<CreateVehicleRequest>
 ) {
     for (req in requests) {
         val (player, prototype, location) = req
 
-        // TODO
-        // mc armorstand spawning stuff
-
-
+        val vehicleId = XV.vehicleStorage.newId()
+        // steps:
+        // 1. Reserve a VehicleId for the vehicle itself.
+        // 2. iterate thru VehicleElementPrototypes
+        // 3. Reserve a VehicleElementId in archetype storage (maybe update elementPrototypeData?)
+        // 4. Write components to storage
+        // 5. Spawn in armorstand, update entityVehicleData in main class
     }
 }

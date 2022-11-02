@@ -17,9 +17,11 @@
 package phonon.xv.core
 
 import java.util.EnumSet
-import phonon.xv.core.INVALID_ID
+import phonon.xv.core.INVALID_ELEMENT_ID
 import phonon.xv.component.*
+import java.util.Stack
 
+public const val INVALID_DENSE_INDEX: Int = -1
 
 /**
  * Note: keep in alphabetical order.
@@ -63,7 +65,6 @@ public interface VehicleComponent {
     val type: VehicleComponentType
 }
 
-
 /**
  * Archetype, contains set of possible component storages.
  * Components stored in packed struct-of-arrays format.
@@ -75,13 +76,60 @@ public class ArchetypeStorage(
 ) {
     public var size: Int = 0
         // private set // TODO: when implemented, outside should never change size
-    
+
+    // fluffy start, vehicle element id manager + dense map/array
+
+    // element id => element
+    private val lookup: Array<VehicleElement?> = Array(maxElements, { _ -> null })
+    // stack of free ids that are not at the end of the lookup array
+    private val freeIds: Stack<Int> = Stack()
+    // lookup array vehicle element id => dense array index
+    // the sets we're mapping have equal cardinality, we use a dense map
+    // to keep all components in contiguous block in dense array
+    private val denseLookup: Array<Int> = Array(maxElements, { _ -> INVALID_DENSE_INDEX })
+    // dense array index => vehicle element id
+    // only internal cuz iterator classes need it
+    internal val elements: IntArray = IntArray(maxElements, { _ -> INVALID_ELEMENT_ID })
+    // dense array implicit linked list head
+
+    // element id => element lookup, function for type safety
+    public fun lookup(id: VehicleElementId): VehicleElement? {
+        return lookup[id]
+    }
+
+    // reserves a new element id and internally adds an entry in dense array
+    public fun newId(): VehicleElementId {
+        // no freeIds between index 0 and size
+        val newId = if ( freeIds.isEmpty() ) {
+            // we're at max capacity, just return invalid
+            if ( size >= MAX_VEHICLE_ELEMENTS ) {
+                return INVALID_VEHICLE_ID
+            } else { // otherwise just use size as index
+                size++
+            }
+        } else {
+            size++
+            freeIds.pop()
+        }
+
+
+        return newId
+    }
+
+    public fun freeId(id: VehicleElementId) {
+
+    }
+
+    // fluffy end
+
+    /*
     // map from vehicle element id => element's dense array index
     // TODO: replace with specialized Densemap
     public val lookup: HashMap<VehicleElementId, Int> = HashMap()
 
     // dense packed element ids
-    public val elements: IntArray = IntArray(maxElements, {_ -> INVALID_ID})
+    public val elements: IntArray = IntArray(maxElements, {_ -> INVALID_ELEMENT_ID})
+    */
 
     // dense packed components
     // only components in layout will be non-null

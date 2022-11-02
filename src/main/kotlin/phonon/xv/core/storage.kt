@@ -3,23 +3,60 @@
 package phonon.xv.core
 
 import java.util.EnumSet
-import phonon.xv.component.*
+import java.util.Stack
 
 public const val MAX_VEHICLE_ELEMENTS: Int = 10000
 
+public class VehicleStorage(
+        maxVehicles: Int
+) {
+    // lookup array VehicleId => Vehicle
+    // encapsulated to do type safety w/ VehicleId
+    private val lookup: Array<Vehicle?> = Array(maxVehicles) { _ -> null }
+    // stack to keep track of free id between 0 and size (exclusive)
+    private val freeIds: Stack<Int> = Stack()
+    // keep track of "size" of arr, equivalent to largest id + 1
+    private var size: Int = 0
+
+    fun lookup(id: VehicleId): Vehicle? {
+        return this.lookup[id]
+    }
+
+    // get new id either from implicit list or
+    // -1 if we've reached MAX_VEHICLE_ELEMENTS
+    fun newId(): VehicleId {
+        // no freeIds between index 0 and size
+        if ( freeIds.isEmpty() ) {
+            // we're at max capacity, just return invalid
+            if ( size >= MAX_VEHICLE_ELEMENTS ) {
+                return INVALID_VEHICLE_ID
+            } else { // otherwise just use size as index
+                return size++
+            }
+        } else {
+            size++
+            return freeIds.pop()
+        }
+    }
+
+    // mark id as free for use , and remove ref from array
+    fun freeId(id: VehicleId) {
+        lookup[id] = null
+        freeIds.push(id)
+    }
+}
+
 public class ComponentsStorage {
-    // TODO:
-    // this needs to be replaced with a proper densemap that maps from
-    // layout => Archetype storage
-    // must handle adding archetypes, checking if already exist, etc...
-    public val lookup: HashMap<EnumSet<VehicleComponentType>, Int> = HashMap()
+    // layout enum set => storage for lookup
+    public val lookup: HashMap<EnumSet<VehicleComponentType>, ArchetypeStorage> = HashMap()
+    // just an array of archetypes, indices have no meaning, for iteration
     public val archetypes: ArrayList<ArchetypeStorage> = ArrayList()
 
     public fun addLayout(layout: EnumSet<VehicleComponentType>) {
         if ( !this.lookup.containsKey(layout) ) {
-            val index = this.archetypes.size
-            this.archetypes.add(ArchetypeStorage(layout, MAX_VEHICLE_ELEMENTS))
-            this.lookup[layout] = index
+            val archetype = ArchetypeStorage(layout, MAX_VEHICLE_ELEMENTS)
+            this.archetypes.add(archetype)
+            this.lookup[layout] = archetype
         }
     }
 
@@ -28,6 +65,7 @@ public class ComponentsStorage {
     // when you call
     public fun clear() {
         lookup.clear()
+        archetypes.forEach { it.clear() }
         archetypes.clear()
         // TODO
         // I imagine there's some extra stuff that needs to be done

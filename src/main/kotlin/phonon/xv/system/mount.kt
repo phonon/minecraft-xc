@@ -4,7 +4,6 @@
 
 package phonon.xv.system
 
-import java.util.UUID
 import java.util.EnumSet
 import kotlin.math.min
 import kotlin.math.max
@@ -13,21 +12,19 @@ import kotlin.math.floor
 import org.bukkit.World
 import org.bukkit.Location
 import org.bukkit.entity.Player
-import org.bukkit.entity.ArmorStand
 import org.bukkit.Particle
 import phonon.xv.XV
 import phonon.xv.core.*
-import phonon.xv.common.UserInput
 import phonon.xv.component.SeatsComponent
 import phonon.xv.component.SeatsRaycastComponent
 import phonon.xv.component.TransformComponent
 import phonon.xv.util.CustomArmorStand
 
 public data class MountVehicleRequest(
-    val player: Player,
-    val elementId: VehicleElementId = INVALID_ID,
-    val componentType: VehicleComponentType = VehicleComponentType.MODEL,
-    val doRaycast: Boolean = false,
+        val player: Player,
+        val elementId: VehicleElementId = INVALID_ELEMENT_ID,
+        val componentType: VehicleComponentType = VehicleComponentType.MODEL,
+        val doRaycast: Boolean = false,
 )
 
 public data class DismountVehicleRequest(
@@ -87,12 +84,11 @@ public fun systemMountVehicle(
         )
 
         // TODO: this lookup should be main engine function
-        val archetypeIndex = XV.storage.lookup[layout]
-        if ( archetypeIndex == null ) {
+        val archetype = XV.storage.lookup[layout]
+        if ( archetype == null ) {
             println("ERROR: archetype not found")
             continue
         }
-        val archetype = XV.storage.archetypes[archetypeIndex]!!
 
         val transformComponent = archetype.transform!![elementId]!!
         val modelComponent = archetype.model!![elementId]!!

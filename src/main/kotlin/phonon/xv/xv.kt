@@ -16,6 +16,8 @@ import phonon.xv.system.*
 import phonon.xv.common.UserInput
 import phonon.xv.util.file.listDirFiles
 
+public const val MAX_VEHICLES = 5000
+
 /**
  * XV engine global state.
  * Stores all game state and provide XV engine api.
@@ -36,14 +38,13 @@ public object XV {
 
     // components
     internal val storage: ComponentsStorage = ComponentsStorage()
+    internal val vehicleStorage: VehicleStorage = VehicleStorage(MAX_VEHICLES)
 
     // user input controls when mounted on entities
     internal val userInputs: HashMap<UUID, UserInput> = HashMap()
 
     // entity uuid => vehicle element data
     internal val entityVehicleData: HashMap<UUID, EntityVehicleData> = HashMap()
-    // element id => the prototype it was built off
-    internal val elementPrototypeData: HashMap<VehicleElementId, VehicleElementPrototype> = HashMap()
 
     // player mount and dismount requests
     internal var mountRequests: ArrayList<MountVehicleRequest> = ArrayList()
@@ -222,6 +223,6 @@ public object XV {
         mountRequests = systemMountSeatRaycast(storage, mountRequests)
 
         // create vehicle handlers
-        systemCreateVehicle(storage, createRequests, elementPrototypeData)
+        systemCreateVehicle(storage, createRequests)
     }
 }
