@@ -491,10 +491,15 @@ private fun runProjectileRaytrace(
     val y0 = projectile.y
     val z0 = projectile.z
 
+    val dirX = projectile.dirX
+    val dirY = projectile.dirY
+    val dirZ = projectile.dirZ
+    // pre-divided inverse ray direction, used frequently
+    val invDirX = if ( dirX != 0f ) 1f / dirX else Float.MAX_VALUE
+    val invDirY = if ( dirY != 0f ) 1f / dirY else Float.MAX_VALUE
+    val invDirZ = if ( dirZ != 0f ) 1f / dirZ else Float.MAX_VALUE
+
     // direction the voxel ids are incremented, based on projectile direction
-    val dirX = projectile.dirX 
-    val dirY = projectile.dirY 
-    val dirZ = projectile.dirZ 
     val stepX = if (dirX >= 0) 1 else -1
     val stepY = if (dirY >= 0) 1 else -1
     val stepZ = if (dirZ >= 0) 1 else -1
@@ -539,14 +544,14 @@ private fun runProjectileRaytrace(
     val blNextBoundaryY = if ( stepY > 0 ) bly + stepY else bly
     val blNextBoundaryZ = if ( stepZ > 0 ) blz + stepZ else blz
 
-    var tMaxX = if (dirX != 0f) (blNextBoundaryX.toFloat() - x0) / dirX else Float.MAX_VALUE
-    var tMaxY = if (dirY != 0f) (blNextBoundaryY.toFloat() - y0) / dirY else Float.MAX_VALUE
-    var tMaxZ = if (dirZ != 0f) (blNextBoundaryZ.toFloat() - z0) / dirZ else Float.MAX_VALUE
+    var tMaxX = (blNextBoundaryX.toFloat() - x0) * invDirX // = (boundX - x0) / dirX
+    var tMaxY = (blNextBoundaryY.toFloat() - y0) * invDirY // = (boundY - y0) / dirY
+    var tMaxZ = (blNextBoundaryZ.toFloat() - z0) * invDirZ // = (boundZ - z0) / dirZ
 
     // distance to next voxel along ray
-    val tDeltaX = if (dirX != 0f) stepX.toFloat() / dirX else Float.MAX_VALUE;
-    val tDeltaY = if (dirY != 0f) stepY.toFloat() / dirY else Float.MAX_VALUE;
-    val tDeltaZ = if (dirZ != 0f) stepZ.toFloat() / dirZ else Float.MAX_VALUE;
+    val tDeltaX = stepX.toFloat() * invDirX // = stepX / dirX
+    val tDeltaY = stepY.toFloat() * invDirY // = stepY / dirY
+    val tDeltaZ = stepZ.toFloat() * invDirZ // = stepZ / dirZ
     
     // total t traveled along direction of ray
     var tTraveled = 0.0f
@@ -645,11 +650,6 @@ private fun runProjectileRaytrace(
     // ====================================================
     // max distance to entity must be less than raycast distance
     val maxEntityDist = projectile.distToNext
-
-    // pre-divided inverse ray direction
-    val invDirX = if ( dirX != 0f ) 1f / dirX else Float.MAX_VALUE
-    val invDirY = if ( dirY != 0f ) 1f / dirY else Float.MAX_VALUE
-    val invDirZ = if ( dirZ != 0f ) 1f / dirZ else Float.MAX_VALUE
 
     // entity hit
     var hitEntity: Entity? = null

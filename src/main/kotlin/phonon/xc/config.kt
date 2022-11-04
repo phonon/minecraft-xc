@@ -2,7 +2,7 @@
  * Config
  * 
  * Contains global config state variables read in from 
- * plugin config.yml file
+ * plugin config.toml file
  */
 
 package phonon.xc
