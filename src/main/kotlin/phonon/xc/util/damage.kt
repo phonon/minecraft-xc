@@ -61,14 +61,11 @@ public fun damageAfterArmorAndResistance(
     baseDamage: Double,
     entity: LivingEntity,
     armorReductionFactor: Double,
-    resistReductionFactor: Double,
+    _resistReductionFactor: Double,
 ): Double {
     // get total entity armor value
-    val armor = if ( entity is Attributable ) {
-        entity.getAttribute(Attribute.GENERIC_ARMOR)?.getValue() ?: 0.0
-    } else {
-        0.0
-    }
+    // note: LivingEntity extends Attributable, so attribute should always exist
+    val armor = entity.getAttribute(Attribute.GENERIC_ARMOR)?.getValue() ?: 0.0
 
     // potion resistance/increase damage
     // UNNEEDED: vanilla will already apply potion modifier to damage
@@ -96,11 +93,8 @@ public fun explosionDamageAfterArmor(
     blastProtReductionFactor: Double,
 ): Double {
     // get total entity armor value
-    val armor = if ( entity is Attributable ) {
-        entity.getAttribute(Attribute.GENERIC_ARMOR)?.getValue() ?: 0.0
-    } else {
-        0.0
-    }
+    // note: LivingEntity extends Attributable, so attribute should always exist
+    val armor = entity.getAttribute(Attribute.GENERIC_ARMOR)?.getValue() ?: 0.0
 
     var totalBlastProtectionLevel = 0.0
 

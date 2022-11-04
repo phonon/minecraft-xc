@@ -87,7 +87,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
         // if player joins and is holding a gun or custom wep,
         // do handle selection event
-        getGunInHand(player)?.let { gun -> 
+        getGunInHand(player)?.let { _ -> 
             XC.playerGunSelectRequests.add(PlayerGunSelectRequest(
                 player = player,
             ))
@@ -109,7 +109,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
         // if player leaves and is holding a gun or custom wep,
         // do reload cleanup
-        getGunInHand(player)?.let { gun -> 
+        getGunInHand(player)?.let { _ -> 
             XC.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
             ))
@@ -127,7 +127,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
         // if player dies and is holding a gun or custom wep,
         // do reload cleanup
-        getGunInHand(player)?.let { gun -> 
+        getGunInHand(player)?.let { _ -> 
             XC.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
             ))
@@ -143,7 +143,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         if ( customDeathEvent != null ) {
             // unpack death event from a weapon
             val (
-                player,
+                _player,
                 killer,
                 weaponType,
                 weaponId,
@@ -159,7 +159,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             // try to get weapon death message
             val playerName = player.getName()
             val killerName = killer?.getName() ?: "None"
-            val killerUUID = killer?.getUniqueId().toString() ?: "None"
+            val killerUUID = killer?.let { it -> it.getUniqueId().toString() } ?: "None"
             var deathMessage = ""
             var deathCause = ""
 
@@ -223,7 +223,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         else {
             val playerName = player.getName()
             var deathCause = "unknown"
-            var deathMessage = ""
+            var deathMessage: String
             // TODO: can we even find these?
             val killerName = ""
             val killerUUID = ""
@@ -283,7 +283,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             XC.crawlStopQueue.add(CrawlStop(player))
         }
         
-        getGunInHand(player)?.let { gun -> 
+        getGunInHand(player)?.let { _ -> 
             // Message.print(player, "Reloading...")
             XC.playerAimDownSightsRequests.add(PlayerAimDownSightsRequest(
                 player = player,
@@ -378,7 +378,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             itemEntity.remove()
         }
         
-        getGunFromItem(item)?.let { gun -> 
+        getGunFromItem(item)?.let { _ -> 
             XC.itemGunCleanupRequests.add(ItemGunCleanupRequest(
                 itemEntity = itemEntity,
                 onDrop = false,
@@ -392,11 +392,10 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     @EventHandler(ignoreCancelled = true)
     public fun onItemSelect(e: PlayerItemHeldEvent) {
         val player = e.player
-        val inventory = player.getInventory()
 
         // check if previous slot was a gun
         val previousSlot = e.getPreviousSlot()
-        getGunInSlot(player, previousSlot)?.let { gun -> 
+        getGunInSlot(player, previousSlot)?.let { _ -> 
             XC.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
                 inventorySlot = previousSlot,
@@ -407,7 +406,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         }
 
         val mainHandSlot = e.getNewSlot()
-        getGunInSlot(player, mainHandSlot)?.let { gun -> 
+        getGunInSlot(player, mainHandSlot)?.let { _ -> 
             XC.playerGunSelectRequests.add(PlayerGunSelectRequest(
                 player = player,
             ))
@@ -421,7 +420,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     public fun onItemSwapHand(e: PlayerSwapHandItemsEvent) {
         val player = e.player
         
-        getGunInHand(player)?.let { gun -> 
+        getGunInHand(player)?.let { _ -> 
             // Message.print(player, "Reloading...")
             XC.playerReloadRequests.add(PlayerGunReloadRequest(
                 player = player,
@@ -463,7 +462,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             when ( getItemTypeInHand(player) ) {
                 // gun left click: single fire or burst
                 XC.ITEM_TYPE_GUN -> {
-                    getGunInHandUnchecked(player)?.let { gun -> 
+                    getGunInHandUnchecked(player)?.let { _ -> 
                         // Message.print(player, "Trying to shoot")
                         XC.playerShootRequests.add(PlayerGunShootRequest(
                             player = player,
@@ -627,7 +626,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             when ( getItemTypeInHand(player) ) {
                 // gun left click: single fire or burst
                 XC.ITEM_TYPE_GUN -> {
-                    getGunInHandUnchecked(player)?.let { gun -> 
+                    getGunInHandUnchecked(player)?.let { _ -> 
                         XC.playerShootRequests.add(PlayerGunShootRequest(
                             player = player,
                         ))
@@ -647,7 +646,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                 XC.ITEM_TYPE_MELEE -> {
                     getMeleeInHandUnchecked(player)?.let { weapon ->
                         val target = e.getEntity()
-                        if ( target is LivingEntity && target is Damageable ) {
+                        if ( target is LivingEntity ) {
                             // melee damage handler
                             val damage = damageAfterArmorAndResistance(
                                 weapon.damage,

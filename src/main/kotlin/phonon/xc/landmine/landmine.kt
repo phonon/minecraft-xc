@@ -256,14 +256,14 @@ internal fun getLandmineExplosionVisitedChunksSystem(
         val location = block.getLocation()
 
         // get item entity's mineman chunk coords (divides by 16)
-        val cx = floor(location.x).toInt() shr 4
-        val cz = floor(location.z).toInt() shr 4
+        val cx0 = floor(location.x).toInt() shr 4
+        val cz0 = floor(location.z).toInt() shr 4
         
         // add 1 chunk margin in case hitboxes spans multiple chunks
-        val cxmin = cx - 1
-        val czmin = cz - 1
-        val cxmax = cx + 1
-        val czmax = cz + 1
+        val cxmin = cx0 - 1
+        val czmin = cz0 - 1
+        val cxmax = cx0 + 1
+        val czmax = cz0 + 1
         
         for ( cx in cxmin..cxmax ) {
             for ( cz in czmin..czmax ) {

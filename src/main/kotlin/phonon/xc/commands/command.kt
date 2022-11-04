@@ -72,7 +72,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             
             // random testing debug commands
             // "chunk" -> debugChunkSnapshotTest(sender)
-            "crawl" -> crawl(sender, args)
+            "crawl" -> crawl(sender)
             else -> {
                 Message.error(sender, "Invalid /xc subcommand, use /xc help")
             }
@@ -329,7 +329,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
     // /**
     //  * Experiment to try make player crawl
     //  */
-    private fun crawl(sender: CommandSender?, args: Array<String>) {
+    private fun crawl(sender: CommandSender?) {
         val player = if ( sender is Player ) sender else null
 
         if ( player !== null ) {

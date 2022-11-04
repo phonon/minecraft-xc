@@ -317,9 +317,11 @@ public class ProjectileSystem(public val world: World) {
             val hitEntity = raytraceResult.entity
 
             if ( hitBlock != null ) {
+                val hitLoc = raytraceResult.location!!
+
                 hitBlocksQueue.add(ProjectileHitBlock(
                     block = hitBlock,
-                    location = raytraceResult.location!!,
+                    location = hitLoc,
                     source = projectile.source,
                     gun = projectile.gun,
                 ))
@@ -327,7 +329,6 @@ public class ProjectileSystem(public val world: World) {
                 // queue packets for block breaking animation
                 // and particles on block hit
                 if ( projectile.gun.projectileBlockHitParticles ) {
-                    val hitLoc = raytraceResult.location!!
                     val hitBlockData = hitBlock.getBlockData().clone()
                     XC.particleBulletImpactQueue.add(ParticleBulletImpact(
                         world = world,

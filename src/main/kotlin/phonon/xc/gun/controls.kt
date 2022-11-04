@@ -1520,7 +1520,9 @@ private fun formatRemainingTimeString(timeMillis: Double): String {
 
 /**
  * Return if inventory contains at least `amount` items with
- * material type and custom model data. 
+ * material type and custom model data.
+ * 
+ * NOTE: item != null is NOT ALWAYS TRUE, ignore compiler
  */
 private fun inventoryContainsItem(
     inventory: Inventory,
@@ -1557,6 +1559,8 @@ private fun inventoryContainsItem(
  * Code for removeItem seems to have inefficient inner loop:
  * https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/browse/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventory.java#352
  * https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/browse/src/main/java/org/bukkit/craftbukkit/inventory/CraftInventory.java#99
+ * 
+ * NOTE: item != null is NOT ALWAYS TRUE, ignore compiler
  */
 private fun inventoryRemoveItem(
     inventory: Inventory,

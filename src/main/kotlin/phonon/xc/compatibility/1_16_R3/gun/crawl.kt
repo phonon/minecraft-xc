@@ -547,7 +547,7 @@ public fun crawlRefreshSystem(requests: HashMap<UUID, Crawling>): HashMap<UUID, 
         0
     }
 
-    for ( (playerId, prevCrawlState) in requests ) {
+    for ( (_playerId, prevCrawlState) in requests ) {
         val (
             tickId,
             player,
@@ -559,7 +559,7 @@ public fun crawlRefreshSystem(requests: HashMap<UUID, Crawling>): HashMap<UUID, 
             blAboveY,
             blAboveZ,
             prevBlAboveMaterial,
-            boxEntity,
+            _boxEntity,
         ) = prevCrawlState
 
         // not needed, toggle event should cancel stop swimming event

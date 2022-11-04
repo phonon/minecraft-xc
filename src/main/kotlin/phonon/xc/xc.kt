@@ -330,7 +330,7 @@ public object XC {
      */
     internal fun onDisable() {
         // cleanup crawl fake entity/packets
-        for ( (playerId, crawlState) in crawling ) {
+        for ( (_playerId, crawlState) in crawling ) {
             crawlState.cleanup()
         }
 

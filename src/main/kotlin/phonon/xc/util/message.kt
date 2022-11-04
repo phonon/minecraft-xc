@@ -19,35 +19,25 @@ public object Message {
     public val COL_ERROR = ChatColor.RED
 
     // print generic message to chat
-    public fun print(sender: Any?, s: String) {
+    public fun print(sender: CommandSender?, s: String) {
 		if ( sender === null ) {
             System.out.println("${PREFIX} Message called with null sender: ${s}")
             return
 		}
 
         val msg = "${COL_MSG}${s}"
-        if ( sender is Player ) {
-            (sender as Player).sendMessage(msg)
-        }
-        else {
-            (sender as CommandSender).sendMessage(msg)
-        }
+        sender.sendMessage(msg)
     }
 
     // print error message to chat
-    public fun error(sender: Any?, s: String) {
+    public fun error(sender: CommandSender?, s: String) {
 		if ( sender === null ) {
             System.out.println("${PREFIX} Message called with null sender: ${s}")
             return
 		}
 
         val msg = "${COL_ERROR}${s}"
-        if ( sender is Player ) {
-            (sender as Player).sendMessage(msg)
-        }
-        else {
-            (sender as CommandSender).sendMessage(msg)
-        }
+        sender.sendMessage(msg)
     }
 
     // wrapper around Bukkit.broadcast to send

@@ -92,7 +92,7 @@ public val entityDamageHitHandler = fun(
     source: Entity,
     distance: Double,
 ) {
-    if ( target is LivingEntity && target is Damageable ) {
+    if ( target is LivingEntity ) {
         if ( target is Player && !XC.canPvpAt(location) ) {
             return
         }
@@ -160,7 +160,7 @@ public val entityExplosionHitHandler = fun(
     distance: Double,
 ) {
     // do main damage directly to target
-    if ( target is LivingEntity && target is Damageable ) {
+    if ( target is LivingEntity ) {
         if ( target is Player && !XC.canPvpAt(location) ) {
             return
         }
@@ -241,7 +241,7 @@ public val blockExplosionHitHandler = fun(
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     gun: Gun,
     location: Location,
-    block: Block,
+    _block: Block,
     source: Entity,
 ) {
     // summon explosion effect at location
@@ -269,7 +269,7 @@ public val blockExplosionHitHandler = fun(
  * Block hit handler that creates fire on top of hit location.
  */
 public val blockFireHitHandler = fun(
-    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    _hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     gun: Gun,
     location: Location,
     block: Block,

@@ -99,15 +99,15 @@ public fun createExplosion(
                     val baseDamage = baseExplosionDamage(damage, distance, radius, falloff)
                     if ( baseDamage > 0.0 ) {
                         val target = hitbox.entity
-                        if ( target is LivingEntity && target is Damageable ) {
-                            val damage = explosionDamageAfterArmor(
+                        if ( target is LivingEntity ) {
+                            val finalDamage = explosionDamageAfterArmor(
                                 baseDamage,
                                 target,
                                 armorReduction,
                                 blastProtReduction,
                             )
 
-                            if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+                            if ( target is Player && target.getHealth() > 0.0 && finalDamage >= target.getHealth() ) {
                                 XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
                                     player = target,
                                     killer = source,
@@ -117,7 +117,7 @@ public fun createExplosion(
                                 )
                             }
                             
-                            target.damage(damage, null)
+                            target.damage(finalDamage, null)
                             target.setNoDamageTicks(0)
 
                             if ( fireTicks > 0 ) {
