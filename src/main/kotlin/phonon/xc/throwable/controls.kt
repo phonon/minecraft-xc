@@ -26,10 +26,10 @@ import org.bukkit.persistence.PersistentDataType
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.scheduler.BukkitRunnable
 import phonon.xc.XC
-import phonon.xc.utils.Message
-import phonon.xc.utils.ChunkCoord
-import phonon.xc.utils.ChunkCoord3D
-import phonon.xc.utils.Hitbox
+import phonon.xc.util.Message
+import phonon.xc.util.ChunkCoord
+import phonon.xc.util.ChunkCoord3D
+import phonon.xc.util.Hitbox
 
 import phonon.xc.compatibility.v1_16_R3.item.getInventorySlotForCustomItemWithNbtKey
 import phonon.xc.compatibility.v1_16_R3.item.getItemIntDataIfMaterialMatches

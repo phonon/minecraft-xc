@@ -2,7 +2,7 @@
  * Vehicle utils
  */
 
-package phonon.xc.utils
+package phonon.xc.util
 
 import org.bukkit.entity.EntityType
 

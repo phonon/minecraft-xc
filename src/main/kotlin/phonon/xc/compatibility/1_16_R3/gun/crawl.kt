@@ -36,10 +36,10 @@ import com.comphenix.protocol.ProtocolManager
 import com.comphenix.protocol.PacketType
 import com.comphenix.protocol.wrappers.WrappedDataWatcher
 import phonon.xc.XC
-import phonon.xc.utils.Message
+import phonon.xc.util.Message
 import phonon.xc.gun.useAimDownSights
 import phonon.xc.gun.AmmoInfoMessagePacket
-import phonon.xc.utils.progressBar10
+import phonon.xc.util.progressBar10
 
 import phonon.xc.compatibility.v1_16_R3.gun.item.*
 

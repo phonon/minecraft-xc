@@ -1,7 +1,7 @@
 /**
  * Math utility functions
  */
-package phonon.xc.utils.math
+package phonon.xc.util.math
 
 import kotlin.math.sqrt
 import org.bukkit.util.Vector

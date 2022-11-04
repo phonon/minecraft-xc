@@ -2,7 +2,7 @@
  * Contains chunk coord wrapper.
  */
 
-package phonon.xc.utils
+package phonon.xc.util
 
 
 /**

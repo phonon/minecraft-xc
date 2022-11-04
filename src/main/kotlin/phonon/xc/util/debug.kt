@@ -2,7 +2,7 @@
  * Debug structures and performance probes.
  */
 
-package phonon.xc.utils.debug
+package phonon.xc.util.debug
 
 /**
  * Debug structure to hold past tick timings for different operations.

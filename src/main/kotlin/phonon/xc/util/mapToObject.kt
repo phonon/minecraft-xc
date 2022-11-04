@@ -2,7 +2,7 @@
  * Random utils that don't fit anywhere else
  */
 
-package phonon.xc.utils
+package phonon.xc.util
 
 import kotlin.reflect.KClass
 

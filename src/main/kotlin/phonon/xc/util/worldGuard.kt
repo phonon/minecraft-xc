@@ -2,7 +2,7 @@
  * WorldGuard API wrapper (v7 api only).
  */
 
-package phonon.xc.utils
+package phonon.xc.util
 
 import org.bukkit.Location
 import com.sk89q.worldguard.WorldGuard

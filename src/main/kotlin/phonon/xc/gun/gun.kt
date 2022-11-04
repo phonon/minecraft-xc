@@ -29,10 +29,10 @@ import phonon.xc.gun.getGunHitEntityHandler
 import phonon.xc.gun.getGunHitBlockHandler
 import phonon.xc.gun.noEntityHitHandler
 import phonon.xc.gun.noBlockHitHandler
-import phonon.xc.utils.mapToObject
-import phonon.xc.utils.damage.DamageType
-import phonon.xc.utils.particle.ParticlePacket
-import phonon.xc.utils.toml.toIntArray
+import phonon.xc.util.mapToObject
+import phonon.xc.util.damage.DamageType
+import phonon.xc.util.particle.ParticlePacket
+import phonon.xc.util.toml.toIntArray
 
 // TODO: abstract out nms
 import phonon.xc.compatibility.v1_16_R3.gun.AimDownSightsModelPacketManager

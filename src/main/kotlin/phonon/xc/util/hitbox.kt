@@ -2,7 +2,7 @@
  * Contain math primitives in here
  */
 
-package phonon.xc.utils
+package phonon.xc.util
 
 import java.util.EnumMap
 import kotlin.math.min

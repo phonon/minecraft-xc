@@ -44,18 +44,18 @@ import phonon.xc.gun.*
 import phonon.xc.landmine.*
 import phonon.xc.melee.*
 import phonon.xc.throwable.*
-import phonon.xc.utils.EnumArrayMap
-import phonon.xc.utils.mapToObject
-import phonon.xc.utils.Hitbox
-import phonon.xc.utils.HitboxSize
-import phonon.xc.utils.particle.*
-import phonon.xc.utils.recoil.*
-import phonon.xc.utils.sound.*
-import phonon.xc.utils.debug.DebugTimings
-import phonon.xc.utils.blockCrackAnimation.*
-import phonon.xc.utils.file.*
-import phonon.xc.utils.WorldGuard
-import phonon.xc.utils.death.*
+import phonon.xc.util.EnumArrayMap
+import phonon.xc.util.mapToObject
+import phonon.xc.util.Hitbox
+import phonon.xc.util.HitboxSize
+import phonon.xc.util.particle.*
+import phonon.xc.util.recoil.*
+import phonon.xc.util.sound.*
+import phonon.xc.util.debug.DebugTimings
+import phonon.xc.util.blockCrackAnimation.*
+import phonon.xc.util.file.*
+import phonon.xc.util.WorldGuard
+import phonon.xc.util.death.*
 
 // TODO: in future need to select NMS version
 import phonon.xc.compatibility.v1_16_R3.gun.crawl.*

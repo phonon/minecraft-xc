@@ -2,7 +2,7 @@
  * Damage calculations
  */
 
-package phonon.xc.utils.damage
+package phonon.xc.util.damage
 
 import kotlin.math.max
 import org.bukkit.entity.LivingEntity

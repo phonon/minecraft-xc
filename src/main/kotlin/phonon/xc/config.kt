@@ -18,12 +18,12 @@ import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.Material
 import org.bukkit.entity.EntityType
 import org.tomlj.Toml
-import phonon.xc.utils.mapToObject
-import phonon.xc.utils.EnumArrayMap
-import phonon.xc.utils.Hitbox
-import phonon.xc.utils.HitboxSize
-import phonon.xc.utils.BlockCollisionHandler
-import phonon.xc.utils.blockCollisionHandlers
+import phonon.xc.util.mapToObject
+import phonon.xc.util.EnumArrayMap
+import phonon.xc.util.Hitbox
+import phonon.xc.util.HitboxSize
+import phonon.xc.util.BlockCollisionHandler
+import phonon.xc.util.blockCollisionHandlers
 
 
 /**

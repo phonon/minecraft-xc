@@ -3,7 +3,7 @@
  * packets to clients. 
  */
 
-package phonon.xc.utils.recoil
+package phonon.xc.util.recoil
 
 import java.util.concurrent.ThreadLocalRandom
 import com.comphenix.protocol.ProtocolManager
@@ -13,8 +13,8 @@ import com.comphenix.protocol.utility.MinecraftReflection
 import org.bukkit.entity.Player
 import org.bukkit.util.Vector
 import phonon.xc.gun.Gun
-import phonon.xc.utils.math.directionFromYawPitch
-import phonon.xc.utils.reflect.getEnumConstant
+import phonon.xc.util.math.directionFromYawPitch
+import phonon.xc.util.reflect.getEnumConstant
 
 /**
  * Wrapper for player gun recoil data needed to run asynchronously.

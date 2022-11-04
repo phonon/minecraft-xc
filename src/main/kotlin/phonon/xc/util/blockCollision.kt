@@ -4,7 +4,7 @@
  * Required for complex blocks with holes like stairs, which cannot
  * be easily raycast. Instead, guns rely on stepped raymarching.
  */
-package phonon.xc.utils
+package phonon.xc.util
 
 import kotlin.math.min
 import kotlin.math.max
@@ -25,7 +25,7 @@ import org.bukkit.block.data.type.Slab
 import org.bukkit.block.data.type.Stairs
 import org.bukkit.block.data.type.TrapDoor
 import org.bukkit.block.data.type.Wall
-import phonon.xc.utils.EnumArrayMap
+import phonon.xc.util.EnumArrayMap
 
 
 /**

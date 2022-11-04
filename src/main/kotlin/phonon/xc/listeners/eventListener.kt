@@ -58,10 +58,10 @@ import phonon.xc.landmine.LandmineActivationRequest
 import phonon.xc.throwable.ReadyThrowableRequest
 import phonon.xc.throwable.ThrowThrowableRequest
 import phonon.xc.throwable.DroppedThrowable
-import phonon.xc.utils.Message
-import phonon.xc.utils.death.PlayerDeathRecord
-import phonon.xc.utils.death.XcPlayerDeathEvent
-import phonon.xc.utils.damage.damageAfterArmorAndResistance
+import phonon.xc.util.Message
+import phonon.xc.util.death.PlayerDeathRecord
+import phonon.xc.util.death.XcPlayerDeathEvent
+import phonon.xc.util.damage.damageAfterArmorAndResistance
 
 // TODO: in future need to select NMS version
 import phonon.xc.compatibility.v1_16_R3.gun.crawl.*

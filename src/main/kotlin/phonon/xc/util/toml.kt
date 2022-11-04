@@ -2,7 +2,7 @@
  * Helper extension functions for toml parsing.
  */
 
-package phonon.xc.utils.toml
+package phonon.xc.util.toml
 
 import org.tomlj.Toml
 import org.tomlj.TomlArray

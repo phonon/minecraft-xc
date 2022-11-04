@@ -12,7 +12,7 @@ import org.bukkit.ChatColor
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import phonon.xc.XC
-import phonon.xc.utils.mapToObject
+import phonon.xc.util.mapToObject
 
 
 public class Ammo(

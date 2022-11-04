@@ -2,7 +2,7 @@
  * File system utils
  */
 
-package phonon.xc.utils.file
+package phonon.xc.util.file
 
 import java.nio.file.Files
 import java.nio.file.Paths

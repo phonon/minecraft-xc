@@ -10,7 +10,7 @@ import org.bukkit.event.Cancellable
 import org.bukkit.event.Event
 import org.bukkit.event.HandlerList
 import phonon.xc.gun.Gun
-import phonon.xc.utils.damage.DamageType
+import phonon.xc.util.damage.DamageType
 
 
 /**

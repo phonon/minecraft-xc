@@ -17,7 +17,7 @@
  * {2}: killer weapon name
  */
 
-package phonon.xc.utils.death
+package phonon.xc.util.death
 
 import java.time.LocalDateTime
 import java.nio.file.Files

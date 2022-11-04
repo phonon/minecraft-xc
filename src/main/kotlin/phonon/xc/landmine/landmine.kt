@@ -26,13 +26,13 @@ import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import phonon.xc.XC
-import phonon.xc.utils.mapToObject
-import phonon.xc.utils.damage.DamageType
-import phonon.xc.utils.explosion.createExplosion
-import phonon.xc.utils.particle.ParticlePacket
-import phonon.xc.utils.ChunkCoord
-import phonon.xc.utils.ChunkCoord3D
-import phonon.xc.utils.Hitbox
+import phonon.xc.util.mapToObject
+import phonon.xc.util.damage.DamageType
+import phonon.xc.util.explosion.createExplosion
+import phonon.xc.util.particle.ParticlePacket
+import phonon.xc.util.ChunkCoord
+import phonon.xc.util.ChunkCoord3D
+import phonon.xc.util.Hitbox
 
 
 internal val PRESSURE_PLATES: EnumSet<Material> = EnumSet.of(

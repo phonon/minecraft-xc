@@ -3,7 +3,7 @@
  * 
  */
 
-package phonon.xc.utils
+package phonon.xc.util
 
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor

@@ -1,4 +1,4 @@
-package phonon.xc.utils
+package phonon.xc.util
 
 /**
  * Wrapper to create EnumArrayMap from an initializer function.

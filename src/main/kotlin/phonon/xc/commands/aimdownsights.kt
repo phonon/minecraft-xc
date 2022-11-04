@@ -16,7 +16,7 @@ import org.bukkit.command.TabCompleter
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
 import phonon.xc.XC
-import phonon.xc.utils.Message
+import phonon.xc.util.Message
 
 
 private val AIM_DOWN_SIGHTS_SETTINGS = listOf(

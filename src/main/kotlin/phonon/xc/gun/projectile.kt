@@ -20,14 +20,14 @@ import org.bukkit.block.Block
 import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
 import phonon.xc.XC
-import phonon.xc.utils.ChunkCoord
-import phonon.xc.utils.ChunkCoord3D
-import phonon.xc.utils.Hitbox
-import phonon.xc.utils.math.*
-import phonon.xc.utils.particle.*
-import phonon.xc.utils.blockCrackAnimation.BlockCrackAnimation
-import phonon.xc.utils.EnumArrayMap
-import phonon.xc.utils.BlockCollisionHandler
+import phonon.xc.util.ChunkCoord
+import phonon.xc.util.ChunkCoord3D
+import phonon.xc.util.Hitbox
+import phonon.xc.util.math.*
+import phonon.xc.util.particle.*
+import phonon.xc.util.blockCrackAnimation.BlockCrackAnimation
+import phonon.xc.util.EnumArrayMap
+import phonon.xc.util.BlockCollisionHandler
 
 
 

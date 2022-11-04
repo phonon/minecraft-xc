@@ -3,7 +3,7 @@
  * and runnable tasks for spawning particles.
  */
 
-package phonon.xc.utils.particle
+package phonon.xc.util.particle
 
 import java.util.concurrent.ThreadLocalRandom
 import org.bukkit.World

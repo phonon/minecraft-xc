@@ -15,7 +15,7 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.InventoryHolder
 import phonon.xc.XC
-import phonon.xc.utils.Message
+import phonon.xc.util.Message
 
 // TODO: in future need to select NMS version
 import phonon.xc.compatibility.v1_16_R3.gun.crawl.*

@@ -2,7 +2,7 @@
  * Explosion handler
  */
 
-package phonon.xc.utils.explosion
+package phonon.xc.util.explosion
 
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -16,13 +16,13 @@ import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Damageable
 import phonon.xc.XC
 import phonon.xc.event.XCExplosionDamageEvent
-import phonon.xc.utils.ChunkCoord3D
-import phonon.xc.utils.Hitbox
-import phonon.xc.utils.damage.DamageType
-import phonon.xc.utils.damage.explosionDamageAfterArmor
-import phonon.xc.utils.death.XcPlayerDeathEvent
-import phonon.xc.utils.particle.ParticlePacket
-import phonon.xc.utils.particle.ParticleExplosion
+import phonon.xc.util.ChunkCoord3D
+import phonon.xc.util.Hitbox
+import phonon.xc.util.damage.DamageType
+import phonon.xc.util.damage.explosionDamageAfterArmor
+import phonon.xc.util.death.XcPlayerDeathEvent
+import phonon.xc.util.particle.ParticlePacket
+import phonon.xc.util.particle.ParticleExplosion
 
 
 /**

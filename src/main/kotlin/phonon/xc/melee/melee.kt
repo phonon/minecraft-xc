@@ -15,8 +15,8 @@ import org.bukkit.Color
 import org.bukkit.ChatColor
 import org.bukkit.inventory.ItemStack
 import phonon.xc.XC
-import phonon.xc.utils.mapToObject
-import phonon.xc.utils.damage.DamageType
+import phonon.xc.util.mapToObject
+import phonon.xc.util.damage.DamageType
 
 /**
  * Melee weapon.

@@ -21,11 +21,11 @@ import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.entity.Damageable
 import phonon.xc.XC
-import phonon.xc.utils.damage.*
-import phonon.xc.utils.ChunkCoord3D
-import phonon.xc.utils.Hitbox
-import phonon.xc.utils.death.XcPlayerDeathEvent
-import phonon.xc.utils.explosion.createExplosion
+import phonon.xc.util.damage.*
+import phonon.xc.util.ChunkCoord3D
+import phonon.xc.util.Hitbox
+import phonon.xc.util.death.XcPlayerDeathEvent
+import phonon.xc.util.explosion.createExplosion
 import phonon.xc.event.XCProjectileDamageEvent
 
 

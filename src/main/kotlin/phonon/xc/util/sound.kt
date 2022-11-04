@@ -1,7 +1,7 @@
 /**
  * Utils for sound effects.
  */
-package phonon.xc.utils.sound
+package phonon.xc.util.sound
 
 import org.bukkit.World
 import org.bukkit.Location

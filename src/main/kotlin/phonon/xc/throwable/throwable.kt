@@ -17,9 +17,9 @@ import org.bukkit.Particle
 import org.bukkit.Sound
 import org.bukkit.inventory.ItemStack
 import phonon.xc.XC
-import phonon.xc.utils.mapToObject
-import phonon.xc.utils.damage.DamageType
-import phonon.xc.utils.particle.ParticlePacket
+import phonon.xc.util.mapToObject
+import phonon.xc.util.damage.DamageType
+import phonon.xc.util.particle.ParticlePacket
 
 /**
  * Wrapper for all throwable item types.

@@ -1,7 +1,7 @@
 /**
  * Progress bar strings.
  */
-package phonon.xc.utils
+package phonon.xc.util
 
 import org.bukkit.ChatColor
 

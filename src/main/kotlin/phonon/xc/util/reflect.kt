@@ -2,7 +2,7 @@
  * Reflection utility functions.
  */
 
-package phonon.xc.utils.reflect
+package phonon.xc.util.reflect
 
 /**
  * Returns an enum constant by name from an enum class using reflection.

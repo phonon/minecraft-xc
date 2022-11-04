@@ -2,7 +2,7 @@
  * Packet handler for block cracking.
  */
 
-package phonon.xc.utils.blockCrackAnimation
+package phonon.xc.util.blockCrackAnimation
 
 
 import java.util.concurrent.ThreadLocalRandom
