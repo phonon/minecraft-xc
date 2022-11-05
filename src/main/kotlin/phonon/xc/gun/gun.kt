@@ -33,9 +33,8 @@ import phonon.xc.util.mapToObject
 import phonon.xc.util.damage.DamageType
 import phonon.xc.util.particle.ParticlePacket
 import phonon.xc.util.toml.toIntArray
-
-// TODO: abstract out nms
-import phonon.xc.compatibility.v1_16_R3.gun.AimDownSightsModelPacketManager
+// nms version specific imports
+import phonon.xc.nms.gun.AimDownSightsModelPacketManager
 
 
 /**

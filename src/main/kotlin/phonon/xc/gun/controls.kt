@@ -27,15 +27,14 @@ import org.bukkit.persistence.PersistentDataType
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.scheduler.BukkitRunnable
 import phonon.xc.XC
+import phonon.xc.gun.crawl.CrawlToShootRequest
 import phonon.xc.util.Message
 import phonon.xc.util.sound.SoundPacket
 import phonon.xc.util.recoil.RecoilPacket
 import phonon.xc.util.progressBar10
 import phonon.xc.util.entityMountEyeHeightOffset
-
-// TODO: in future need to select NMS version
-import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
-import phonon.xc.compatibility.v1_16_R3.gun.item.*
+// nms version specific imports
+import phonon.xc.nms.gun.item.*
 
 
 /**

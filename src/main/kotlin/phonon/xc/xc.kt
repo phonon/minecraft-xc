@@ -38,9 +38,11 @@ import org.bukkit.util.Vector
 
 import com.comphenix.protocol.ProtocolLibrary
 
+// i hate java
 import phonon.xc.ammo.*
 import phonon.xc.armor.*
 import phonon.xc.gun.*
+import phonon.xc.gun.crawl.*
 import phonon.xc.landmine.*
 import phonon.xc.melee.*
 import phonon.xc.throwable.*
@@ -53,13 +55,13 @@ import phonon.xc.util.recoil.*
 import phonon.xc.util.sound.*
 import phonon.xc.util.debug.DebugTimings
 import phonon.xc.util.blockCrackAnimation.*
-import phonon.xc.util.file.*
+import phonon.xc.util.file.listDirFiles
 import phonon.xc.util.WorldGuard
 import phonon.xc.util.death.*
 
 // TODO: in future need to select NMS version
-import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
-import phonon.xc.compatibility.v1_16_R3.gun.item.*
+import phonon.xc.nms.gun.crawl.*
+import phonon.xc.nms.gun.item.*
 
 
 /**

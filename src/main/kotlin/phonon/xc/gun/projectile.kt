@@ -30,7 +30,6 @@ import phonon.xc.util.EnumArrayMap
 import phonon.xc.util.BlockCollisionHandler
 
 
-
 /**
  * Common class for all projectiles. System that updates
  * projectile will be responsible for updating the projectile

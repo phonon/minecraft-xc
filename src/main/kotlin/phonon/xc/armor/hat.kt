@@ -21,8 +21,8 @@ import org.bukkit.attribute.AttributeModifier
 import org.bukkit.enchantments.Enchantment
 import phonon.xc.XC
 import phonon.xc.util.mapToObject
-
-import phonon.xc.compatibility.v1_16_R3.armor.item.*
+// nms version specific imports
+import phonon.xc.nms.armor.item.*
 
 
 public data class Hat(

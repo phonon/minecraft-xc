@@ -54,6 +54,7 @@ import phonon.xc.gun.PlayerAutoFireRequest
 import phonon.xc.gun.PlayerGunCleanupRequest
 import phonon.xc.gun.ItemGunCleanupRequest
 import phonon.xc.gun.AmmoInfoMessagePacket
+import phonon.xc.gun.crawl.CrawlStop
 import phonon.xc.landmine.LandmineActivationRequest
 import phonon.xc.throwable.ReadyThrowableRequest
 import phonon.xc.throwable.ThrowThrowableRequest
@@ -64,13 +65,18 @@ import phonon.xc.util.death.XcPlayerDeathEvent
 import phonon.xc.util.damage.damageAfterArmorAndResistance
 
 // TODO: in future need to select NMS version
-import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
-import phonon.xc.compatibility.v1_16_R3.gun.item.*
-import phonon.xc.compatibility.v1_16_R3.armor.item.*
-import phonon.xc.compatibility.v1_16_R3.throwable.item.*
-import phonon.xc.compatibility.v1_16_R3.melee.item.getMeleeInHandUnchecked
-import phonon.xc.compatibility.v1_16_R3.item.getItemTypeInHand
-import phonon.xc.compatibility.v1_16_R3.item.setItemArmorNMS
+import phonon.xc.nms.gun.item.getGunInHand
+import phonon.xc.nms.gun.item.getGunInHandUnchecked
+import phonon.xc.nms.gun.item.getGunInSlot
+import phonon.xc.nms.gun.item.getGunFromItem
+import phonon.xc.nms.armor.item.getHatInHand
+import phonon.xc.nms.armor.item.getHatInHandUnchecked
+import phonon.xc.nms.throwable.item.getThrowableInHand
+import phonon.xc.nms.throwable.item.getThrowableInHandUnchecked
+import phonon.xc.nms.throwable.item.getThrowableFromItem
+import phonon.xc.nms.melee.item.getMeleeInHandUnchecked
+import phonon.xc.nms.item.getItemTypeInHand
+import phonon.xc.nms.item.setItemArmorNMS
 
 
 public class EventListener(val plugin: JavaPlugin): Listener {

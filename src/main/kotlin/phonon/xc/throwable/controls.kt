@@ -30,10 +30,10 @@ import phonon.xc.util.Message
 import phonon.xc.util.ChunkCoord
 import phonon.xc.util.ChunkCoord3D
 import phonon.xc.util.Hitbox
-
-import phonon.xc.compatibility.v1_16_R3.item.getInventorySlotForCustomItemWithNbtKey
-import phonon.xc.compatibility.v1_16_R3.item.getItemIntDataIfMaterialMatches
-import phonon.xc.compatibility.v1_16_R3.throwable.item.*
+// nms version specific imports
+import phonon.xc.nms.item.getInventorySlotForCustomItemWithNbtKey
+import phonon.xc.nms.item.getItemIntDataIfMaterialMatches
+import phonon.xc.nms.throwable.item.*
 
 private val ERROR_MESSAGE_THROWABLE_NOT_READY = "${ChatColor.DARK_RED}First ready throwable with [LEFT MOUSE]"
 // private val INFO_MESSAGE_THROWABLE_READY = "${ChatColor.GREEN}Throw using [RIGHT MOUSE]"

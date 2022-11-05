@@ -2,7 +2,7 @@
  * Common NMS item handling methods.
  */
 
-package phonon.xc.compatibility.v1_16_R3.item
+package phonon.xc.nms.item
 
 import org.bukkit.Material
 import org.bukkit.entity.Player
@@ -15,7 +15,6 @@ import net.minecraft.server.v1_16_R3.ItemStack as NMSItemStack
 import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftItemStack
 import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer
 import org.bukkit.craftbukkit.v1_16_R3.util.CraftMagicNumbers
-
 import phonon.xc.XC
 
 

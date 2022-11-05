@@ -6,7 +6,7 @@
  * https://www.spigotmc.org/threads/what-are-nbt-tags-and-how-do-you-use-it.500603/
  */
 
-package phonon.xc.compatibility.v1_16_R3.gun.item
+package phonon.xc.nms.gun.item
 
 import kotlin.math.min
 import org.bukkit.ChatColor
@@ -25,8 +25,8 @@ import org.bukkit.craftbukkit.v1_16_R3.util.CraftMagicNumbers
 
 import phonon.xc.XC
 import phonon.xc.gun.*
-import phonon.xc.compatibility.v1_16_R3.item.getCustomItemUnchecked
-import phonon.xc.compatibility.v1_16_R3.item.GetNMSItemStack
+import phonon.xc.nms.item.getCustomItemUnchecked
+import phonon.xc.nms.item.GetNMSItemStack
 
 
 // bukkit persistent data container (pdc) key

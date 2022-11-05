@@ -2,7 +2,7 @@
  * Packet handlers for aim down sights model for player
  */
 
-package phonon.xc.compatibility.v1_16_R3.gun
+package phonon.xc.nms.gun
 
 import kotlin.math.min
 import org.bukkit.Material

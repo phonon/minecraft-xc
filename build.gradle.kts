@@ -6,12 +6,10 @@
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import io.papermc.paperweight.userdev.PaperweightUser
 
 // plugin versioning
 version = "0.0.0"
-
-// jvm target
-val JVM = 16 // 1.8 for 8, 11 for 11
 
 // base of output jar name
 val OUTPUT_JAR_NAME = "xc"
@@ -24,6 +22,15 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "1.6.10"
     id("com.github.johnrengelman.shadow") version "7.0.0"
     // maven() // no longer needed in gradle 7
+    
+    // include paperweight, but DO NOT APPLY BY DEFAULT...
+    // we need imports, but only conditionally apply it for 1.17+ builds
+    // for 1.16.5, we don't want to apply because not supported, it
+    // does not allow building unless a bundle version is applied,
+    // which does not exist for 1.16.5, so its impossible to build with
+    // paperweight plugin enabled on 1.16.5
+    // https://stackoverflow.com/questions/62579114/how-to-optionally-apply-some-plugins-using-kotlin-dsl-and-plugins-block-with-gra
+    id("io.papermc.paperweight.userdev") version "1.3.8" apply false
 
     // Apply the application plugin to add support for building a CLI application.
     application
@@ -42,12 +49,6 @@ repositories {
     }
     maven { // worldguard
         url = uri("https://maven.enginehub.org/repo/")
-    }
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(JVM))
     }
 }
 
@@ -90,7 +91,7 @@ dependencies {
     configurations["resolvableImplementation"]("org.tomlj:tomlj:1.0.0")
 
     // paper api
-    api("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
+    // api("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
     
     // protocol lib (for packets)
     compileOnly("com.comphenix.protocol:ProtocolLib:4.5.0")
@@ -104,18 +105,21 @@ dependencies {
     // Use the Kotlin JUnit integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 
-    if ( project.hasProperty("1.12") === true ) {
-        compileOnly(files("./lib/spigot-1.12.2.jar"))
-        configurations["compileOnlyPriority"]("com.destroystokyo.paper:paper-api:1.12.2-R0.1-SNAPSHOT")
-        target = "1.12"
-    } else if ( project.hasProperty("1.16") === true ) {
+    // MINECRAFT VERSION SPECIFIC BUILD CONFIGURATION
+    if ( project.hasProperty("1.16") == true ) {
+        java.toolchain.languageVersion.set(JavaLanguageVersion.of(16)) // need java==16 for 1.16.5
+        sourceSets["main"].java.srcDir("src/nms/v1_16_R3")
         // compileOnly(files("./lib/craftbukkit-1.16.5.jar"))
         compileOnly(files("./lib/spigot-1.16.5.jar"))
         configurations["compileOnlyPriority"]("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
         target = "1.16"
-    } else if ( project.hasProperty("1.18") === true ) {
-        compileOnly(files("./lib/spigot-1.18.2.jar"))
-        configurations["compileOnlyPriority"]("io.papermc.paper:paper-api:1.18.1-R0.1-SNAPSHOT")
+    }
+    else if ( project.hasProperty("1.18") == true ) {
+        java.toolchain.languageVersion.set(JavaLanguageVersion.of(17)) // need java==17 for 1.18.2
+        sourceSets["main"].java.srcDir("src/nms/v1_18_R2")
+        apply<PaperweightUser>() // applies the paper weight plugin for minecraft nms classes
+        paperDevBundle("1.18.2-R0.1-SNAPSHOT") // contains 1.18.2 nms classes
+        compileOnly("io.papermc.paper:paper-api:1.18.2-R0.1-SNAPSHOT")
         target = "1.18"
     }
 }
@@ -133,7 +137,7 @@ tasks {
     named<ShadowJar>("shadowJar") {
         // verify valid target minecraft version
         doFirst {
-            val supportedMinecraftVersions = setOf("1.12", "1.16", "1.18")
+            val supportedMinecraftVersions = setOf("1.16", "1.18")
             if ( !supportedMinecraftVersions.contains(target) ) {
                 throw Exception("Invalid Minecraft version! Supported versions are: 1.12, 1.16, 1.18")
             }

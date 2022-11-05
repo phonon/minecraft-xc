@@ -16,10 +16,9 @@ import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.InventoryHolder
 import phonon.xc.XC
 import phonon.xc.util.Message
-
-// TODO: in future need to select NMS version
-import phonon.xc.compatibility.v1_16_R3.gun.crawl.*
-import phonon.xc.compatibility.v1_16_R3.gun.item.*
+import phonon.xc.gun.crawl.CrawlStart
+// nms version specific imports
+import phonon.xc.nms.gun.item.*
 
 
 private val SUBCOMMANDS = listOf(
