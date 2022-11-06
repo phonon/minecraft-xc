@@ -1,61 +1,35 @@
 /**
- * Contains adapter functions to set/get hat properties
- * on minecraft item stacks.
- * 
- * Some helpers:
- * https://www.spigotmc.org/threads/what-are-nbt-tags-and-how-do-you-use-it.500603/
+ * Throwable item specific nms item stack adapter functions.
  */
 
 package phonon.xc.nms.throwable.item
 
-import kotlin.math.min
-import org.bukkit.ChatColor
-import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.meta.ItemMeta
-import org.bukkit.persistence.PersistentDataType
-import org.bukkit.persistence.PersistentDataContainer
-
 import net.minecraft.server.v1_16_R3.NBTTagCompound
 import net.minecraft.server.v1_16_R3.ItemStack as NMSItemStack
 import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftItemStack
 import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer
-import org.bukkit.craftbukkit.v1_16_R3.util.CraftMagicNumbers
 
 import phonon.xc.XC
 import phonon.xc.throwable.ThrowableItem
 import phonon.xc.nms.item.getCustomItemUnchecked
 import phonon.xc.nms.item.GetNMSItemStack
+import phonon.xc.nms.item.getObjectFromNMSItemStack
+import phonon.xc.nms.item.BUKKIT_STORAGE_TAG
+import phonon.xc.nms.item.NBT_TAG_INT
 
-
-// bukkit persistent data container (pdc) key
-// pdc is stored in a nested table in item main tags
-private const val BUKKIT_CUSTOM_TAG = "PublicBukkitValues"
-
-// nbt tag integers
-private const val NBT_TAG_INT = 3
 
 /**
  * Get a throwable from nms item stack using raw NBT tags.
  * This checks if material matches config throwable item material.
  */
 public fun getThrowableFromNMSItemStack(nmsItem: NMSItemStack): ThrowableItem? {
-    val material = CraftMagicNumbers.getMaterial(nmsItem.getItem())
-    if ( material == XC.config.materialThrowable ) {
-        val tags: NBTTagCompound? = nmsItem.getTag()
-        // println("tags = $tags")
-        if ( tags != null && tags.hasKeyOfType("CustomModelData", NBT_TAG_INT) ) {
-            // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
-            val modelId = tags.getInt("CustomModelData")
-            // println("tags['CustomModelData'] = ${modelId}")
-            if ( modelId < XC.MAX_THROWABLE_CUSTOM_MODEL_ID ) {
-                return XC.throwable[modelId]
-            }
-        }
-    }
-
-    return null
+    return getObjectFromNMSItemStack(
+        nmsItem,
+        XC.config.materialThrowable,
+        XC.throwable,
+    )
 }
 
 /**
@@ -88,7 +62,7 @@ public fun getThrowableInHandUnchecked(player: Player): ThrowableItem? {
     // println("itemInHand: $nmsItem")
 
     if ( nmsItem != null ) {
-        return getCustomItemUnchecked(nmsItem, XC.throwable, XC.MAX_THROWABLE_CUSTOM_MODEL_ID)
+        return getCustomItemUnchecked(nmsItem, XC.throwable)
     }
 
     return null

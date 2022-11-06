@@ -35,12 +35,12 @@ import phonon.xc.XC
 import phonon.xc.util.Message
 import phonon.xc.gun.useAimDownSights
 import phonon.xc.gun.AmmoInfoMessagePacket
+import phonon.xc.gun.item.setGunItemMetaModel
 import phonon.xc.util.progressBar10
 // nms version specific imports
 import phonon.xc.nms.gun.crawl.BoxEntity
 import phonon.xc.nms.gun.item.getGunInHand
 import phonon.xc.nms.gun.item.getGunFromItem
-import phonon.xc.nms.gun.item.setGunItemMetaModel
 
 /**
  * Block data for a fake barrier block to place above player to

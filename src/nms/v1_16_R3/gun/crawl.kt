@@ -15,32 +15,11 @@
 
 package phonon.xc.nms.gun.crawl
 
-import java.util.UUID
 import net.minecraft.server.v1_16_R3.EnumDirection
 import net.minecraft.server.v1_16_R3.EntityTypes
 import net.minecraft.server.v1_16_R3.EntityShulker
 import org.bukkit.craftbukkit.v1_16_R3.CraftWorld
-import org.bukkit.World
-import org.bukkit.block.data.BlockData
-import org.bukkit.ChatColor
 import org.bukkit.Location
-import org.bukkit.Material
-import org.bukkit.entity.Player
-import org.bukkit.scheduler.BukkitRunnable
-import org.bukkit.potion.PotionEffectType
-import org.bukkit.potion.PotionEffect
-import org.bukkit.persistence.PersistentDataType
-import com.comphenix.protocol.ProtocolLibrary
-import com.comphenix.protocol.ProtocolManager
-import com.comphenix.protocol.PacketType
-import com.comphenix.protocol.wrappers.WrappedDataWatcher
-import phonon.xc.XC
-import phonon.xc.util.Message
-import phonon.xc.gun.useAimDownSights
-import phonon.xc.gun.AmmoInfoMessagePacket
-import phonon.xc.util.progressBar10
-
-import phonon.xc.nms.gun.item.*
 
 // ==================================================================
 // Entity Shulker in 1.16.5:

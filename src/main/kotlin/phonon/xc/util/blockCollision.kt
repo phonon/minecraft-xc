@@ -67,7 +67,7 @@ public val defaultSolidBlockHandler: BlockCollisionHandler = { _, _, _, _, _, _,
  * specific material handlers to true/false.
  */
 public fun blockCollisionHandlers(): EnumArrayMap<Material, BlockCollisionHandler> =
-    createEnumArrayMap<Material, BlockCollisionHandler>({ m -> materialBlockCollisionHandler(m) })
+    EnumArrayMap.from<Material, BlockCollisionHandler>({ m -> materialBlockCollisionHandler(m) })
 
 /**
  * Material specific block collision handler

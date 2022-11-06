@@ -28,6 +28,7 @@ import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.scheduler.BukkitRunnable
 import phonon.xc.XC
 import phonon.xc.gun.crawl.CrawlToShootRequest
+import phonon.xc.gun.item.*
 import phonon.xc.util.Message
 import phonon.xc.util.sound.SoundPacket
 import phonon.xc.util.recoil.RecoilPacket

@@ -20,6 +20,7 @@ import org.bukkit.entity.EntityType
 import org.tomlj.Toml
 import phonon.xc.util.mapToObject
 import phonon.xc.util.EnumArrayMap
+import phonon.xc.util.EnumToIntMap
 import phonon.xc.util.Hitbox
 import phonon.xc.util.HitboxSize
 import phonon.xc.util.BlockCollisionHandler
@@ -123,6 +124,23 @@ public data class Config(
     // path to save player deaths stats to
     public val playerDeathLogSaveDir: String = "plugins/xc/logs",
 ) {
+
+    // Lookup table for Material => Int constant for plugin custom
+    // item types defined by XC.ITEM_TYPE_* constants.
+    public val materialToCustomItemType: EnumToIntMap<Material>
+
+    init {
+        materialToCustomItemType = EnumToIntMap.from<Material>({ mat ->
+            when ( mat ) {
+                materialAmmo -> XC.ITEM_TYPE_AMMO
+                materialArmor -> XC.ITEM_TYPE_HAT
+                materialGun -> XC.ITEM_TYPE_GUN
+                materialMelee -> XC.ITEM_TYPE_MELEE
+                materialThrowable -> XC.ITEM_TYPE_THROWABLE
+                else -> XC.ITEM_TYPE_INVALID
+            }
+        })
+    }
 
     companion object {
         /**

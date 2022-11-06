@@ -304,7 +304,7 @@ public data class Hitbox(
          * Create default entity hitbox half extent mappings.
          */
         internal fun defaultEntityHitboxSizes(): EnumArrayMap<EntityType, HitboxSize> {
-            val map = createEnumArrayMap<EntityType, HitboxSize>({_ -> HitboxSize(0f, 0f, 0f, 0f)})
+            val map = EnumArrayMap.from<EntityType, HitboxSize>({_ -> HitboxSize(0f, 0f, 0f, 0f)})
             
             // each value is (x/2, z/2, y, y_offset)
 
@@ -433,7 +433,7 @@ public data class Hitbox(
          */
         internal fun defaultEntityTargetable(): EnumArrayMap<EntityType, Boolean> {
             // default insert all living entities
-            val map = createEnumArrayMap<EntityType, Boolean>({type -> type.isAlive()})
+            val map = EnumArrayMap.from<EntityType, Boolean>({type -> type.isAlive()})
 
             // insert specific non-living entities
             map[EntityType.BOAT] = true

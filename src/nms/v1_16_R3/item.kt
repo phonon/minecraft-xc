@@ -17,36 +17,68 @@ import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer
 import org.bukkit.craftbukkit.v1_16_R3.util.CraftMagicNumbers
 import phonon.xc.XC
 
+/**
+ * Bukkit persistent data container (pdc) key.
+ * PDC is stored in a nested table in item's main NBT tags.
+ * https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/browse/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java#264
+ */
+internal const val BUKKIT_STORAGE_TAG = "PublicBukkitValues"
 
-// bukkit persistent data container (pdc) key
-// pdc is stored in a nested table in item main tags
-private const val BUKKIT_CUSTOM_TAG = "PublicBukkitValues"
-
-// nbt tag integers
-private const val NBT_TAG_INT = 3
+/**
+ * NBT tag type for integers.
+ */
+internal const val NBT_TAG_INT = 3
 
 /**
  * Return custom item type player is holding in hand.
+ * This is a helper function to map from item config materials
+ * to pre-defined constants for item types, used in event listener
+ * to map from player item in hand to custom item type. Very slightly
+ * slower due to the 2nd translation from material to custom item type
+ * ...but makes code that needs to match custom item types a little
+ * cleaner by avoiding matching on "XC.config.materialGun" directly.
  */
 public fun getItemTypeInHand(player: Player): Int {
     val craftPlayer = player as CraftPlayer
     val nmsPlayer = craftPlayer.getHandle()
     val nmsItem = nmsPlayer.inventory.getItemInHand()
+
+    // note: nms item is never null, if hand empty this gives air material
+    // println("getItemTypeInHand -> itemInHand: $nmsItem")
     
-    // println("itemInHand: $nmsItem")
+    // internally uses IntArray lookup table using material enum ordinal
     val material = CraftMagicNumbers.getMaterial(nmsItem.getItem())
-
-    return when ( material ) {
-        XC.config.materialAmmo -> XC.ITEM_TYPE_AMMO
-        XC.config.materialArmor -> XC.ITEM_TYPE_HAT
-        XC.config.materialGun -> XC.ITEM_TYPE_GUN
-        XC.config.materialMelee -> XC.ITEM_TYPE_MELEE
-        XC.config.materialThrowable -> XC.ITEM_TYPE_THROWABLE
-
-        else -> XC.ITEM_TYPE_INVALID
-    }
+    return XC.config.materialToCustomItemType[material]
 }
 
+/**
+ * Get custom item type from nms item stack using raw NBT tags.
+ * Checks if material matches, then uses its custom model id to
+ * index into custom type storage array. Return null if material
+ * does not match or if id is past the storage array size.
+ */
+public fun <T> getObjectFromNMSItemStack(
+    nmsItem: NMSItemStack,
+    materialType: Material,
+    storage: Array<T>,
+): T? {
+    val material = CraftMagicNumbers.getMaterial(nmsItem.getItem())
+    if ( material == materialType ) {
+        val tags: NBTTagCompound? = nmsItem.getTag()
+        // println("tags = $tags")
+        // NOTE: must check first before getting tag
+        if ( tags != null && tags.hasKeyOfType("CustomModelData", NBT_TAG_INT) ) {
+            // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
+            val modelId = tags.getInt("CustomModelData")
+            // println("tags['CustomModelData'] = ${modelId}")
+            if ( modelId < storage.size ) {
+                return storage[modelId]
+            }
+        }
+    }
+
+    return null
+}
 
 /**
  * Get a custom item from index in XC engine storage Array<T>
@@ -60,7 +92,6 @@ public fun getItemTypeInHand(player: Player): Int {
 public fun <T> getCustomItemUnchecked(
     nmsItem: NMSItemStack,
     storage: Array<T>,
-    maxId: Int,
 ): T? {
     val tags: NBTTagCompound? = nmsItem.getTag()
     // println("tags = $tags")
@@ -68,7 +99,7 @@ public fun <T> getCustomItemUnchecked(
         // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
         val modelId = tags.getInt("CustomModelData")
         // println("tags['CustomModelData'] = ${modelId}")
-        if ( modelId < maxId ) {
+        if ( modelId < storage.size ) {
             return storage[modelId]
         }
     }
@@ -102,7 +133,7 @@ internal object GetNMSItemStack {
  * 
  * Bukkit PersistentDataContainer keys are stored in a table
  * keyed by "PublicBukkitValues", which is accessible from
- * CraftMetaItem.BUKKIT_CUSTOM_TAG.NBT
+ * CraftMetaItem.BUKKIT_STORAGE_TAG.NBT
  * 
  * NOTE: in some cases the cast "item as CraftItemStack" is unsafe...
  * If item is not a CraftItemStack.
@@ -126,9 +157,9 @@ public fun getItemIntDataIfMaterialMatches(
                 val tag: NBTTagCompound? = nmsItem.getTag()
                 // println("tags = $tag")
                 // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
-                if ( tag != null && tag.hasKey(BUKKIT_CUSTOM_TAG) ) {
+                if ( tag != null && tag.hasKey(BUKKIT_STORAGE_TAG) ) {
                     // persistent data container holder NBTTagCompound
-                    val pdc = tag.getCompound(BUKKIT_CUSTOM_TAG)!!
+                    val pdc = tag.getCompound(BUKKIT_STORAGE_TAG)!!
                     if ( pdc.hasKeyOfType(key, NBT_TAG_INT) ) {
                         return pdc.getInt(key)
                     }
@@ -172,9 +203,9 @@ internal fun getInventorySlotForCustomItemWithNbtKey(
             val tag: NBTTagCompound? = nmsItem.getTag()
             // println("tags = $tag")
             // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
-            if ( tag != null && tag.hasKey(BUKKIT_CUSTOM_TAG) ) {
+            if ( tag != null && tag.hasKey(BUKKIT_STORAGE_TAG) ) {
                 // persistent data container holder NBTTagCompound
-                val pdc = tag.getCompound(BUKKIT_CUSTOM_TAG)!!
+                val pdc = tag.getCompound(BUKKIT_STORAGE_TAG)!!
                 if ( pdc.hasKeyOfType(nbtKey, NBT_TAG_INT) ) {
                     if ( pdc.getInt(nbtKey) == value ) {
                         return slot
