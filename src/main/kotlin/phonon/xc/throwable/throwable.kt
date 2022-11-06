@@ -18,6 +18,7 @@ import org.bukkit.Sound
 import org.bukkit.inventory.ItemStack
 import phonon.xc.XC
 import phonon.xc.util.mapToObject
+import phonon.xc.util.IntoItemStack
 import phonon.xc.util.damage.DamageType
 import phonon.xc.util.particle.ParticlePacket
 
@@ -79,7 +80,7 @@ public data class ThrowableItem(
     public val soundThrow: String = "minecraft:entity.arrow.shoot",
     public val soundImpact: String = "minecraft:block.glass.break", // for hit entity or block handler
     public val soundExplosion: String = "minecraft:entity.generic.explode", // for explosion handler
-) {
+): IntoItemStack {
     // flags for handlers, used in thrown throwable tick loop
     // to enable handling for block and entity hit detection 
     public val hasBlockHitHandler: Boolean = onBlockHitHandler !== noBlockHitHandler
@@ -88,7 +89,7 @@ public data class ThrowableItem(
     /**
      * Create a new ItemStack from properties.
      */
-    public fun toItemStack(): ItemStack {
+    public override fun toItemStack(): ItemStack {
         val item = ItemStack(XC.config.materialThrowable, 1)
         val itemMeta = item.getItemMeta()
         

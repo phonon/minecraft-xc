@@ -17,6 +17,7 @@ import org.bukkit.inventory.ItemStack
 import phonon.xc.XC
 import phonon.xc.util.mapToObject
 import phonon.xc.util.damage.DamageType
+import phonon.xc.util.IntoItemStack
 
 /**
  * Melee weapon.
@@ -34,12 +35,12 @@ public data class MeleeWeapon(
     public val damageArmorReduction: Double = 0.5,     // reduction per armor point
     public val damageResistanceReduction: Double = 1.0, // reduction per resistance protection level
     public val damageType: DamageType = DamageType.MELEE,
-) {
+): IntoItemStack {
 
     /**
      * Create a new ItemStack from properties.
      */
-    public fun toItemStack(): ItemStack {
+    public override fun toItemStack(): ItemStack {
         val item = ItemStack(XC.config.materialMelee, 1)
         val itemMeta = item.getItemMeta()
         

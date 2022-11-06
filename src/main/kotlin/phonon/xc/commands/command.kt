@@ -15,8 +15,9 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.InventoryHolder
 import phonon.xc.XC
-import phonon.xc.util.Message
 import phonon.xc.gun.crawl.CrawlStart
+import phonon.xc.util.Message
+import phonon.xc.util.CustomItemGui
 // nms version specific imports
 import phonon.xc.nms.gun.item.*
 
@@ -125,19 +126,34 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         }
 
         if ( args.size < 2 ) {
-            Message.error(sender, "[xc] /xc browse [ammo|gun|hat|melee|throwable]")
+            Message.error(sender, "[xc] /xc browse [ammo|gun|hat|melee|throwable] [page]")
+            return
+        }
+
+        // parse third arg as "page number", which is base index
+        // in item ids to start at. for user command parsing,
+        // let page start at 1 (not 0), but internally page is 0 indexed.
+        // so subtract 1
+        val page = if ( args.size > 2 ) {
+            (args[2].toIntOrNull() ?: 1) - 1
+        } else {
+            0
+        }
+
+        if ( page < 0 ) {
+            Message.error(sender, "Page must be >= 1.")
             return
         }
 
         val type = args[1].lowercase()
         when ( type ) {
-            "ammo" -> player.openInventory(AmmoGui().getInventory())
-            "gun" -> player.openInventory(GunGui().getInventory())
-            "hat" -> player.openInventory(HatGui().getInventory())
-            "melee" -> player.openInventory(MeleeGui().getInventory())
-            "throwable" -> player.openInventory(ThrowableGui().getInventory())
+            "ammo" -> player.openInventory(CustomItemGui("Ammo", XC.ammoIds, XC.ammo, page).getInventory())
+            "gun" -> player.openInventory(CustomItemGui("Gun", XC.gunIds, XC.guns, page).getInventory())
+            "hat" -> player.openInventory(CustomItemGui("Hat", XC.hatIds, XC.hats, page).getInventory())
+            "melee" -> player.openInventory(CustomItemGui("Melee", XC.meleeIds, XC.melee, page).getInventory())
+            "throwable" -> player.openInventory(CustomItemGui("Throwable", XC.throwableIds, XC.throwable, page).getInventory())
             else -> {
-                Message.error(sender, "[xc] Invalid $type: /xc browse [ammo|gun|hat|melee|throwable]")
+                Message.error(sender, "[xc] Invalid $type: /xc browse [ammo|gun|hat|melee|throwable] [page]")
             }
         }
     }
@@ -418,120 +434,4 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
 
     //     println("load chunks: ${dt / 1000}us")
     // }
-}
-
-
-private class AmmoGui(): InventoryHolder {
-    val inv: Inventory = Bukkit.createInventory(this, 54, "Ammo")
-    
-    override public fun getInventory(): Inventory {
-        var n = 0 // base index in array of guns for pagination
-        for ( id in XC.ammoIds ) {
-            val ammo = XC.ammo[id]
-            if ( ammo != null ) {
-                this.inv.setItem(n, ammo.toItemStack())
-
-                // inventory size cutoff
-                // TODO: pagination
-                n += 1
-                if ( n >= 54 ) {
-                    break
-                }
-            }
-        }
-
-        return this.inv
-    }
-}
-
-private class GunGui(): InventoryHolder {
-    val inv: Inventory = Bukkit.createInventory(this, 54, "Guns")
-    
-    override public fun getInventory(): Inventory {
-        var n = 0 // base index in array of guns for pagination
-        for ( id in XC.gunIds ) {
-            val gun = XC.guns[id]
-            if ( gun != null ) {
-                this.inv.setItem(n, gun.toItemStack())
-
-                // inventory size cutoff
-                // TODO: pagination
-                n += 1
-                if ( n >= 54 ) {
-                    break
-                }
-            }
-        }
-
-        return this.inv
-    }
-}
-
-private class HatGui(): InventoryHolder {
-    val inv: Inventory = Bukkit.createInventory(this, 54, "Hats")
-    
-    override public fun getInventory(): Inventory {
-        var n = 0 // base index in array of guns for pagination
-        for ( id in XC.hatIds ) {
-            val hat = XC.hats[id]
-            if ( hat != null ) {
-                this.inv.setItem(n, hat.toItemStack())
-
-                // inventory size cutoff
-                // TODO: pagination
-                n += 1
-                if ( n >= 54 ) {
-                    break
-                }
-            }
-        }
-
-        return this.inv
-    }
-}
-
-private class ThrowableGui(): InventoryHolder {
-    val inv: Inventory = Bukkit.createInventory(this, 54, "Throwable")
-    
-    override public fun getInventory(): Inventory {
-        var n = 0 // base index in array of throwables for pagination
-        for ( id in XC.throwableIds ) {
-            val th = XC.throwable[id]
-            if ( th != null ) {
-                this.inv.setItem(n, th.toItemStack())
-
-                // inventory size cutoff
-                // TODO: pagination
-                n += 1
-                if ( n >= 54 ) {
-                    break
-                }
-            }
-        }
-
-        return this.inv
-    }
-}
-
-private class MeleeGui(): InventoryHolder {
-    val inv: Inventory = Bukkit.createInventory(this, 54, "Melee")
-    
-    override public fun getInventory(): Inventory {
-        var n = 0 // base index in array of throwables for pagination
-        for ( id in XC.meleeIds ) {
-            val th = XC.melee[id]
-            if ( th != null ) {
-                this.inv.setItem(n, th.toItemStack())
-
-                // inventory size cutoff
-                // TODO: pagination
-                n += 1
-                if ( n >= 54 ) {
-                    break
-                }
-            }
-        }
-
-        return this.inv
-    }
 }

@@ -21,6 +21,7 @@ import org.bukkit.attribute.AttributeModifier
 import org.bukkit.enchantments.Enchantment
 import phonon.xc.XC
 import phonon.xc.util.mapToObject
+import phonon.xc.util.IntoItemStack
 // nms version specific imports
 import phonon.xc.nms.armor.item.*
 
@@ -34,11 +35,11 @@ public data class Hat(
     public val itemName: String = "helmet",
     public val itemModel: Int = 0,
     public val itemLore: List<String> = listOf(),
-) {
+): IntoItemStack {
     /**
      * Create a new ItemStack from helmet properties.
      */
-    public fun toItemStack(): ItemStack {
+    public override fun toItemStack(): ItemStack {
         val item = ItemStack(XC.config.materialArmor, 1)
         val itemMeta = item.getItemMeta()
         

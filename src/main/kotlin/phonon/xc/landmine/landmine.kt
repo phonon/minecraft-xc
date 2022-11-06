@@ -33,6 +33,7 @@ import phonon.xc.util.particle.ParticlePacket
 import phonon.xc.util.ChunkCoord
 import phonon.xc.util.ChunkCoord3D
 import phonon.xc.util.Hitbox
+import phonon.xc.util.IntoItemStack
 
 
 internal val PRESSURE_PLATES: EnumSet<Material> = EnumSet.of(
@@ -80,12 +81,12 @@ public data class Landmine(
 
     // sounds
     public val soundExplosion: String = "minecraft:entity.generic.explode",
-) {
+): IntoItemStack {
 
     /**
      * Create a new ItemStack from properties.
      */
-    public fun toItemStack(): ItemStack {
+    public override fun toItemStack(): ItemStack {
         val item = ItemStack(this.material, 1)
         val itemMeta = item.getItemMeta()
         

@@ -100,6 +100,7 @@ public object XC {
     // BUILT-IN ENGINE CONSTANTS
     // ========================================================================
     public const val INVALID_ID: Int = Int.MAX_VALUE       // sentinel value for invalid IDs
+    public const val MAX_AMMO_CUSTOM_MODEL_ID: Int = 1024  // max allowed ammo item custom model id
     public const val MAX_GUN_CUSTOM_MODEL_ID: Int = 1024   // max allowed gun item custom model id
     public const val MAX_MELEE_CUSTOM_MODEL_ID: Int = 1024 // max allowed melee item custom model id
     public const val MAX_HAT_CUSTOM_MODEL_ID: Int = 1024   // max allowed hat item custom model id
@@ -146,7 +147,7 @@ public object XC {
     internal var throwableIds: IntArray = intArrayOf() // cached non null throwing item ids
 
     // ammo lookup
-    internal var ammo: HashMap<Int, Ammo> = HashMap()
+    internal var ammo: Array<Ammo?> = Array(MAX_AMMO_CUSTOM_MODEL_ID, { _ -> null })
     internal var ammoIds: IntArray = intArrayOf() // cached non null ammo Ids
 
     // landmine storage: material => landmine properties lookup
@@ -500,11 +501,15 @@ public object XC {
             }
         }
         // map ammo id => ammo
-        val ammo = HashMap<Int, Ammo>()
+        val ammo: Array<Ammo?> = Array(XC.MAX_AMMO_CUSTOM_MODEL_ID, { _ -> null })
         val validAmmoIds = mutableSetOf<Int>()
         for ( a in ammoLoaded ) {
-            ammo[a.id] = a
-            validAmmoIds.add(a.id)
+            if ( a.id < XC.MAX_AMMO_CUSTOM_MODEL_ID ) {
+                ammo[a.id] = a
+                validAmmoIds.add(a.id)
+            } else {
+                XC.logger!!.warning("Ammo ${a.itemName} has invalid custom model id: ${a.id} (max allowed = ${XC.MAX_AMMO_CUSTOM_MODEL_ID})")
+            }
         }
         
         // map hat id => hat

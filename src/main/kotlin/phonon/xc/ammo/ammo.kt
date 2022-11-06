@@ -13,6 +13,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import phonon.xc.XC
 import phonon.xc.util.mapToObject
+import phonon.xc.util.IntoItemStack
 
 
 public class Ammo(
@@ -22,14 +23,12 @@ public class Ammo(
     // ammo item/visual properties
     public val itemName: String = "ammo",
     public val itemLore: List<String>? = null,
-) {
+): IntoItemStack {
     /**
      * Create a new ItemStack from ammo properties.
      */
-    public fun toItemStack(
-        count: Int = 1,
-    ): ItemStack {
-        val item = ItemStack(XC.config.materialAmmo, count)
+    public override fun toItemStack(): ItemStack {
+        val item = ItemStack(XC.config.materialAmmo, 1)
         val itemMeta = item.getItemMeta()
         
         // name

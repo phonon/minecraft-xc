@@ -31,6 +31,7 @@ import phonon.xc.gun.noEntityHitHandler
 import phonon.xc.gun.noBlockHitHandler
 import phonon.xc.util.mapToObject
 import phonon.xc.util.damage.DamageType
+import phonon.xc.util.IntoItemStack
 import phonon.xc.util.particle.ParticlePacket
 import phonon.xc.util.toml.toIntArray
 // nms version specific imports
@@ -260,7 +261,7 @@ public data class Gun(
     public val soundReloadFinish: String = "gun_reload_finish",
     public val soundReloadFinishVolume: Float = 1f,
     public val soundReloadFinishPitch: Float = 1f,
-) {
+): IntoItemStack {
 
     // This contains an array of all possible combinations of
     // ammo string (e.g. "Ammo: 4/10") and item lore.
@@ -358,7 +359,7 @@ public data class Gun(
     /**
      * Create a new ItemStack from gun properties.
      */
-    public fun toItemStack(ammo: Int = Int.MAX_VALUE): ItemStack {
+    public override fun toItemStack(): ItemStack {
         val item = ItemStack(XC.config.materialGun, 1)
         val itemMeta = item.getItemMeta()
         
@@ -369,12 +370,12 @@ public data class Gun(
         itemMeta.setCustomModelData(this.itemModelDefault)
 
         // ammo (IMPORTANT: actual ammo count used for shooting/reload logic)
-        val ammoCount = min(ammo, this.ammoMax)
+        val ammoCount = this.ammoMax
         val itemData = itemMeta.getPersistentDataContainer()
         itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, min(ammoCount, this.ammoMax))
         
         // begin item description with ammo count
-        val itemDescription = this.getItemDescriptionForAmmo(ammo)
+        val itemDescription = this.getItemDescriptionForAmmo(ammoCount)
         itemMeta.setLore(itemDescription.toList())
 
         // add item cooldown
