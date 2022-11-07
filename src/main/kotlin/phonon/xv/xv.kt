@@ -35,6 +35,11 @@ public object XV {
     // vehicle base prototypes
     internal var vehiclePrototypes: Map<String, VehiclePrototype> = mapOf()
     internal var vehiclePrototypeNames: List<String> = listOf() // for tab completion
+    // vehicle element prototypes
+    // the keys in this map are <vehicle.name>.<element.name>, not just the element name
+    internal var vehicleElementPrototypes: Map<String, VehicleElementPrototype> = mapOf()
+    // list of <vehicle.name>.<element.name>
+    internal var vehicleElementPrototypeNames: List<String> = listOf()
 
     // components
     internal val storage: ComponentsStorage = ComponentsStorage()
@@ -105,6 +110,8 @@ public object XV {
             "vehicle/debug_tank.toml",
         ).forEach { p -> XV.plugin!!.saveResource(p, false) }
 
+        val elementPrototypes = mutableMapOf<String, VehicleElementPrototype>()
+
         val vehiclePrototypes: Map<String, VehiclePrototype> = listDirFiles(config.pathFilesVehicles)
             .map { f -> VehiclePrototype.fromTomlFile(config.pathFilesVehicles.resolve(f), XV.logger) }
             .filterNotNull()
@@ -115,11 +122,14 @@ public object XV {
                 v.elements.forEach { e ->
                     if (!storage.lookup.containsKey(e.layout))
                         storage.addLayout(e.layout)
+                    elementPrototypes["${v.name}.${e.name}"] = e
                 }
                 v.name to v
             }
             .toMap()
-        
+
+        XV.vehicleElementPrototypes = elementPrototypes
+        XV.vehicleElementPrototypeNames = XV.vehicleElementPrototypes.keys.toList()
         XV.vehiclePrototypes = vehiclePrototypes
         XV.vehiclePrototypeNames = vehiclePrototypes.keys.toList()
         

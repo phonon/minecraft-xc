@@ -3,8 +3,7 @@ package phonon.xv.system
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import phonon.xv.XV
-import phonon.xv.core.ComponentsStorage
-import phonon.xv.core.VehiclePrototype
+import phonon.xv.core.*
 
 public data class CreateVehicleRequest(
         val player: Player,
@@ -27,6 +26,18 @@ public fun systemCreateVehicle(
         val (player, prototype, location) = req
 
         val vehicleId = XV.vehicleStorage.newId()
+        val elements = ArrayList<VehicleElement>(prototype.elements.size)
+        for ( eltPrototype in prototype.elements ) {
+            // copy elements from prototype and create
+
+        }
+
+        val vehicle = Vehicle(
+                "${prototype.name}${vehicleId}",
+                vehicleId,
+                prototype,
+                elements.toTypedArray()
+        )
         // steps:
         // 1. Reserve a VehicleId for the vehicle itself.
         // 2. iterate thru VehicleElementPrototypes

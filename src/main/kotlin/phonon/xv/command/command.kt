@@ -260,6 +260,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
                     z = loc.z,
                     yaw = loc.yaw.toDouble(),
                 ))
+                element.seats?.copy()
                 archetype.seats!!.add(element.seats!!.copy())
                 archetype.seatsRaycast!!.add(element.seatsRaycast!!.copy())
                 archetype.model!!.add(element.model!!.copy(

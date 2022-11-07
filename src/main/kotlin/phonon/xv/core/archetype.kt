@@ -80,47 +80,18 @@ public class ArchetypeStorage(
     // fluffy start, vehicle element id manager + dense map/array
 
     // element id => element
-    private val lookup: Array<VehicleElement?> = Array(maxElements, { _ -> null })
+    val lookup: HashMap<VehicleElementId, VehicleElement> = HashMap()
     // stack of free ids that are not at the end of the lookup array
-    private val freeIds: Stack<Int> = Stack()
     // lookup array vehicle element id => dense array index
     // the sets we're mapping have equal cardinality, we use a dense map
     // to keep all components in contiguous block in dense array
-    private val denseLookup: Array<Int> = Array(maxElements, { _ -> INVALID_DENSE_INDEX })
+    private val denseLookup: Array<Int> = Array(maxElements) { _ -> INVALID_DENSE_INDEX }
+
     // dense array index => vehicle element id
     // only internal cuz iterator classes need it
-    internal val elements: IntArray = IntArray(maxElements, { _ -> INVALID_ELEMENT_ID })
-    // dense array implicit linked list head
-
-    // element id => element lookup, function for type safety
-    public fun lookup(id: VehicleElementId): VehicleElement? {
-        return lookup[id]
-    }
-
-    // reserves a new element id and internally adds an entry in dense array
-    public fun newId(): VehicleElementId {
-        // no freeIds between index 0 and size
-        val newId = if ( freeIds.isEmpty() ) {
-            // we're at max capacity, just return invalid
-            if ( size >= MAX_VEHICLE_ELEMENTS ) {
-                return INVALID_VEHICLE_ID
-            } else { // otherwise just use size as index
-                size++
-            }
-        } else {
-            size++
-            freeIds.pop()
-        }
-
-
-        return newId
-    }
-
-    public fun freeId(id: VehicleElementId) {
-
-    }
-
-    // fluffy end
+    internal val elements: IntArray = IntArray(maxElements) { _ -> INVALID_ELEMENT_ID }
+    // denseLookup implicit linked list head
+    private var freedNext: Int = 0
 
     /*
     // map from vehicle element id => element's dense array index
@@ -141,6 +112,97 @@ public class ArchetypeStorage(
     public val seats: ArrayList<SeatsComponent>? = if ( layout.contains(VehicleComponentType.SEATS) ) ArrayList() else null
     public val seatsRaycast: ArrayList<SeatsRaycastComponent>? = if ( layout.contains(VehicleComponentType.SEATS_RAYCAST) ) ArrayList() else null
     public val transform: ArrayList<TransformComponent>? = if ( layout.contains(VehicleComponentType.TRANSFORM) ) ArrayList() else null
+
+    // element id => element lookup, function for type safety
+    fun lookup(id: VehicleElementId): VehicleElement? {
+        return lookup[id]
+    }
+
+    // reserves a new element id and internally adds an entry in dense array
+    // YOU NEED TO UPDATE THE LOOKUP MAP YOURSELF!
+    public fun newId(): VehicleElementId {
+        if ( size >= MAX_VEHICLE_ELEMENTS )
+            return INVALID_ELEMENT_ID
+        // new id is head of linked list
+        val newId = freedNext
+        // update dense array
+        elements[size] = newId
+        // set new head of implicit linked list
+        freedNext = denseLookup[freedNext]
+        // update dense lookup
+        denseLookup[newId] = size
+        size++
+        return newId
+    }
+
+    // inject the vehicle element w/ its component data
+    // into the archetype storage, this is assuming we've
+    // already called newId() to reserve its id
+    public fun inject(
+            element: VehicleElement,
+            fuel: FuelComponent?,
+            gunTurret: GunTurretComponent?,
+            health: HealthComponent?,
+            landMovementControls: LandMovementControlsComponent?,
+            model: ModelComponent?,
+            seats: SeatsComponent?,
+            seatsRaycast: SeatsRaycastComponent?,
+            transform: TransformComponent?,
+    ) {
+        this.lookup[element.id] = element
+        val denseIndex = denseLookup[element.id]
+        if ( fuel != null )
+            this.fuel?.set(denseIndex, fuel)
+        if ( gunTurret != null )
+            this.gunTurret?.set(denseIndex, gunTurret)
+        if ( health != null )
+            this.health?.set(denseIndex, health)
+        if ( landMovementControls != null )
+            this.landMovementControls?.set(denseIndex, landMovementControls)
+        if ( model != null )
+            this.model?.set(denseIndex, model)
+        if ( seats != null )
+            this.seats?.set(denseIndex, seats)
+        if ( seatsRaycast != null )
+            this.seatsRaycast?.set(denseIndex, seatsRaycast)
+        if ( transform != null )
+            this.transform?.set(denseIndex, transform)
+    }
+
+    // mark id as deleted
+    public fun freeId(id: VehicleElementId) {
+        lookup.remove(id)
+        // index in dense array to delete
+        val index = denseLookup[id]
+        // swap values in dense array w/ last elt
+        val idAtLast = elements[size - 1]
+        elements[index] = idAtLast
+        elements[size - 1] = -1
+        // update in dense lookup and implicit list head
+        denseLookup[id] = freedNext
+        freedNext = id
+        denseLookup[idAtLast] = index
+        // make the swap in component arrays
+        fuel?.set(size - 1, fuel.get(index))
+        fuel?.removeAt(size - 1)
+        gunTurret?.set(size - 1, gunTurret.get(index))
+        gunTurret?.removeAt(size - 1)
+        health?.set(size - 1, health.get(index))
+        health?.removeAt(size - 1)
+        landMovementControls?.set(size - 1, landMovementControls.get(index))
+        landMovementControls?.removeAt(size - 1)
+        model?.set(size - 1, model.get(index))
+        model?.removeAt(size - 1)
+        seats?.set(size - 1, seats.get(index))
+        seats?.removeAt(size - 1)
+        seatsRaycast?.set(size - 1, seatsRaycast.get(index))
+        seatsRaycast?.removeAt(size - 1)
+        transform?.set(size - 1, transform.get(index))
+        transform?.removeAt(size - 1)
+        size--
+    }
+
+    // fluffy end
     
     /**
      * Remove all elements from archetype.

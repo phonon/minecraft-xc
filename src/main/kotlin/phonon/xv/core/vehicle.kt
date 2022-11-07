@@ -27,10 +27,10 @@ public const val INVALID_ELEMENT_ID: VehicleElementId = -1
  * elements together.
  */
 public data class Vehicle(
-    val name: String,
-    val id: VehicleId,
-    val prototype: VehiclePrototype,
-    val elements: Array<VehicleElement>
+        val name: String,
+        val id: VehicleId,
+        val prototype: VehiclePrototype,
+        val elements: Array<VehicleElement>
 ) {
     public val rootElements: Array<VehicleElement>
     
@@ -52,7 +52,8 @@ public data class VehicleElement(
     // This is similar to a "bitset" ECS data layout.
     val prototype: VehicleElementPrototype,
     // Element parent-child tree hierarchy
-    val parent: VehicleElement?,
+    // parents are set lazily, but are set right after
+    var parent: VehicleElement?,
     val children: Array<VehicleElement>,
 ) {
 

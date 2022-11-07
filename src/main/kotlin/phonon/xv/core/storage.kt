@@ -26,16 +26,16 @@ public class VehicleStorage(
     // -1 if we've reached MAX_VEHICLE_ELEMENTS
     fun newId(): VehicleId {
         // no freeIds between index 0 and size
-        if ( freeIds.isEmpty() ) {
+        return if ( freeIds.isEmpty() ) {
             // we're at max capacity, just return invalid
             if ( size >= MAX_VEHICLE_ELEMENTS ) {
-                return INVALID_VEHICLE_ID
+                INVALID_VEHICLE_ID
             } else { // otherwise just use size as index
-                return size++
+                size++
             }
         } else {
             size++
-            return freeIds.pop()
+            freeIds.pop()
         }
     }
 

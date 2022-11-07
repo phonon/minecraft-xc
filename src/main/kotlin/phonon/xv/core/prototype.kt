@@ -32,7 +32,10 @@ import java.util.EnumSet
 import java.util.logging.Logger
 import org.tomlj.Toml
 import org.tomlj.TomlTable
+import phonon.xv.XV
 import phonon.xv.component.*
+import java.util.LinkedList
+import java.util.Queue
 
 
 /**
@@ -43,6 +46,9 @@ public data class VehiclePrototype(
     val name: String,
     val elements: Array<VehicleElementPrototype>,
 ) {
+
+    val rootElements: Array<VehicleElementPrototype> = elements.filter { e -> e.parent == null }.toTypedArray()
+
     companion object {
         /**
          * Try to load a vehicle prototype from a toml file.
@@ -57,13 +63,79 @@ public data class VehiclePrototype(
 
                 // if this contains an elements table, parse each element
                 // else, parse entire doc as single toml table
-                val elements: Array<VehicleElementPrototype> = toml.getArray("elements")?.let { elems ->
-                    ( 0 until elems.size() )
-                    .map { i -> VehicleElementPrototype.fromToml(elems.getTable(i)) }
-                    .toTypedArray()
-                } ?: arrayOf(VehicleElementPrototype.fromToml(toml))
+                val elementsMap: Map<String, VehicleElementPrototype> = if ( toml.getArray("elements") != null ) {
+                    toml.getArray("elements")?.let { elems ->
+                        ( 0 until elems.size() )
+                                .map { i ->
+                                    val elt = VehicleElementPrototype.fromToml(elems.getTable(i), vehicleName = name)
+                                    elt.name to elt
+                                }.toMap()
+                    }!!
+                } else {
+                    val elt = VehicleElementPrototype.fromToml(toml, vehicleName = name)
+                    mapOf(Pair(elt.name, elt))
+                }
+                // we're gonna sort the elements so that we build children
+                // first then parents in the tree
 
-                return VehiclePrototype(name, elements)
+                // we build a graph of elements, element.parent are directed edges
+                // use topological sort to sort array
+                val graph = HashMap<String, String>() // children -> parent
+                val indegree = HashMap<String, Int>()
+                val reverse = HashMap<String, ArrayList<String>>() // parent -> children
+                // build the graph
+                elementsMap.values.forEach { e ->
+                    if ( !indegree.containsKey(e.name) ) {
+                        indegree[e.name] = 0
+                    }
+
+                    if ( e.parent != null ) {
+                        graph[e.name] = e.parent
+                        if ( !reverse.containsKey(e.parent) ) {
+                            reverse[e.parent] = ArrayList()
+                        }
+                        reverse[e.parent]!!.add(e.name)
+                        if ( !indegree.containsKey(e.parent) ) {
+                            indegree[e.parent] = 0
+                        }
+                        indegree[e.parent] = indegree[e.parent]!! + 1
+                    }
+                }
+                // kahn's algo, O(V+E)
+                // basically, push all nodes w/ indegree 0 to queue
+                // process nodes on queue, remove processed nodes and
+                // incident edges from graph & update indegree, push
+                // nodes w/ indegree 0 to stack, then we're done!
+
+                // push all nodes of indegree 0 onto queue
+                val queue: Queue<String> = LinkedList()
+                for ((key, num) in indegree) {
+                    if (num == 0)
+                        queue.add(key)
+                }
+                val elements = ArrayList<VehicleElementPrototype>(elementsMap.keys.size)
+                // main algo
+                while ( !queue.isEmpty() ) {
+                    val next = queue.remove()
+                    // update indegrees & push to stack
+                    indegree[graph[next]!!] = indegree[graph[next]]!! - 1
+                    if ( indegree[graph[next]] == 0 ) {
+                        queue.add(graph[next])
+                    }
+                    // process node
+                    elements.add(elementsMap[next]!!)
+                }
+
+                // build children list
+                for ( e in elements ) {
+                    val children = ArrayList<VehicleElementPrototype>()
+                    for ( childName in reverse[e.name]!! ) {
+                        children.add(elementsMap[childName]!!)
+                    }
+                    e.children = children.toTypedArray()
+                }
+
+                return VehiclePrototype(name, elements.toTypedArray())
             } catch (e: Exception) {
                 logger?.warning("Failed to parse landmine file: ${source.toString()}, ${e}")
                 e.printStackTrace()
@@ -81,6 +153,7 @@ public data class VehiclePrototype(
 public data class VehicleElementPrototype(
     val name: String,
     val parent: String?,
+    val vehicle: String,
     val layout: EnumSet<VehicleComponentType>,
     val fuel: FuelComponent? = null,
     val gunTurret: GunTurretComponent? = null,
@@ -91,8 +164,33 @@ public data class VehicleElementPrototype(
     val seatsRaycast: SeatsRaycastComponent? = null,
     val transform: TransformComponent? = null,
 ) {
+
+    var children: Array<VehicleElementPrototype>? = null
+
+    fun buildCopy(): VehicleElement {
+        val childrenElts = ArrayList<VehicleElement>()
+        // build children first
+        for ( eltPrototype in this.children!! ) {
+            val elt = eltPrototype.buildCopy()
+            childrenElts.add(elt)
+        }
+        val id = XV.storage.lookup[layout]!!.newId()
+        val elt = VehicleElement(
+                "${vehicle}.${name}${id}",
+                id,
+                this,
+                null, // late init, we set this when its parent is built
+                childrenElts.toTypedArray()
+        )
+        // go for another pass thru and set parent of children
+        for ( child in childrenElts ) {
+            child.parent = elt
+        }
+        return elt
+    }
+
     companion object {
-        public fun fromToml(toml: TomlTable, logger: Logger? = null): VehicleElementPrototype {
+        public fun fromToml(toml: TomlTable, logger: Logger? = null, vehicleName: String): VehicleElementPrototype {
             // element built-in properties
             val name = toml.getString("name") ?: ""
             val parent = toml.getString("parent")
@@ -152,6 +250,7 @@ public data class VehicleElementPrototype(
             return VehicleElementPrototype(
                 name,
                 parent,
+                vehicleName,
                 layout,
                 fuel,
                 gunTurret,
