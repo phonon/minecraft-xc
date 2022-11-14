@@ -86,7 +86,7 @@ public data class Landmine(
     /**
      * Create a new ItemStack from properties.
      */
-    public override fun toItemStack(): ItemStack {
+    public override fun toItemStack(_xc: XC): ItemStack {
         val item = ItemStack(this.material, 1)
         val itemMeta = item.getItemMeta()
         
@@ -220,25 +220,26 @@ internal data class LandmineExplosionRequest(
  * Handle landmine activation (e.g. when player steps on pressure plate
  * or redstone activates any other landmine type block).
  */
-internal fun landmineActivationSystem(requests: List<LandmineActivationRequest>): ArrayList<LandmineActivationRequest> {
-    for ( request in requests ) {
+internal fun XC.landmineActivationSystem() {
+    for ( request in this.landmineActivationRequests ) {
         // unpack
         val (
             block,
             landmine,
         ) = request
 
-        XC.landmineExplosions[block.world.getUID()]?.add(LandmineExplosionRequest(
+        this.landmineExplosions[block.world.getUID()]?.add(LandmineExplosionRequest(
             block = block,
             landmine = landmine,
         ))
 
-        XC.landmineFinishUseRequests.add(LandmineFinishUseRequest(
+        this.landmineFinishUseRequests.add(LandmineFinishUseRequest(
             block = block,
         ))
     }
-
-    return ArrayList()
+    
+    // clear requests for next tick
+    this.landmineActivationRequests = ArrayList(0)
 }
 
 /**
@@ -282,10 +283,12 @@ internal fun getLandmineExplosionVisitedChunksSystem(
 /**
  * Handle landmine activation (e.g. when player steps on pressure plate
  * or redstone activates any other landmine type block).
+ * Returns empty request queue for next tick. 
  */
-internal fun landmineHandleExplosionSystem(
+internal fun XC.landmineHandleExplosionSystem(
     requests: List<LandmineExplosionRequest>,
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    logger: Logger,
 ): ArrayList<LandmineExplosionRequest> {
     for ( request in requests ) {
         // unpack
@@ -303,11 +306,11 @@ internal fun landmineHandleExplosionSystem(
             world.playSound(location, landmine.soundExplosion, 1f, 1f)
         } catch ( e: Exception ) {
             e.printStackTrace()
-            XC.logger?.severe("Failed to play sound: ${landmine.soundExplosion}")
+            logger.severe("Failed to play sound: ${landmine.soundExplosion}")
         }
 
         // summon explosion effect at location
-        createExplosion(
+        this.createExplosion(
             hitboxes,
             location,
             null,
@@ -327,7 +330,8 @@ internal fun landmineHandleExplosionSystem(
         )
     }
 
-    return ArrayList()
+    // return empty queue for next tick
+    return ArrayList(0)
 }
 
 /**
@@ -336,13 +340,13 @@ internal fun landmineHandleExplosionSystem(
  * pressed pressure plates to a PRESSED state on same tick. So removing
  * pressure plate (e.g. set to AIR) must be done manually on next tick.
  */
-internal fun landmineFinishUseSystem(requests: List<LandmineFinishUseRequest>): ArrayList<LandmineFinishUseRequest> {
-    for ( request in requests ) {
+internal fun XC.landmineFinishUseSystem() {
+    for ( request in this.landmineFinishUseRequests ) {
         // unpack
         val block = request.block
 
         block.setType(Material.AIR)
     }
 
-    return ArrayList()
+    this.landmineFinishUseRequests = ArrayList()
 }

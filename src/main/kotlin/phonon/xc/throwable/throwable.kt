@@ -89,8 +89,8 @@ public data class ThrowableItem(
     /**
      * Create a new ItemStack from properties.
      */
-    public override fun toItemStack(): ItemStack {
-        val item = ItemStack(XC.config.materialThrowable, 1)
+    public override fun toItemStack(xc: XC): ItemStack {
+        val item = ItemStack(xc.config.materialThrowable, 1)
         val itemMeta = item.getItemMeta()
         
         // name

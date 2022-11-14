@@ -14,6 +14,7 @@ import org.tomlj.Toml
 import org.bukkit.Color
 import org.bukkit.ChatColor
 import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.Particle
 import org.bukkit.attribute.Attribute
 import org.bukkit.attribute.AttributeModifier
@@ -133,7 +134,13 @@ public data class Gun(
     public val itemModelReload: Int = -1,     // when gun is reloading
     public val itemModelAimDownSights: Int = -1, // when using iron sights
 
+    // alternative material for aim down sights model
+    public val materialAimDownSights: Material = Material.CARROT_ON_A_STICK,
+
     // death message
+    // {0} = playerName,
+    // {1} = killerName,
+    // {2} = gun.itemName,
     public val deathMessage: String = "{0} was shot by {1} using {2}",
 
     // equiped properties
@@ -306,7 +313,7 @@ public data class Gun(
     )
 
     // aim down sights handler
-    public val aimDownSightsModel: AimDownSightsModel = AimDownSightsModelPacketManager(this, XC.config.materialAimDownSights)
+    public val aimDownSightsModel: AimDownSightsModel = AimDownSightsModelPacketManager(this, materialAimDownSights)
 
     init {
         // generate all possible item descriptions with different ammo values
@@ -359,8 +366,8 @@ public data class Gun(
     /**
      * Create a new ItemStack from gun properties.
      */
-    public override fun toItemStack(): ItemStack {
-        val item = ItemStack(XC.config.materialGun, 1)
+    public override fun toItemStack(xc: XC): ItemStack {
+        val item = ItemStack(xc.config.materialGun, 1)
         val itemMeta = item.getItemMeta()
         
         // name
@@ -372,7 +379,7 @@ public data class Gun(
         // ammo (IMPORTANT: actual ammo count used for shooting/reload logic)
         val ammoCount = this.ammoMax
         val itemData = itemMeta.getPersistentDataContainer()
-        itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, min(ammoCount, this.ammoMax))
+        itemData.set(xc.namespaceKeyItemAmmo, PersistentDataType.INTEGER, min(ammoCount, this.ammoMax))
         
         // begin item description with ammo count
         val itemDescription = this.getItemDescriptionForAmmo(ammoCount)

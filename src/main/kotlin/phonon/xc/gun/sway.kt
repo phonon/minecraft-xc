@@ -2,6 +2,9 @@
  * Sway and pipelined player motion calculation system.
  * 
  * This is pretty dirty...
+ * 
+ * TODO: convert into a object, move pipeline
+ * state into class state.
  */
 
 package phonon.xc.gun
@@ -18,7 +21,7 @@ import phonon.xc.XC
 /**
  * Calculate shooting sway based on player speed/state and gun.
  */
-public fun calculateSway(
+public fun XC.calculateSway(
     player: Player,
     gun: Gun,
     playerSpeed: Double,
@@ -34,7 +37,7 @@ public fun calculateSway(
     if ( playerSpeed > 0.1 ) {
         sway *= (1.0 + (playerSpeed * gun.swaySpeedMultiplier))
     } else {
-        if ( player.isSneaking() || XC.isCrawling(player) ) {
+        if ( player.isSneaking() || this.isCrawling(player) ) {
             sway *= gun.swayAimDownSights
         }
     }
@@ -78,7 +81,7 @@ internal data class PlayersMotionState(
  * player uuid => speed in blocks/tick
  * player uuid => location
  */
-internal fun playerSpeedSystem(
+internal fun XC.playerSpeedSystem(
     playerSpeed: HashMap<UUID, Double>,       // player uuid => previous speed
     playerLocation: HashMap<UUID, Location>, // player uuid => previous location
 ): PlayersMotionState {
@@ -100,7 +103,7 @@ internal fun playerSpeedSystem(
         val players = Bukkit.getOnlinePlayers()
         val numPlayers = players.size
     
-        if ( numPlayers >= XC.config.playersBeforePipelinedSway ) {
+        if ( numPlayers >= this.config.playersBeforePipelinedSway ) {
             // initiate pipelined motion calculation
             currentPlayers = players.toTypedArray()
             runningPipeline = true

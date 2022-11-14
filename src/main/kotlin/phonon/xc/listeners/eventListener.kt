@@ -8,7 +8,6 @@ import java.time.LocalDateTime
 import java.text.MessageFormat
 import org.bukkit.ChatColor
 import org.bukkit.attribute.Attribute
-import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.entity.Player
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.LivingEntity
@@ -63,38 +62,39 @@ import phonon.xc.util.Message
 import phonon.xc.util.death.PlayerDeathRecord
 import phonon.xc.util.death.XcPlayerDeathEvent
 import phonon.xc.util.damage.damageAfterArmorAndResistance
+// item extension functions on XC
+import phonon.xc.item.getGunInHand
+import phonon.xc.item.getGunInHandUnchecked
+import phonon.xc.item.getGunInSlot
+import phonon.xc.item.getGunFromItem
+import phonon.xc.item.getHatInHand
+import phonon.xc.item.getHatInHandUnchecked
+import phonon.xc.item.getThrowableInHand
+import phonon.xc.item.getThrowableInHandUnchecked
+import phonon.xc.item.getThrowableFromItem
+import phonon.xc.item.getMeleeInHandUnchecked
+import phonon.xc.item.getItemTypeInHand
+import phonon.xc.item.setItemArmorNMS
 
-// TODO: in future need to select NMS version
-import phonon.xc.nms.gun.item.getGunInHand
-import phonon.xc.nms.gun.item.getGunInHandUnchecked
-import phonon.xc.nms.gun.item.getGunInSlot
-import phonon.xc.nms.gun.item.getGunFromItem
-import phonon.xc.nms.armor.item.getHatInHand
-import phonon.xc.nms.armor.item.getHatInHandUnchecked
-import phonon.xc.nms.throwable.item.getThrowableInHand
-import phonon.xc.nms.throwable.item.getThrowableInHandUnchecked
-import phonon.xc.nms.throwable.item.getThrowableFromItem
-import phonon.xc.nms.melee.item.getMeleeInHandUnchecked
-import phonon.xc.nms.item.getItemTypeInHand
-import phonon.xc.nms.item.setItemArmorNMS
 
-
-public class EventListener(val plugin: JavaPlugin): Listener {
+public class EventListener(
+    val xc: XC,
+): Listener {
     @EventHandler
     public fun onPlayerJoin(e: PlayerJoinEvent) {
         val player = e.player
         val playerId = player.getUniqueId()
 
         // stop crawling (cleans up old crawl state)
-        XC.crawlStopQueue.add(CrawlStop(player))
+        xc.crawlStopQueue.add(CrawlStop(player))
 
         // initialize XC engine player data maps
-        XC.playerPreviousLocation[playerId] = player.getLocation()
+        xc.playerPreviousLocation[playerId] = player.getLocation()
 
         // if player joins and is holding a gun or custom wep,
         // do handle selection event
-        getGunInHand(player)?.let { _ -> 
-            XC.playerGunSelectRequests.add(PlayerGunSelectRequest(
+        xc.getGunInHand(player)?.let { _ -> 
+            xc.playerGunSelectRequests.add(PlayerGunSelectRequest(
                 player = player,
             ))
         }
@@ -106,17 +106,17 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         val playerId = player.getUniqueId()
 
         // remove player from XC player data maps
-        XC.playerShootDelay.remove(playerId)
-        XC.playerSpeed.remove(playerId)
-        XC.playerPreviousLocation.remove(playerId)
+        xc.playerShootDelay.remove(playerId)
+        xc.playerSpeed.remove(playerId)
+        xc.playerPreviousLocation.remove(playerId)
         
         // stop crawling (cleans up old crawl state)
-        XC.crawlStopQueue.add(CrawlStop(player))
+        xc.crawlStopQueue.add(CrawlStop(player))
 
         // if player leaves and is holding a gun or custom wep,
         // do reload cleanup
-        getGunInHand(player)?.let { _ -> 
-            XC.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
+        xc.getGunInHand(player)?.let { _ -> 
+            xc.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
             ))
         }
@@ -127,14 +127,14 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         val player: Player = e.entity
 
         // stop crawling
-        if ( XC.isCrawling(player) ) {
-            XC.crawlStopQueue.add(CrawlStop(player))
+        if ( xc.isCrawling(player) ) {
+            xc.crawlStopQueue.add(CrawlStop(player))
         }
 
         // if player dies and is holding a gun or custom wep,
         // do reload cleanup
-        getGunInHand(player)?.let { _ -> 
-            XC.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
+        xc.getGunInHand(player)?.let { _ -> 
+            xc.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
             ))
         }
@@ -145,7 +145,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         // check if custom death message exists
         val playerId = player.getUniqueId()
 
-        val customDeathEvent = XC.deathEvents.remove(playerId)
+        val customDeathEvent = xc.deathEvents.remove(playerId)
         if ( customDeathEvent != null ) {
             // unpack death event from a weapon
             val (
@@ -172,7 +172,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             try {
                 when ( weaponType ) {
                     XC.ITEM_TYPE_GUN -> {
-                        XC.guns[weaponId]?.let { weapon -> 
+                        xc.storage.gun[weaponId]?.let { weapon -> 
                             deathCause = weapon.itemName
                             deathMessage = MessageFormat.format(
                                 weapon.deathMessage,
@@ -185,7 +185,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                     }
                     
                     XC.ITEM_TYPE_THROWABLE -> {
-                        XC.throwable[weaponId]?.let { weapon -> 
+                        xc.storage.throwable[weaponId]?.let { weapon -> 
                             deathCause = weapon.itemName
                             deathMessage = MessageFormat.format(
                                 weapon.deathMessage,
@@ -198,7 +198,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                     }
 
                     XC.ITEM_TYPE_LANDMINE -> {
-                        XC.landmines[weaponMaterial]?.let { weapon -> 
+                        xc.storage.landmine[weaponMaterial]?.let { weapon -> 
                             deathCause = weapon.itemName
                             deathMessage = MessageFormat.format(
                                 weapon.deathMessage,
@@ -211,11 +211,11 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                 }
             } catch ( err: Exception ) {
                 err.printStackTrace()
-                XC.logger?.severe("Failed to get death message for weapon: type=$weaponType id=$weaponId")
+                xc.logger?.severe("Failed to get death message for weapon: type=$weaponType id=$weaponId")
             }
 
             // create death record
-            XC.playerDeathRecords.add(PlayerDeathRecord(
+            xc.playerDeathRecords.add(PlayerDeathRecord(
                 timestamp = LocalDateTime.now(),
                 playerName = playerName,
                 playerUUID = playerId.toString(),
@@ -241,14 +241,14 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
                 if ( damageCause == DamageCause.BLOCK_EXPLOSION || damageCause == DamageCause.ENTITY_EXPLOSION ) {
                     deathMessage = MessageFormat.format(
-                        XC.config.deathMessageExplosion,
+                        xc.config.deathMessageExplosion,
                         playerName,
                     )
                     e.setDeathMessage(deathMessage)
                 }
                 else if ( damageCause == DamageCause.WITHER ) {
                     deathMessage = MessageFormat.format(
-                        XC.config.deathMessageWither,
+                        xc.config.deathMessageWither,
                         playerName,
                     )
                     e.setDeathMessage(deathMessage)
@@ -259,7 +259,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                 deathMessage = e.getDeathMessage() ?: ""
             }
 
-            XC.playerDeathRecords.add(PlayerDeathRecord(
+            xc.playerDeathRecords.add(PlayerDeathRecord(
                 timestamp = LocalDateTime.now(),
                 playerName = playerName,
                 playerUUID = playerId.toString(),
@@ -276,7 +276,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         // clears any redundant death event messages that may have
         // accumulated on the player
         val playerId = e.player.getUniqueId()
-        XC.deathEvents.remove(playerId)
+        xc.deathEvents.remove(playerId)
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -285,13 +285,13 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         val player = e.player
 
         // stop crawling
-        if ( XC.isCrawling(player) ) {
-            XC.crawlStopQueue.add(CrawlStop(player))
+        if ( xc.isCrawling(player) ) {
+            xc.crawlStopQueue.add(CrawlStop(player))
         }
         
-        getGunInHand(player)?.let { _ -> 
+        xc.getGunInHand(player)?.let { _ -> 
             // Message.print(player, "Reloading...")
-            XC.playerAimDownSightsRequests.add(PlayerAimDownSightsRequest(
+            xc.playerAimDownSightsRequests.add(PlayerAimDownSightsRequest(
                 player = player,
             ))
         }
@@ -305,7 +305,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     public fun onEntityToggleSwim(e: EntityToggleSwimEvent) {
         // println("onEntityToggleSwim ${e.getEntity()}")
         if ( !e.isSwimming() && e.getEntityType() == EntityType.PLAYER ) {
-            if( XC.crawling.contains(e.getEntity().getUniqueId()) ) {
+            if( xc.crawling.contains(e.getEntity().getUniqueId()) ) {
                 e.setCancelled(true)
             }
         }
@@ -324,7 +324,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     
     //     //     // disable sprint if gun is no sprint
     //     //     val itemMainHand = equipment.itemInMainHand
-    //     //     if ( itemMainHand.type == XC.config.materialGun ) {
+    //     //     if ( itemMainHand.type == xc.config.materialGun ) {
     //     //         getGunFromItem(itemMainHand)?.let { gun -> 
     //     //             if ( gun.equipNoSprint ) {
     //     //                 println("Stop sprint!")
@@ -342,14 +342,14 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         val item = itemEntity.getItemStack()
         
         // remove invalid aim down sights model item
-        if ( XC.isAimDownSightsModel(item) ) {
+        if ( xc.isAimDownSightsModel(item) ) {
             itemEntity.remove()
         } else {
             when ( item.type ) {
                 // gun drop item: cleanup
-                XC.config.materialGun -> {
-                    getGunFromItem(item)?.let {
-                        XC.itemGunCleanupRequests.add(ItemGunCleanupRequest(
+                xc.config.materialGun -> {
+                    xc.getGunFromItem(item)?.let {
+                        xc.itemGunCleanupRequests.add(ItemGunCleanupRequest(
                             itemEntity = itemEntity,
                             onDrop = true,
                         ))
@@ -357,9 +357,9 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                 }
 
                 // throwable drop item: cancel and do throw request
-                XC.config.materialThrowable -> {
-                    getThrowableFromItem(item)?.let {
-                        XC.droppedThrowables.add(DroppedThrowable(
+                xc.config.materialThrowable -> {
+                    xc.getThrowableFromItem(item)?.let {
+                        xc.droppedThrowables.add(DroppedThrowable(
                             player = e.player,
                             itemEntity = itemEntity,
                         ))
@@ -380,12 +380,12 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         val item = itemEntity.getItemStack()
 
         // remove invalid aim down sights model item
-        if ( XC.isAimDownSightsModel(item) ) {
+        if ( xc.isAimDownSightsModel(item) ) {
             itemEntity.remove()
         }
         
-        getGunFromItem(item)?.let { _ -> 
-            XC.itemGunCleanupRequests.add(ItemGunCleanupRequest(
+        xc.getGunFromItem(item)?.let { _ -> 
+            xc.itemGunCleanupRequests.add(ItemGunCleanupRequest(
                 itemEntity = itemEntity,
                 onDrop = false,
             ))
@@ -401,19 +401,19 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
         // check if previous slot was a gun
         val previousSlot = e.getPreviousSlot()
-        getGunInSlot(player, previousSlot)?.let { _ -> 
-            XC.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
+        xc.getGunInSlot(player, previousSlot)?.let { _ -> 
+            xc.playerGunCleanupRequests.add(PlayerGunCleanupRequest(
                 player = player,
                 inventorySlot = previousSlot,
             ))
 
             // remove any aim down sights models
-            XC.removeAimDownSightsOffhandModel(player)
+            xc.removeAimDownSightsOffhandModel(player)
         }
 
         val mainHandSlot = e.getNewSlot()
-        getGunInSlot(player, mainHandSlot)?.let { _ -> 
-            XC.playerGunSelectRequests.add(PlayerGunSelectRequest(
+        xc.getGunInSlot(player, mainHandSlot)?.let { _ -> 
+            xc.playerGunSelectRequests.add(PlayerGunSelectRequest(
                 player = player,
             ))
         }
@@ -426,9 +426,9 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     public fun onItemSwapHand(e: PlayerSwapHandItemsEvent) {
         val player = e.player
         
-        getGunInHand(player)?.let { _ -> 
+        xc.getGunInHand(player)?.let { _ -> 
             // Message.print(player, "Reloading...")
-            XC.playerReloadRequests.add(PlayerGunReloadRequest(
+            xc.playerReloadRequests.add(PlayerGunReloadRequest(
                 player = player,
             ))
             e.setCancelled(true)
@@ -465,12 +465,12 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         }
 
         if ( action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK ) {
-            when ( getItemTypeInHand(player) ) {
+            when ( xc.getItemTypeInHand(player) ) {
                 // gun left click: single fire or burst
                 XC.ITEM_TYPE_GUN -> {
-                    getGunInHandUnchecked(player)?.let { _ -> 
+                    xc.getGunInHandUnchecked(player)?.let { _ -> 
                         // Message.print(player, "Trying to shoot")
-                        XC.playerShootRequests.add(PlayerGunShootRequest(
+                        xc.playerShootRequests.add(PlayerGunShootRequest(
                             player = player,
                         ))
 
@@ -481,8 +481,8 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
                 // throwable left click: readies throwable
                 XC.ITEM_TYPE_THROWABLE -> {
-                    getThrowableInHandUnchecked(player)?.let {
-                        XC.readyThrowableRequests.add(ReadyThrowableRequest(
+                    xc.getThrowableInHandUnchecked(player)?.let {
+                        xc.readyThrowableRequests.add(ReadyThrowableRequest(
                             player = player,
                         ))
 
@@ -493,13 +493,13 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             }
         }
         else if ( action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK ) {
-            when ( getItemTypeInHand(player) ) {
+            when ( xc.getItemTypeInHand(player) ) {
                 // gun right click: auto fire
                 XC.ITEM_TYPE_GUN -> {
-                    getGunInHandUnchecked(player)?.let { gun -> 
+                    xc.getGunInHandUnchecked(player)?.let { gun -> 
                         // Message.print(player, "auto firing request")
                         if ( gun.autoFire ) {
-                            XC.playerAutoFireRequests.add(PlayerAutoFireRequest(
+                            xc.playerAutoFireRequests.add(PlayerAutoFireRequest(
                                 player = player,
                             ))
 
@@ -511,8 +511,8 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                 
                 // throwable right click: throw item
                 XC.ITEM_TYPE_THROWABLE -> {
-                    getThrowableInHandUnchecked(player)?.let {
-                        XC.throwThrowableRequests.add(ThrowThrowableRequest(
+                    xc.getThrowableInHandUnchecked(player)?.let {
+                        xc.throwThrowableRequests.add(ThrowThrowableRequest(
                             player = player,
                         ))
 
@@ -523,8 +523,8 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
                 // hat right click: wear
                 XC.ITEM_TYPE_HAT -> {
-                    getHatInHandUnchecked(player)?.let {
-                        XC.wearHatRequests.add(PlayerWearHatRequest(
+                    xc.getHatInHandUnchecked(player)?.let {
+                        xc.wearHatRequests.add(PlayerWearHatRequest(
                             player = player,
                         ))
 
@@ -562,13 +562,13 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         ) {
             val player = e.getPlayer()
             
-            when ( getItemTypeInHand(player) ) {
+            when ( xc.getItemTypeInHand(player) ) {
                 // gun right click: auto fire
                 XC.ITEM_TYPE_GUN -> {
-                    getGunInHandUnchecked(player)?.let { gun -> 
+                    xc.getGunInHandUnchecked(player)?.let { gun -> 
                         // Message.print(player, "auto firing request")
                         if ( gun.autoFire ) {
-                            XC.playerAutoFireRequests.add(PlayerAutoFireRequest(
+                            xc.playerAutoFireRequests.add(PlayerAutoFireRequest(
                                 player = player,
                             ))
 
@@ -580,8 +580,8 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                 
                 // throwable right click: throw item
                 XC.ITEM_TYPE_THROWABLE -> {
-                    getThrowableInHandUnchecked(player)?.let {
-                        XC.throwThrowableRequests.add(ThrowThrowableRequest(
+                    xc.getThrowableInHandUnchecked(player)?.let {
+                        xc.throwThrowableRequests.add(ThrowThrowableRequest(
                             player = player,
                         ))
 
@@ -592,8 +592,8 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
                 // hat right click: wear
                 XC.ITEM_TYPE_HAT -> {
-                    getHatInHandUnchecked(player)?.let {
-                        XC.wearHatRequests.add(PlayerWearHatRequest(
+                    xc.getHatInHandUnchecked(player)?.let {
+                        xc.wearHatRequests.add(PlayerWearHatRequest(
                             player = player,
                         ))
 
@@ -613,9 +613,9 @@ public class EventListener(val plugin: JavaPlugin): Listener {
     //     // if ( equipment == null ) return
 
     //     // val itemMainHand = equipment.itemInMainHand
-    //     // if ( itemMainHand.type == XC.config.materialGun ) {
+    //     // if ( itemMainHand.type == xc.config.materialGun ) {
     //     //     Message.print(player, "Firing")
-    //     //     XC.shootGun(player, XC.gunDebug)
+    //     //     xc.shootGun(player, xc.gunDebug)
     //     // }
     // }
 
@@ -629,11 +629,11 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         if ( damager is Player ) {
             val player: Player = damager
             
-            when ( getItemTypeInHand(player) ) {
+            when ( xc.getItemTypeInHand(player) ) {
                 // gun left click: single fire or burst
                 XC.ITEM_TYPE_GUN -> {
-                    getGunInHandUnchecked(player)?.let { _ -> 
-                        XC.playerShootRequests.add(PlayerGunShootRequest(
+                    xc.getGunInHandUnchecked(player)?.let { _ -> 
+                        xc.playerShootRequests.add(PlayerGunShootRequest(
                             player = player,
                         ))
                     }
@@ -641,8 +641,8 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
                 // throwable left click: readies throwable
                 XC.ITEM_TYPE_THROWABLE -> {
-                    getThrowableInHandUnchecked(player)?.let {
-                        XC.readyThrowableRequests.add(ReadyThrowableRequest(
+                    xc.getThrowableInHandUnchecked(player)?.let {
+                        xc.readyThrowableRequests.add(ReadyThrowableRequest(
                             player = player,
                         ))
                     }
@@ -650,7 +650,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
                 // melee weapon damage adjustment
                 XC.ITEM_TYPE_MELEE -> {
-                    getMeleeInHandUnchecked(player)?.let { weapon ->
+                    xc.getMeleeInHandUnchecked(player)?.let { weapon ->
                         val target = e.getEntity()
                         if ( target is LivingEntity ) {
                             // melee damage handler
@@ -664,12 +664,12 @@ public class EventListener(val plugin: JavaPlugin): Listener {
                             // println("NEW MELEE DAMAGE base=${weapon.damage} final=$damage")
 
                             if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-                                XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                                xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
                                     player = target,
                                     killer = player,
                                     weaponType = XC.ITEM_TYPE_MELEE,
                                     weaponId = weapon.itemModelDefault,
-                                    weaponMaterial = XC.config.materialMelee,
+                                    weaponMaterial = xc.config.materialMelee,
                                 )
                             }
 
@@ -699,11 +699,11 @@ public class EventListener(val plugin: JavaPlugin): Listener {
      */
     @EventHandler
     public fun onPlayerChangeArmor(e: PlayerArmorChangeEvent) {
-        if ( XC.config.armorEnforce ) {
+        if ( xc.config.armorEnforce ) {
             val item = e.getNewItem()
             if ( item != null ) {
                 val player = e.getPlayer()
-                val armorValue = XC.config.armorValues[item.type]
+                val armorValue = xc.config.armorValues[item.type]
                 if ( armorValue != null ) {
                     when ( e.getSlotType() ) {
                         PlayerArmorChangeEvent.SlotType.CHEST -> {
@@ -765,9 +765,9 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         val block = event.block
 
         // pressure plate land mine, queue landmine activation handling
-        XC.landmines[block.type]?.let { landmine ->
-            if ( event.getNewCurrent() > XC.config.landmineMinRedstoneCurrent ) {
-                XC.landmineActivationRequests.add(LandmineActivationRequest(
+        xc.storage.landmine[block.type]?.let { landmine ->
+            if ( event.getNewCurrent() > xc.config.landmineMinRedstoneCurrent ) {
+                xc.landmineActivationRequests.add(LandmineActivationRequest(
                     block = block,
                     landmine = landmine,
                 ))

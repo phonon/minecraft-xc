@@ -20,6 +20,16 @@ throwable = "GOLDEN_HORSE_ARMOR"
 ammo = "SNOWBALL"
 armor = "LEATHER_HORSE_ARMOR"
 
+# max item types, equivalent to max custom model id allowed
+# to create custom items (these are used to size internal
+# storage arrays, so do not make unnecessarily large)
+[max_types]
+ammo = 512
+gun = 1024
+melee = 1024
+throwable = 1024
+hat = 1024
+
 # death messages and death stats recording
 # {0} = player name
 [deaths]

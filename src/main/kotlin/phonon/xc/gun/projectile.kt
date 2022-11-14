@@ -207,6 +207,7 @@ public class ProjectileSystem(public val world: World) {
      * that do their own collision tests, but also need to gather entity hitboxes.
      */
     internal fun update(
+        xc: XC,
         visitedChunks: LinkedHashSet<ChunkCoord>, // to force gathering entity hitboxes in these chunks
     ): ProjectileSystemUpdate {
         // Push all waiting async projectiles
@@ -215,7 +216,7 @@ public class ProjectileSystem(public val world: World) {
         }
 
         // timings probe
-        val tStart = XC.debugNanoTime()
+        val tStart = xc.debugNanoTime()
         
         // First, iterate all projectiles, determine start and end positions
         // during tick, then map all potential chunks => hitboxes that 
@@ -284,7 +285,7 @@ public class ProjectileSystem(public val world: World) {
             for ( entity in chunk.getEntities() ) {
                 // special handling for custom model hitboxes
                 if ( entity.type == EntityType.ARMOR_STAND ) {
-                    val hitboxSize = XC.customModelHitboxes.get(entity.getUniqueId())
+                    val hitboxSize = xc.customModelHitboxes.get(entity.getUniqueId())
                     if ( hitboxSize != null ) {
                         addHitboxToAllIntersectingChunks(hitboxes, Hitbox.from(entity, hitboxSize))
                         continue
@@ -292,14 +293,14 @@ public class ProjectileSystem(public val world: World) {
                 }
 
                 // regular entities
-                if ( XC.config.entityTargetable[entity.type] ) {
-                    addHitboxToAllIntersectingChunks(hitboxes, Hitbox.from(entity, XC.config.entityHitboxSizes[entity.type]))
+                if ( xc.config.entityTargetable[entity.type] ) {
+                    addHitboxToAllIntersectingChunks(hitboxes, Hitbox.from(entity, xc.config.entityHitboxSizes[entity.type]))
                 }
             }
         }
 
         // timings probe
-        val tHitboxMapDone = XC.debugNanoTime()
+        val tHitboxMapDone = xc.debugNanoTime()
 
         // Main projectile update: calculate hit blocks and entities
         val hitBlocksQueue = ArrayList<ProjectileHitBlock>()
@@ -309,7 +310,7 @@ public class ProjectileSystem(public val world: World) {
             val projectile = this.projectiles.removeLast()
 
             // update projectile
-            val raytraceResult = runProjectileRaytrace(projectile, world, hitboxes)
+            val raytraceResult = runProjectileRaytrace(xc, projectile, world, hitboxes)
 
             val outOfBounds = raytraceResult.outOfBounds
             val hitBlock = raytraceResult.block
@@ -329,9 +330,9 @@ public class ProjectileSystem(public val world: World) {
                 // and particles on block hit
                 if ( projectile.gun.projectileBlockHitParticles ) {
                     val hitBlockData = hitBlock.getBlockData().clone()
-                    XC.particleBulletImpactQueue.add(ParticleBulletImpact(
+                    xc.particleBulletImpactQueue.add(ParticleBulletImpact(
                         world = world,
-                        count = XC.config.particleBulletImpactCount,
+                        count = xc.config.particleBulletImpactCount,
                         x = hitLoc.x,
                         y = hitLoc.y,
                         z = hitLoc.z,
@@ -339,7 +340,7 @@ public class ProjectileSystem(public val world: World) {
                         force = true,
                     ))
 
-                    XC.blockCrackAnimationQueue.add(BlockCrackAnimation(world, hitBlock.x, hitBlock.y, hitBlock.z))
+                    xc.blockCrackAnimationQueue.add(BlockCrackAnimation(world, hitBlock.x, hitBlock.y, hitBlock.z))
                 }
             }
             
@@ -356,7 +357,7 @@ public class ProjectileSystem(public val world: World) {
 
             // bullet trails particle effects
             val gun = projectile.gun
-            XC.particleBulletTrailQueue.add(ParticleBulletTrail(
+            xc.particleBulletTrailQueue.add(ParticleBulletTrail(
                 world = world,
                 particle = gun.projectileParticleType,
                 particleData = Particle.DustOptions(gun.projectileParticleColor, gun.projectileParticleSize),
@@ -401,13 +402,13 @@ public class ProjectileSystem(public val world: World) {
 
 
         // timings probe
-        val tProjectileUpdateDone = XC.debugNanoTime()
+        val tProjectileUpdateDone = xc.debugNanoTime()
 
-        if ( XC.doDebugTimings ) {
+        if ( xc.doDebugTimings ) {
             val dtHitboxMap = tHitboxMapDone - tStart
             val dtProjectileUpdate = tProjectileUpdateDone - tHitboxMapDone
-            XC.debugTimings.add("createEntityHitboxMap", dtHitboxMap)
-            XC.debugTimings.add("projectileUpdate", dtProjectileUpdate)
+            xc.debugTimings.add("createEntityHitboxMap", dtHitboxMap)
+            xc.debugTimings.add("projectileUpdate", dtProjectileUpdate)
         }
 
         return ProjectileSystemUpdate(
@@ -449,6 +450,7 @@ private fun addHitboxToAllIntersectingChunks(
  * and does hit tests on blocks and entities.
  */
 private fun runProjectileRaytrace(
+    xc: XC,
     projectile: Projectile,
     world: World,
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
@@ -597,7 +599,7 @@ private fun runProjectileRaytrace(
             val zStart = z0 + (tTraveled * dirZ)
 
             // defer fine raytrace to block material specific handler
-            val hitDistance = XC.config.blockCollision[bl.type](
+            val hitDistance = xc.config.blockCollision[bl.type](
                 bl,
                 xStart,
                 yStart,
@@ -675,14 +677,14 @@ private fun runProjectileRaytrace(
     //         for ( entity in chunk.getEntities() ) {
     //             // special handling for custom model hitboxes
     //             val hitbox = if ( entity.type == EntityType.ARMOR_STAND ) {
-    //                 val hitboxSize = XC.customModelHitboxes.get(entity.getEntityId())
+    //                 val hitboxSize = xc.customModelHitboxes.get(entity.getEntityId())
     //                 if ( hitboxSize != null ) {
     //                     Hitbox.from(entity, hitboxSize)
     //                 } else {
     //                     null
     //                 }
-    //             } else if ( XC.config.entityTargetable[entity.type] ) {
-    //                 Hitbox.from(entity, XC.config.entityHitboxSizes[entity.type])
+    //             } else if ( xc.config.entityTargetable[entity.type] ) {
+    //                 Hitbox.from(entity, xc.config.entityHitboxSizes[entity.type])
     //             } else {
     //                 null
     //             }
@@ -799,7 +801,7 @@ private fun runProjectileRaytrace(
     // ====================================================
     
     // DEBUG GLASS BLOCK TRAILS (test voxel traversal)
-    // Bukkit.getScheduler().runTaskLater(XC.plugin!!, object: Runnable {
+    // Bukkit.getScheduler().runTaskLater(xc.plugin!!, object: Runnable {
     //     init { 
     //         for ( block in blocksVisited ) {
     //             if ( block.type == Material.AIR ) {

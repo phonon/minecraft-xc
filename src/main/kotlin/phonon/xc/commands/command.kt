@@ -5,7 +5,6 @@ import org.bukkit.Bukkit
 import org.bukkit.ChunkSnapshot
 import org.bukkit.ChatColor
 import org.bukkit.Location
-import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
@@ -18,8 +17,7 @@ import phonon.xc.XC
 import phonon.xc.gun.crawl.CrawlStart
 import phonon.xc.util.Message
 import phonon.xc.util.CustomItemGui
-// nms version specific imports
-import phonon.xc.nms.gun.item.*
+import phonon.xc.util.createCustomItemGui
 
 
 private val SUBCOMMANDS = listOf(
@@ -43,7 +41,9 @@ private val SUBCOMMANDS = listOf(
 /**
  * Main /xc command. Route to subcommands.
  */
-public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
+public class Command(
+    val xc: XC,
+): CommandExecutor, TabCompleter {
 
     override fun onCommand(sender: CommandSender, cmd: Command, commandLabel: String, args: Array<String>): Boolean {
         
@@ -109,7 +109,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         val player = if ( sender is Player ) sender else null
         if ( player === null || player.isOp() ) {
             Message.print(sender, "[xc] Reloading...")
-            XC.reload(async = false)
+            xc.reload(async = false)
             Message.print(sender, "[xc] Reloaded")
         }
         else {
@@ -147,11 +147,11 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
 
         val type = args[1].lowercase()
         when ( type ) {
-            "ammo" -> player.openInventory(CustomItemGui("Ammo", XC.ammoIds, XC.ammo, page).getInventory())
-            "gun" -> player.openInventory(CustomItemGui("Gun", XC.gunIds, XC.guns, page).getInventory())
-            "hat" -> player.openInventory(CustomItemGui("Hat", XC.hatIds, XC.hats, page).getInventory())
-            "melee" -> player.openInventory(CustomItemGui("Melee", XC.meleeIds, XC.melee, page).getInventory())
-            "throwable" -> player.openInventory(CustomItemGui("Throwable", XC.throwableIds, XC.throwable, page).getInventory())
+            "ammo" -> player.openInventory(xc.createCustomItemGui("Ammo", xc.storage.ammoIds, xc.storage.ammo, page).getInventory())
+            "gun" -> player.openInventory(xc.createCustomItemGui("Gun", xc.storage.gunIds, xc.storage.gun, page).getInventory())
+            "hat" -> player.openInventory(xc.createCustomItemGui("Hat", xc.storage.hatIds, xc.storage.hat, page).getInventory())
+            "melee" -> player.openInventory(xc.createCustomItemGui("Melee", xc.storage.meleeIds, xc.storage.melee, page).getInventory())
+            "throwable" -> player.openInventory(xc.createCustomItemGui("Throwable", xc.storage.throwableIds, xc.storage.throwable, page).getInventory())
             else -> {
                 Message.error(sender, "[xc] Invalid $type: /xc browse [ammo|gun|hat|melee|throwable] [page]")
             }
@@ -167,10 +167,10 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             Message.error(player, "[xc] op only")
         }
 
-        XC.debugTimings.calculateAverageTimings()
+        xc.debugTimings.calculateAverageTimings()
 
         Message.print(sender, "[xc] average timings last 1s, 5s, 10s [us]:")
-        for ( (key, avgTimings) in XC.debugTimings.avgTimings ) {
+        for ( (key, avgTimings) in xc.debugTimings.avgTimings ) {
             Message.print(sender, String.format("- %s: %.3f | %.3f | %.3f",
                 key,
                 avgTimings[19] / 1000,
@@ -190,8 +190,8 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             return
         }
 
-        XC.doDebugTimings = !XC.doDebugTimings
-        Message.print(sender, "[xc] Debug timings: ${XC.doDebugTimings}")
+        xc.doDebugTimings = !xc.doDebugTimings
+        Message.print(sender, "[xc] Debug timings: ${xc.doDebugTimings}")
     }
     
     /**
@@ -209,14 +209,14 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             if ( args.size < 2 ) {
                 Message.print(player, "[xc] Disabling benchmark")
                 Message.print(player, "[xc] To run, use /xc benchmark [projectileCount]")
-                XC.setBenchmark(false, 0)
+                xc.setBenchmark(false, 0)
             } else {
                 val projectileCount = args[1].toInt()
                 if ( projectileCount < 1 ) {
                     Message.error(player, "[xc] projectileCount must be > 0")
                 } else {
                     Message.print(player, "[xc] Running benchmark with ${projectileCount} projectiles")
-                    XC.setBenchmark(true, projectileCount, player)
+                    xc.setBenchmark(true, projectileCount, player)
                 }
             }
         }
@@ -245,9 +245,9 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         }
 
         val ammoId = args[1].toInt()
-        val ammo = XC.ammo[ammoId]
+        val ammo = xc.storage.ammo[ammoId]
         if ( ammo != null ) {
-            val item = ammo.toItemStack()
+            val item = ammo.toItemStack(xc)
             player.getInventory().addItem(item)
             return
         } else {
@@ -275,10 +275,10 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         }
 
         val gunId = args[1].toInt()
-        if ( gunId >= 0 && gunId < XC.MAX_GUN_CUSTOM_MODEL_ID ) {
-            val gun = XC.guns[gunId]
+        if ( gunId >= 0 && gunId < xc.config.maxGunTypes ) {
+            val gun = xc.storage.gun[gunId]
             if ( gun != null ) {
-                val item = gun.toItemStack()
+                val item = gun.toItemStack(xc)
                 player.getInventory().addItem(item)
             }
             return
@@ -301,14 +301,14 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         } else if ( args.size < 3 ) {
             val velocity = args[1].toFloat()
             val gravity = 0.025f
-            XC.guns[0] = XC.gunDebug.copy(
+            xc.storage.gun[0] = xc.gunDebug.copy(
                 projectileVelocity = velocity,
                 projectileGravity = gravity,
             )
         } else {
             val velocity = args[1].toFloat()
             val gravity = args[2].toFloat()
-            XC.guns[0] = XC.gunDebug.copy(
+            xc.storage.gun[0] = xc.gunDebug.copy(
                 projectileVelocity = velocity,
                 projectileGravity = gravity,
             )
@@ -338,7 +338,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         }
 
         Message.print(player, "[xc] Showing hitboxes in range=${range}")
-        XC.debugHitboxRequest(player, range)
+        xc.debugHitboxRequest(player, range)
     }
 
     // /**
@@ -350,7 +350,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         if ( player !== null ) {
             // player.setSwimming(true)
             // forceCrawl(player)
-            XC.crawlStartQueue.add(CrawlStart(player))
+            xc.crawlStartQueue.add(CrawlStart(player))
 
             return
         }

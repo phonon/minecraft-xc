@@ -12,10 +12,12 @@ public data class ChunkCoord(
     public val x: Int,
     public val z: Int,
 ) {
-    // bernstein djb2 hash using magic number 33:
-    // hash = 33 * x + z
+    // 2 random big primes
+    // const val p1 = 73856093
+    // const val p2 = 83492791
+    // http://www.beosil.com/download/CollisionDetectionHashing_VMV03.pdf
     override public fun hashCode(): Int {
-        return ((this.x shl 5) + this.x) + z
+        return (this.x * 73856093) xor (this.z * 83492791)
     }
 
     companion object {
@@ -41,10 +43,10 @@ public data class ChunkCoord3D(
     override public fun hashCode(): Int {
         // 3 random big primes
         // const val p1 = 73856093
-        // const val p2 = 19349663
+        // const val p2 = 19349669
         // const val p3 = 83492791
         // http://www.beosil.com/download/CollisionDetectionHashing_VMV03.pdf
-        return (this.x * 73856093) xor (this.y * 19349663) xor (this.z * 83492791)
+        return (this.x * 73856093) xor (this.y * 19349669) xor (this.z * 83492791)
     }
 
     companion object {

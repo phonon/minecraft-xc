@@ -51,7 +51,7 @@ public fun baseExplosionDamage(
 /**
  * Create explosion at location.
  */
-public fun createExplosion(
+public fun XC.createExplosion(
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     location: Location,
     source: Entity?,
@@ -70,7 +70,7 @@ public fun createExplosion(
     weaponMaterial: Material, // metadata for player death tracking
 ) {
     // check if region allows explosions
-    if ( !XC.canExplodeAt(location) ) {
+    if ( !this.canExplodeAt(location) ) {
         // print to player cannot attack here?
         return
     }
@@ -108,7 +108,7 @@ public fun createExplosion(
                             )
 
                             if ( target is Player && target.getHealth() > 0.0 && finalDamage >= target.getHealth() ) {
-                                XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                                this.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
                                     player = target,
                                     killer = source,
                                     weaponType = weaponType,
@@ -140,7 +140,7 @@ public fun createExplosion(
     }
     
     // create block explosion if power > 0
-    if ( XC.config.blockDamageExplosion && blockDamagePower > 0.0f ) {
+    if ( this.config.blockDamageExplosion && blockDamagePower > 0.0f ) {
         location.world?.createExplosion(
             location.x,
             location.y,
@@ -151,7 +151,7 @@ public fun createExplosion(
     
     // queue explosion particle effect
     if ( particles != null ) {
-        XC.particleExplosionQueue.add(ParticleExplosion(
+        this.particleExplosionQueue.add(ParticleExplosion(
             particles,
             location.world,
             location.x,

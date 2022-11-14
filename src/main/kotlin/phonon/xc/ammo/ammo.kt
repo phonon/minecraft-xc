@@ -27,8 +27,8 @@ public class Ammo(
     /**
      * Create a new ItemStack from ammo properties.
      */
-    public override fun toItemStack(): ItemStack {
-        val item = ItemStack(XC.config.materialAmmo, 1)
+    public override fun toItemStack(xc: XC): ItemStack {
+        val item = ItemStack(xc.config.materialAmmo, 1)
         val itemMeta = item.getItemMeta()
         
         // name

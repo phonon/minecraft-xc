@@ -25,10 +25,10 @@ import phonon.xc.gun.Gun
  * Note: this does not update an item itself, this is a sub-function
  * for a client updating a gun item.
  */
-public fun setGunItemMetaAmmo(itemMeta: ItemMeta, gun: Gun, ammo: Int): ItemMeta {
+public fun XC.setGunItemMetaAmmo(itemMeta: ItemMeta, gun: Gun, ammo: Int): ItemMeta {
     // update ammo data
     val itemData = itemMeta.getPersistentDataContainer()
-    itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, ammo)
+    itemData.set(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER, ammo)
 
     // update item description
     itemMeta.setLore(gun.getItemDescriptionForAmmo(ammo))
@@ -41,7 +41,7 @@ public fun setGunItemMetaAmmo(itemMeta: ItemMeta, gun: Gun, ammo: Int): ItemMeta
  * Note: this does not update an item itself, this is a sub-function
  * for a client updating a gun item.
  */
-public fun setGunItemMetaAmmoAndModel(
+public fun XC.setGunItemMetaAmmoAndModel(
     itemMeta: ItemMeta,
     itemData: PersistentDataContainer,
     gun: Gun,
@@ -49,7 +49,7 @@ public fun setGunItemMetaAmmoAndModel(
     useAimDownSights: Boolean,
 ): ItemMeta {
     // update ammo data
-    itemData.set(XC.namespaceKeyItemAmmo!!, PersistentDataType.INTEGER, ammo)
+    itemData.set(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER, ammo)
 
     // update item description
     itemMeta.setLore(gun.getItemDescriptionForAmmo(ammo))
@@ -61,7 +61,7 @@ public fun setGunItemMetaAmmoAndModel(
  * Set gun item meta model based on gun and ammo count.
  * Player used to set model to aim down sights.
  */
-public fun setGunItemMetaModel(itemMeta: ItemMeta, gun: Gun, ammo: Int, aimdownsights: Boolean): ItemMeta {
+public fun XC.setGunItemMetaModel(itemMeta: ItemMeta, gun: Gun, ammo: Int, aimdownsights: Boolean): ItemMeta {
     // gun empty and there is custom empty model
     if ( ammo <= 0 && gun.itemModelEmpty > 0 ) {
         itemMeta.setCustomModelData(gun.itemModelEmpty)
@@ -81,7 +81,7 @@ public fun setGunItemMetaModel(itemMeta: ItemMeta, gun: Gun, ammo: Int, aimdowns
 /**
  * Set gun item meta to reload model, if it exists for Gun.
  */
-public fun setGunItemMetaReloadModel(itemMeta: ItemMeta, gun: Gun): ItemMeta {
+public fun XC.setGunItemMetaReloadModel(itemMeta: ItemMeta, gun: Gun): ItemMeta {
     // gun empty and there is custom empty model
     if ( gun.itemModelReload > 0 ) {
         itemMeta.setCustomModelData(gun.itemModelReload)

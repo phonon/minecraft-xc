@@ -4,7 +4,6 @@
 
 package phonon.xc.melee
 
-
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
@@ -40,8 +39,8 @@ public data class MeleeWeapon(
     /**
      * Create a new ItemStack from properties.
      */
-    public override fun toItemStack(): ItemStack {
-        val item = ItemStack(XC.config.materialMelee, 1)
+    public override fun toItemStack(xc: XC): ItemStack {
+        val item = ItemStack(xc.config.materialMelee, 1)
         val itemMeta = item.getItemMeta()
         
         // name

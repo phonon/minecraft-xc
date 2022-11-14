@@ -26,14 +26,14 @@ import org.bukkit.persistence.PersistentDataType
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.scheduler.BukkitRunnable
 import phonon.xc.XC
+import phonon.xc.item.getInventorySlotForCustomItemWithNbtKey
+import phonon.xc.item.getItemIntDataIfMaterialMatches
+import phonon.xc.item.getThrowableFromItem
 import phonon.xc.util.Message
 import phonon.xc.util.ChunkCoord
 import phonon.xc.util.ChunkCoord3D
 import phonon.xc.util.Hitbox
-// nms version specific imports
-import phonon.xc.nms.item.getInventorySlotForCustomItemWithNbtKey
-import phonon.xc.nms.item.getItemIntDataIfMaterialMatches
-import phonon.xc.nms.throwable.item.*
+
 
 private val ERROR_MESSAGE_THROWABLE_NOT_READY = "${ChatColor.DARK_RED}First ready throwable with [LEFT MOUSE]"
 // private val INFO_MESSAGE_THROWABLE_READY = "${ChatColor.GREEN}Throw using [RIGHT MOUSE]"
@@ -106,10 +106,13 @@ internal data class ThrownThrowable(
  * System for handling player requests to ready a throwable
  * in their hand.
  */
-internal fun requestReadyThrowableSystem(requests: List<ReadyThrowableRequest>): ArrayList<ReadyThrowableRequest> {
+internal fun XC.requestReadyThrowableSystem(
+    readyThrowableRequests: List<ReadyThrowableRequest>,
+    readyThrowables: HashMap<Int, ReadyThrowable>,
+) {
     val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
 
-    for ( request in requests ) {
+    for ( request in readyThrowableRequests ) {
         val player = request.player
         val playerId = player.getUniqueId()
         
@@ -127,7 +130,7 @@ internal fun requestReadyThrowableSystem(requests: List<ReadyThrowableRequest>):
             continue
         }
 
-        val throwable = getThrowableFromItem(item)
+        val throwable = this.getThrowableFromItem(item)
         if ( throwable == null ) {
             continue
         }
@@ -136,13 +139,13 @@ internal fun requestReadyThrowableSystem(requests: List<ReadyThrowableRequest>):
         val itemData = itemMeta.getPersistentDataContainer()
 
         // check if throwable is already readied, if so continue
-        if ( itemData.has(XC.namespaceKeyItemThrowableId!!, PersistentDataType.INTEGER) ) {
+        if ( itemData.has(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER) ) {
             continue
         }
 
         // get new ready throwable item id
-        val throwId = XC.newThrowableId()
-        itemData.set(XC.namespaceKeyItemThrowableId!!, PersistentDataType.INTEGER, throwId)
+        val throwId = this.newThrowableId()
+        itemData.set(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER, throwId)
         
         // set item model to ready state
         if ( throwable.itemModelReady > 0 ) {
@@ -154,13 +157,13 @@ internal fun requestReadyThrowableSystem(requests: List<ReadyThrowableRequest>):
 
         // track ready throwable
         // NOTE: throwable ids are used inside the map
-        //      XC.readyThrowable[throwId] -> ReadyThrowable
+        //      this.readyThrowable[throwId] -> ReadyThrowable
         // It's technically possible for this to overflow and overwrite.
         // But extremely unlikely, since throwables have a lifetime and
         // should be removed from this map before 
         // Integer.MAX_VALUE new throwables are created to overflow and
         // overwrite the key.
-        XC.readyThrowables[throwId] = ReadyThrowable(
+        readyThrowables[throwId] = ReadyThrowable(
             throwable = throwable,
             id = throwId,
             ticksElapsed = 0,
@@ -178,11 +181,12 @@ internal fun requestReadyThrowableSystem(requests: List<ReadyThrowableRequest>):
             world.playSound(location, throwable.soundReady, 1f, 1f)
         } catch ( e: Exception ) {
             e.printStackTrace()
-            XC.logger?.severe("Failed to play sound: ${throwable.soundReady}")
+            this.logger?.severe("Failed to play sound: ${throwable.soundReady}")
         }
     }
 
-    return ArrayList()
+    // reset request queue
+    this.readyThrowableRequests = ArrayList(0)
 }
 
 
@@ -190,10 +194,14 @@ internal fun requestReadyThrowableSystem(requests: List<ReadyThrowableRequest>):
  * System for handling player requests to throw a throwable
  * in their hand.
  */
-internal fun requestThrowThrowableSystem(requests: List<ThrowThrowableRequest>): ArrayList<ThrowThrowableRequest> {
+internal fun XC.requestThrowThrowableSystem(
+    throwThrowableRequests: List<ThrowThrowableRequest>,
+    readyThrowables: HashMap<Int, ReadyThrowable>,
+    thrownThrowables: HashMap<UUID, ArrayList<ThrownThrowable>>,
+) {
     val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
 
-    for ( request in requests ) {
+    for ( request in throwThrowableRequests ) {
         val player = request.player
         val playerId = player.getUniqueId()
         
@@ -211,7 +219,7 @@ internal fun requestThrowThrowableSystem(requests: List<ThrowThrowableRequest>):
             continue
         }
 
-        val throwable = getThrowableFromItem(item)
+        val throwable = this.getThrowableFromItem(item)
         if ( throwable == null ) {
             continue
         }
@@ -220,7 +228,7 @@ internal fun requestThrowThrowableSystem(requests: List<ThrowThrowableRequest>):
         val itemData = itemMeta.getPersistentDataContainer()
 
         // check if throwable is readied. if not readied, skip
-        if ( !itemData.has(XC.namespaceKeyItemThrowableId!!, PersistentDataType.INTEGER) ) {
+        if ( !itemData.has(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER) ) {
             Message.announcement(player, ERROR_MESSAGE_THROWABLE_NOT_READY)
             continue
         }
@@ -236,14 +244,13 @@ internal fun requestThrowThrowableSystem(requests: List<ThrowThrowableRequest>):
         equipment.setItem(inventorySlot, null)
         
         // throw id must exist (since we checked if key exists)
-        val throwId = itemData.get(XC.namespaceKeyItemThrowableId!!, PersistentDataType.INTEGER)!!
-        // get current ticks elapsed from ready throwable tracking (this should always exist...)
-        val ticksElapsed = XC.readyThrowables[throwId]?.ticksElapsed ?: 0
-        // remove ready throwable tracking
-        XC.readyThrowables.remove(throwId)
+        val throwId = itemData.get(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER)!!
+        // remove ready throwable (this should always exist...),
+        // and get current ticks elapsed from ready throwable tracking 
+        val ticksElapsed = readyThrowables.remove(throwId)?.ticksElapsed ?: 0
 
         // create thrown throwable tracking
-        XC.thrownThrowables[world.getUID()]?.let { throwables ->
+        thrownThrowables[world.getUID()]?.let { throwables ->
             throwables.add(ThrownThrowable(
                 throwable = throwable,
                 id = throwId,
@@ -262,11 +269,12 @@ internal fun requestThrowThrowableSystem(requests: List<ThrowThrowableRequest>):
             world.playSound(location, throwable.soundThrow, 1f, 1f)
         } catch ( e: Exception ) {
             e.printStackTrace()
-            XC.logger?.severe("Failed to play sound: ${throwable.soundThrow}")
+            this.logger?.severe("Failed to play sound: ${throwable.soundThrow}")
         }
     }
 
-    return ArrayList()
+    // reset request queue
+    this.throwThrowableRequests = ArrayList(0)
 }
 
 
@@ -274,23 +282,27 @@ internal fun requestThrowThrowableSystem(requests: List<ThrowThrowableRequest>):
  * System for handling player dropping throwable items. If throwable
  * was a readied throwable, must add it to ThrownThrowables.
  */
-internal fun droppedThrowableSystem(requests: List<DroppedThrowable>): ArrayList<DroppedThrowable> {
-    for ( request in requests ) {
+internal fun XC.droppedThrowableSystem(
+    droppedThrowables: List<DroppedThrowable>,
+    readyThrowables: HashMap<Int, ReadyThrowable>,
+    thrownThrowables: HashMap<UUID, ArrayList<ThrownThrowable>>,
+) {
+    for ( request in droppedThrowables ) {
         val (player, itemEntity) = request
         val item = itemEntity.getItemStack()
 
         // check if item is a readied throwable
         val throwId = getItemIntDataIfMaterialMatches(
             item,
-            XC.config.materialThrowable,
-            XC.nbtKeyItemThrowableId,
+            this.config.materialThrowable,
+            this.nbtKeyItemThrowableId,
         )
         
         if ( throwId == -1 ) { // skip if not readied throwable
             continue
         }
 
-        val throwable = getThrowableFromItem(item)
+        val throwable = this.getThrowableFromItem(item)
         if ( throwable == null ) {
             continue
         }
@@ -300,13 +312,12 @@ internal fun droppedThrowableSystem(requests: List<DroppedThrowable>): ArrayList
         // make item impossible to pick up
         itemEntity.setPickupDelay(Integer.MAX_VALUE)
 
-        // get current ticks elapsed from ready throwable tracking (this should always exist...)
-        val ticksElapsed = XC.readyThrowables[throwId]?.ticksElapsed ?: 0
-        // remove ready throwable tracking
-        XC.readyThrowables.remove(throwId)
+        // remove ready throwable (this should always exist...),
+        // and get current ticks elapsed from ready throwable tracking 
+        val ticksElapsed = readyThrowables.remove(throwId)?.ticksElapsed ?: 0
 
         // create thrown throwable tracking
-        XC.thrownThrowables[world.getUID()]?.let { throwables ->
+        thrownThrowables[world.getUID()]?.let { throwables ->
             throwables.add(ThrownThrowable(
                 throwable = throwable,
                 id = throwId,
@@ -320,7 +331,8 @@ internal fun droppedThrowableSystem(requests: List<DroppedThrowable>): ArrayList
         }
     }
 
-    return ArrayList()
+    // reset request queue
+    this.droppedThrowables = ArrayList(0)
 }
 
 
@@ -332,10 +344,13 @@ internal fun droppedThrowableSystem(requests: List<DroppedThrowable>): ArrayList
  * 
  * Returns new list of ready throwables that need to be ticked.
  */
-internal fun tickReadyThrowableSystem(requests: Map<Int, ReadyThrowable>): HashMap<Int, ReadyThrowable> {
+internal fun XC.tickReadyThrowableSystem(
+    readyThrowables: Map<Int, ReadyThrowable>,
+    expiredThrowables: HashMap<UUID, ArrayList<ExpiredThrowable>>,
+) {
     val newThrowables = HashMap<Int, ReadyThrowable>()
 
-    for ( th in requests.values ) {
+    for ( th in readyThrowables.values ) {
         // unpack
         val (
             throwable,
@@ -349,8 +364,8 @@ internal fun tickReadyThrowableSystem(requests: Map<Int, ReadyThrowable>): HashM
             // remove from player inventory
             val slot = getInventorySlotForCustomItemWithNbtKey(
                 holder,
-                XC.config.materialThrowable,
-                XC.nbtKeyItemThrowableId,
+                this.config.materialThrowable,
+                this.nbtKeyItemThrowableId,
                 throwId,
             )
             if ( slot != -1 ) {
@@ -365,7 +380,7 @@ internal fun tickReadyThrowableSystem(requests: Map<Int, ReadyThrowable>): HashM
             }
 
             // queue expired throwable handler
-            XC.expiredThrowables[holder.getWorld().getUID()]?.add(ExpiredThrowable(
+            expiredThrowables[holder.getWorld().getUID()]?.add(ExpiredThrowable(
                 throwable = throwable,
                 location = holder.location,
                 entity = holder,
@@ -385,7 +400,8 @@ internal fun tickReadyThrowableSystem(requests: Map<Int, ReadyThrowable>): HashM
 
     }
 
-    return newThrowables
+    // update ready throwables
+    this.readyThrowables = newThrowables
 }
 
 
@@ -395,7 +411,7 @@ internal fun tickReadyThrowableSystem(requests: Map<Int, ReadyThrowable>): HashM
  * 
  * Returns new list of thrown throwables that need to be ticked.
  */
-internal fun handleExpiredThrowableSystem(
+internal fun XC.handleExpiredThrowableSystem(
     requests: List<ExpiredThrowable>,
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
 ): ArrayList<ExpiredThrowable> {
@@ -408,6 +424,7 @@ internal fun handleExpiredThrowableSystem(
 
         // queue timer expired handler
         throwable.onTimerExpiredHandler(
+            this,
             hitboxes,
             throwable,
             location,
@@ -462,7 +479,7 @@ internal fun getThrownThrowableVisitedChunksSystem(
  * 
  * Returns new list of thrown throwables that need to be ticked.
  */
-internal fun tickThrownThrowableSystem(
+internal fun XC.tickThrownThrowableSystem(
     requests: List<ThrownThrowable>,
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
 ): ArrayList<ThrownThrowable> {
@@ -489,6 +506,7 @@ internal fun tickThrownThrowableSystem(
 
             // run handler
             throwable.onTimerExpiredHandler(
+                this,
                 hitboxes,
                 throwable,
                 currLocation,
@@ -543,7 +561,7 @@ internal fun tickThrownThrowableSystem(
                     val dirZ = velZ / distance
 
                     // check if movement path intersects into solid block
-                    val hitDistance = XC.config.blockCollision[bl.type](
+                    val hitDistance = this.config.blockCollision[bl.type](
                         bl,
                         currLocX.toFloat(),
                         currLocY.toFloat(),
@@ -567,6 +585,7 @@ internal fun tickThrownThrowableSystem(
                         itemEntity.remove()
 
                         throwable.onBlockHitHandler(
+                            this,
                             hitboxes,
                             throwable,
                             hitBlockLocation,
@@ -602,6 +621,7 @@ internal fun tickThrownThrowableSystem(
                             itemEntity.remove()
 
                             throwable.onEntityHitHandler(
+                                this,
                                 hitboxes,
                                 throwable,
                                 currLocation,

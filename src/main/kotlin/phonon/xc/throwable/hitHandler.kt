@@ -32,16 +32,19 @@ import phonon.xc.event.XCProjectileDamageEvent
 /**
  * Common throwable timer expired handler function type. Inputs are
  * (
+ *  xc: XC,
+ *  hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
  *  throwable: ThrowableItem,
  *  location: Location,
  *  source: Entity,
  * ) -> Unit
  */
-typealias ThrowableTimerExpiredHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, ThrowableItem, Location, Entity) -> Unit
+typealias ThrowableTimerExpiredHandler = (XC, HashMap<ChunkCoord3D, ArrayList<Hitbox>>, ThrowableItem, Location, Entity) -> Unit
 
 /**
  * Common hit block handler function type. Inputs are
  * (
+ *  xc: XC,
  *  hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
  *  throwable: ThrowableItem,
  *  location: Location,
@@ -49,18 +52,20 @@ typealias ThrowableTimerExpiredHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox
  *  source: Entity,
  * ) -> Unit
  */
-typealias ThrowableBlockHitHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, ThrowableItem, Location, Block, Entity) -> Unit
+typealias ThrowableBlockHitHandler = (XC, HashMap<ChunkCoord3D, ArrayList<Hitbox>>, ThrowableItem, Location, Block, Entity) -> Unit
 
 /**
  * Common hit entity handler function type. Inputs are
  * (
+ *  xc: XC,
+ *  hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
  *  throwable: Throwable,
  *  location: Location,
  *  target: Entity,
  *  source: Entity,
  * ) -> Unit
  */
-typealias ThrowableEntityHitHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, ThrowableItem, Location, Entity, Entity) -> Unit
+typealias ThrowableEntityHitHandler = (XC, HashMap<ChunkCoord3D, ArrayList<Hitbox>>, ThrowableItem, Location, Entity, Entity) -> Unit
 
 
 /**
@@ -101,19 +106,20 @@ public fun getThrowableEntityHitHandler(name: String): ThrowableEntityHitHandler
 /**
  * Empty timer expired handler.
  */
-public val noTimerExpiredHandler: ThrowableTimerExpiredHandler = {_, _, _, _ -> }
+public val noTimerExpiredHandler: ThrowableTimerExpiredHandler = {_, _, _, _, _ -> }
 
 /**
  * Handler to create explosion at location after timer expired.
  */
 public val timerExpiredExplosionHandler = fun(
+    xc: XC,
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     throwable: ThrowableItem,
     location: Location,
     source: Entity,
 ) {
     // summon explosion effect at location
-    createExplosion(
+    xc.createExplosion(
         hitboxes,
         location,
         source,
@@ -129,7 +135,7 @@ public val timerExpiredExplosionHandler = fun(
         throwable.explosionParticles,
         XC.ITEM_TYPE_THROWABLE,
         throwable.itemModelDefault,
-        XC.config.materialThrowable,
+        xc.config.materialThrowable,
     )
 }
 
@@ -137,12 +143,13 @@ public val timerExpiredExplosionHandler = fun(
 /**
  * Empty entity hit handler.
  */
-public val noEntityHitHandler: ThrowableEntityHitHandler = {_, _, _, _, _ -> }
+public val noEntityHitHandler: ThrowableEntityHitHandler = {_, _, _, _, _, _ -> }
 
 /**
  * Entity hit handler with damage (standard entity damage hit handler).
  */
 public val entityDamageHitHandler = fun(
+    xc: XC,
     _hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     throwable: ThrowableItem,
     location: Location,
@@ -151,7 +158,7 @@ public val entityDamageHitHandler = fun(
 ) {
     // do main damage directly to target
     if ( target is LivingEntity ) {
-        if ( target is Player && !XC.canPvpAt(location) ) {
+        if ( target is Player && !xc.canPvpAt(location) ) {
             return
         }
 
@@ -163,12 +170,12 @@ public val entityDamageHitHandler = fun(
         )
 
         if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-            XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+            xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
                 player = target,
                 killer = source,
                 weaponType = XC.ITEM_TYPE_THROWABLE,
                 weaponId = throwable.itemModelDefault,
-                weaponMaterial = XC.config.materialThrowable,
+                weaponMaterial = xc.config.materialThrowable,
             )
         }
 
@@ -189,6 +196,7 @@ public val entityDamageHitHandler = fun(
  * Entity hit handler with damage and a queued explosion at hit location.
  */
 public val entityExplosionHitHandler = fun(
+    xc: XC,
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     throwable: ThrowableItem,
     location: Location,
@@ -197,7 +205,7 @@ public val entityExplosionHitHandler = fun(
 ) {
     // do main damage directly to target
     if ( target is LivingEntity ) {
-        if ( target is Player && !XC.canPvpAt(location) ) {
+        if ( target is Player && !xc.canPvpAt(location) ) {
             return
         }
 
@@ -209,12 +217,12 @@ public val entityExplosionHitHandler = fun(
         )
 
         if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-            XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+            xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
                 player = target,
                 killer = source,
                 weaponType = XC.ITEM_TYPE_THROWABLE,
                 weaponId = throwable.itemModelDefault,
-                weaponMaterial = XC.config.materialThrowable,
+                weaponMaterial = xc.config.materialThrowable,
             )
         }
 
@@ -231,7 +239,7 @@ public val entityExplosionHitHandler = fun(
     // e.g. for vehicles
 
     // summon explosion effect at location
-    createExplosion(
+    xc.createExplosion(
         hitboxes,
         location,
         source,
@@ -247,19 +255,20 @@ public val entityExplosionHitHandler = fun(
         throwable.explosionParticles,
         XC.ITEM_TYPE_THROWABLE,
         throwable.itemModelDefault,
-        XC.config.materialThrowable,
+        xc.config.materialThrowable,
     )
 }
 
 /**
  * Empty block hit handler.
  */
-public val noBlockHitHandler: ThrowableBlockHitHandler = {_, _, _, _, _ -> }
+public val noBlockHitHandler: ThrowableBlockHitHandler = {_, _, _, _, _, _ -> }
 
 /**
  * Block hit handler that queues explosion at hit location.
  */
 public val blockExplosionHitHandler = fun(
+    xc: XC,
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     throwable: ThrowableItem,
     location: Location,
@@ -267,7 +276,7 @@ public val blockExplosionHitHandler = fun(
     source: Entity,
 ) {
     // summon explosion effect at location
-    createExplosion(
+    xc.createExplosion(
         hitboxes,
         location,
         source,
@@ -283,6 +292,6 @@ public val blockExplosionHitHandler = fun(
         throwable.explosionParticles,
         XC.ITEM_TYPE_THROWABLE,
         throwable.itemModelDefault,
-        XC.config.materialThrowable,
+        xc.config.materialThrowable,
     )
 }

@@ -49,6 +49,15 @@ public data class Config(
     // block collision handlers
     public val blockCollision: EnumArrayMap<Material, BlockCollisionHandler> = blockCollisionHandlers(),
     
+    // max number of item types, used to size storage arrays
+    // value = max allowed item custom model id, which indexes 
+    // directly to the item in storage arrays
+    public val maxAmmoTypes: Int = 512,
+    public val maxGunTypes: Int = 1024,
+    public val maxMeleeTypes: Int = 1024,
+    public val maxThrowableTypes: Int = 1024,
+    public val maxHatTypes: Int = 1024,
+
     // material types for custom items
     public val materialAimDownSights: Material = Material.CARROT_ON_A_STICK, // phantom model for ads
     public val materialAmmo: Material = Material.SNOWBALL,
@@ -146,7 +155,11 @@ public data class Config(
         /**
          * Parse and return a Config from a config.toml file.
          */
-        public fun fromToml(source: Path, logger: Logger? = null): Config {
+        public fun fromToml(
+            source: Path,
+            pluginDataFolder: String,
+            logger: Logger,
+        ): Config {
             val toml = Toml.parse(source)
 
             // map with keys as Config constructor property names
@@ -155,8 +168,7 @@ public data class Config(
             // parse toml file into configOptions
 
             // item config folder paths
-            toml.getTable("configs")?.let { configsPaths -> 
-                val pluginDataFolder = XC.plugin!!.getDataFolder().getPath()
+            toml.getTable("configs")?.let { configsPaths ->
                 configsPaths.getString("ammo")?.let { path -> configOptions["pathFilesAmmo"] = Paths.get(pluginDataFolder, path) }
                 configsPaths.getString("armor")?.let { path -> configOptions["pathFilesArmor"] = Paths.get(pluginDataFolder, path) }
                 configsPaths.getString("gun")?.let { path -> configOptions["pathFilesGun"] = Paths.get(pluginDataFolder, path) }
@@ -166,36 +178,47 @@ public data class Config(
                 configsPaths.getString("throwable")?.let { path -> configOptions["pathFilesThrowable"] = Paths.get(pluginDataFolder, path) }
             }
 
-            // materials
-            toml.getString("material.gun")?.let { s ->
-                Material.getMaterial(s)?.let { configOptions["materialGun"] = it } ?: run {
-                    logger?.warning("[material.gun] Invalid material: ${s}")
+            // materials (for item stacks)
+            toml.getTable("material")?.let { materials ->
+                materials.getString("gun")?.let { s ->
+                    Material.getMaterial(s)?.let { configOptions["materialGun"] = it } ?: run {
+                        logger.warning("[material.gun] Invalid material: ${s}")
+                    }
+                }
+                materials.getString("aim_down_sights")?.let { s ->
+                    Material.getMaterial(s)?.let { configOptions["materialAimDownSights"] = it } ?: run {
+                        logger.warning("[material.aim_down_sights] Invalid material: ${s}")
+                    }
+                }
+                materials.getString("melee")?.let { s ->
+                    Material.getMaterial(s)?.let { configOptions["materialMelee"] = it } ?: run {
+                        logger.warning("[material.melee] Invalid material: ${s}")
+                    }
+                }
+                materials.getString("throwable")?.let { s ->
+                    Material.getMaterial(s)?.let { configOptions["materialThrowable"] = it } ?: run {
+                        logger.warning("[material.throwable] Invalid material: ${s}")
+                    }
+                }
+                materials.getString("ammo")?.let { s ->
+                    Material.getMaterial(s)?.let { configOptions["materialAmmo"] = it } ?: run {
+                        logger.warning("[material.ammo] Invalid material: ${s}")
+                    }
+                }
+                materials.getString("armor")?.let { s ->
+                    Material.getMaterial(s)?.let { configOptions["materialArmor"] = it } ?: run {
+                        logger.warning("[material.armor] Invalid material: ${s}")
+                    }
                 }
             }
-            toml.getString("material.aim_down_sights")?.let { s ->
-                Material.getMaterial(s)?.let { configOptions["materialAimDownSights"] = it } ?: run {
-                    logger?.warning("[material.aim_down_sights] Invalid material: ${s}")
-                }
-            }
-            toml.getString("material.melee")?.let { s ->
-                Material.getMaterial(s)?.let { configOptions["materialMelee"] = it } ?: run {
-                    logger?.warning("[material.melee] Invalid material: ${s}")
-                }
-            }
-            toml.getString("material.throwable")?.let { s ->
-                Material.getMaterial(s)?.let { configOptions["materialThrowable"] = it } ?: run {
-                    logger?.warning("[material.throwable] Invalid material: ${s}")
-                }
-            }
-            toml.getString("material.ammo")?.let { s ->
-                Material.getMaterial(s)?.let { configOptions["materialAmmo"] = it } ?: run {
-                    logger?.warning("[material.ammo] Invalid material: ${s}")
-                }
-            }
-            toml.getString("material.armor")?.let { s ->
-                Material.getMaterial(s)?.let { configOptions["materialArmor"] = it } ?: run {
-                    logger?.warning("[material.armor] Invalid material: ${s}")
-                }
+
+            // max item types
+            toml.getTable("max_types")?.let { maxTypes ->
+                maxTypes.getLong("ammo")?.let { configOptions["maxAmmoTypes"] = it.toInt() }
+                maxTypes.getLong("gun")?.let { configOptions["maxGunTypes"] = it.toInt() }
+                maxTypes.getLong("melee")?.let { configOptions["maxMeleeTypes"] = it.toInt() }
+                maxTypes.getLong("throwable")?.let { configOptions["maxThrowableTypes"] = it.toInt() }
+                maxTypes.getLong("hat")?.let { configOptions["maxHatTypes"] = it.toInt() }
             }
 
             // gun configs
@@ -250,7 +273,7 @@ public data class Config(
                                 values[mat] = it.toInt()
                             }
                         } ?: run {
-                            logger?.warning("[armor.values] Invalid material: ${key}")
+                            logger.warning("[armor.values] Invalid material: ${key}")
                         }
                     }
                     configOptions["armorValues"] = values

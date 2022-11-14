@@ -8,7 +8,6 @@ import org.bukkit.Bukkit
 import org.bukkit.ChunkSnapshot
 import org.bukkit.ChatColor
 import org.bukkit.Location
-import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
@@ -28,7 +27,9 @@ private val AIM_DOWN_SIGHTS_SETTINGS = listOf(
  * `/aimdownsights on|off` command.
  * Set player's ads mode on or off.
  */
-public class AimDownSightsCommand(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
+public class AimDownSightsCommand(
+    val xc: XC,
+): CommandExecutor, TabCompleter {
 
     override fun onCommand(sender: CommandSender, cmd: Command, commandLabel: String, args: Array<String>): Boolean {
         
@@ -48,8 +49,8 @@ public class AimDownSightsCommand(val plugin: JavaPlugin) : CommandExecutor, Tab
         // parse subcommand
         val arg = args[0].lowercase()
         when ( arg ) {
-            "on" -> XC.setAimDownSights(player, true)
-            "off" -> XC.setAimDownSights(player, false)
+            "on" -> xc.setAimDownSights(player, true)
+            "off" -> xc.setAimDownSights(player, false)
             else -> {
                 printHelp(sender)
                 return true

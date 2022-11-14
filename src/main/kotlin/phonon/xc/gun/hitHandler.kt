@@ -32,17 +32,21 @@ import phonon.xc.event.XCProjectileDamageEvent
 /**
  * Common hit block handler function type. Inputs are
  * (
+ *  xc: XC,
+ *  hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
  *  gun: Gun,
  *  location: Location,
  *  target: Block,
  *  source: Entity,
  * ) -> Unit
  */
-typealias GunHitBlockHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, Location, Block, Entity) -> Unit
+typealias GunHitBlockHandler = (XC, HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, Location, Block, Entity) -> Unit
 
 /**
  * Common hit entity handler function type. Inputs are
  * (
+ *  xc: XC,
+ *  hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
  *  gun: Gun,
  *  location: Location,
  *  target: Entity,
@@ -50,7 +54,7 @@ typealias GunHitBlockHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, L
  *  distance: Double,
  * ) -> Unit
  */
-typealias GunHitEntityHandler = (HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, Location, Entity, Entity, Double) -> Unit
+typealias GunHitEntityHandler = (XC, HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, Location, Entity, Entity, Double) -> Unit
 
 
 /**
@@ -79,12 +83,13 @@ public fun getGunHitEntityHandler(name: String): GunHitEntityHandler? {
 /**
  * Empty entity hit handler.
  */
-public val noEntityHitHandler: GunHitEntityHandler = {_, _, _, _, _, _ -> }
+public val noEntityHitHandler: GunHitEntityHandler = {_, _, _, _, _, _, _ -> }
 
 /**
  * Entity hit handler with damage (standard entity damage hit handler).
  */
 public val entityDamageHitHandler = fun(
+    xc: XC,
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     gun: Gun,
     location: Location,
@@ -93,7 +98,7 @@ public val entityDamageHitHandler = fun(
     distance: Double,
 ) {
     if ( target is LivingEntity ) {
-        if ( target is Player && !XC.canPvpAt(location) ) {
+        if ( target is Player && !xc.canPvpAt(location) ) {
             return
         }
 
@@ -115,18 +120,18 @@ public val entityDamageHitHandler = fun(
         if ( target is Player ) {
             // custom death event
             if ( target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-                XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
                     player = target,
                     killer = source,
                     weaponType = XC.ITEM_TYPE_GUN,
                     weaponId = gun.itemModelDefault,
-                    weaponMaterial = XC.config.materialGun,
+                    weaponMaterial = xc.config.materialGun,
                 )
             }
 
             // play sound for shooter indicating succesful player hit
-            if ( XC.config.soundOnHitEnabled && source is Player ) {
-                source.playSound(source.getLocation(), XC.config.soundOnHit, XC.config.soundOnHitVolume, 1.0f)
+            if ( xc.config.soundOnHitEnabled && source is Player ) {
+                source.playSound(source.getLocation(), xc.config.soundOnHit, xc.config.soundOnHitVolume, 1.0f)
             }
         }
         
@@ -152,6 +157,7 @@ public val entityDamageHitHandler = fun(
  * Entity hit handler with damage and a queued explosion at hit location.
  */
 public val entityExplosionHitHandler = fun(
+    xc: XC,
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     gun: Gun,
     location: Location,
@@ -161,7 +167,7 @@ public val entityExplosionHitHandler = fun(
 ) {
     // do main damage directly to target
     if ( target is LivingEntity ) {
-        if ( target is Player && !XC.canPvpAt(location) ) {
+        if ( target is Player && !xc.canPvpAt(location) ) {
             return
         }
 
@@ -176,18 +182,18 @@ public val entityExplosionHitHandler = fun(
         if ( target is Player ) {
             // custom death event
             if ( target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-                XC.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
                     player = target,
                     killer = source,
                     weaponType = XC.ITEM_TYPE_GUN,
                     weaponId = gun.itemModelDefault,
-                    weaponMaterial = XC.config.materialGun,
+                    weaponMaterial = xc.config.materialGun,
                 )
             }
 
             // play sound for shooter indicating succesful player hit
-            if ( XC.config.soundOnHitEnabled && source is Player ) {
-                source.playSound(source.getLocation(), XC.config.soundOnHit, XC.config.soundOnHitVolume, 1.0f)
+            if ( xc.config.soundOnHitEnabled && source is Player ) {
+                source.playSound(source.getLocation(), xc.config.soundOnHit, xc.config.soundOnHitVolume, 1.0f)
             }
         }
 
@@ -209,7 +215,7 @@ public val entityExplosionHitHandler = fun(
     ))
 
     // summon explosion effect at location
-    createExplosion(
+    xc.createExplosion(
         hitboxes,
         location,
         source,
@@ -225,27 +231,27 @@ public val entityExplosionHitHandler = fun(
         gun.explosionParticles,
         XC.ITEM_TYPE_GUN,
         gun.itemModelDefault,
-        XC.config.materialGun,
+        xc.config.materialGun,
     )
 }
 
 /**
  * Empty block hit handler.
  */
-public val noBlockHitHandler: GunHitBlockHandler = {_, _, _, _, _ -> }
+public val noBlockHitHandler: GunHitBlockHandler = {_, _, _, _, _, _ -> }
 
 /**
  * Block hit handler that queues explosion at hit location.
  */
 public val blockExplosionHitHandler = fun(
+    xc: XC,
     hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     gun: Gun,
     location: Location,
     _block: Block,
     source: Entity,
 ) {
-    // summon explosion effect at location
-    createExplosion(
+    xc.createExplosion(
         hitboxes,
         location,
         source,
@@ -261,7 +267,7 @@ public val blockExplosionHitHandler = fun(
         gun.explosionParticles,
         XC.ITEM_TYPE_GUN,
         gun.itemModelDefault,
-        XC.config.materialGun,
+        xc.config.materialGun,
     )
 }
 
@@ -269,13 +275,14 @@ public val blockExplosionHitHandler = fun(
  * Block hit handler that creates fire on top of hit location.
  */
 public val blockFireHitHandler = fun(
+    xc: XC,
     _hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
     gun: Gun,
     location: Location,
     block: Block,
     source: Entity,
 ) {
-    if ( !XC.canCreateFireAt(location) ) {
+    if ( !xc.canCreateFireAt(location) ) {
         return
     }
     

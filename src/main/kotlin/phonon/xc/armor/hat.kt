@@ -20,10 +20,9 @@ import org.bukkit.attribute.Attribute
 import org.bukkit.attribute.AttributeModifier
 import org.bukkit.enchantments.Enchantment
 import phonon.xc.XC
+import phonon.xc.item.getHatInHand
 import phonon.xc.util.mapToObject
 import phonon.xc.util.IntoItemStack
-// nms version specific imports
-import phonon.xc.nms.armor.item.*
 
 
 public data class Hat(
@@ -39,8 +38,8 @@ public data class Hat(
     /**
      * Create a new ItemStack from helmet properties.
      */
-    public override fun toItemStack(): ItemStack {
-        val item = ItemStack(XC.config.materialArmor, 1)
+    public override fun toItemStack(xc: XC): ItemStack {
+        val item = ItemStack(xc.config.materialArmor, 1)
         val itemMeta = item.getItemMeta()
         
         // name
@@ -153,7 +152,7 @@ internal value class PlayerWearHatRequest(
  * Puts hat item in main hand into head slot.
  * Return new empty array for next tick cycle.
  */
-internal fun wearHatSystem(requests: ArrayList<PlayerWearHatRequest>): ArrayList<PlayerWearHatRequest> {
+internal fun XC.wearHatSystem(requests: ArrayList<PlayerWearHatRequest>): ArrayList<PlayerWearHatRequest> {
     val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
 
     for ( request in requests ) {

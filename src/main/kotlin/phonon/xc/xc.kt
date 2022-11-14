@@ -61,100 +61,130 @@ import phonon.xc.util.death.*
 
 // TODO: in future need to select NMS version
 import phonon.xc.nms.gun.crawl.*
-import phonon.xc.nms.gun.item.*
 
+// ========================================================================
+// BUILT-IN ENGINE CONSTANTS TODO MAKE THESE CONFIG
+// ========================================================================
+public const val INVALID_ITEM_ID: Int = Int.MAX_VALUE       // sentinel value for invalid IDs
+
+/**
+ * Container for all XC custom object storage.
+ * Include helper functions to get custom items from Bukkit Item stacks
+ * or player inventory.
+ */
+public class CustomItemStorage(
+    // ammo lookup
+    public val ammo: Array<Ammo?>,
+    public val ammoIds: IntArray,
+    
+    // gun storage and lookup
+    public val gun: Array<Gun?>,
+    public val gunIds: IntArray,
+
+    // melee weapon storage and lookup
+    public val melee: Array<MeleeWeapon?>,
+    public val meleeIds: IntArray,
+    
+    // custom hat (helmet) storage and lookup
+    public val hat: Array<Hat?>,
+    public val hatIds: IntArray,
+    
+    // melee weapon storage and lookup
+    public val throwable: Array<ThrowableItem?>,
+    public val throwableIds: IntArray,
+    
+    // landmine storage: material => landmine properties lookup
+    public val landmine: EnumMap<Material, Landmine>,
+) {
+    
+    companion object {
+        /**
+         * Return a storage with zero sized arrays, as a placeholder.
+         */
+        public fun empty(): CustomItemStorage {
+            return CustomItemStorage(
+                ammo = arrayOf(),
+                ammoIds = intArrayOf(),
+                gun = arrayOf(),
+                gunIds = intArrayOf(),
+                melee = arrayOf(),
+                meleeIds = intArrayOf(),
+                hat = arrayOf(),
+                hatIds = intArrayOf(),
+                throwable = arrayOf(),
+                throwableIds = intArrayOf(),
+                landmine = EnumMap(Material::class.java),
+            )
+        }
+    }
+}
 
 /**
  * XC engine global state.
  * Stores all game state and provide XC engine API.
+ * This singleton instance should be stored within the plugin.
  */
-public object XC {
-    // spigot plugin variable
-    internal var plugin: Plugin? = null
-    internal var logger: Logger? = null
+public class XC(
+    // spigot plugin variables links
+    internal val plugin: Plugin,
+    internal val logger: Logger,
+) {
+    // CONSTANTS
+    companion object {
+        // item types (using int const instead of enum)
+        public const val ITEM_TYPE_INVALID: Int = -1
+        public const val ITEM_TYPE_AMMO: Int = 0
+        public const val ITEM_TYPE_GUN: Int = 1
+        public const val ITEM_TYPE_MELEE: Int = 2
+        public const val ITEM_TYPE_THROWABLE: Int = 3
+        public const val ITEM_TYPE_HAT: Int = 4
+        public const val ITEM_TYPE_LANDMINE: Int = 5
+    }
+    
+    // namespaced keys for custom item stack properties
+    internal val namespaceKeyItemAmmo = NamespacedKey(plugin, "ammo")                  // key for item ammo value
+    internal val namespaceKeyItemReloading = NamespacedKey(plugin, "reloading")        // key for item is reloading (0 or 1)
+    internal val namespaceKeyItemReloadId = NamespacedKey(plugin, "reloadId")          // key for item reload id
+    internal val namespaceKeyItemReloadTimestamp = NamespacedKey(plugin, "reloadTime") // key for item reload timestamp
+    internal val namespaceKeyItemBurstFireId = NamespacedKey(plugin, "burstId")        // key for item burst firing id
+    internal val namespaceKeyItemAutoFireId = NamespacedKey(plugin, "autoId")          // key for item auto firing id
+    internal val namespaceKeyItemCrawlToShootId = NamespacedKey(plugin, "crawlId")     // key for item crawl to shoot id
+    internal val namespaceKeyItemThrowableId = NamespacedKey(plugin, "throwId")        // key for item throwable id
 
-    // hooks to other plugins available
+    // string form of namespaced keys, for raw nbt lookups
+    internal val nbtKeyItemAmmo: String = namespaceKeyItemAmmo.toString()                       // raw nbt key string for item ammo value
+    internal val nbtKeyItemReloading: String = namespaceKeyItemReloading.toString()             // raw nbt key string for item is reloading (0 or 1)
+    internal val nbtKeyItemReloadId: String = namespaceKeyItemReloadId.toString()               // raw nbt key string for item reload id
+    internal val nbtKeyItemReloadTimestamp: String = namespaceKeyItemReloadTimestamp.toString() // raw nbt key string for item reload timestamp
+    internal val nbtKeyItemBurstFireId: String = namespaceKeyItemBurstFireId.toString()         // raw nbt key for item burst firing id
+    internal val nbtKeyItemAutoFireId: String = namespaceKeyItemAutoFireId.toString()           // raw nbt key for item auto firing id
+    internal val nbtKeyItemCrawlToShootId: String = namespaceKeyItemCrawlToShootId.toString()   // raw nbt key for crawl to shoot id
+    internal val nbtKeyItemThrowableId: String = namespaceKeyItemThrowableId.toString()         // raw nbt key for throwable id
+        
+    // ========================================================================
+    // EXTERNAL PLUGIN APIs
+    // ========================================================================
+    // flags for other plugins available
     internal var usingProtocolLib: Boolean = false
+        private set
     internal var usingWorldGuard: Boolean = false
-
-    // namespace keys for custom item properties
-    internal var namespaceKeyItemAmmo: NamespacedKey? = null      // key for item ammo value
-    internal var namespaceKeyItemReloading: NamespacedKey? = null // key for item is reloading (0 or 1)
-    internal var namespaceKeyItemReloadId: NamespacedKey? = null  // key for item reload id
-    internal var namespaceKeyItemReloadTimestamp: NamespacedKey? = null  // key for item reload timestamp
-    internal var namespaceKeyItemBurstFireId: NamespacedKey? = null  // key for item burst firing id
-    internal var namespaceKeyItemAutoFireId: NamespacedKey? = null  // key for item auto firing id
-    internal var namespaceKeyItemCrawlToShootId: NamespacedKey? = null  // key for item crawl to shoot id
-    internal var namespaceKeyItemThrowableId: NamespacedKey? = null  // key for item throwable id
-
-    internal var nbtKeyItemAmmo: String = ""            // raw nbt key string for item ammo value
-    internal var nbtKeyItemReloading: String = ""       // raw nbt key string for item is reloading (0 or 1)
-    internal var nbtKeyItemReloadId: String = ""        // raw nbt key string for item reload id
-    internal var nbtKeyItemReloadTimestamp: String = "" // raw nbt key string for item reload timestamp
-    internal var nbtKeyItemBurstFireId: String = ""     // raw nbt key for item burst firing id
-    internal var nbtKeyItemAutoFireId: String = ""      // raw nbt key for item auto firing id
-    internal var nbtKeyItemCrawlToShootId: String = ""  // raw nbt key for crawl to shoot id
-    internal var nbtKeyItemThrowableId: String = ""     // raw nbt key for throwable id
-
-    // ========================================================================
-    // BUILT-IN ENGINE CONSTANTS
-    // ========================================================================
-    public const val INVALID_ID: Int = Int.MAX_VALUE       // sentinel value for invalid IDs
-    public const val MAX_AMMO_CUSTOM_MODEL_ID: Int = 1024  // max allowed ammo item custom model id
-    public const val MAX_GUN_CUSTOM_MODEL_ID: Int = 1024   // max allowed gun item custom model id
-    public const val MAX_MELEE_CUSTOM_MODEL_ID: Int = 1024 // max allowed melee item custom model id
-    public const val MAX_HAT_CUSTOM_MODEL_ID: Int = 1024   // max allowed hat item custom model id
-    public const val MAX_THROWABLE_CUSTOM_MODEL_ID: Int = 1024   // max allowed hat item custom model id
-    
-    // item types (using int const instead of enum)
-    public const val ITEM_TYPE_INVALID: Int = -1
-    public const val ITEM_TYPE_AMMO: Int = 0
-    public const val ITEM_TYPE_GUN: Int = 1
-    public const val ITEM_TYPE_MELEE: Int = 2
-    public const val ITEM_TYPE_THROWABLE: Int = 3
-    public const val ITEM_TYPE_HAT: Int = 4
-    public const val ITEM_TYPE_LANDMINE: Int = 5
-
-    // namespaced keys
-    public const val ITEM_KEY_AMMO: String = "ammo"           // ItemStack namespaced key for ammo count
-    public const val ITEM_KEY_RELOADING: String = "reloading" // ItemStack namespaced key for gun reloading
-    public const val ITEM_KEY_RELOAD_ID: String = "reloadId"  // ItemStack namespaced key for gun reload id
-    public const val ITEM_KEY_RELOAD_TIMESTAMP: String = "reloadTime"  // ItemStack namespaced key for gun reload timestamp
-    public const val ITEM_KEY_BURST_FIRE_ID: String = "burstId"  // ItemStack namespaced key for gun burst fire id
-    public const val ITEM_KEY_AUTO_FIRE_ID: String = "autoId"  // ItemStack namespaced key for gun auto fire id
-    public const val ITEM_KEY_CRAWL_TO_SHOOT_ID: String = "crawlId"  // ItemStack namespaced key for gun crawl to shoot request id
-    public const val ITEM_KEY_THROWABLE_ID: String = "throwId"  // ItemStack namespaced key for a ready throwable item
+        private set
     
     // ========================================================================
-    // STORAGE
+    // STORAGE (allow public get)
     // ========================================================================
-    internal var config: Config = Config()
-    
-    // gun storage and lookup
-    internal var guns: Array<Gun?> = Array(MAX_GUN_CUSTOM_MODEL_ID, { _ -> null }) 
-    internal var gunIds: IntArray = intArrayOf() // cached non null gun ids
+    public var config: Config = Config()
+        private set
 
-    // melee weapon storage and lookup
-    internal var melee: Array<MeleeWeapon?> = Array(MAX_MELEE_CUSTOM_MODEL_ID, { _ -> null })
-    internal var meleeIds: IntArray = intArrayOf() // cached non null melee ids
+    // storage contains all guns, ammo, hats, etc. and helpers to map items to them
+    public var storage: CustomItemStorage = CustomItemStorage.empty()
+        private set
 
-    // custom hat (helmet) storage and lookup
-    internal var hats: Array<Hat?> = Array(MAX_HAT_CUSTOM_MODEL_ID, { _ -> null })
-    internal var hatIds: IntArray = intArrayOf() // cached non null hat ids
-
-    // melee weapon storage and lookup
-    internal var throwable: Array<ThrowableItem?> = Array(MAX_THROWABLE_CUSTOM_MODEL_ID, { _ -> null })
-    internal var throwableIds: IntArray = intArrayOf() // cached non null throwing item ids
-
-    // ammo lookup
-    internal var ammo: Array<Ammo?> = Array(MAX_AMMO_CUSTOM_MODEL_ID, { _ -> null })
-    internal var ammoIds: IntArray = intArrayOf() // cached non null ammo Ids
-
-    // landmine storage: material => landmine properties lookup
-    internal var landmines: EnumMap<Material, Landmine> = EnumMap(Material::class.java)
-
+    // ========================================================================
+    // INTERNAL PLUGIN SPECIFIC STORAGE
+    // ========================================================================
     // custom hitboxes for armor stand custom models, maps EntityId => HitboxSize
-    internal var customModelHitboxes: HashMap<UUID, HitboxSize> = HashMap()
+    internal val customModelHitboxes: HashMap<UUID, HitboxSize> = HashMap()
 
     // projectile systems for each world, map world uuid => ProjectileSystem
     internal val projectileSystems: HashMap<UUID, ProjectileSystem> = HashMap(4) // initial capacity 4 worlds
@@ -182,29 +212,37 @@ public object XC {
 
     // counter for running player death record saving
     internal var playerDeathRecordSaveCounter: Int = 0
-
+        private set
+    
     // When gun item reloads, it gets assigned a unique id from this counter.
     // When reload is complete, gun item id is checked with this to make sure
     // player did not swap items during reload that plugin failed to catch.
     // Using int instead of atomic int since mineman is single threaded.
     internal var gunReloadIdCounter: Int = 0
+        private set
     
     // Burst and auto fire ID counter. Used to detect if player is firing
     // the same weapon in a burst or auto fire sequence.
     // Using int instead of atomic int since mineman is single threaded.
     internal var burstFireIdCounter: Int = 0
+        private set
     internal var autoFireIdCounter: Int = 0
-
+        private set
+    
     // ID counter for crawl to shoot request.
     internal var crawlToShootIdCounter: Int = 0
-
+        private set
+    
     // id counters for crawl refresh "load balancing"
     // hard coded for only 2 ticks
     internal var crawlRefreshTick0Count: Int = 0
+        private set
     internal var crawlRefreshTick1Count: Int = 0
-
+        private set
+    
     // id counter for throwable items (when they are readied)
     internal var throwableIdCounter: Int = 0
+        private set
 
     // player death message storage, death event checks this for custom messages
     internal val playerDeathMessages: HashMap<UUID, String> = HashMap()
@@ -239,8 +277,8 @@ public object XC {
     internal var expiredThrowables: HashMap<UUID, ArrayList<ExpiredThrowable>> = HashMap()
     internal var thrownThrowables: HashMap<UUID, ArrayList<ThrownThrowable>> = HashMap()
     // landmine systems
-    internal var landmineActivationRequests: ArrayList<LandmineActivationRequest> = ArrayList()
-    internal var landmineFinishUseRequests: ArrayList<LandmineFinishUseRequest> = ArrayList()
+    internal var landmineActivationRequests: ArrayList<LandmineActivationRequest> = ArrayList(0)
+    internal var landmineFinishUseRequests: ArrayList<LandmineFinishUseRequest> = ArrayList(0)
     internal var landmineExplosions: HashMap<UUID, ArrayList<LandmineExplosionRequest>> = HashMap() // per world landmine explosion queues
     // task finish queues
     internal val playerReloadTaskQueue: LinkedBlockingQueue<PlayerReloadTask> = LinkedBlockingQueue()
@@ -291,41 +329,22 @@ public object XC {
     // RUNNING TASKS
     // ========================================================================
     internal var engineTask: BukkitTask? = null
+        private set
 
     /**
-     * onEnable:
-     * Set links to spigot plugin and logger.
+     * Setter for `usingProtocolLib` flag, set when plugin enabled and 
+     * ProtocolLib is detected.
      */
-    internal fun onEnable(plugin: Plugin) {
-        XC.plugin = plugin
-        XC.logger = plugin.getLogger()
+    internal fun usingProtocolLib(state: Boolean) {
+        usingProtocolLib = state
+    }
 
-        // namespaced keys
-        XC.namespaceKeyItemAmmo = NamespacedKey(plugin, ITEM_KEY_AMMO)
-        XC.namespaceKeyItemReloading = NamespacedKey(plugin, ITEM_KEY_RELOADING)
-        XC.namespaceKeyItemReloadId = NamespacedKey(plugin, ITEM_KEY_RELOAD_ID)
-        XC.namespaceKeyItemReloadTimestamp = NamespacedKey(plugin, ITEM_KEY_RELOAD_TIMESTAMP)
-        XC.namespaceKeyItemBurstFireId = NamespacedKey(plugin, ITEM_KEY_BURST_FIRE_ID)
-        XC.namespaceKeyItemAutoFireId = NamespacedKey(plugin, ITEM_KEY_AUTO_FIRE_ID)
-        XC.namespaceKeyItemCrawlToShootId = NamespacedKey(plugin, ITEM_KEY_CRAWL_TO_SHOOT_ID)
-        XC.namespaceKeyItemThrowableId = NamespacedKey(plugin, ITEM_KEY_THROWABLE_ID)
-        
-        // raw nbt keys
-        XC.nbtKeyItemAmmo = XC.namespaceKeyItemAmmo!!.toString()
-        XC.nbtKeyItemReloading = XC.namespaceKeyItemReloading!!.toString()
-        XC.nbtKeyItemReloadId = XC.namespaceKeyItemReloadId!!.toString()
-        XC.nbtKeyItemReloadTimestamp = XC.namespaceKeyItemReloadTimestamp!!.toString()
-        XC.nbtKeyItemBurstFireId = XC.namespaceKeyItemBurstFireId!!.toString()
-        XC.nbtKeyItemAutoFireId = XC.namespaceKeyItemAutoFireId!!.toString()
-        XC.nbtKeyItemCrawlToShootId =XC.namespaceKeyItemCrawlToShootId!!.toString()
-        XC.nbtKeyItemThrowableId = XC.namespaceKeyItemThrowableId!!.toString()
-
-        // reset counters
-        XC.crawlRefreshTick0Count = 0
-        XC.crawlRefreshTick1Count = 0
-
-        // reset queues
-        // TODO
+    /**
+     * Setter for `usingWorldGuard` flag, set when plugin enabled and
+     * WorldGuard is detected.
+     */
+    internal fun usingWorldGuard(state: Boolean) {
+        usingWorldGuard = state
     }
 
     /**
@@ -338,17 +357,23 @@ public object XC {
         }
 
         // flush death stats save
-        TaskSavePlayerDeathRecords(XC.playerDeathRecords, XC.config.playerDeathLogSaveDir).run()
-        
-        XC.plugin = null
-        XC.logger = null
-        XC.namespaceKeyItemAmmo = null
-        XC.namespaceKeyItemReloading = null
-        XC.namespaceKeyItemReloadId = null
-        XC.namespaceKeyItemReloadTimestamp = null
-        XC.namespaceKeyItemBurstFireId = null
-        XC.namespaceKeyItemAutoFireId = null
-        XC.namespaceKeyItemCrawlToShootId = null
+        TaskSavePlayerDeathRecords(playerDeathRecords, config.playerDeathLogSaveDir).run()
+    }
+
+    /**
+     * Cleanup resources before reload or disabling plugin. 
+     */
+    internal fun cleanup() {
+        // clear death message and stats tracking
+        TaskSavePlayerDeathRecords(playerDeathRecords, config.playerDeathLogSaveDir).run()
+        playerDeathRecords = ArrayList()
+        deathEvents.clear()
+
+        // re-create new projectile systems for each world
+        projectileSystems.clear()
+        thrownThrowables.clear()
+        expiredThrowables.clear()
+        landmineExplosions.clear()
     }
 
     /**
@@ -357,73 +382,67 @@ public object XC {
      */
     internal fun reload(async: Boolean = false) {
         val timeStart = System.currentTimeMillis()
-        XC.cleanup()
+        this.cleanup()
 
         // create projectile and throwable systems for each world
         Bukkit.getWorlds().forEach { world ->
-            XC.projectileSystems.put(world.getUID(), ProjectileSystem(world))
-            XC.thrownThrowables.put(world.getUID(), ArrayList())
-            XC.expiredThrowables.put(world.getUID(), ArrayList())
-            XC.landmineExplosions.put(world.getUID(), ArrayList())
+            projectileSystems.put(world.getUID(), ProjectileSystem(world))
+            thrownThrowables.put(world.getUID(), ArrayList())
+            expiredThrowables.put(world.getUID(), ArrayList())
+            landmineExplosions.put(world.getUID(), ArrayList())
         }
         
         // reload main plugin config
-        val pathConfigToml = Paths.get(XC.plugin!!.getDataFolder().getPath(), "config.toml")
+        val pathConfigToml = Paths.get(plugin.getDataFolder().getPath(), "config.toml")
         val config = if ( Files.exists(pathConfigToml) ) {
-            Config.fromToml(pathConfigToml, XC.logger)
+            Config.fromToml(pathConfigToml, plugin.getDataFolder().getPath(), logger)
         } else {
-            XC.logger!!.info("Creating default config.toml")
-            XC.plugin!!.saveResource("config.toml", false)
+            logger.info("Creating default config.toml")
+            plugin.saveResource("config.toml", false)
             Config()
         }
-
-        XC.config = config
-        XC.doDebugTimings = config.defaultDoDebugTimings
 
         // load from toml config files
 
         val filesGuns = listDirFiles(config.pathFilesGun)
         val gunsLoaded: List<Gun> = filesGuns
-            .map { file -> Gun.fromToml(config.pathFilesGun.resolve(file), XC.logger) }
+            .map { file -> Gun.fromToml(config.pathFilesGun.resolve(file), logger) }
             .filterNotNull()
 
         val filesAmmo = listDirFiles(config.pathFilesAmmo)
         val ammoLoaded: List<Ammo> = filesAmmo
-            .map { file -> Ammo.fromToml(config.pathFilesAmmo.resolve(file), XC.logger) }
+            .map { file -> Ammo.fromToml(config.pathFilesAmmo.resolve(file), logger) }
             .filterNotNull()
 
         val filesMelee = listDirFiles(config.pathFilesMelee)
         val meleeLoaded: List<MeleeWeapon> = filesMelee
-            .map { file -> MeleeWeapon.fromToml(config.pathFilesMelee.resolve(file), XC.logger) }
+            .map { file -> MeleeWeapon.fromToml(config.pathFilesMelee.resolve(file), logger) }
             .filterNotNull()
         
         val filesThrowable = listDirFiles(config.pathFilesThrowable)
         val throwableLoaded: List<ThrowableItem> = filesThrowable
-            .map { file -> ThrowableItem.fromToml(config.pathFilesThrowable.resolve(file), XC.logger) }
+            .map { file -> ThrowableItem.fromToml(config.pathFilesThrowable.resolve(file), logger) }
             .filterNotNull()
         
         val filesHats = listDirFiles(config.pathFilesArmor)
         val hatsLoaded: List<Hat> = filesHats
-            .map { file -> Hat.listFromToml(config.pathFilesArmor.resolve(file), XC.logger) }
+            .map { file -> Hat.listFromToml(config.pathFilesArmor.resolve(file), logger) }
             .filterNotNull()
             .flatten() // this flattens a List<List<Hat>> -> List<Hat>
         
         val filesLandmine = listDirFiles(config.pathFilesLandmine)
         val landminesLoaded: List<Landmine> = filesLandmine
-            .map { file -> Landmine.fromToml(config.pathFilesLandmine.resolve(file), XC.logger) }
+            .map { file -> Landmine.fromToml(config.pathFilesLandmine.resolve(file), logger) }
             .filterNotNull()
         
-        // map custom model ids => gun (NOTE: guns can overwrite each other!)
-        val guns: Array<Gun?> = Array(MAX_GUN_CUSTOM_MODEL_ID, { _ -> null })
+        // MAP GUN CUSTOM MODEL ID => GUN
+        val guns: Array<Gun?> = Array(config.maxGunTypes, { _ -> null })
         val validGunIds = mutableSetOf<Int>()
-        for ( item in gunsLoaded ) {
+        loadgun@ for ( item in gunsLoaded ) {
             // special debug gun
             if ( item.id == -1 ) {
-                XC.gunDebug = item
+                gunDebug = item
             }
-
-            // add default gun model id to validGunIds (this overwrites duplicates)
-            validGunIds.add(item.itemModelDefault)
 
             // map regular guns custom model ids => gun
             val gunModels = arrayOf(
@@ -433,171 +452,175 @@ public object XC {
                 item.itemModelAimDownSights,
             )
 
+            // validate custom model ids are in range [0, MAX_ID)
             for ( modelId in gunModels ) {
-                if ( modelId >= 0 ) {
-                    if ( modelId < MAX_GUN_CUSTOM_MODEL_ID ) {
-                        if ( guns[modelId] != null ) {
-                            XC.logger!!.warning("Gun ${item.itemName} (${item.id}) overwrites gun ${guns[modelId]!!.id}")
-                        }
-                        guns[modelId] = item
-                    } else {
-                        XC.logger!!.warning("Gun ${item.id} has invalid custom model id: ${modelId} (max allowed is ${MAX_GUN_CUSTOM_MODEL_ID})")
-                    }
+                if ( modelId < 0 || modelId >= config.maxGunTypes ) {
+                    logger.severe("Gun ${item.itemName} has invalid custom model id ${modelId}, must be within [0, ${config.maxGunTypes})")
+                    continue@loadgun
                 }
             }
+
+            // model ids are valid, now map each id => object
+            for ( modelId in gunModels ) {
+                guns[modelId]?.let { old -> logger.warning("Gun ${item.itemName} (${modelId}) overwrites gun ${old.itemName}") }
+                guns[modelId] = item
+            }
+
+            // add default gun model id to validGunIds (this overwrites duplicates)
+            validGunIds.add(item.itemModelDefault)
         }
 
-        // temporary: set gun 0 to debug gun
-        guns[0] = XC.gunDebug
+        // TEMPORARY: set gun 0 to debug gun
+        guns[0] = gunDebug
 
-        // map melee ids => melee weapon
-        val melee: Array<MeleeWeapon?> = Array(MAX_MELEE_CUSTOM_MODEL_ID, { _ -> null })
+        // MAP MELEE CUSTOM MODEL ID => MELEE WEAPON
+        val melee: Array<MeleeWeapon?> = Array(config.maxMeleeTypes, { _ -> null })
         val validMeleeIds = mutableSetOf<Int>()
-        for ( item in meleeLoaded ) {
+        loadmelee@ for ( item in meleeLoaded ) {
             // map all custom model ids => item
             val models = arrayOf(
                 item.itemModelDefault,
             )
 
-            validMeleeIds.add(item.itemModelDefault)
-
+            // validate custom model ids are in range [0, MAX_ID)
             for ( modelId in models ) {
-                if ( modelId >= 0 ) {
-                    if ( modelId < MAX_MELEE_CUSTOM_MODEL_ID ) {
-                        if ( melee[modelId] != null ) {
-                            XC.logger!!.warning("Melee weapon ${item.itemName} overwrites ${melee[modelId]!!.itemModelDefault}")
-                        }
-                        melee[modelId] = item
-                    } else {
-                        XC.logger!!.warning("Melee weapon ${item.itemName} has invalid custom model id: ${modelId} (max allowed is ${MAX_MELEE_CUSTOM_MODEL_ID})")
-                    }
+                if ( modelId < 0 || modelId > config.maxMeleeTypes ) {
+                    logger.severe("Melee weapon ${item.itemName} has invalid custom model id ${modelId}, must be within [0, ${config.maxMeleeTypes})")
+                    continue@loadmelee
                 }
             }
+
+            // model ids are valid, now map each id => object
+            for ( modelId in models ) {
+                melee[modelId]?.let { old -> logger.warning("Melee weapon ${item.itemName} (${modelId}) overwrites ${old.itemName}") }
+                melee[modelId] = item
+            }
+            
+            validMeleeIds.add(item.itemModelDefault)
         }
 
         // map throwable ids => throwable weapon
-        val throwable: Array<ThrowableItem?> = Array(MAX_THROWABLE_CUSTOM_MODEL_ID, { _ -> null })
+        val throwable: Array<ThrowableItem?> = Array(config.maxThrowableTypes, { _ -> null })
         val validThrowableIds = mutableSetOf<Int>()
-        for ( item in throwableLoaded ) {
+        loadthrow@ for ( item in throwableLoaded ) {
             // map all custom model ids => item
             val models = arrayOf(
                 item.itemModelDefault,
                 item.itemModelReady,
             )
 
-            validThrowableIds.add(item.itemModelDefault)
-
+            // validate custom model ids are in range [0, MAX_ID)
             for ( modelId in models ) {
-                if ( modelId >= 0 ) {
-                    if ( modelId < MAX_THROWABLE_CUSTOM_MODEL_ID ) {
-                        if ( throwable[modelId] != null ) {
-                            XC.logger!!.warning("Throwable ${item.itemName} overwrites ${throwable[modelId]!!.itemModelDefault}")
-                        }
-                        throwable[modelId] = item
-                    } else {
-                        XC.logger!!.warning("Throwable ${item.itemName} has invalid custom model id: ${modelId} (max allowed is ${MAX_THROWABLE_CUSTOM_MODEL_ID})")
-                    }
+                if ( modelId < 0 || modelId >= config.maxThrowableTypes ) {
+                    logger.severe("Throwable ${item.itemName} has invalid custom model id ${modelId}, must be within [0, ${config.maxThrowableTypes})")
+                    continue@loadthrow
                 }
             }
-        }
-        // map ammo id => ammo
-        val ammo: Array<Ammo?> = Array(XC.MAX_AMMO_CUSTOM_MODEL_ID, { _ -> null })
-        val validAmmoIds = mutableSetOf<Int>()
-        for ( a in ammoLoaded ) {
-            if ( a.id < XC.MAX_AMMO_CUSTOM_MODEL_ID ) {
-                ammo[a.id] = a
-                validAmmoIds.add(a.id)
-            } else {
-                XC.logger!!.warning("Ammo ${a.itemName} has invalid custom model id: ${a.id} (max allowed = ${XC.MAX_AMMO_CUSTOM_MODEL_ID})")
+
+            // model ids are valid, now map each id => object
+            for ( modelId in models ) {
+                throwable[modelId]?.let { old -> logger.warning("Throwable ${item.itemName} (${modelId}) overwrites ${old.itemName}") }
+                throwable[modelId] = item
             }
+
+            validThrowableIds.add(item.itemModelDefault)
+        }
+
+        // map ammo id => ammo
+        val ammo: Array<Ammo?> = Array(config.maxAmmoTypes, { _ -> null })
+        val validAmmoIds = mutableSetOf<Int>()
+        for ( item in ammoLoaded ) {
+            val modelId = item.id // TODO: replace with just custom model id
+
+            // validate custom model ids are in range [0, MAX_ID)
+            if ( modelId < 0 || modelId >= config.maxAmmoTypes ) {
+                logger.severe("Ammo ${item.itemName} has invalid custom model id ${modelId}, must be within [0, ${config.maxAmmoTypes})")
+                continue
+            }
+
+            // model ids are valid, now map each id => object
+            ammo[modelId]?.let { old -> logger.warning("Ammo ${item.itemName} (${modelId}) overwrites ${old.itemName}") }
+            ammo[modelId] = item
+            validAmmoIds.add(item.id)
         }
         
         // map hat id => hat
-        val hats: Array<Hat?> = Array(MAX_HAT_CUSTOM_MODEL_ID, { _ -> null })
+        val hats: Array<Hat?> = Array(config.maxHatTypes, { _ -> null })
         val validHatIds = mutableSetOf<Int>()
-        for ( h in hatsLoaded ) {
-            hats[h.itemModel] = h
-            validHatIds.add(h.itemModel)
+        for ( item in hatsLoaded ) {
+            val modelId = item.itemModel
+
+            // validate custom model ids are in range [0, MAX_ID)
+            if ( modelId < 0 || modelId >= config.maxAmmoTypes ) {
+                logger.severe("Hat ${item.itemName} has invalid custom model id ${modelId}, must be within [0, ${config.maxHatTypes})")
+                continue
+            }
+
+            // model ids are valid, now map each id => object
+            hats[modelId]?.let { old -> logger.warning("Hat ${item.itemName} (${modelId}) overwrites ${old.itemName}") }
+            hats[modelId] = item
+            validHatIds.add(item.id)
         }
 
         // add landmines to enum map
         val landmines: EnumMap<Material, Landmine> = EnumMap(Material::class.java)
         for ( l in landminesLoaded ) {
-            if ( l.material in landmines ) {
-                XC.logger!!.warning("Landmine ${l.itemName} overwrites ${landmines[l.material]!!.itemName}")
-            }
+            landmines[l.material]?.let { old -> logger.warning("Landmine ${l.itemName} (${l.material}) overwrites ${old.itemName}") }
             landmines[l.material] = l
         }
-
-        // set guns/ammos/etc...
-        XC.ammo = ammo
-        XC.ammoIds = validAmmoIds.toIntArray().sortedArray()
-        XC.guns = guns
-        XC.gunIds = validGunIds.toIntArray().sortedArray()
-        XC.hats = hats
-        XC.hatIds = validHatIds.toIntArray().sortedArray()
-        XC.melee = melee
-        XC.meleeIds = validMeleeIds.toIntArray().sortedArray()
-        XC.throwable = throwable
-        XC.throwableIds = validThrowableIds.toIntArray().sortedArray()
-        XC.landmines = landmines
+        
+        // set config and storage
+        this.config = config
+        this.doDebugTimings = config.defaultDoDebugTimings
+        this.storage = CustomItemStorage(
+            ammo = ammo,
+            ammoIds = validAmmoIds.toIntArray().sortedArray(),
+            gun = guns,
+            gunIds = validGunIds.toIntArray().sortedArray(),
+            hat = hats,
+            hatIds = validHatIds.toIntArray().sortedArray(),
+            melee = melee,
+            meleeIds = validMeleeIds.toIntArray().sortedArray(),
+            throwable = throwable,
+            throwableIds = validThrowableIds.toIntArray().sortedArray(),
+            landmine = landmines,
+        )
 
         // start new engine runnable
         val timeEnd = System.currentTimeMillis()
         val timeLoad = timeEnd - timeStart
-        XC.logger?.info("Reloaded in ${timeLoad}ms")
-        XC.logger?.info("- Guns: ${validGunIds.size}")
-        XC.logger?.info("- Ammo: ${validAmmoIds.size}")
-        XC.logger?.info("- Melee: ${validMeleeIds.size}")
-        XC.logger?.info("- Throwable: ${validThrowableIds.size}")
-        XC.logger?.info("- Hats: ${validHatIds.size}")
-        XC.logger?.info("- Landmines: ${landmines.size}")
+        logger.info("Reloaded in ${timeLoad}ms")
+        logger.info("- Guns: ${validGunIds.size}")
+        logger.info("- Ammo: ${validAmmoIds.size}")
+        logger.info("- Melee: ${validMeleeIds.size}")
+        logger.info("- Throwable: ${validThrowableIds.size}")
+        logger.info("- Hats: ${validHatIds.size}")
+        logger.info("- Landmines: ${landmines.size}")
     }
 
     /**
      * Function to run after finishing an async scheduled part of a reload.
      */
     internal fun reloadFinishAsync() {
-        XC.cleanup()
+        cleanup()
         // TODO
-    }
-
-    /**
-     * Cleanup resources before reload or disabling plugin. 
-     */
-    internal fun cleanup() {
-        // clear item definition storages
-        XC.guns.fill(null)
-        XC.melee.fill(null)
-        XC.hats.fill(null)
-        
-        // clear death message and stats tracking
-        TaskSavePlayerDeathRecords(XC.playerDeathRecords, XC.config.playerDeathLogSaveDir).run()
-        XC.playerDeathRecords = ArrayList()
-        XC.deathEvents.clear()
-
-        // re-create new projectile systems for each world
-        XC.projectileSystems.clear()
-        XC.thrownThrowables.clear()
-        XC.expiredThrowables.clear()
-        XC.landmineExplosions.clear()
     }
 
     /**
      * Starts running engine task
      */
     internal fun start() {
-        if ( XC.engineTask == null ) {
-            XC.engineTask = Bukkit.getScheduler().runTaskTimer(XC.plugin!!, object: Runnable {
+        if ( engineTask == null ) {
+            engineTask = Bukkit.getScheduler().runTaskTimer(plugin, object: Runnable {
                 override fun run() {
-                    XC.update()
+                    update()
                 }
             }, 0, 0)
 
-            XC.logger!!.info("Starting engine")
+            logger.info("Starting engine")
         }
         else {
-            XC.logger!!.warning("Engine already running")
+            logger.warning("Engine already running")
         }
     }
 
@@ -605,13 +628,13 @@ public object XC {
      * Stop running engine task
      */
     internal fun stop() {
-        val task = XC.engineTask
+        val task = engineTask
         if ( task != null ) {
             task.cancel()
-            XC.engineTask = null
-            XC.logger!!.info("Stopping engine")
+            engineTask = null
+            logger.info("Stopping engine")
         } else {
-            XC.logger!!.warning("Engine not running")
+            logger.warning("Engine not running")
         }
     }
 
@@ -619,8 +642,8 @@ public object XC {
      * Get current reload id counter for reload task.
      */
     internal fun newReloadId(): Int {
-        val id = XC.gunReloadIdCounter
-        XC.gunReloadIdCounter = max(0, id + 1)
+        val id = gunReloadIdCounter
+        gunReloadIdCounter = max(0, id + 1)
         return id
     }
 
@@ -629,8 +652,8 @@ public object XC {
      * Used to detect if same gun is being fired in burst mode.
      */
     internal fun newBurstFireId(): Int {
-        val id = XC.burstFireIdCounter
-        XC.burstFireIdCounter = max(0, id + 1)
+        val id = burstFireIdCounter
+        burstFireIdCounter = max(0, id + 1)
         return id
     }
 
@@ -639,8 +662,8 @@ public object XC {
      * Used to detect if same gun is being fired in automatic mode.
      */
     internal fun newAutoFireId(): Int {
-        val id = XC.autoFireIdCounter
-        XC.autoFireIdCounter = max(0, id + 1)
+        val id = autoFireIdCounter
+        autoFireIdCounter = max(0, id + 1)
         return id
     }
 
@@ -648,8 +671,8 @@ public object XC {
      * Get current crawl to shoot id counter for crawling.
      */
     internal fun newCrawlToShootId(): Int {
-        val id = XC.crawlToShootIdCounter
-        XC.crawlToShootIdCounter = max(0, id + 1)
+        val id = crawlToShootIdCounter
+        crawlToShootIdCounter = max(0, id + 1)
         return id
     }
 
@@ -662,7 +685,7 @@ public object XC {
      * that currently has the LEAST number of crawling ids.
      */
     internal fun newCrawlRefreshId(): Int {
-        if ( XC.crawlRefreshTick0Count < XC.crawlRefreshTick1Count ) {
+        if ( crawlRefreshTick0Count < crawlRefreshTick1Count ) {
             return 0
         } else {
             return 1
@@ -675,9 +698,9 @@ public object XC {
      */
     internal fun freeCrawlRefreshId(index: Int) {
         if ( index == 0 ) {
-            XC.crawlRefreshTick0Count = max(0, XC.crawlRefreshTick0Count - 1)
+            crawlRefreshTick0Count = max(0, crawlRefreshTick0Count - 1)
         } else {
-            XC.crawlRefreshTick1Count = max(0, XC.crawlRefreshTick1Count - 1)
+            crawlRefreshTick1Count = max(0, crawlRefreshTick1Count - 1)
         }
     }
 
@@ -685,7 +708,7 @@ public object XC {
      * Create new throwable id from global counter.
      * 
      * Note: throwable ids are used inside the map
-     *      XC.readyThrowable[throwId] -> ReadyThrowable
+     *      readyThrowable[throwId] -> ReadyThrowable
      * It's technically possible for this to overflow and overwrite.
      * But extremely unlikely, since throwables have a lifetime and
      * should be removed from this map before 
@@ -693,8 +716,8 @@ public object XC {
      * overwrite the key.
      */
     internal fun newThrowableId(): Int {
-        val id = XC.throwableIdCounter
-        XC.throwableIdCounter = max(0, id + 1)
+        val id = throwableIdCounter
+        throwableIdCounter = max(0, id + 1)
         return id
     }
 
@@ -703,7 +726,7 @@ public object XC {
      * In future, this should add other hooked plugin checks.
      */
     internal fun canPvpAt(loc: Location): Boolean {
-        if ( XC.usingWorldGuard ) {
+        if ( usingWorldGuard ) {
             return WorldGuard.canPvpAt(loc)
         }
 
@@ -717,7 +740,7 @@ public object XC {
      * In future, this should add other hooked plugin checks.
      */
     internal fun canExplodeAt(loc: Location): Boolean {
-        if ( XC.usingWorldGuard ) {
+        if ( usingWorldGuard ) {
             return WorldGuard.canExplodeAt(loc)
         }
 
@@ -728,7 +751,7 @@ public object XC {
      * Protection check if location allows fire.
      */
     internal fun canCreateFireAt(loc: Location): Boolean {
-        if ( XC.usingWorldGuard ) {
+        if ( usingWorldGuard ) {
             return WorldGuard.canCreateFireAt(loc)
         }
 
@@ -740,7 +763,7 @@ public object XC {
      * if debug timings are on.
      */
     internal fun debugNanoTime(): Long {
-        if ( XC.doDebugTimings ) {
+        if ( doDebugTimings ) {
             return System.nanoTime()
         } else {
             return 0L
@@ -752,18 +775,18 @@ public object XC {
      */
     public fun setBenchmark(state: Boolean, numProjectiles: Int = 100, player: Player? = null) {
         if ( state == false ) {
-            XC.doBenchmark = false
+            doBenchmark = false
         }
         else { // begin benchmark task, if player valid
             if ( numProjectiles < 1 || player == null ) {
-                XC.logger!!.warning("Invalid benchmark parameters: numProjectiles=${numProjectiles}, player=${player}")
-                XC.doBenchmark = false
+                logger.warning("Invalid benchmark parameters: numProjectiles=${numProjectiles}, player=${player}")
+                doBenchmark = false
                 return
             }
 
-            XC.doBenchmark = true
-            XC.benchmarkProjectileCount = numProjectiles
-            XC.benchmarkPlayer = player
+            doBenchmark = true
+            benchmarkProjectileCount = numProjectiles
+            benchmarkPlayer = player
         }
     }
 
@@ -771,24 +794,24 @@ public object XC {
      * Run benchmark task. This should run before projectile system update.
      */
     public fun runBenchmarkProjectiles() {
-        if ( XC.doBenchmark == false ) return
+        if ( doBenchmark == false ) return
 
-        val player = XC.benchmarkPlayer
+        val player = benchmarkPlayer
         if ( player == null ) return
         
         val world = player.world
-        val projectileSystem = XC.projectileSystems[world.getUID()]
+        val projectileSystem = projectileSystems[world.getUID()]
         if ( projectileSystem == null ) return
 
         val currNumProjectiles = projectileSystem.size()
-        val numToCreate = XC.benchmarkProjectileCount - currNumProjectiles
+        val numToCreate = benchmarkProjectileCount - currNumProjectiles
         if ( numToCreate <= 0 ) return
 
         val loc = player.location
         val eyeHeight = player.eyeHeight
         val shootPosition = loc.clone().add(0.0, eyeHeight, 0.0)
 
-        val gun = XC.gunDebug
+        val gun = gunDebug
         
         val random = ThreadLocalRandom.current()
 
@@ -819,39 +842,25 @@ public object XC {
     }
 
     /**
-     * Return current XC config.
-     */
-    public fun config(): Config {
-        return XC.config
-    }
-
-    /**
-     * Return Ammo object for given id if it exists.
-     */
-    public fun getAmmo(id: Int): Ammo? {
-        return XC.ammo[id]
-    }
-
-    /**
      * Map an uuid to a custom hitbox size. UUID flexible, can be
      * entity unique id, or uuid managed by other systems.
      */
     public fun addHitbox(uuid: UUID, hitbox: HitboxSize) {
-        XC.customModelHitboxes[uuid] = hitbox
+        customModelHitboxes[uuid] = hitbox
     }
 
     /**
      * Remove custom hitbox from uuid if it exists.
      */
     public fun removeHitbox(uuid: UUID) {
-        XC.customModelHitboxes.remove(uuid)
+        customModelHitboxes.remove(uuid)
     }
 
     /**
      * Adds projectile to projectile system if it exists.
      */
     public fun addProjectile(world: World, projectile: Projectile) {
-        XC.projectileSystems[world.getUID()]?.let { sys ->
+        projectileSystems[world.getUID()]?.let { sys ->
             sys.addProjectile(projectile)
         }
     }
@@ -876,7 +885,7 @@ public object XC {
                     for ( entity in chunk.getEntities() ) {
                         // special handling for custom model hitboxes
                         if ( entity.type == EntityType.ARMOR_STAND ) {
-                            val hitboxSize = XC.customModelHitboxes.get(entity.getUniqueId())
+                            val hitboxSize = customModelHitboxes.get(entity.getUniqueId())
                             if ( hitboxSize != null ) {
                                 Hitbox.from(entity, hitboxSize).visualize(world, Particle.VILLAGER_HAPPY)
                                 continue
@@ -884,8 +893,8 @@ public object XC {
                         }
         
                         // regular entities
-                        if ( XC.config.entityTargetable[entity.type] ) {
-                            Hitbox.from(entity, XC.config.entityHitboxSizes[entity.type]).visualize(world, Particle.VILLAGER_HAPPY)
+                        if ( config.entityTargetable[entity.type] ) {
+                            Hitbox.from(entity, config.entityHitboxSizes[entity.type]).visualize(world, Particle.VILLAGER_HAPPY)
                         }
                     }
                 }
@@ -898,9 +907,9 @@ public object XC {
      */
     public fun setAimDownSights(player: Player, use: Boolean) {
         if ( use ) {
-            XC.dontUseAimDownSights.remove(player.getUniqueId())
+            dontUseAimDownSights.remove(player.getUniqueId())
         } else {
-            XC.dontUseAimDownSights.add(player.getUniqueId())
+            dontUseAimDownSights.add(player.getUniqueId())
         }
     }
     
@@ -924,7 +933,7 @@ public object XC {
             // DEPRECATED
             // if this is an existing aim down sights model, ignore (ADS models can be glitchy)
             // val itemMeta = itemOffhand.getItemMeta()
-            // if ( itemOffhand.type != XC.config.materialAimDownSights || ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() >= XC.MAX_GUN_CUSTOM_MODEL_ID ) ) {
+            // if ( itemOffhand.type != config.materialAimDownSights || ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() >= MAX_GUN_CUSTOM_MODEL_ID ) ) {
             //     player.getWorld().dropItem(player.getLocation(), itemOffhand)
             // }
         }
@@ -954,7 +963,7 @@ public object XC {
      */
     @Deprecated(message = "Use PacketPlayOutSetSlot instead of a real ItemStack")
     private fun createAimDownSightsOffhandModelItemStack(gun: Gun): ItemStack {
-        val item = ItemStack(XC.config.materialAimDownSights, 1)
+        val item = ItemStack(config.materialAimDownSights, 1)
         val itemMeta = item.getItemMeta()
 
         itemMeta.setDisplayName("Aim down sights")
@@ -975,9 +984,9 @@ public object XC {
         // println("removeAimDownSightsOffhandModelItemStack")
         val equipment = player.getInventory()
         val itemOffhand = equipment.getItemInOffHand()
-        if ( itemOffhand != null && itemOffhand.type == XC.config.materialAimDownSights ) {
+        if ( itemOffhand != null && itemOffhand.type == config.materialAimDownSights ) {
             val itemMeta = itemOffhand.getItemMeta()
-            if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() < XC.MAX_GUN_CUSTOM_MODEL_ID ) {
+            if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() < config.maxGunTypes ) {
                 equipment.setItemInOffHand(ItemStack(Material.AIR, 1))
             }
         }
@@ -988,10 +997,10 @@ public object XC {
      * Return true if item stack is an aim down sights model.
      */
     public fun isAimDownSightsModel(item: ItemStack): Boolean {
-        if ( item.getType() == XC.config.materialAimDownSights ) {
+        if ( item.getType() == config.materialAimDownSights ) {
             val itemMeta = item.getItemMeta()
             if ( itemMeta.hasCustomModelData() ) {
-                return itemMeta.getCustomModelData() < XC.MAX_GUN_CUSTOM_MODEL_ID
+                return itemMeta.getCustomModelData() < config.maxGunTypes
             }
         }
 
@@ -1002,153 +1011,160 @@ public object XC {
      * Return true if player is crawling.
      */
     public fun isCrawling(player: Player): Boolean {
-        return XC.crawling.contains(player.getUniqueId())
+        return crawling.contains(player.getUniqueId())
     }
 
     /**
-     * Main engine update, runs on each tick
+     * Main engine update, runs on each tick.
+     * 
+     * Not happy with blackbox update functions, cant see which systems
+     * mutate what storage state...but o well :^(
+     * 
+     * NOTE: the "systems" below are extension functions on the XC
+     * instance, each system is really doing `systemFn(this)`.
+     * Each system has full mutation control over this XC instance.
      */
     internal fun update() {
-        val tUpdateStart = XC.debugNanoTime() // timing probe
+        val tUpdateStart = debugNanoTime() // timing probe
 
-        XC.debugTimings.tick()
-        XC.runBenchmarkProjectiles() // debugging
+        debugTimings.tick()
+        runBenchmarkProjectiles() // debugging
 
-        val tShootSystem = XC.debugNanoTime() // timing probe
+        val tShootSystem = debugNanoTime() // timing probe
 
         // timestamp for beginning update tick
         val timestamp = System.currentTimeMillis()
 
         // wear hats
-        XC.wearHatRequests = wearHatSystem(XC.wearHatRequests)
+        wearHatRequests = wearHatSystem(wearHatRequests)
 
         // run pipelined player movement check, for sway modifier
-        val (playerNewSpeed, playerNewLocation) = playerSpeedSystem(XC.playerSpeed, XC.playerPreviousLocation)
-        XC.playerSpeed = playerNewSpeed
-        XC.playerPreviousLocation = playerNewLocation
+        val (playerNewSpeed, playerNewLocation) = playerSpeedSystem(playerSpeed, playerPreviousLocation)
+        playerSpeed = playerNewSpeed
+        playerPreviousLocation = playerNewLocation
 
         // crawl systems
-        XC.crawlStartQueue = startCrawlSystem(XC.crawlStartQueue)
-        XC.crawlStopQueue = stopCrawlSystem(XC.crawlStopQueue)
-        XC.crawling = crawlRefreshSystem(XC.crawling)
+        crawlStartQueue = startCrawlSystem(crawlStartQueue)
+        crawlStopQueue = stopCrawlSystem(crawlStopQueue)
+        crawling = crawlRefreshSystem(crawling)
         // finish crawl to shoot requests
         val crawlRequestFinishTasks = ArrayList<CrawlToShootRequestFinish>()
         val crawlRequestCancelTasks = ArrayList<CrawlToShootRequestCancel>()
-        XC.playerCrawlRequestFinishQueue.drainTo(crawlRequestFinishTasks)
-        XC.playerCrawlRequestCancelQueue.drainTo(crawlRequestCancelTasks)
+        playerCrawlRequestFinishQueue.drainTo(crawlRequestFinishTasks)
+        playerCrawlRequestCancelQueue.drainTo(crawlRequestCancelTasks)
         finishCrawlToShootRequestSystem(crawlRequestFinishTasks)
         cancelCrawlToShootRequestSystem(crawlRequestCancelTasks)
 
         // run gun controls systems (these emit new queues for next tick)
-        XC.playerAimDownSightsRequests = gunAimDownSightsSystem(XC.playerAimDownSightsRequests)
-        XC.playerGunCleanupRequests = playerGunCleanupSystem(XC.playerGunCleanupRequests)
-        XC.itemGunCleanupRequests = gunItemCleanupSystem(XC.itemGunCleanupRequests)
-        XC.playerGunSelectRequests = gunSelectSystem(XC.playerGunSelectRequests, timestamp)
-        XC.playerReloadRequests = gunPlayerReloadSystem(XC.playerReloadRequests, timestamp)
-        XC.autoFiringPackets = autoFireRequestSystem(XC.playerAutoFireRequests, XC.autoFiringPackets, timestamp) // do auto fire request before single/burst fire
-        XC.playerShootRequests = gunPlayerShootSystem(XC.playerShootRequests, timestamp)
-        XC.burstFiringPackets = burstFireSystem(XC.burstFiringPackets, timestamp)
-        XC.autoFiringPackets = autoFireSystem(XC.autoFiringPackets)
-        XC.playerRecoil = recoilRecoverySystem(XC.playerRecoil)
-        XC.crawlToShootRequestQueue = requestCrawlToShootSystem(XC.crawlToShootRequestQueue, timestamp)
+        playerAimDownSightsRequests = gunAimDownSightsSystem(playerAimDownSightsRequests)
+        playerGunCleanupRequests = playerGunCleanupSystem(playerGunCleanupRequests)
+        itemGunCleanupRequests = gunItemCleanupSystem(itemGunCleanupRequests)
+        playerGunSelectRequests = gunSelectSystem(playerGunSelectRequests, timestamp)
+        playerReloadRequests = gunPlayerReloadSystem(playerReloadRequests, timestamp)
+        autoFiringPackets = autoFireRequestSystem(playerAutoFireRequests, autoFiringPackets, timestamp) // do auto fire request before single/burst fire
+        playerShootRequests = gunPlayerShootSystem(playerShootRequests, timestamp)
+        burstFiringPackets = burstFireSystem(burstFiringPackets, timestamp)
+        autoFiringPackets = autoFireSystem(autoFiringPackets)
+        playerRecoil = recoilRecoverySystem(playerRecoil)
+        crawlToShootRequestQueue = requestCrawlToShootSystem(crawlToShootRequestQueue, timestamp)
 
         // queues that need to be manually re-created (cannot easily return tuples in kotlin/java)
-        XC.playerAutoFireRequests = ArrayList()
+        playerAutoFireRequests = ArrayList()
 
         // ready and throw throwable systems
         // (tick for thrown throwable objects done with projectiles
         // because hitboxes needed)
-        XC.readyThrowableRequests = requestReadyThrowableSystem(XC.readyThrowableRequests)
-        XC.throwThrowableRequests = requestThrowThrowableSystem(XC.throwThrowableRequests)
-        XC.droppedThrowables = droppedThrowableSystem(XC.droppedThrowables)
-        XC.readyThrowables = tickReadyThrowableSystem(XC.readyThrowables)
+        requestReadyThrowableSystem(readyThrowableRequests, readyThrowables)
+        requestThrowThrowableSystem(throwThrowableRequests, readyThrowables, thrownThrowables)
+        droppedThrowableSystem(droppedThrowables, readyThrowables, thrownThrowables)
+        tickReadyThrowableSystem(readyThrowables, expiredThrowables)
 
         // landmine systems
         // (explosion handling done after hitboxes created in projectiles update block)
-        XC.landmineFinishUseRequests = landmineFinishUseSystem(XC.landmineFinishUseRequests) // note: finish using tick N-1 requests
-        XC.landmineActivationRequests = landmineActivationSystem(XC.landmineActivationRequests)
+        landmineFinishUseSystem() // note: finishes PREVIOUS tick's requests (a 1-tick delayed system)
+        landmineActivationSystem()
         
         // finish gun reloading tasks
-        val tReloadSystem = XC.debugNanoTime() // timing probe
+        val tReloadSystem = debugNanoTime() // timing probe
         val gunReloadTasks = ArrayList<PlayerReloadTask>()
         val gunReloadCancelledTasks = ArrayList<PlayerReloadCancelledTask>()
-        XC.playerReloadTaskQueue.drainTo(gunReloadTasks)
-        XC.playerReloadCancelledTaskQueue.drainTo(gunReloadCancelledTasks)
+        playerReloadTaskQueue.drainTo(gunReloadTasks)
+        playerReloadCancelledTaskQueue.drainTo(gunReloadCancelledTasks)
         doGunReload(gunReloadTasks)
         doGunReloadCancelled(gunReloadCancelledTasks)
 
-        val tProjectileSystem = XC.debugNanoTime() // timing probe
+        val tProjectileSystem = debugNanoTime() // timing probe
 
         // update projectile systems for each world
         for ( (worldId, projSys) in this.projectileSystems ) {
             // first gather visited chunks for throwable items
             // (for potential explosion/entity hit calculations)
-            val visitedChunks = XC.thrownThrowables[worldId]?.let { throwables -> getThrownThrowableVisitedChunksSystem(throwables) } ?: LinkedHashSet()
-            XC.landmineExplosions[worldId]?.let { explosions -> visitedChunks.addAll(getLandmineExplosionVisitedChunksSystem(explosions)) }
+            val visitedChunks = thrownThrowables[worldId]?.let { throwables -> getThrownThrowableVisitedChunksSystem(throwables) } ?: LinkedHashSet()
+            landmineExplosions[worldId]?.let { explosions -> visitedChunks.addAll(getLandmineExplosionVisitedChunksSystem(explosions)) }
 
             // run projectile system
-            val (hitboxes, hitBlocksQueue, hitEntitiesQueue) = projSys.update(visitedChunks)
+            val (hitboxes, hitBlocksQueue, hitEntitiesQueue) = projSys.update(this, visitedChunks)
             
             // handle hit blocks and entities
             // if ( hitBlocksQueue.size > 0 ) println("HIT BLOCKS: ${hitBlocksQueue}")
             // if ( hitEntitiesQueue.size > 0 ) println("HIT ENTITIES: ${hitEntitiesQueue}")
 
             for ( hitBlock in hitBlocksQueue ) {
-                hitBlock.gun.hitBlockHandler(hitboxes, hitBlock.gun, hitBlock.location, hitBlock.block, hitBlock.source)
+                hitBlock.gun.hitBlockHandler(this, hitboxes, hitBlock.gun, hitBlock.location, hitBlock.block, hitBlock.source)
             }
 
             for ( hitEntity in hitEntitiesQueue ) {
-                hitEntity.gun.hitEntityHandler(hitboxes, hitEntity.gun, hitEntity.location, hitEntity.entity, hitEntity.source, hitEntity.distance)
+                hitEntity.gun.hitEntityHandler(this, hitboxes, hitEntity.gun, hitEntity.location, hitEntity.entity, hitEntity.source, hitEntity.distance)
             }
 
             // per-world throwable tick systems (needs hitboxes)
-            XC.expiredThrowables[worldId] = handleExpiredThrowableSystem(XC.expiredThrowables[worldId] ?: listOf(), hitboxes)
-            XC.thrownThrowables[worldId] = tickThrownThrowableSystem(XC.thrownThrowables[worldId] ?: listOf(), hitboxes)
+            expiredThrowables[worldId] = handleExpiredThrowableSystem(expiredThrowables[worldId] ?: listOf(), hitboxes)
+            thrownThrowables[worldId] = tickThrownThrowableSystem(thrownThrowables[worldId] ?: listOf(), hitboxes)
 
             // per-world landmine tick systems (needs hitboxes)
-            XC.landmineExplosions[worldId] = landmineHandleExplosionSystem(XC.landmineExplosions[worldId] ?: listOf(), hitboxes)
+            landmineExplosions[worldId] = landmineHandleExplosionSystem(landmineExplosions[worldId] ?: listOf(), hitboxes, logger)
         }
 
         // ================================================
         // SCHEDULE ALL ASYNC TASKS (particles, packets)
         // ================================================
-        val tStartPackets = XC.debugNanoTime() // timing probe
+        val tStartPackets = debugNanoTime() // timing probe
 
-        val particleBulletTrails = XC.particleBulletTrailQueue
-        val particleBulletImpacts = XC.particleBulletImpactQueue
-        val particleExplosions = XC.particleExplosionQueue
-        val gunAmmoInfoMessages = XC.gunAmmoInfoMessageQueue
-        val soundPackets = XC.soundQueue
-        val recoilPackets = XC.recoilQueue
-        val blockCrackAnimations = XC.blockCrackAnimationQueue
+        val particleBulletTrails = particleBulletTrailQueue
+        val particleBulletImpacts = particleBulletImpactQueue
+        val particleExplosions = particleExplosionQueue
+        val gunAmmoInfoMessages = gunAmmoInfoMessageQueue
+        val soundPackets = soundQueue
+        val recoilPackets = recoilQueue
+        val blockCrackAnimations = blockCrackAnimationQueue
 
-        XC.particleBulletTrailQueue = ArrayList()
-        XC.particleBulletImpactQueue = ArrayList()
-        XC.particleExplosionQueue = ArrayList()
-        XC.gunAmmoInfoMessageQueue = ArrayList()
-        XC.soundQueue = ArrayList()
-        XC.recoilQueue = ArrayList()
-        XC.blockCrackAnimationQueue = ArrayList()
+        particleBulletTrailQueue = ArrayList()
+        particleBulletImpactQueue = ArrayList()
+        particleExplosionQueue = ArrayList()
+        gunAmmoInfoMessageQueue = ArrayList()
+        soundQueue = ArrayList()
+        recoilQueue = ArrayList()
+        blockCrackAnimationQueue = ArrayList()
 
-        if ( XC.config.asyncPackets ) {
+        if ( config.asyncPackets ) {
             Bukkit.getScheduler().runTaskAsynchronously(
-                XC.plugin!!,
+                plugin,
                 TaskSpawnParticleBulletTrails(particleBulletTrails),
             )
             Bukkit.getScheduler().runTaskAsynchronously(
-                XC.plugin!!,
+                plugin,
                 TaskSpawnParticleBulletImpacts(particleBulletImpacts),
             )
             Bukkit.getScheduler().runTaskAsynchronously(
-                XC.plugin!!,
+                plugin,
                 TaskSpawnParticleExplosion(particleExplosions),
             )
             Bukkit.getScheduler().runTaskAsynchronously(
-                XC.plugin!!,
+                plugin,
                 TaskAmmoInfoMessages(gunAmmoInfoMessages),
             )
             Bukkit.getScheduler().runTaskAsynchronously(
-                XC.plugin!!,
+                plugin,
                 TaskSounds(soundPackets),
             )
         }
@@ -1163,18 +1179,18 @@ public object XC {
 
 
         // custom packets (only if ProtocolLib is available)
-        if ( XC.usingProtocolLib ) {
+        if ( usingProtocolLib ) {
             val protocolManager = ProtocolLibrary.getProtocolManager()
 
             // block crack animations
             Bukkit.getScheduler().runTaskAsynchronously(
-                XC.plugin!!,
+                plugin,
                 TaskBroadcastBlockCrackAnimations(protocolManager, blockCrackAnimations),
             )
 
             // player recoil from gun firing
             Bukkit.getScheduler().runTaskAsynchronously(
-                XC.plugin!!,
+                plugin,
                 TaskRecoil(protocolManager, recoilPackets),
             )
 
@@ -1183,31 +1199,31 @@ public object XC {
         }
 
         // save kill/death stats system
-        XC.playerDeathRecordSaveCounter -= 1
-        if ( XC.playerDeathRecordSaveCounter <= 0 ) {
-            XC.playerDeathRecordSaveCounter = XC.config.playerDeathRecordSaveInterval
+        playerDeathRecordSaveCounter -= 1
+        if ( playerDeathRecordSaveCounter <= 0 ) {
+            playerDeathRecordSaveCounter = config.playerDeathRecordSaveInterval
             
-            if ( XC.playerDeathRecords.size > 0 ) {
-                val deathRecords = XC.playerDeathRecords
-                XC.playerDeathRecords = ArrayList()
+            if ( playerDeathRecords.size > 0 ) {
+                val deathRecords = playerDeathRecords
+                playerDeathRecords = ArrayList()
 
                 Bukkit.getScheduler().runTaskAsynchronously(
-                    XC.plugin!!,
-                    TaskSavePlayerDeathRecords(deathRecords, XC.config.playerDeathLogSaveDir),
+                    plugin,
+                    TaskSavePlayerDeathRecords(deathRecords, config.playerDeathLogSaveDir),
                 )
             }
         }
 
         
         // timings
-        if ( XC.doDebugTimings ) {
-            val tEndPackets = XC.debugNanoTime()
-            val tUpdateEnd = XC.debugNanoTime()
+        if ( doDebugTimings ) {
+            val tEndPackets = debugNanoTime()
+            val tUpdateEnd = debugNanoTime()
 
-            XC.debugTimings.add("shoot", tReloadSystem - tShootSystem)
-            XC.debugTimings.add("reload", tProjectileSystem - tReloadSystem)
-            XC.debugTimings.add("packets", tEndPackets - tStartPackets)
-            XC.debugTimings.add("total", tUpdateEnd - tUpdateStart)
+            debugTimings.add("shoot", tReloadSystem - tShootSystem)
+            debugTimings.add("reload", tProjectileSystem - tReloadSystem)
+            debugTimings.add("packets", tEndPackets - tStartPackets)
+            debugTimings.add("total", tUpdateEnd - tUpdateStart)
         }
     }
 }

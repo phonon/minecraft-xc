@@ -11,7 +11,13 @@ import phonon.xc.commands.*
 import phonon.xc.listeners.*
 import java.io.File
 
-public class XCPlugin : JavaPlugin() {
+public class XCPlugin: JavaPlugin() {
+    
+    // plugin internal state
+    val xc: XC = XC(
+        this,
+        this.getLogger(),
+    )
     
     override fun onEnable() {
         
@@ -26,40 +32,46 @@ public class XCPlugin : JavaPlugin() {
         // - save hooks to this plugin 
         // - save hooks to external APIs
         // ===================================
-        XC.onEnable(this)
         
         // protocol lib hook
         val pluginProtocolLib = pluginManager.getPlugin("ProtocolLib")
-        if ( pluginManager.isPluginEnabled("ProtocolLib") && pluginProtocolLib != null ) {
-            XC.usingProtocolLib = true
+        val usingProtocolLib = if ( pluginManager.isPluginEnabled("ProtocolLib") && pluginProtocolLib != null ) {
             logger.info("Using ProtocolLib v${pluginProtocolLib.getDescription().getVersion()}")
+            true
+        } else {
+            false
         }
 
         // world guard hook
         val pluginWorldGuard = pluginManager.getPlugin("WorldGuard")
-        if ( pluginManager.isPluginEnabled("WorldGuard") && pluginWorldGuard != null ) {
-            XC.usingWorldGuard = true
+        val usingWorldGuard = if ( pluginManager.isPluginEnabled("WorldGuard") && pluginWorldGuard != null ) {
             logger.info("Using WorldGuard v${pluginWorldGuard.getDescription().getVersion()}")
+            true
+        } else {
+            false
         }
+
+        xc.usingProtocolLib(usingProtocolLib)
+        xc.usingWorldGuard(usingWorldGuard)
 
         // ===================================
         // Plugin reload
         // ===================================
 
         // register listeners
-        pluginManager.registerEvents(EventListener(this), this)
+        pluginManager.registerEvents(EventListener(xc), this)
 
         // register commands
-        this.getCommand("xc")?.setExecutor(Command(this))
-        this.getCommand("aimdownsights")?.setExecutor(AimDownSightsCommand(this))
+        this.getCommand("xc")?.setExecutor(Command(xc))
+        this.getCommand("aimdownsights")?.setExecutor(AimDownSightsCommand(xc))
         
         // override command aliases tab complete if they exist
         this.getCommand("xc")?.setTabCompleter(this.getCommand("xc")?.getExecutor() as TabCompleter)
         this.getCommand("ads")?.setTabCompleter(this.getCommand("aimdownsights")?.getExecutor() as TabCompleter)
 
         // load plugin and start engine
-        XC.reload()
-        XC.start()
+        xc.reload()
+        xc.start()
 
         // print load time
         val timeEnd = System.currentTimeMillis()
@@ -71,8 +83,8 @@ public class XCPlugin : JavaPlugin() {
     }
 
     override fun onDisable() {
-        XC.stop()
-        XC.onDisable()
+        xc.stop()
+        xc.onDisable()
 
         HandlerList.unregisterAll(this);
 

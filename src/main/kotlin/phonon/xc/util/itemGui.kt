@@ -12,6 +12,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.InventoryHolder
 import net.kyori.adventure.text.Component
+import phonon.xc.XC
 
 /**
  * Interface for any custom item type that can be converted into
@@ -20,8 +21,9 @@ import net.kyori.adventure.text.Component
 internal interface IntoItemStack {
     /**
      * Convert this type into a Bukkit ItemStack.
+     * Requires XC instance to get config values (material, meta keys, etc.).
      */
-    fun toItemStack(): ItemStack
+    fun toItemStack(xc: XC): ItemStack
 }
 
 /**
@@ -29,6 +31,7 @@ internal interface IntoItemStack {
  * TODO: pagination
  */
 internal class CustomItemGui(
+    val xc: XC,
     val title: String,
     val ids: IntArray,
     val storage: Array<out IntoItemStack?>,
@@ -47,7 +50,7 @@ internal class CustomItemGui(
             val id = ids[i]
             val obj = storage[id]
             if ( obj != null ) {
-                this.inv.setItem(n, obj.toItemStack())
+                this.inv.setItem(n, obj.toItemStack(xc))
 
                 // inventory size cutoff
                 n += 1
@@ -59,4 +62,16 @@ internal class CustomItemGui(
 
         return this.inv
     }
+}
+
+/**
+ * Helper extension function on XC to create custom item gui.
+ */
+internal fun XC.createCustomItemGui(
+    title: String,
+    ids: IntArray,
+    storage: Array<out IntoItemStack?>,
+    page: Int = 0,
+): CustomItemGui {
+    return CustomItemGui(this, title, ids, storage, page)
 }
