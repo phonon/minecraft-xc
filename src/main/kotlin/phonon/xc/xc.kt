@@ -439,12 +439,7 @@ public class XC(
         val guns: Array<Gun?> = Array(config.maxGunTypes, { _ -> null })
         val validGunIds = mutableSetOf<Int>()
         loadgun@ for ( item in gunsLoaded ) {
-            // special debug gun
-            if ( item.id == -1 ) {
-                gunDebug = item
-            }
-
-            // map regular guns custom model ids => gun
+            // map all gun custom model ids => gun
             val gunModels = arrayOf(
                 item.itemModelDefault,
                 item.itemModelEmpty,
@@ -452,10 +447,18 @@ public class XC(
                 item.itemModelAimDownSights,
             )
 
-            // validate custom model ids are in range [0, MAX_ID)
+            // validate required id (itemModelDefault) within [0, MAX_ID)
+            val gunId = item.itemModelDefault
+            if ( gunId < 0 || gunId >= config.maxGunTypes ) {
+                logger.severe("Gun ${item.itemName} has invalid custom model id ${gunId}, must be within [0, ${config.maxGunTypes})")
+                continue@loadgun
+            }
+
+            // validate all custom model ids are < MAX_ID
+            // (negative values allowed for optional models, indicates no model)
             for ( modelId in gunModels ) {
-                if ( modelId < 0 || modelId >= config.maxGunTypes ) {
-                    logger.severe("Gun ${item.itemName} has invalid custom model id ${modelId}, must be within [0, ${config.maxGunTypes})")
+                if ( modelId >= config.maxGunTypes ) {
+                    logger.severe("Gun ${item.itemName} has invalid custom model id ${modelId}, must be < ${config.maxGunTypes}")
                     continue@loadgun
                 }
             }
@@ -470,9 +473,6 @@ public class XC(
             validGunIds.add(item.itemModelDefault)
         }
 
-        // TEMPORARY: set gun 0 to debug gun
-        guns[0] = gunDebug
-
         // MAP MELEE CUSTOM MODEL ID => MELEE WEAPON
         val melee: Array<MeleeWeapon?> = Array(config.maxMeleeTypes, { _ -> null })
         val validMeleeIds = mutableSetOf<Int>()
@@ -482,10 +482,18 @@ public class XC(
                 item.itemModelDefault,
             )
 
-            // validate custom model ids are in range [0, MAX_ID)
+            // validate required id (itemModelDefault) within [0, MAX_ID)
+            val meleeId = item.itemModelDefault
+            if ( meleeId < 0 || meleeId >= config.maxMeleeTypes ) {
+                logger.severe("Melee weapon ${item.itemName} has invalid custom model id ${meleeId}, must be within [0, ${config.maxMeleeTypes})")
+                continue@loadmelee
+            }
+
+            // validate all custom model ids are < MAX_ID
+            // (negative values allowed for optional models, indicates no model)
             for ( modelId in models ) {
-                if ( modelId < 0 || modelId > config.maxMeleeTypes ) {
-                    logger.severe("Melee weapon ${item.itemName} has invalid custom model id ${modelId}, must be within [0, ${config.maxMeleeTypes})")
+                if ( modelId >= config.maxMeleeTypes ) {
+                    logger.severe("Melee weapon ${item.itemName} has invalid custom model id ${modelId}, must be < ${config.maxMeleeTypes}")
                     continue@loadmelee
                 }
             }
@@ -509,7 +517,15 @@ public class XC(
                 item.itemModelReady,
             )
 
-            // validate custom model ids are in range [0, MAX_ID)
+            // validate required id (itemModelDefault) within [0, MAX_ID)
+            val throwableId = item.itemModelDefault
+            if ( throwableId < 0 || throwableId >= config.maxThrowableTypes ) {
+                logger.severe("Melee weapon ${item.itemName} has invalid custom model id ${throwableId}, must be within [0, ${config.maxThrowableTypes})")
+                continue@loadthrow
+            }
+            
+            // validate all custom model ids are < MAX_ID
+            // (negative values allowed for optional models, indicates no model)
             for ( modelId in models ) {
                 if ( modelId < 0 || modelId >= config.maxThrowableTypes ) {
                     logger.severe("Throwable ${item.itemName} has invalid custom model id ${modelId}, must be within [0, ${config.maxThrowableTypes})")
@@ -532,13 +548,13 @@ public class XC(
         for ( item in ammoLoaded ) {
             val modelId = item.id // TODO: replace with just custom model id
 
-            // validate custom model ids are in range [0, MAX_ID)
+            // validate ammo id (custom model id) within range [0, MAX_ID)
             if ( modelId < 0 || modelId >= config.maxAmmoTypes ) {
                 logger.severe("Ammo ${item.itemName} has invalid custom model id ${modelId}, must be within [0, ${config.maxAmmoTypes})")
                 continue
             }
 
-            // model ids are valid, now map each id => object
+            // model id valid, map id => object
             ammo[modelId]?.let { old -> logger.warning("Ammo ${item.itemName} (${modelId}) overwrites ${old.itemName}") }
             ammo[modelId] = item
             validAmmoIds.add(item.id)
@@ -551,7 +567,7 @@ public class XC(
             val modelId = item.itemModel
 
             // validate custom model ids are in range [0, MAX_ID)
-            if ( modelId < 0 || modelId >= config.maxAmmoTypes ) {
+            if ( modelId < 0 || modelId >= config.maxHatTypes ) {
                 logger.severe("Hat ${item.itemName} has invalid custom model id ${modelId}, must be within [0, ${config.maxHatTypes})")
                 continue
             }

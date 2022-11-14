@@ -118,9 +118,6 @@ public interface AimDownSightsModel {
  * alter certain properties while leaving others the same.
  */
 public data class Gun(
-    // gun id, used for mapping custom models => gun
-    public val id: Int = Int.MAX_VALUE, // invalid
-    
     // gun type
     public val type: GunType = GunType.RIFLE,
 
@@ -417,9 +414,6 @@ public data class Gun(
                 val properties = HashMap<String, Any>()
 
                 // parse toml file into properties
-                
-                // gun id
-                toml.getLong("id")?.let { properties["id"] = it.toInt() }
 
                 // item properties
                 toml.getTable("item")?.let { item -> 

@@ -17,7 +17,7 @@ import phonon.xc.util.IntoItemStack
 
 
 public class Ammo(
-    // id and custom model id
+    // id, same as custom model id
     public val id: Int = Int.MAX_VALUE,
 
     // ammo item/visual properties

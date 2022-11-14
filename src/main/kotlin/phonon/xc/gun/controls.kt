@@ -542,7 +542,7 @@ internal fun XC.gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>, tim
         equipment.setItem(inventorySlot, item)
 
         // if player is aim down sights, add offhand model
-        if ( ammo > 0 && aimDownSights ) {
+        if ( ammo > 0 && aimDownSights && gun.itemModelAimDownSights > 0 ) {
             this.createAimDownSightsOffhandModel(gun, player)
         }
     }
@@ -1449,7 +1449,7 @@ internal fun XC.doGunReload(tasks: ArrayList<PlayerReloadTask>) {
         inventory.setItem(inventorySlot, item)
         
         // if player is aim down sights, add offhand model
-        if ( aimDownSights ) {
+        if ( aimDownSights && gun.itemModelAimDownSights > 0 ) {
             this.createAimDownSightsOffhandModel(gun, player)
         }
 
