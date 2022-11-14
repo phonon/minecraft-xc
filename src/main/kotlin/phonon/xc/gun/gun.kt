@@ -35,8 +35,6 @@ import phonon.xc.util.damage.DamageType
 import phonon.xc.util.IntoItemStack
 import phonon.xc.util.particle.ParticlePacket
 import phonon.xc.util.toml.toIntArray
-// nms version specific imports
-import phonon.xc.nms.gun.AimDownSightsModelPacketManager
 
 
 /**

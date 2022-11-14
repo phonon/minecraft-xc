@@ -2,18 +2,18 @@
  * Packet handlers for aim down sights model for player
  */
 
-package phonon.xc.nms.gun
+package phonon.xc.gun
 
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 
-import net.minecraft.server.v1_16_R3.PacketPlayOutSetSlot
-import net.minecraft.server.v1_16_R3.NBTTagCompound
-import net.minecraft.server.v1_16_R3.ItemStack as NMSItemStack
-import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftItemStack
-import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer
+import phonon.xc.nms.NBTTagCompound
+import phonon.xc.nms.PacketPlayOutSetSlot
+import phonon.xc.nms.ItemStack as NMSItemStack
+import phonon.xc.nms.CraftItemStack
+import phonon.xc.nms.CraftPlayer
 
 import phonon.xc.XC
 import phonon.xc.gun.Gun
