@@ -52,11 +52,13 @@ public data class VehicleElement(
     // This is similar to a "bitset" ECS data layout.
     val prototype: VehicleElementPrototype,
     // Element parent-child tree hierarchy
-    // parents are set lazily, but are set right after
-    var parent: VehicleElement?,
     val children: Array<VehicleElement>,
 ) {
+    // parents are set lazily, but are set immediately after init
+    var parent: VehicleElement? = null
+        internal set
 
+    fun layout(): EnumSet<VehicleComponentType> = prototype.layout
 }
 
 /**
@@ -64,5 +66,6 @@ public data class VehicleElement(
  */
 public data class EntityVehicleData(
     val elementId: VehicleElementId,
+    val layout: EnumSet<VehicleComponentType>,
     val componentType: VehicleComponentType,
 )

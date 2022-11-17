@@ -61,6 +61,7 @@ public data class VehiclePrototype(
 
                 val name = toml.getString("name") ?: ""
 
+                val childParentMap = HashMap<String, ArrayList<String>>() // parent->child
                 // if this contains an elements table, parse each element
                 // else, parse entire doc as single toml table
                 val elementsMap: Map<String, VehicleElementPrototype> = if ( toml.getArray("elements") != null ) {
@@ -68,6 +69,12 @@ public data class VehiclePrototype(
                         ( 0 until elems.size() )
                                 .map { i ->
                                     val elt = VehicleElementPrototype.fromToml(elems.getTable(i), vehicleName = name)
+                                    if ( elt.parent != null ) {
+                                        if ( childParentMap[elt.parent] == null ) {
+                                            childParentMap[elt.parent] = ArrayList()
+                                        }
+                                        childParentMap[elt.parent]!!.add(elt.name)
+                                    }
                                     elt.name to elt
                                 }.toMap()
                     }!!
@@ -75,6 +82,27 @@ public data class VehiclePrototype(
                     val elt = VehicleElementPrototype.fromToml(toml, vehicleName = name)
                     mapOf(Pair(elt.name, elt))
                 }
+                val elements = elementsMap.values.toTypedArray()
+
+                // build children list
+                for ( e in elements ) {
+                    val childNameList = childParentMap[e.name]
+                    if ( childNameList == null ) {
+                        e.children = Array(0) { null!! } // 0_0
+                        continue;
+                    }
+                    val children = childNameList.stream()
+                            .map { n -> elementsMap[n]!! }
+                            .toList()
+                    e.children = children.toTypedArray()
+                }
+
+                // what 3am coding does to a mf
+                // this is topological sort to create build order
+                // for element prototypes
+                // instead u can just construct this top-down from the root nodes
+                // truly.... just fucking stupid retard moment...
+                /*
                 // we're gonna sort the elements so that we build children
                 // first then parents in the tree
 
@@ -133,9 +161,9 @@ public data class VehiclePrototype(
                         children.add(elementsMap[childName]!!)
                     }
                     e.children = children.toTypedArray()
-                }
+                }*/
 
-                return VehiclePrototype(name, elements.toTypedArray())
+                return VehiclePrototype(name, elementsMap.values.toTypedArray())
             } catch (e: Exception) {
                 logger?.warning("Failed to parse landmine file: ${source.toString()}, ${e}")
                 e.printStackTrace()
@@ -165,13 +193,15 @@ public data class VehicleElementPrototype(
     val transform: TransformComponent? = null,
 ) {
 
+    // DONT SET THIS SHIT!!!
     var children: Array<VehicleElementPrototype>? = null
+    internal set
 
     fun buildCopy(): VehicleElement {
         val childrenElts = ArrayList<VehicleElement>()
         // build children first
-        for ( eltPrototype in this.children!! ) {
-            val elt = eltPrototype.buildCopy()
+        for ( childPrototype in this.children!! ) {
+            val elt = childPrototype.buildCopy()
             childrenElts.add(elt)
         }
         val id = XV.storage.lookup[layout]!!.newId()
@@ -179,7 +209,6 @@ public data class VehicleElementPrototype(
                 "${vehicle}.${name}${id}",
                 id,
                 this,
-                null, // late init, we set this when its parent is built
                 childrenElts.toTypedArray()
         )
         // go for another pass thru and set parent of children
