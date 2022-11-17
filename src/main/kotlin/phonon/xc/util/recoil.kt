@@ -6,15 +6,13 @@
 package phonon.xc.util.recoil
 
 import java.util.concurrent.ThreadLocalRandom
-import com.comphenix.protocol.ProtocolManager
-import com.comphenix.protocol.PacketType
-import com.comphenix.protocol.wrappers.EnumWrappers
-import com.comphenix.protocol.utility.MinecraftReflection
 import org.bukkit.entity.Player
 import org.bukkit.util.Vector
 import phonon.xc.gun.Gun
 import phonon.xc.util.math.directionFromYawPitch
 import phonon.xc.util.reflect.getEnumConstant
+import phonon.xc.nms.recoil.sendRecoilPacketUsingLookAt
+import phonon.xc.nms.recoil.sendRecoilPacketUsingRelativeTeleport
 
 /**
  * Wrapper for player gun recoil data needed to run asynchronously.
@@ -28,41 +26,8 @@ public data class RecoilPacket(
     val multiplier: Double, // recoil multiplier
 )
 
-// https://wiki.vg/Protocol#Player_Position
-// https://github.com/WeaponMechanics/MechanicsMain/blob/master/WeaponCompatibility/Weapon_1_16_R3/src/main/java/me/deecaad/weaponmechanics/compatibility/v1_16_R3.java#L39
-// This is "X | Y | Z | X_ROT | Y_ROT"
-// This makes player position packet a relative position instead of absolute.
-
-// Mineman class for EnumPlayerTeleportFlags
-// https://github.com/dmulloy2/PacketWrapper/blob/master/PacketWrapper/src/main/java/com/comphenix/packetwrapper/WrapperPlayServerPosition.java
-private val EnumPlayerTeleportFlags = MinecraftReflection.getMinecraftClass("EnumPlayerTeleportFlags", "PacketPlayOutPosition\$EnumPlayerTeleportFlags")
-
 /**
- * Wrapper for teleport packet flags.
- * Makes position relative instead of absolute.
- */
-private enum class PlayerTeleportFlag { 
-    X,
-    Y,
-    Z,
-    Y_ROT,
-    X_ROT,
-    ;
-}
-
-private val RELATIVE_TELEPORT_FLAGS = setOf(
-    PlayerTeleportFlag.X,
-    PlayerTeleportFlag.Y,
-    PlayerTeleportFlag.Z,
-    PlayerTeleportFlag.Y_ROT,
-    PlayerTeleportFlag.X_ROT,
-)
-
-private val EnumArgumentAnchor = MinecraftReflection.getMinecraftClass("ArgumentAnchor\$Anchor")
-private val enumArgumentAnchorEyes = getEnumConstant(EnumArgumentAnchor, "EYES")!!
-
-/**
- * Runnable task to spawn bullet trails.
+ * Runnable task to send visual recoil packets to players.
  * 
  * Two methods for recoil packet:
  * 1. PacketPlayOutPosition:
@@ -74,7 +39,6 @@ private val enumArgumentAnchorEyes = getEnumConstant(EnumArgumentAnchor, "EYES")
  *      It's not smooth, but it prevents players from ejecting from vehicles.
  */
 public class TaskRecoil(
-    val protocolManager: ProtocolManager,
     val packets: ArrayList<RecoilPacket>,
 ): Runnable {
     override fun run() {
@@ -93,7 +57,10 @@ public class TaskRecoil(
             val netRecoilHorizontalRange = recoilHorizontal * multiplier
             val netRecoilHorizontal = random.nextDouble(-netRecoilHorizontalRange, netRecoilHorizontalRange)
 
-            if ( isInVehicle ) { // use specific vehicle recoil packet
+            // use specific vehicle recoil packet if in vehicle
+            // NOTE: IN 1.18.2 THIS IS NOW SMOOTH!!! :^)))
+            // but not in 1.16.5 :^(
+            if ( isInVehicle ) {
                 // println("USING VEHICLE RECOIL PACKET PacketPlayServerLookAt")
 
                 // calculate new look direction new yaw and pitch
@@ -117,54 +84,17 @@ public class TaskRecoil(
                 // println("netRecoilVertical = $netRecoilVertical")
                 // println("newViewDirection = $newViewDirection")
 
-                val yawPacket = protocolManager.createPacket(PacketType.Play.Server.LOOK_AT, false)
-                yawPacket.getModifier().write(4, enumArgumentAnchorEyes)
-                yawPacket.getDoubles().write(0, playerEyeLocation.x + newViewDirection.x)
-                yawPacket.getDoubles().write(1, playerEyeLocation.y + mountOffsetY + newViewDirection.y)
-                yawPacket.getDoubles().write(2, playerEyeLocation.z + newViewDirection.z)
-                yawPacket.getBooleans().write(0, false)
-
-                try {
-                    protocolManager.sendServerPacket(player, yawPacket)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                player.sendRecoilPacketUsingLookAt(
+                    playerEyeLocation.x + newViewDirection.x,
+                    playerEyeLocation.y + mountOffsetY + newViewDirection.y,
+                    playerEyeLocation.z + newViewDirection.z,
+                )
             }
-            else { // default recoil packet
-                // https://wiki.vg/Protocol#Player_Position
-                // Position packet: 0x36, Play, Server -> Client
-                //      X                    Double    Absolute or relative position, depending on Flags.
-                //      Y                    Double    Absolute or relative position, depending on Flags.
-                //      Z                    Double    Absolute or relative position, depending on Flags.
-                //      Yaw                  Float     Absolute or relative rotation on the X axis, in degrees.
-                //      Pitch                Float     Absolute or relative rotation on the Y axis, in degrees.
-                //      Flags                Byte      Bit field, see below.
-                //      Teleport ID          VarInt    Client should confirm this packet with Accept Teleportation containing the same Teleport ID.
-                //      Dismount Vehicle     Boolean   True if the player should dismount their vehicle. 
-                //
-                // Flags: <Dinnerbone> It's a bitfield, X/Y/Z/Y_ROT/X_ROT. If X is set, the x value is relative and not absolute.
-                // Field    Bit
-                // X        0x01
-                // Y        0x02
-                // Z        0x04
-                // Y_ROT    0x08
-                // X_ROT    0x10
-                val yawPacket = protocolManager.createPacket(PacketType.Play.Server.POSITION, false)
-                yawPacket.getDoubles().write(0, 0.0)
-                yawPacket.getDoubles().write(1, 0.0)
-                yawPacket.getDoubles().write(2, 0.0)
-                yawPacket.getFloat().write(0, netRecoilHorizontal.toFloat())
-                yawPacket.getFloat().write(1, -netRecoilVertical.toFloat())
-                
-                // teleport relative position flags
-                val teleportFlags = yawPacket.getSets(EnumWrappers.getGenericConverter(EnumPlayerTeleportFlags, PlayerTeleportFlag::class.java))
-                teleportFlags.write(0, RELATIVE_TELEPORT_FLAGS)
-
-                try {
-                    protocolManager.sendServerPacket(player, yawPacket)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+            else { // default recoil packet using relative teleport packet
+                player.sendRecoilPacketUsingRelativeTeleport(
+                    netRecoilHorizontal.toFloat(),
+                    -netRecoilVertical.toFloat(),
+                )
             }
         }
     }

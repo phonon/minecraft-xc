@@ -1560,12 +1560,15 @@ private fun inventoryContainsItem(
         return true
     }
 
-    for ( item in inventory.getStorageContents() ) {
-        if ( item != null && item.type == material && (item.getAmount() - amount) >= 0 ) {
-            // check custom model data
-            val itemMeta = item.getItemMeta()
-            if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() == modelData ) {
-                return true
+    val items = inventory.getStorageContents()
+    if ( items !== null ) {
+        for ( item in items ) {
+            if ( item != null && item.type == material && (item.getAmount() - amount) >= 0 ) {
+                // check custom model data
+                val itemMeta = item.getItemMeta()
+                if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() == modelData ) {
+                    return true
+                }
             }
         }
     }
@@ -1600,20 +1603,22 @@ private fun inventoryRemoveItem(
     else if ( amount == 1 ) {
         // remove first item found matching
         val items = inventory.getStorageContents()
-        for ( i in 0 until items.size ) {
-            val item = items[i]
-            if ( item != null && item.type == material ) {
-                // check custom model data
-                val itemMeta = item.getItemMeta()
-                if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() == modelData ) {
-                    // found matching item: remove from slot
-                    if ( item.getAmount() > 1 ) {
-                        item.setAmount(item.getAmount() - 1)
-                        inventory.setItem(i, item)
-                    } else {
-                        inventory.setItem(i, null)
+        if ( items !== null ) {
+            for ( i in 0 until items.size ) {
+                val item = items[i]
+                if ( item != null && item.type == material ) {
+                    // check custom model data
+                    val itemMeta = item.getItemMeta()
+                    if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() == modelData ) {
+                        // found matching item: remove from slot
+                        if ( item.getAmount() > 1 ) {
+                            item.setAmount(item.getAmount() - 1)
+                            inventory.setItem(i, item)
+                        } else {
+                            inventory.setItem(i, null)
+                        }
+                        return true
                     }
-                    return true
                 }
             }
         }
@@ -1624,43 +1629,45 @@ private fun inventoryRemoveItem(
         var amountLeft = amount
 
         val items = inventory.getStorageContents()
-        for ( i in 0 until items.size ) {
-            val item = items[i]
-            if ( item != null && item.type == material ) {
-                // check custom model data
-                val itemMeta = item.getItemMeta()
-                if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() == modelData ) {
-                    // found matching item: remove from slot
-                    indicesToRemove.add(i)
-                    amountLeft -= item.getAmount()
-                    if ( amountLeft <= 0 ) {
-                        break
-                    }
-                }
-            }
-        }
-
-        // only remove items if enough amount found across all item stacks
-        if ( amountLeft <= 0 ) {
-            var amountToRemove = amount
-
-            for ( i in indicesToRemove ) {
+        if ( items !== null ) {
+            for ( i in 0 until items.size ) {
                 val item = items[i]
-                val itemAmount = item.getAmount()           
-                if ( itemAmount > amountToRemove ) {
-                    item.setAmount(itemAmount - amountToRemove)
-                    inventory.setItem(i, item)
-                    break
-                } else {
-                    inventory.setItem(i, null)
-                    amountToRemove -= itemAmount
-                    if ( amountToRemove <= 0 ) {
-                        break
+                if ( item != null && item.type == material ) {
+                    // check custom model data
+                    val itemMeta = item.getItemMeta()
+                    if ( itemMeta.hasCustomModelData() && itemMeta.getCustomModelData() == modelData ) {
+                        // found matching item: remove from slot
+                        indicesToRemove.add(i)
+                        amountLeft -= item.getAmount()
+                        if ( amountLeft <= 0 ) {
+                            break
+                        }
                     }
                 }
             }
 
-            return true
+            // only remove items if enough amount found across all item stacks
+            if ( amountLeft <= 0 ) {
+                var amountToRemove = amount
+
+                for ( i in indicesToRemove ) {
+                    val item = items[i]
+                    val itemAmount = item.getAmount()           
+                    if ( itemAmount > amountToRemove ) {
+                        item.setAmount(itemAmount - amountToRemove)
+                        inventory.setItem(i, item)
+                        break
+                    } else {
+                        inventory.setItem(i, null)
+                        amountToRemove -= itemAmount
+                        if ( amountToRemove <= 0 ) {
+                            break
+                        }
+                    }
+                }
+
+                return true
+            }
         }
     }
 

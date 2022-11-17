@@ -15,6 +15,7 @@
 
 package phonon.xc.nms.gun.crawl
 
+import net.minecraft.server.v1_16_R3.DataWatcher
 import net.minecraft.server.v1_16_R3.EnumDirection
 import net.minecraft.server.v1_16_R3.EntityTypes
 import net.minecraft.server.v1_16_R3.EntityShulker
@@ -134,4 +135,17 @@ public class BoxEntity(
 
     public fun rideableUnderWater(): Boolean { return true }
 
+    /**
+     * Wrapper around setLocation( ... ) in 1.16.5.
+     */
+    public fun moveTo(x: Double, y: Double, z: Double, yaw: Float, pitch: Float) {
+        this.setLocation(x, y, z, yaw, pitch)
+    }
+
+    /**
+     * Match 1.18.2 api for getting entity synced data watcher.
+     */
+    public fun getEntityData(): DataWatcher {
+        return this.getDataWatcher()
+    }
 }

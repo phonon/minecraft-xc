@@ -9,11 +9,11 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 
-import phonon.xc.nms.NBTTagCompound
-import phonon.xc.nms.PacketPlayOutSetSlot
-import phonon.xc.nms.ItemStack as NMSItemStack
+import phonon.xc.nms.NmsPacketPlayOutSetSlot
+import phonon.xc.nms.NmsItemStack
 import phonon.xc.nms.CraftItemStack
 import phonon.xc.nms.CraftPlayer
+import phonon.xc.nms.sendItemSlotChange
 
 import phonon.xc.XC
 import phonon.xc.gun.Gun
@@ -34,7 +34,7 @@ public class AimDownSightsModelPacketManager(
     gun: Gun,
     materialAimDownSights: Material,
 ): AimDownSightsModel {
-    private val nmsItemAdsModel: NMSItemStack
+    private val nmsItemAdsModel: NmsItemStack
     
     init {
         val modelId = if ( gun.itemModelAimDownSights > 0 ) {
@@ -54,8 +54,7 @@ public class AimDownSightsModelPacketManager(
 
     override fun create(player: Player) {
         val nmsPlayer = (player as CraftPlayer).getHandle()
-        val packet = PacketPlayOutSetSlot(PLAYER_CONTAINER_ID, SLOT_OFFHAND, nmsItemAdsModel)
-        nmsPlayer.playerConnection.sendPacket(packet)
+        nmsPlayer.sendItemSlotChange(SLOT_OFFHAND, nmsItemAdsModel)
     }
 
 
@@ -65,8 +64,7 @@ public class AimDownSightsModelPacketManager(
          */
         fun destroy(player: Player) {
             val nmsPlayer = (player as CraftPlayer).getHandle()
-            val packet = PacketPlayOutSetSlot(PLAYER_CONTAINER_ID, SLOT_OFFHAND, NMS_ITEM_NONE)
-            nmsPlayer.playerConnection.sendPacket(packet)
+            nmsPlayer.sendItemSlotChange(SLOT_OFFHAND, NMS_ITEM_NONE)
         }
     }
 }

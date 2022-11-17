@@ -18,14 +18,18 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.persistence.PersistentDataContainer
-import phonon.xc.nms.NBTTagCompound
-import phonon.xc.nms.NBTTagList
+import phonon.xc.nms.NmsNBTTagCompound
+import phonon.xc.nms.NmsNBTTagList
 import phonon.xc.nms.NBTTagString
 import phonon.xc.nms.NBTTagInt
-import phonon.xc.nms.ItemStack as NMSItemStack
+import phonon.xc.nms.putTag
+import phonon.xc.nms.containsKey
+import phonon.xc.nms.containsKeyOfType
+import phonon.xc.nms.NmsItemStack
 import phonon.xc.nms.CraftItemStack
 import phonon.xc.nms.CraftPlayer
 import phonon.xc.nms.CraftMagicNumbers
+import phonon.xc.nms.getMainHandNMSItem
 import phonon.xc.XC
 import phonon.xc.ammo.Ammo
 import phonon.xc.armor.Hat
@@ -57,8 +61,7 @@ internal const val NBT_TAG_INT = 3
  */
 public fun XC.getItemTypeInHand(player: Player): Int {
     val craftPlayer = player as CraftPlayer
-    val nmsPlayer = craftPlayer.getHandle()
-    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    val nmsItem = craftPlayer.getMainHandNMSItem()
 
     // note: nms item is never null, if hand empty this gives air material
     // println("getItemTypeInHand -> itemInHand: $nmsItem")
@@ -74,17 +77,17 @@ public fun XC.getItemTypeInHand(player: Player): Int {
  * index into custom type storage array. Return null if material
  * does not match or if id is past the storage array size.
  */
-public fun <T> getObjectFromNMSItemStack(
-    nmsItem: NMSItemStack,
+public fun <T> getObjectFromNmsItemStack(
+    nmsItem: NmsItemStack,
     materialType: Material,
     storage: Array<T>,
 ): T? {
     val material = CraftMagicNumbers.getMaterial(nmsItem.getItem())
     if ( material == materialType ) {
-        val tags: NBTTagCompound? = nmsItem.getTag()
+        val tags: NmsNBTTagCompound? = nmsItem.getTag()
         // println("tags = $tags")
         // NOTE: must check first before getting tag
-        if ( tags != null && tags.hasKeyOfType("CustomModelData", NBT_TAG_INT) ) {
+        if ( tags != null && tags.containsKeyOfType("CustomModelData", NBT_TAG_INT) ) {
             // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
             val modelId = tags.getInt("CustomModelData")
             // println("tags['CustomModelData'] = ${modelId}")
@@ -107,12 +110,12 @@ public fun <T> getObjectFromNMSItemStack(
  * correct.
  */
 public fun <T> getCustomItemUnchecked(
-    nmsItem: NMSItemStack,
+    nmsItem: NmsItemStack,
     storage: Array<T>,
 ): T? {
-    val tags: NBTTagCompound? = nmsItem.getTag()
+    val tags: NmsNBTTagCompound? = nmsItem.getTag()
     // println("tags = $tags")
-    if ( tags != null && tags.hasKeyOfType("CustomModelData", NBT_TAG_INT) ) {
+    if ( tags != null && tags.containsKeyOfType("CustomModelData", NBT_TAG_INT) ) {
         // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
         val modelId = tags.getInt("CustomModelData")
         // println("tags['CustomModelData'] = ${modelId}")
@@ -128,15 +131,15 @@ public fun <T> getCustomItemUnchecked(
  * Internal helper to get NMS item stack from a bukkit CraftItemStack.
  * Requires reflection to access private NMS item stack handle.
  */
-internal object GetNMSItemStack {
+internal object GetNmsItemStack {
     val privField = CraftItemStack::class.java.getDeclaredField("handle")
 
     init {
         privField.setAccessible(true)
     }
 
-    public fun from(item: CraftItemStack): NMSItemStack {
-        return privField.get(item) as NMSItemStack
+    public fun from(item: CraftItemStack): NmsItemStack {
+        return privField.get(item) as NmsItemStack
     }
 }
 
@@ -169,15 +172,15 @@ public fun XC.getItemIntDataIfMaterialMatches(
 ): Int {
     if ( item.type == material ) {
         try {
-            val nmsItem = GetNMSItemStack.from(item as CraftItemStack)
+            val nmsItem = GetNmsItemStack.from(item as CraftItemStack)
             if ( nmsItem != null ) {
-                val tag: NBTTagCompound? = nmsItem.getTag()
+                val tag: NmsNBTTagCompound? = nmsItem.getTag()
                 // println("tags = $tag")
                 // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
-                if ( tag != null && tag.hasKey(BUKKIT_STORAGE_TAG) ) {
-                    // persistent data container holder NBTTagCompound
+                if ( tag != null && tag.containsKey(BUKKIT_STORAGE_TAG) ) {
+                    // persistent data container holder NmsNBTTagCompound
                     val pdc = tag.getCompound(BUKKIT_STORAGE_TAG)!!
-                    if ( pdc.hasKeyOfType(key, NBT_TAG_INT) ) {
+                    if ( pdc.containsKeyOfType(key, NBT_TAG_INT) ) {
                         return pdc.getInt(key)
                     }
                 }
@@ -217,13 +220,13 @@ internal fun getInventorySlotForCustomItemWithNbtKey(
         val nmsItem = items[slot]
         if ( nmsItem != null && CraftMagicNumbers.getMaterial(nmsItem.getItem()) == material ) {
             // check for nbt key
-            val tag: NBTTagCompound? = nmsItem.getTag()
+            val tag: NmsNBTTagCompound? = nmsItem.getTag()
             // println("tags = $tag")
             // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
-            if ( tag != null && tag.hasKey(BUKKIT_STORAGE_TAG) ) {
-                // persistent data container holder NBTTagCompound
+            if ( tag != null && tag.containsKey(BUKKIT_STORAGE_TAG) ) {
+                // persistent data container holder NmsNBTTagCompound
                 val pdc = tag.getCompound(BUKKIT_STORAGE_TAG)!!
-                if ( pdc.hasKeyOfType(nbtKey, NBT_TAG_INT) ) {
+                if ( pdc.containsKeyOfType(nbtKey, NBT_TAG_INT) ) {
                     if ( pdc.getInt(nbtKey) == value ) {
                         return slot
                     }
@@ -243,7 +246,7 @@ internal fun getInventorySlotForCustomItemWithNbtKey(
  * 
  * NOTE:
  * in 1.16.X
- * NBTTagString.a(str) is the static constructor
+ * NmsNBTTagString.a(str) is the static constructor
  * This is same for all NBTTag_____ objects.
  */
 internal fun setItemArmorNMS(
@@ -255,26 +258,28 @@ internal fun setItemArmorNMS(
 ): ItemStack {
     val nmsItem = CraftItemStack.asNMSCopy(item)
     if ( nmsItem != null ) {
-        val tag: NBTTagCompound = if ( nmsItem.hasTag() ) {
+        val tag: NmsNBTTagCompound = if ( nmsItem.hasTag() ) {
             nmsItem.getTag()!!
         } else {
-            NBTTagCompound()
+            NmsNBTTagCompound()
         }
 
         // attribute modifiers are an nbt tag list
-        val attributeModifiers = NBTTagList()
+        val attributeModifiers = NmsNBTTagList()
 
-        val armorTag = NBTTagCompound()
-        armorTag.set("AttributeName", NBTTagString.a("generic.armor"))
-        armorTag.set("Name", NBTTagString.a("generic.armor"))
-        armorTag.set("Amount", NBTTagInt.a(armor))
-        armorTag.set("Slot", NBTTagString.a(slot))
-        armorTag.set("Operation", NBTTagInt.a(0))
-        armorTag.set("UUIDLeast", NBTTagInt.a(uuidLeast))
-        armorTag.set("UUIDMost", NBTTagInt.a(uuidMost))
+        // NOTE: THESE ARE USING XC's INTERNAL NBTTag VALUE CLASS WRAPPERS
+        // SEE nms.kt IMPLEMENTATIONS
+        val armorTag = NmsNBTTagCompound()
+        armorTag.putTag("AttributeName", NBTTagString("generic.armor").toNms())
+        armorTag.putTag("Name", NBTTagString("generic.armor").toNms())
+        armorTag.putTag("Amount", NBTTagInt(armor).toNms())
+        armorTag.putTag("Slot", NBTTagString(slot).toNms())
+        armorTag.putTag("Operation", NBTTagInt(0).toNms())
+        armorTag.putTag("UUIDLeast", NBTTagInt(uuidLeast).toNms())
+        armorTag.putTag("UUIDMost", NBTTagInt(uuidMost).toNms())
 
         attributeModifiers.add(armorTag)
-        tag.set("AttributeModifiers", attributeModifiers)
+        tag.putTag("AttributeModifiers", attributeModifiers)
 
         nmsItem.setTag(tag)
         
@@ -301,19 +306,18 @@ internal fun setItemArmorNMS(
  */
 public fun checkHandMaterialAndGetNbtIntKey(player: Player, material: Material, key: String): Int {
     val craftPlayer = player as CraftPlayer
-    val nmsPlayer = craftPlayer.getHandle()
-    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    val nmsItem = craftPlayer.getMainHandNMSItem()
 
     if ( nmsItem != null ) {
         val itemMat = CraftMagicNumbers.getMaterial(nmsItem.getItem())
         if ( itemMat == material ) {
-            val tag: NBTTagCompound? = nmsItem.getTag()
+            val tag: NmsNBTTagCompound? = nmsItem.getTag()
             // println("tags = $tag")
             // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
-            if ( tag != null && tag.hasKey(BUKKIT_STORAGE_TAG) ) {
-                // persistent data container holder NBTTagCompound
+            if ( tag != null && tag.containsKey(BUKKIT_STORAGE_TAG) ) {
+                // persistent data container holder NmsNBTTagCompound
                 val pdc = tag.getCompound(BUKKIT_STORAGE_TAG)!!
-                if ( pdc.hasKeyOfType(key, NBT_TAG_INT) ) {
+                if ( pdc.containsKeyOfType(key, NBT_TAG_INT) ) {
                     return pdc.getInt(key)
                 }
             }
@@ -332,8 +336,8 @@ public fun checkHandMaterialAndGetNbtIntKey(player: Player, material: Material, 
  * Get a gun from nms item stack using raw NBT tags.
  * This checks if material matches config gun material.
  */
-public fun XC.getGunFromNMSItemStack(nmsItem: NMSItemStack): Gun? {
-    return getObjectFromNMSItemStack(
+public fun XC.getGunFromNmsItemStack(nmsItem: NmsItemStack): Gun? {
+    return getObjectFromNmsItemStack(
         nmsItem,
         this.config.materialGun,
         this.storage.gun,
@@ -346,13 +350,12 @@ public fun XC.getGunFromNMSItemStack(nmsItem: NMSItemStack): Gun? {
  */
 public fun XC.getGunInHand(player: Player): Gun? {
     val craftPlayer = player as CraftPlayer
-    val nmsPlayer = craftPlayer.getHandle()
-    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    val nmsItem = craftPlayer.getMainHandNMSItem()
     
     // println("itemInHand: $nmsItem")
 
     if ( nmsItem != null ) {
-        return getGunFromNMSItemStack(nmsItem)
+        return getGunFromNmsItemStack(nmsItem)
     }
 
     return null
@@ -366,8 +369,7 @@ public fun XC.getGunInHand(player: Player): Gun? {
  */
 public fun XC.getGunInHandUnchecked(player: Player): Gun? {
     val craftPlayer = player as CraftPlayer
-    val nmsPlayer = craftPlayer.getHandle()
-    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    val nmsItem = craftPlayer.getMainHandNMSItem()
     
     // println("itemInHand: $nmsItem")
 
@@ -390,7 +392,7 @@ public fun XC.getGunInSlot(player: Player, slot: Int): Gun? {
     // println("itemInHand: $nmsItem")
 
     if ( nmsItem != null ) {
-        return getGunFromNMSItemStack(nmsItem)
+        return getGunFromNmsItemStack(nmsItem)
     }
 
     return null
@@ -418,8 +420,8 @@ public fun XC.getGunFromItem(item: ItemStack): Gun? {
 }
 
 internal fun XC.getGunFromItemNMS(item: ItemStack): Gun? {
-    val nmsItem = GetNMSItemStack.from(item as CraftItemStack)
-    return getGunFromNMSItemStack(nmsItem)
+    val nmsItem = GetNmsItemStack.from(item as CraftItemStack)
+    return getGunFromNmsItemStack(nmsItem)
 }
 
 /**
@@ -446,8 +448,8 @@ internal fun XC.getGunFromItemBukkit(item: ItemStack): Gun? {
  * Get a throwable from nms item stack using raw NBT tags.
  * This checks if material matches config throwable item material.
  */
-public fun XC.getThrowableFromNMSItemStack(nmsItem: NMSItemStack): ThrowableItem? {
-    return getObjectFromNMSItemStack(
+public fun XC.getThrowableFromNmsItemStack(nmsItem: NmsItemStack): ThrowableItem? {
+    return getObjectFromNmsItemStack(
         nmsItem,
         this.config.materialThrowable,
         this.storage.throwable,
@@ -460,13 +462,12 @@ public fun XC.getThrowableFromNMSItemStack(nmsItem: NMSItemStack): ThrowableItem
  */
 public fun XC.getThrowableInHand(player: Player): ThrowableItem? {
     val craftPlayer = player as CraftPlayer
-    val nmsPlayer = craftPlayer.getHandle()
-    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    val nmsItem = craftPlayer.getMainHandNMSItem()
     
     // println("itemInHand: $nmsItem")
 
     if ( nmsItem != null ) {
-        return getThrowableFromNMSItemStack(nmsItem)
+        return getThrowableFromNmsItemStack(nmsItem)
     }
 
     return null
@@ -478,8 +479,7 @@ public fun XC.getThrowableInHand(player: Player): ThrowableItem? {
  */
 public fun XC.getThrowableInHandUnchecked(player: Player): ThrowableItem? {
     val craftPlayer = player as CraftPlayer
-    val nmsPlayer = craftPlayer.getHandle()
-    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    val nmsItem = craftPlayer.getMainHandNMSItem()
     
     // println("itemInHand: $nmsItem")
 
@@ -513,8 +513,8 @@ public fun XC.getThrowableFromItem(item: ItemStack): ThrowableItem? {
 }
 
 internal fun XC.getThrowableFromItemNMS(item: ItemStack): ThrowableItem? {
-    val nmsItem = GetNMSItemStack.from(item as CraftItemStack)
-    return getThrowableFromNMSItemStack(nmsItem)
+    val nmsItem = GetNmsItemStack.from(item as CraftItemStack)
+    return getThrowableFromNmsItemStack(nmsItem)
 }
 
 /**
@@ -541,8 +541,8 @@ internal fun XC.getThrowableFromItemBukkit(item: ItemStack): ThrowableItem? {
  * Get a melee weapon from nms item stack using raw NBT tags.
  * This checks if material matches config melee item material.
  */
-public fun XC.getMeleeFromNMSItemStack(nmsItem: NMSItemStack): MeleeWeapon? {
-    return getObjectFromNMSItemStack(
+public fun XC.getMeleeFromNmsItemStack(nmsItem: NmsItemStack): MeleeWeapon? {
+    return getObjectFromNmsItemStack(
         nmsItem,
         this.config.materialMelee,
         this.storage.melee,
@@ -555,13 +555,12 @@ public fun XC.getMeleeFromNMSItemStack(nmsItem: NMSItemStack): MeleeWeapon? {
  */
 public fun XC.getMeleeInHand(player: Player): MeleeWeapon? {
     val craftPlayer = player as CraftPlayer
-    val nmsPlayer = craftPlayer.getHandle()
-    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    val nmsItem = craftPlayer.getMainHandNMSItem()
     
     // println("itemInHand: $nmsItem")
 
     if ( nmsItem != null ) {
-        return getMeleeFromNMSItemStack(nmsItem)
+        return getMeleeFromNmsItemStack(nmsItem)
     }
 
     return null
@@ -573,8 +572,7 @@ public fun XC.getMeleeInHand(player: Player): MeleeWeapon? {
  */
 public fun XC.getMeleeInHandUnchecked(player: Player): MeleeWeapon? {
     val craftPlayer = player as CraftPlayer
-    val nmsPlayer = craftPlayer.getHandle()
-    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    val nmsItem = craftPlayer.getMainHandNMSItem()
     
     // println("itemInHand: $nmsItem")
 
@@ -594,8 +592,8 @@ public fun XC.getMeleeInHandUnchecked(player: Player): MeleeWeapon? {
  * Get a hat from nms item stack using raw NBT tags.
  * This checks if material matches config hat material.
  */
-public fun XC.getHatFromNMSItemStack(nmsItem: NMSItemStack): Hat? {
-    return getObjectFromNMSItemStack(
+public fun XC.getHatFromNmsItemStack(nmsItem: NmsItemStack): Hat? {
+    return getObjectFromNmsItemStack(
         nmsItem,
         this.config.materialArmor,
         this.storage.hat,
@@ -608,13 +606,12 @@ public fun XC.getHatFromNMSItemStack(nmsItem: NMSItemStack): Hat? {
  */
 public fun XC.getHatInHand(player: Player): Hat? {
     val craftPlayer = player as CraftPlayer
-    val nmsPlayer = craftPlayer.getHandle()
-    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    val nmsItem = craftPlayer.getMainHandNMSItem()
     
     // println("itemInHand: $nmsItem")
 
     if ( nmsItem != null ) {
-        return getHatFromNMSItemStack(nmsItem)
+        return getHatFromNmsItemStack(nmsItem)
     }
 
     return null
@@ -626,8 +623,7 @@ public fun XC.getHatInHand(player: Player): Hat? {
  */
 public fun XC.getHatInHandUnchecked(player: Player): Hat? {
     val craftPlayer = player as CraftPlayer
-    val nmsPlayer = craftPlayer.getHandle()
-    val nmsItem = nmsPlayer.inventory.getItemInHand()
+    val nmsItem = craftPlayer.getMainHandNMSItem()
     
     // println("itemInHand: $nmsItem")
 

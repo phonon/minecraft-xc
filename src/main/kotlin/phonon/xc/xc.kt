@@ -1201,13 +1201,13 @@ public class XC(
             // block crack animations
             Bukkit.getScheduler().runTaskAsynchronously(
                 plugin,
-                TaskBroadcastBlockCrackAnimations(protocolManager, blockCrackAnimations),
+                TaskBroadcastBlockCrackAnimations(blockCrackAnimations),
             )
 
             // player recoil from gun firing
             Bukkit.getScheduler().runTaskAsynchronously(
                 plugin,
-                TaskRecoil(protocolManager, recoilPackets),
+                TaskRecoil(recoilPackets),
             )
 
             // sync

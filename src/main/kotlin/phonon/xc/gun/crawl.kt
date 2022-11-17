@@ -106,7 +106,7 @@ public data class Crawling(
         } else {
             val boxEntity = if ( this.boxEntity != null ) {
                 // re-use same box entity, with updated location
-                this.boxEntity.setLocation(
+                this.boxEntity.moveTo(
                     newLocation.getX(),
                     newLocation.getY() + 1.25,
                     newLocation.getZ(),
@@ -117,7 +117,7 @@ public data class Crawling(
             } else {
                 val newBoxEntity = BoxEntity(newLocation.clone().add(0.0, 1.0, 0.0))
                 newBoxEntity.setRawPeekAmount(0.toByte())
-                newBoxEntity.setLocation(
+                newBoxEntity.moveTo(
                     newLocation.getX(),
                     newLocation.getY() + 1.25,
                     newLocation.getZ(),
@@ -188,7 +188,7 @@ internal fun sendBoxEntityPacket(player: Player, boxEntity: BoxEntity) {
     // https://aadnk.github.io/ProtocolLib/Javadoc/com/comphenix/protocol/wrappers/WrappedDataWatcher.html
     // https://github.com/aadnk/PacketWrapper/blob/master/PacketWrapper/src/main/java/com/comphenix/packetwrapper/WrapperPlayServerEntityMetadata.java
     // getWatchableObjects()
-    val dataWatcher = WrappedDataWatcher(boxEntity.getDataWatcher())
+    val dataWatcher = WrappedDataWatcher(boxEntity.getEntityData())
     val dataPacket = protocolManager.createPacket(PacketType.Play.Server.ENTITY_METADATA, false)
     dataPacket.getIntegers().write(0, boxEntity.getId())
     dataPacket.getWatchableCollectionModifier().write(0, dataWatcher.getWatchableObjects())
@@ -288,7 +288,7 @@ public fun XC.forceCrawl(player: Player): Crawling {
         // println("box loc = $loc")
         val boxEntity = BoxEntity(loc)
         boxEntity.setRawPeekAmount(0.toByte())
-        boxEntity.setLocation(
+        boxEntity.moveTo(
             loc.getX(),
             loc.getY(),
             loc.getZ(),
@@ -384,7 +384,6 @@ public fun XC.stopCrawlSystem(requests: List<CrawlStop>): ArrayList<CrawlStop> {
     for ( r in requests ) {
         val player = r.player
         val playerId = player.getUniqueId()
-        // println("STOP CRAWL $player")
 
         // player.removePotionEffect(PotionEffectType.SLOW)
         player.removePotionEffect(PotionEffectType.JUMP)

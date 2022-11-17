@@ -29,3 +29,14 @@ without needing to use this, as if the function were a method of `XC`.
 This can create ambiguity if a local variable name shadows a `XC` class
 variable. **So always use `this` for properties on XC inside extension
 functions.**
+
+
+# Miscellaneous Aesthetics
+- Use `camelCase` for kotlin file names and variables. this isnt java,
+u can export single functions from files so `JavaClassName.java`
+doesnt really make sense in kotlin
+- Use 4 spaces for tabs
+- Use `/** **/` comments for function or class block comments
+- Add spacing after if, for, when operators
+e.g. `if ( x == true )` instead of `if(x == true)`
+e.g. `for ( x in 0 until 420 )` instead of `for(x in 0 until 420)`
