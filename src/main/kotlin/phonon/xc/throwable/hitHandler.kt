@@ -118,6 +118,13 @@ public val timerExpiredExplosionHandler = fun(
     location: Location,
     source: Entity,
 ) {
+    // try playing sound
+    try {
+        location.getWorld()?.playSound(location, throwable.soundExplosion, 1.0f, 1.0f)
+    } catch (e: Exception) {
+        xc.logger.warning("Failed to play sound ${throwable.soundExplosion} at ${location}")
+    }
+    
     // summon explosion effect at location
     xc.createExplosion(
         hitboxes,
@@ -238,6 +245,13 @@ public val entityExplosionHitHandler = fun(
     // TODO: emit event for target hit
     // e.g. for vehicles
 
+    // try playing sound
+    try {
+        location.getWorld()?.playSound(location, throwable.soundExplosion, 1.0f, 1.0f)
+    } catch (e: Exception) {
+        xc.logger.warning("Failed to play sound ${throwable.soundExplosion} at ${location}")
+    }
+
     // summon explosion effect at location
     xc.createExplosion(
         hitboxes,
@@ -275,6 +289,13 @@ public val blockExplosionHitHandler = fun(
     _block: Block,
     source: Entity,
 ) {
+    // try playing sound at location
+    try {
+        location.getWorld()?.playSound(location, throwable.soundExplosion, 1.0f, 1.0f)
+    } catch (e: Exception) {
+        xc.logger.warning("Failed to play sound ${throwable.soundExplosion} at ${location}")
+    }
+
     // summon explosion effect at location
     xc.createExplosion(
         hitboxes,
