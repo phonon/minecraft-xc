@@ -36,10 +36,10 @@ plugins {
     // just manually uncomment
 
     // USE FOR 1.16.5, UNCOMMENT WHEN NEEDED :^(
-    id("io.papermc.paperweight.userdev") version "1.3.8" apply false
+    // id("io.papermc.paperweight.userdev") version "1.3.8" apply false
     
     // USE FOR 1.18.2 (DEFAULT)
-    // id("io.papermc.paperweight.userdev") version "1.3.8"
+    id("io.papermc.paperweight.userdev") version "1.3.8"
 
     // Apply the application plugin to add support for building a CLI application.
     application

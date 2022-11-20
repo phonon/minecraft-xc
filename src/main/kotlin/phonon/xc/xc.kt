@@ -32,6 +32,7 @@ import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.entity.Damageable
 import org.bukkit.plugin.Plugin
+import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitTask
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.util.Vector
@@ -271,13 +272,13 @@ public class XC(
     internal var throwThrowableRequests: ArrayList<ThrowThrowableRequest> = ArrayList()
     internal var droppedThrowables: ArrayList<DroppedThrowable> = ArrayList()
     internal var readyThrowables: HashMap<Int, ReadyThrowable> = HashMap()
-    // per-world throwables queues
+    // per-world throwables queues, map world uuid => queue
     internal var expiredThrowables: HashMap<UUID, ArrayList<ExpiredThrowable>> = HashMap()
     internal var thrownThrowables: HashMap<UUID, ArrayList<ThrownThrowable>> = HashMap()
     // landmine systems
     internal var landmineActivationRequests: ArrayList<LandmineActivationRequest> = ArrayList(0)
     internal var landmineFinishUseRequests: ArrayList<LandmineFinishUseRequest> = ArrayList(0)
-    internal var landmineExplosions: HashMap<UUID, ArrayList<LandmineExplosionRequest>> = HashMap() // per world landmine explosion queues
+    internal var landmineExplosions: HashMap<UUID, ArrayList<LandmineExplosionRequest>> = HashMap() // per world landmine explosion queues, world uuid => explosions
     // task finish queues
     internal val playerReloadTaskQueue: LinkedBlockingQueue<PlayerReloadTask> = LinkedBlockingQueue()
     internal val playerReloadCancelledTaskQueue: LinkedBlockingQueue<PlayerReloadCancelledTask> = LinkedBlockingQueue()
@@ -354,16 +355,101 @@ public class XC(
      * Cleanup resources before reload or disabling plugin. 
      */
     internal fun cleanup() {
-        // clear death message and stats tracking
-        TaskSavePlayerDeathRecords(playerDeathRecords, config.playerDeathLogSaveDir).run()
-        playerDeathRecords = ArrayList()
-        deathEvents.clear()
+        // cleanup crawl fake entity/packets
+        for ( (_playerId, crawlState) in crawling ) {
+            try {
+                crawlState.cleanup()
+                crawlState.player.removePotionEffect(PotionEffectType.JUMP)
+                crawlState.player.setWalkSpeed(0.2f) // default speed
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
 
-        // re-create new projectile systems for each world
+        // flush death message and stats tracking
+        try {
+            TaskSavePlayerDeathRecords(playerDeathRecords, config.playerDeathLogSaveDir).run()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // clear counters
+        playerDeathRecordSaveCounter = 0
+        gunReloadIdCounter = 0
+        burstFireIdCounter = 0
+        autoFireIdCounter = 0
+        crawlToShootIdCounter = 0
+        crawlRefreshTick0Count = 0
+        crawlRefreshTick1Count = 0
+        throwableIdCounter = 0
+
+        // clear all queues/maps
         projectileSystems.clear()
-        thrownThrowables.clear()
+
+        playerShootDelay.clear()
+        playerRecoil = HashMap()
+        playerSpeed = HashMap()
+        playerPreviousLocation = HashMap()
+        
+        deathEvents.clear()
+        playerDeathMessages.clear()
+        playerDeathRecords = ArrayList()
+
+        playerAimDownSightsRequests = ArrayList()
+        playerGunSelectRequests = ArrayList()
+        playerReloadRequests = ArrayList()
+        playerShootRequests = ArrayList()
+        playerAutoFireRequests = ArrayList()
+        playerGunCleanupRequests = ArrayList()
+        itemGunCleanupRequests = ArrayList()
+        burstFiringPackets = HashMap()
+        autoFiringPackets = HashMap()
+
+        crawlRequestTasks = HashMap()
+        crawlStartQueue = ArrayList()
+        crawlStopQueue = ArrayList()
+        crawling = HashMap()
+        crawlToShootRequestQueue = ArrayList()
+        crawlingAndReadyToShoot.clear()
+
+        readyThrowableRequests = ArrayList()
+        throwThrowableRequests = ArrayList()
+        droppedThrowables = ArrayList()
+        readyThrowables = HashMap()
+
         expiredThrowables.clear()
-        landmineExplosions.clear()
+        thrownThrowables.clear()
+
+        landmineActivationRequests = ArrayList(0)
+        landmineFinishUseRequests = ArrayList(0)
+        landmineExplosions = HashMap()
+        playerReloadTaskQueue.clear()
+        playerReloadCancelledTaskQueue.clear()
+        playerCrawlRequestFinishQueue.clear()
+        playerCrawlRequestCancelQueue.clear()
+
+        wearHatRequests = ArrayList()
+
+        particleBulletTrailQueue = ArrayList()
+        particleBulletImpactQueue = ArrayList()
+        particleExplosionQueue = ArrayList()
+        blockCrackAnimationQueue = ArrayList()
+        gunAmmoInfoMessageQueue = ArrayList()
+        soundQueue = ArrayList()
+        recoilQueue = ArrayList()
+    }
+
+    /**
+     * Inserts world specific queues for projectiles/weapons systems
+     */
+    internal fun initializePerWorldSystems() {
+        Bukkit.getWorlds().forEach { world ->
+            val worldId = world.getUID()
+            projectileSystems.put(worldId, ProjectileSystem(world))
+            thrownThrowables.put(worldId, ArrayList())
+            expiredThrowables.put(worldId, ArrayList())
+            landmineExplosions.put(worldId, ArrayList())
+        }
     }
 
     /**
@@ -375,12 +461,7 @@ public class XC(
         this.cleanup()
 
         // create projectile and throwable systems for each world
-        Bukkit.getWorlds().forEach { world ->
-            projectileSystems.put(world.getUID(), ProjectileSystem(world))
-            thrownThrowables.put(world.getUID(), ArrayList())
-            expiredThrowables.put(world.getUID(), ArrayList())
-            landmineExplosions.put(world.getUID(), ArrayList())
-        }
+        this.initializePerWorldSystems()
         
         // reload main plugin config
         val pathConfigToml = Paths.get(plugin.getDataFolder().getPath(), "config.toml")
@@ -618,8 +699,36 @@ public class XC(
     internal fun start() {
         if ( engineTask == null ) {
             engineTask = Bukkit.getScheduler().runTaskTimer(plugin, object: Runnable {
+                // number of successive errors caught on each update
+                var errorAccumulator = 0
+
+                // max errors before resetting engine to clean slate
+                val maxErrorsBeforeCleanup = 100
+
                 override fun run() {
-                    update()
+                    // wrap update in try catch...
+                    // right now engine is very fragile, a single in loop can 
+                    // basically cause loop to keep failing at same spot...need to make
+                    // each system more resilient with internal try/catch...
+                    // but for now just catch an err, accumulate error count, then after
+                    // threshold hit, reset engine to a clean state
+                    try {
+                        update()
+                        errorAccumulator = 0 // clear on successful update
+                    } catch ( e: Exception ) {
+                        logger.severe("Engine update failed:")
+                        e.printStackTrace()
+                        
+                        // accumulate errors. if we reach past threshold,
+                        // reset engine to clean slate
+                        errorAccumulator += 1
+                        if ( errorAccumulator >= maxErrorsBeforeCleanup ) {
+                            logger.severe("Engine reached error threshold...resetting to clean slate")
+                            cleanup()
+                            initializePerWorldSystems()
+                            errorAccumulator = 0
+                        }
+                    }
                 }
             }, 0, 0)
 
