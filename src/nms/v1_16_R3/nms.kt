@@ -53,6 +53,36 @@ internal fun <T: PacketListener> EntityPlayer.sendPacket(p: Packet<T>) {
 }
 
 /**
+ * Send packet to all players in list of players within distance
+ * from origin.
+ * Similar to protocol lib:
+ * https://github.com/dmulloy2/ProtocolLib/blob/4bc9e8b7b78196c99d95330005171ced8ed5b73d/src/main/java/com/comphenix/protocol/injector/PacketFilterManager.java#L268
+ */
+internal fun <T: PacketListener> List<CraftPlayer>.broadcastPacketWithinDistance(
+    packet: Packet<T>,
+    originX: Double,
+    originY: Double,
+    originZ: Double,
+    maxDistance: Double,
+) {
+    val maxDistanceSq = maxDistance * maxDistance
+
+    for ( player in this ) {
+        val loc = player.location
+
+        val dx = loc.x - originX
+        val dy = loc.y - originY
+        val dz = loc.z - originZ
+
+        val distanceSq = (dx * dx) + (dy * dy) + (dz * dz)
+
+        if ( distanceSq <= maxDistanceSq ) {
+            player.getHandle().playerConnection.sendPacket(packet)
+        }
+    }
+}
+
+/**
  * Wrapper to send a PacketPlayOutSetSlot to a player inventory slot.
  * Required because PacketPlayOutSetSlot fields change between versions.
  */
