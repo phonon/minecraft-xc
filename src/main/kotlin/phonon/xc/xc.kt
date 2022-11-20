@@ -1210,7 +1210,7 @@ public class XC(
                 TaskRecoil(recoilPackets),
             )
 
-            // sync
+            // run synchronously
             // TaskBroadcastBlockCrackAnimations(ProtocolLibrary.getProtocolManager(), blockCrackAnimations).run()
         }
 

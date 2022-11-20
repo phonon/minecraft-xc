@@ -8,91 +8,29 @@
  * - Else uses a fake shulker entity above player which forces player into
  * crawling position (since shulker is like a block)
  *   HOWEVER, shulker HEAD will NEVER BE INVISIBLE so looks ugly...
- * https://github.com/Gecolay/GSit/blob/main/v1_17_R1/src/main/java/dev/geco/gsit/mcv/v1_17_R1/objects/GCrawl.java
- * https://github.com/Gecolay/GSit/blob/main/v1_17_R1/src/main/java/dev/geco/gsit/mcv/v1_17_R1/objects/BoxEntity.java
+ * https://github.com/Gecolay/GSit/blob/main/v1_18_R2/src/main/java/dev/geco/gsit/mcv/v1_18_R2/objects/GCrawl.java
+ * https://github.com/Gecolay/GSit/blob/main/v1_18_R2/src/main/java/dev/geco/gsit/mcv/v1_18_R2/objects/BoxEntity.java
  * 
  */
 
 package phonon.xc.nms.gun.crawl
 
+import kotlin.math.ceil
 import net.minecraft.core.Direction
+import net.minecraft.network.protocol.game.ClientboundAddMobPacket
+import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket
+import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket
+import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket
 import net.minecraft.world.entity.EntityType
-import net.minecraft.world.entity.monster.Shulker 
+import net.minecraft.world.entity.monster.Shulker
 import org.bukkit.craftbukkit.v1_18_R2.CraftWorld
+import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer
 import org.bukkit.Location
-
-// ==================================================================
-// Entity Shulker in 1.16.5:
-// ==================================================================
-// public class Shulker extends EntityGolem implements IMonster {
-
-//     private static final UUID bp = UUID.fromString("7E0292F2-9434-48D5-A29F-9583AF7DF27F");
-//     private static final AttributeModifier bq = new AttributeModifier(Shulker.bp, "Covered armor bonus", 20.0D, AttributeModifier.Operation.ADDITION);
-//     public static final DataWatcherObject<EnumDirection> b = DataWatcher.a(Shulker.class, DataWatcherRegistry.n); // PAIL protected -> public, rename ATTACH_FACE
-//     protected static final DataWatcherObject<Optional<BlockPosition>> c = DataWatcher.a(Shulker.class, DataWatcherRegistry.m);
-//     protected static final DataWatcherObject<Byte> d = DataWatcher.a(Shulker.class, DataWatcherRegistry.a);
-//     public static final DataWatcherObject<Byte> COLOR = DataWatcher.a(Shulker.class, DataWatcherRegistry.a);
-//     private float br;
-//     private float bs;
-//     private BlockPosition bt = null;
-//     private int bu;
-
-//     public Shulker(EntityType<? extends Shulker> EntityType, World world) {
-//         super(EntityType, world);
-//         this.f = 5;
-//     }
-//    ...
-//
-//     @Override
-//     protected void initDatawatcher() {
-//         super.initDatawatcher();
-//         this.datawatcher.register(Shulker.b, EnumDirection.DOWN);
-//         this.datawatcher.register(Shulker.c, Optional.empty());
-//         this.datawatcher.register(Shulker.d, (byte) 0);
-//         this.datawatcher.register(Shulker.COLOR, (byte) 16);
-//     }
-
-//     @Override
-//     public void loadData(NBTTagCompound nbttagcompound) {
-//         super.loadData(nbttagcompound);
-//         this.datawatcher.set(Shulker.b, EnumDirection.fromType1(nbttagcompound.getByte("AttachFace")));
-//         this.datawatcher.set(Shulker.d, nbttagcompound.getByte("Peek"));
-//         this.datawatcher.set(Shulker.COLOR, nbttagcompound.getByte("Color"));
-//         if (nbttagcompound.hasKey("APX")) {
-//             int i = nbttagcompound.getInt("APX");
-//             int j = nbttagcompound.getInt("APY");
-//             int k = nbttagcompound.getInt("APZ");
-    
-//             this.datawatcher.set(Shulker.c, Optional.of(new BlockPosition(i, j, k)));
-//         } else {
-//             this.datawatcher.set(Shulker.c, Optional.empty());
-//         }
-    
-//     }
-    
-//     @Override
-//     public void saveData(NBTTagCompound nbttagcompound) {
-//         super.saveData(nbttagcompound);
-//         nbttagcompound.setByte("AttachFace", (byte) ((EnumDirection) this.datawatcher.get(Shulker.b)).c());
-//         nbttagcompound.setByte("Peek", (Byte) this.datawatcher.get(Shulker.d));
-//         nbttagcompound.setByte("Color", (Byte) this.datawatcher.get(Shulker.COLOR));
-//         BlockPosition blockposition = this.eM();
-    
-//         if (blockposition != null) {
-//             nbttagcompound.setInt("APX", blockposition.getX());
-//             nbttagcompound.setInt("APY", blockposition.getY());
-//             nbttagcompound.setInt("APZ", blockposition.getZ());
-//         }
-    
-//     }
-
-//  ...
-// }
-// ==================================================================
+import org.bukkit.entity.Player
 
 /**
- * Shulker entity used to force player into crawling position
- * when cannot place a barrier block.
+ * Shulker entity is used to force player into crawling position
+ * when we cannot place a barrier block above the player.
  */
 public class BoxEntity(
     location: Location,
@@ -109,13 +47,6 @@ public class BoxEntity(
         this.setAttachFace(Direction.UP)
     }
 
-    /**
-     * Set raw peek amount between [0, 100]
-     */
-    public fun setRawPeekAmount(amount: Byte) {
-        super.setRawPeekAmount(amount.toInt())
-    }
-
     public override fun canChangeDimensions(): Boolean { return false }
 
     public override fun isAffectedByFluids(): Boolean { return false }
@@ -124,4 +55,96 @@ public class BoxEntity(
 
     public override fun rideableUnderWater(): Boolean { return true }
 
+    /**
+     * Set peek amount between [0, 1] = block size of peak
+     * https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/browse/src/main/java/org/bukkit/craftbukkit/entity/CraftShulker.java#49
+     */
+    internal fun setPeekAmount(value: Double) {
+        val peek = value.coerceIn(0.0, 1.0)
+        super.setRawPeekAmount((peek * 100.0).toInt())
+    }
+
+    /**
+     * Moves the box entity above input PLAYER location and adjusts the
+     * shulker peek amount to force player into crawling mode.
+     * 
+     * The shulker y-height is forced to 0.5 increments. So we need to
+     * round upwards to next 0.5 increment, then use peek to force player
+     * into crawl:
+     *     
+     *        shulker
+     *         _____
+     *        |     |
+     *        |_____| ceil(player.y + 1.5)
+     *           | 
+     *        ------- peek
+     *                            } Remaining distance must be
+     *                            } ~ 1.0 to force player into crawl
+     *        ------- player
+     */
+    internal fun moveAboveLocation(loc: Location) {
+        // place y ~ 1.25 above player, then round to nearest 0.5 increment
+        val yHeightShulker = 0.5 * ceil((loc.y + 1.25) * 2.0)
+
+        this.moveTo(
+            loc.x,
+            yHeightShulker,
+            loc.z,
+            0f,
+            0f,
+        )
+        
+        // target height is 1.25 above player, adjust peek to match
+        val yHeightTarget = loc.y + 1.25
+        val yPeekAmount = yHeightShulker - yHeightTarget
+        this.setPeekAmount(yPeekAmount) // internally will be clamped to [0, 1]
+
+        // println("yHeightShulker: $yHeightShulker, yPeekAmount: $yPeekAmount")
+    }
+
+    /**
+     * Currently works by sending packet to respawn the shulker box.
+     * Teleport packet does not seem to work, despite seeming correct
+     * based on what packet should be...wtf?
+     */
+    internal fun sendCreatePacket(player: Player) {
+        // println("sendUpdateCrawlPacket $loc")
+
+        // send packets to create fake shulker box
+        val packetSpawn = ClientboundAddMobPacket(this)
+
+        // entity metadata
+        // https://wiki.vg/Entity_metadata#Shulker
+        val packetEntityData = ClientboundSetEntityDataPacket(this.getId(), this.getEntityData(), true)
+
+        val playerConnection = (player as CraftPlayer).handle.connection
+        playerConnection.send(packetSpawn)
+        playerConnection.send(packetEntityData)
+    }
+    
+    /**
+     * Send packet destroying this entity.
+     */
+    internal fun sendDestroyPacket(player: Player) {
+        val packet = ClientboundRemoveEntitiesPacket(this.id)
+        (player as CraftPlayer).handle.connection.send(packet)
+    }
+    
+    /**
+     * Send packet updating Shulker location.
+     */
+    internal fun sendMovePacket(player: Player) {
+        val packet = ClientboundTeleportEntityPacket(this)
+        (player as CraftPlayer).handle.connection.send(packet)
+    }
+    
+    /**
+     * Send entity metadata packet that updates Shulker peek amount.
+     * Required when y-height location changes and peek is adjusted
+     * when forcing players to crawl.
+     */
+    internal fun sendPeekMetadataPacket(player: Player) {
+        val packet = ClientboundSetEntityDataPacket(this.getId(), this.getEntityData(), true)
+        (player as CraftPlayer).handle.connection.send(packet)
+    }
 }

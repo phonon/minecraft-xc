@@ -19,8 +19,14 @@ import net.minecraft.server.v1_16_R3.DataWatcher
 import net.minecraft.server.v1_16_R3.EnumDirection
 import net.minecraft.server.v1_16_R3.EntityTypes
 import net.minecraft.server.v1_16_R3.EntityShulker
+import net.minecraft.server.v1_16_R3.PacketPlayOutSpawnEntityLiving // ClientboundAddMobPacket
+import net.minecraft.server.v1_16_R3.PacketPlayOutEntityDestroy // ClientboundRemoveEntitiesPacket
+// import net.minecraft.server.v1_16_R3.PacketPlayOutEntityTeleport // ClientboundTeleportEntityPacket
+import net.minecraft.server.v1_16_R3.PacketPlayOutEntityMetadata // ClientboundSetEntityDataPacket
 import org.bukkit.craftbukkit.v1_16_R3.CraftWorld
+import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer
 import org.bukkit.Location
+import org.bukkit.entity.Player
 
 // ==================================================================
 // Entity Shulker in 1.16.5:
@@ -108,6 +114,7 @@ public class BoxEntity(
         this.setNoAi(true)
         this.setSilent(true)
         this.setAttachedFace(EnumDirection.UP)
+        this.setPeekAmount(0.0)
     }
 
     // for 1.16.5: set no ai:
@@ -121,12 +128,14 @@ public class BoxEntity(
     }
 
     /**
-     * Set raw peek amount between [0, 100]
+     * Set peek amount between [0, 1] = block size of peak
+     * https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/browse/src/main/java/org/bukkit/craftbukkit/entity/CraftShulker.java#49
      */
-    public fun setRawPeekAmount(amount: Byte) {
-        this.datawatcher.set(EntityShulker.d, amount)
+    internal fun setPeekAmount(value: Double) {
+        val peek = value.coerceIn(0.0, 1.0)
+        this.datawatcher.set(EntityShulker.d, (peek * 100.0).toInt().toByte())
     }
-
+    
     public fun canChangeDimensions(): Boolean { return false }
 
     public fun isAffectedByFluids(): Boolean { return false }
@@ -146,6 +155,76 @@ public class BoxEntity(
      * Match 1.18.2 api for getting entity synced data watcher.
      */
     public fun getEntityData(): DataWatcher {
-        return this.getDataWatcher()
+        return this.datawatcher
+    }
+
+    /**
+     * Moves the box entity above input PLAYER location such that player
+     * is forced into a crawling position. In 1.16.5, we can create a
+     * fake shulker entity at ANY LOCATION, so we can just directly
+     * move it 1.25 above the location. (In 1.18.2, shulkers are
+     * clamped onto blocks and 0.5 y increments... sad!)
+     */
+    internal fun moveAboveLocation(loc: Location) {
+        this.setLocation(
+            loc.x,
+            loc.y + 1.25,
+            loc.z,
+            0f,
+            0f,
+        )
+    }
+
+    /**
+     * Currently works by sending packet to respawn the shulker box.
+     * Teleport packet does not seem to work, despite seeming correct
+     * based on what packet should be...wtf?
+     */
+    internal fun sendCreatePacket(player: Player) {
+        // println("sendUpdateCrawlPacket $loc")
+
+        // send packets to create fake shulker box
+        val packetSpawn = PacketPlayOutSpawnEntityLiving(this)
+
+        // entity metadata
+        // https://wiki.vg/Entity_metadata#Shulker
+        // https://aadnk.github.io/ProtocolLib/Javadoc/com/comphenix/protocol/wrappers/WrappedDataWatcher.html
+        // https://github.com/aadnk/PacketWrapper/blob/master/PacketWrapper/src/main/java/com/comphenix/packetwrapper/WrapperPlayServerEntityMetadata.java
+        // getWatchableObjects()
+        val packetEntityData = PacketPlayOutEntityMetadata(this.getId(), this.getEntityData(), true)
+
+        val playerConnection = (player as CraftPlayer).handle.playerConnection
+        playerConnection.sendPacket(packetSpawn)
+        playerConnection.sendPacket(packetEntityData)
+    }
+
+    /**
+     * Send packet destroying this entity.
+     */
+    internal fun sendDestroyPacket(player: Player) {
+        val packet = PacketPlayOutEntityDestroy(this.id)
+        (player as CraftPlayer).handle.playerConnection.sendPacket(packet)
+    }
+    
+    /**
+     * Send packet updating Shulker location.
+     * NOTE: in 1.16.5 move packet does not work...need to re-create shulker
+     * using a create packet :^(((
+     */
+    internal fun sendMovePacket(player: Player) {
+        this.sendCreatePacket(player)
+        // DOES NOT WORK IN 1.16.5
+        // val packet = PacketPlayOutEntityTeleport(this)
+        // (player as CraftPlayer).handle.playerConnection.sendPacket(packet)
+    }
+    
+    /**
+     * Send entity metadata packet that updates Shulker peek amount.
+     * Required when y-height location changes and peek is adjusted
+     * when forcing players to crawl.
+     */
+    internal fun sendPeekMetadataPacket(player: Player) {
+        val packet = PacketPlayOutEntityMetadata(this.getId(), this.getEntityData(), true)
+        (player as CraftPlayer).handle.playerConnection.sendPacket(packet)
     }
 }
