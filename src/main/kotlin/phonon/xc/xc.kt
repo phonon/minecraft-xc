@@ -36,8 +36,6 @@ import org.bukkit.scheduler.BukkitTask
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.util.Vector
 
-import com.comphenix.protocol.ProtocolLibrary
-
 // i hate java
 import phonon.xc.ammo.*
 import phonon.xc.armor.*
@@ -330,14 +328,6 @@ public class XC(
     // ========================================================================
     internal var engineTask: BukkitTask? = null
         private set
-
-    /**
-     * Setter for `usingProtocolLib` flag, set when plugin enabled and 
-     * ProtocolLib is detected.
-     */
-    internal fun usingProtocolLib(state: Boolean) {
-        usingProtocolLib = state
-    }
 
     /**
      * Setter for `usingWorldGuard` flag, set when plugin enabled and
@@ -1165,6 +1155,14 @@ public class XC(
         if ( config.asyncPackets ) {
             Bukkit.getScheduler().runTaskAsynchronously(
                 plugin,
+                TaskBroadcastBlockCrackAnimations(blockCrackAnimations),
+            )
+            Bukkit.getScheduler().runTaskAsynchronously(
+                plugin,
+                TaskRecoil(recoilPackets),
+            )
+            Bukkit.getScheduler().runTaskAsynchronously(
+                plugin,
                 TaskSpawnParticleBulletTrails(particleBulletTrails),
             )
             Bukkit.getScheduler().runTaskAsynchronously(
@@ -1186,32 +1184,13 @@ public class XC(
         }
         else {
             // sync
+            TaskBroadcastBlockCrackAnimations(blockCrackAnimations).run()
+            TaskRecoil(recoilPackets).run()
             TaskSpawnParticleBulletTrails(particleBulletTrails).run()
             TaskSpawnParticleBulletImpacts(particleBulletImpacts).run()
             TaskSpawnParticleExplosion(particleExplosions).run()
             TaskAmmoInfoMessages(gunAmmoInfoMessages).run()
             TaskSounds(soundPackets).run()
-        }
-
-
-        // custom packets (only if ProtocolLib is available)
-        if ( usingProtocolLib ) {
-            val protocolManager = ProtocolLibrary.getProtocolManager()
-
-            // block crack animations
-            Bukkit.getScheduler().runTaskAsynchronously(
-                plugin,
-                TaskBroadcastBlockCrackAnimations(blockCrackAnimations),
-            )
-
-            // player recoil from gun firing
-            Bukkit.getScheduler().runTaskAsynchronously(
-                plugin,
-                TaskRecoil(recoilPackets),
-            )
-
-            // run synchronously
-            // TaskBroadcastBlockCrackAnimations(ProtocolLibrary.getProtocolManager(), blockCrackAnimations).run()
         }
 
         // save kill/death stats system

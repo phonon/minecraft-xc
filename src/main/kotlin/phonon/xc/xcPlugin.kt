@@ -32,15 +32,6 @@ public class XCPlugin: JavaPlugin() {
         // - save hooks to this plugin 
         // - save hooks to external APIs
         // ===================================
-        
-        // protocol lib hook
-        val pluginProtocolLib = pluginManager.getPlugin("ProtocolLib")
-        val usingProtocolLib = if ( pluginManager.isPluginEnabled("ProtocolLib") && pluginProtocolLib != null ) {
-            logger.info("Using ProtocolLib v${pluginProtocolLib.getDescription().getVersion()}")
-            true
-        } else {
-            false
-        }
 
         // world guard hook
         val pluginWorldGuard = pluginManager.getPlugin("WorldGuard")
@@ -51,7 +42,6 @@ public class XCPlugin: JavaPlugin() {
             false
         }
 
-        xc.usingProtocolLib(usingProtocolLib)
         xc.usingWorldGuard(usingWorldGuard)
 
         // ===================================
