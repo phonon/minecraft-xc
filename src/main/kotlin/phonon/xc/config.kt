@@ -102,6 +102,7 @@ public data class Config(
     // death messages (note: single quote must be '')
     public val deathMessageExplosion: String = "{0} was guro''d in an explosion",
     public val deathMessageWither: String = "{0} suffocated in poison gas",
+    public val deathDropHead: Boolean = true, // drop player head on death
 
     // armor settings
     public val armorEnforce: Boolean = false, // enforce server-side armor values
@@ -253,6 +254,7 @@ public data class Config(
                 deaths.getString("message_wither")?.let { configOptions["deathMessageWither"] = it }
                 deaths.getString("log_save_dir")?.let { configOptions["playerDeathLogSaveDir"] = it }
                 deaths.getLong("save_interval")?.let { configOptions["playerDeathRecordSaveInterval"] = it.toInt() }
+                deaths.getBoolean("drop_head")?.let { configOptions["deathDropHead"] = it }
             }
 
             // global sound effects

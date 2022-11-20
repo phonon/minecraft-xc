@@ -61,6 +61,7 @@ import phonon.xc.throwable.DroppedThrowable
 import phonon.xc.util.Message
 import phonon.xc.util.death.PlayerDeathRecord
 import phonon.xc.util.death.XcPlayerDeathEvent
+import phonon.xc.util.death.createHeadItem
 import phonon.xc.util.damage.damageAfterArmorAndResistance
 // item extension functions on XC
 import phonon.xc.item.getGunInHand
@@ -225,6 +226,15 @@ public class EventListener(
                 deathMessage = deathMessage,
             ))
 
+            // drop player head on death (createHeadItem in death.kt)
+            if ( xc.config.deathDropHead ) {
+                val msg = if ( killer !== null ) {
+                    "${ChatColor.GRAY}Killed by $killerName"
+                } else {
+                    null
+                }
+                e.getDrops().add(player.createHeadItem(msg))
+            }
         }
         else {
             val playerName = player.getName()

@@ -35,6 +35,7 @@ hat = 1024
 [deaths]
 message_explosion = "{0} was guro''d in an explosion"
 message_wither = "{0} suffocated in poison gas"
+drop_head = true
 log_save_dir = "plugins/xc/logs"
 save_interval = 1200 # in ticks
 

@@ -23,9 +23,13 @@ import java.time.LocalDateTime
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
+import org.bukkit.Bukkit
+import org.bukkit.ChatColor
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.Material
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.SkullMeta
 
 
 /**
@@ -126,4 +130,22 @@ public class TaskSavePlayerDeathRecords(
             )
         }
     }
+}
+
+/**
+ * Create a player skull item from a player. Used to
+ * drop player heads when they are killed by another player
+ * (as a trophy).
+ */
+internal fun Player.createHeadItem(msg: String?): ItemStack {
+    val playerHead = ItemStack(Material.PLAYER_HEAD, 1)
+    val skullMeta = playerHead.getItemMeta() as SkullMeta
+    skullMeta.setOwningPlayer(this)
+    skullMeta.setDisplayName("${ChatColor.RESET}${this.getName()}")
+    if ( msg !== null ) {
+        skullMeta.setLore(listOf(msg))
+    }
+    playerHead.setItemMeta(skullMeta)
+
+    return playerHead
 }
