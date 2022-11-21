@@ -10,7 +10,6 @@ import org.bukkit.entity.Player
 import org.bukkit.util.Vector
 import phonon.xc.gun.Gun
 import phonon.xc.util.math.directionFromYawPitch
-import phonon.xc.util.reflect.getEnumConstant
 import phonon.xc.nms.recoil.sendRecoilPacketUsingLookAt
 import phonon.xc.nms.recoil.sendRecoilPacketUsingRelativeTeleport
 
