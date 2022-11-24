@@ -103,7 +103,9 @@ timeout = 20.0 # in seconds
 
 # sway config
 [sway]
-players_before_pipelined_sway = 4
+movement_speed_decay = 0.35 # exponential moving avg factor for speed decay
+movement_threshold = 2.50 # speed [block/s] threshold for sway to occur
+players_before_pipelined_sway = 4 # DEPRECATED, DOES NOTHING
 
 # crawl config
 [crawl]

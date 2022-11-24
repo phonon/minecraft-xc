@@ -37,7 +37,7 @@ public fun XC.calculateSway(
     // | Max horse   | 14.57 block/s |
     // here motion will be gated at 2.50 block/tick before aim down sights stops
     // so that players can still move while sneaking.
-    if ( playerSpeed > 2.50 ) {
+    if ( playerSpeed > this.config.swayMovementThreshold ) {
         sway *= (1.0 + (playerSpeed * gun.swaySpeedMultiplier))
     } else {
         if ( player.isSneaking() || this.isCrawling(player) ) {
@@ -118,7 +118,7 @@ internal class TaskCalculatePlayerSpeed(
     // current speed, must be in range [0, 1]. old avg speed will be
     // weighted (1 - alpha).
     // https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
-    val alpha = 0.3
+    val alpha = xc.config.swayMovementSpeedDecay
     val oneMinusAlpha = 1.0 - alpha
     
     // previous time this task was run, used to calculate delta time dt for speed

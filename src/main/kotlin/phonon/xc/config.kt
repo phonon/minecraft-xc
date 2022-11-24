@@ -115,6 +115,12 @@ public data class Config(
     public val soundOnHitVolume: Float = 1.0f,    // volume of sound when successfully hitting entity
     
     // ============================================================
+    // sway settings
+    public val swayMovementSpeedDecay: Double = 0.35, // exponential moving avg factor in calculating move speed
+    public val swayMovementThreshold: Double = 2.50, // threshold
+    public val playersBeforePipelinedSway: Int = 4, // number of players before pipelined sway system enabled
+    
+    // ============================================================
     // Built-in anti combat logging module
     public val antiCombatLogEnabled: Boolean = true, // use built in anti combat logging
     public val antiCombatLogTimeout: Double = 20.0,  // time in seconds to punish player for combat logging
@@ -124,9 +130,6 @@ public data class Config(
 
     // stops player crawling when switching to a non-crawl to shoot weapon
     public val crawlOnlyAllowedOnCrawlWeapons: Boolean = false,
-    
-    // number of players before pipelined sway system enabled
-    public val playersBeforePipelinedSway: Int = 4,
 
     // debug timings default value
     public val defaultDoDebugTimings: Boolean = false,
@@ -251,10 +254,7 @@ public data class Config(
 
             // block damage config
             toml.getBoolean("block_damage.explosion")?.let { configOptions["blockDamageExplosion"] = it }
-            
-            // sway config
-            toml.getLong("sway.players_before_pipelined_sway")?.let { configOptions["playersBeforePipelinedSway"] = it.toInt() }
-            
+
             // player death messages and death record saving
             toml.getTable("deaths")?.let { deaths ->
                 deaths.getString("message_explosion")?.let { configOptions["deathMessageExplosion"] = it }
@@ -288,8 +288,15 @@ public data class Config(
                     configOptions["armorValues"] = values
                 }
             }
+                        
+            // sway config
+            toml.getTable("sway")?.let { swayConfig ->
+                swayConfig.getDouble("movement_speed_decay")?.let { configOptions["swayMovementSpeedDecay"] = it }
+                swayConfig.getDouble("movement_threshold")?.let { configOptions["swayMovementThreshold"] = it }
+                swayConfig.getLong("sway.players_before_pipelined_sway")?.let { configOptions["playersBeforePipelinedSway"] = it.toInt() }
+            }
             
-            // global sound effects
+            // anti combat logging config
             toml.getTable("anti_combat_log")?.let { antiCombatLog ->
                 antiCombatLog.getBoolean("enabled")?.let { configOptions["antiCombatLogEnabled"] = it }
                 antiCombatLog.getNumberAs<Double>("timeout")?.let { configOptions["antiCombatLogTimeout"] = it }
