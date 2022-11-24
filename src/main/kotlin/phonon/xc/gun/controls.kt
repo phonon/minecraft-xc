@@ -273,7 +273,8 @@ private fun XC.doSingleShot(
     random: ThreadLocalRandom,
 ) {
     // if newAmmo is 0, remove any aim down sights model and also play empty sound
-    if ( newAmmo == 0 ) {
+    // case for -1: if using consumeOnUse guns, newAmmo set to -1 to mark gun
+    if ( newAmmo <= 0 ) {
         this.removeAimDownSightsOffhandModel(player)
 
         this.soundQueue.add(SoundPacket(
@@ -284,9 +285,11 @@ private fun XC.doSingleShot(
             pitch = gun.soundEmptyPitch,
         ))
     }
+    // send ammo if gun is still relevent (ammo >= 0, -1 if gun item removed)
+    if ( newAmmo >= 0 ) {
+        this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
+    }
 
-    this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
-    
     val shootPosition = if ( player.isSwimming() ) {
         loc.clone().add(0.0, 0.4, 0.0)
     } else {
@@ -633,35 +636,42 @@ internal fun XC.gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>,
 
         if ( fireMode == GunSingleFireMode.SINGLE ) {
             
-            // check ammo and send ammo info message to player
-            val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
-            if ( ammo <= 0 ) {
-                this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
-                
-                // play gun empty sound effect
-                this.soundQueue.add(SoundPacket(
-                    sound = gun.soundEmpty,
-                    world = world,
-                    location = loc,
-                    volume = gun.soundEmptyVolume,
-                    pitch = gun.soundEmptyPitch,
-                ))
-
-                if ( !gun.ammoIgnore ) {
-                    if ( this.config.autoReloadGuns ) {
-                        this.playerReloadRequests.add(PlayerGunReloadRequest(player))
+            val newAmmo = if ( gun.shootConsumeOnUse ) { // removes gun item when used
+                equipment.setItem(inventorySlot, ItemStack(Material.AIR, 1))
+                -1
+            } else {
+                // check ammo and send ammo info message to player
+                val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
+                if ( ammo <= 0 ) {
+                    this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
+                    
+                    // play gun empty sound effect
+                    this.soundQueue.add(SoundPacket(
+                        sound = gun.soundEmpty,
+                        world = world,
+                        location = loc,
+                        volume = gun.soundEmptyVolume,
+                        pitch = gun.soundEmptyPitch,
+                    ))
+    
+                    if ( !gun.ammoIgnore ) {
+                        if ( this.config.autoReloadGuns ) {
+                            this.playerReloadRequests.add(PlayerGunReloadRequest(player))
+                        }
+                        continue
                     }
-                    continue
                 }
+    
+                val newAmmo = max(0, ammo - 1)
+    
+                // update player item: set new ammo and set model
+                itemMeta = setGunItemMetaAmmo(itemMeta, gun, newAmmo)
+                itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo, useAimDownSights(player))
+                item.setItemMeta(itemMeta)
+                equipment.setItem(inventorySlot, item)
+
+                newAmmo
             }
-
-            val newAmmo = max(0, ammo - 1)
-
-            // update player item: set new ammo and set model
-            itemMeta = setGunItemMetaAmmo(itemMeta, gun, newAmmo)
-            itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo, useAimDownSights(player))
-            item.setItemMeta(itemMeta)
-            equipment.setItem(inventorySlot, item)
 
             // fires projectiles
             doSingleShot(

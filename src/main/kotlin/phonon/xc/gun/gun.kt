@@ -157,6 +157,9 @@ public data class Gun(
     public val burstFireDelayTicks: Int = 2,
     public val burstFireDelayTickPattern: IntArray = intArrayOf(), // pattern of delay ticks
     public val shootDelayMillis: Long = 500,
+    // remove this item after doing single-shot firing.
+    // use to make single-use guns like a panzerfaust
+    public val shootConsumeOnUse: Boolean = false,
 
     // automatic fire rate properties
     public val autoFire: Boolean = false,     // automatic weapon
@@ -486,6 +489,8 @@ public data class Gun(
                     } else {
                         shoot.getLong("burst_delay")?.let { properties["burstFireDelayTicks"] = it.toInt() }
                     }
+
+                    shoot.getBoolean("consume_on_use")?.let { properties["shootConsumeOnUse"] = it }
                 }
 
                 // [right-click] automatic fire

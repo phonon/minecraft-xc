@@ -57,6 +57,7 @@ fire_mode = "single" # "single" or "burst"
 burst_count = 3 # number of shots in a burst
 burst_delay = 2 # ticks between burst fire, either single value or array like [2, 2, 1]
 delay = 500 # Delay between [left-click] semi-auto mode shooting in milliseconds
+consume_on_use = false # consume gun when used, for single-use projectile items like panzerfaust
 
 # [right-click] Automatic fire settings
 [automatic]
