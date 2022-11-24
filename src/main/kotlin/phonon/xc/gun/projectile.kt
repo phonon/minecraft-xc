@@ -118,7 +118,7 @@ private class ProjectileDynamicsUpdateTask(
     override fun call(): Unit {
         for ( projectile in projectiles ) {
             projectile.xNext = projectile.x + projectile.velX
-            projectile.yNext = projectile.y + projectile.velY - projectile.gravity
+            projectile.yNext = projectile.y + projectile.velY - projectile.gravity/2f
             projectile.zNext = projectile.z + projectile.velZ
 
             projectile.velY -= projectile.gravity
@@ -288,8 +288,13 @@ public class ProjectileSystem(
         // timings probe
         val tStart = xc.debugNanoTime()
 
+        // number of projectiles
+        val numProjectiles = this.projectiles.size
+
         // Convert initial visited chunks into concurrent hash set
-        val visitedChunks = ConcurrentHashMap.newKeySet<ChunkCoord>(1024)
+        // heuristic: assume each projectile checks at most a 4x4 chunk grid
+        // so size with 16 chunks / projectile
+        val visitedChunks = ConcurrentHashMap.newKeySet<ChunkCoord>(initialVisitedChunks.size + 16 * numProjectiles)
         visitedChunks.addAll(initialVisitedChunks)
 
         // First, iterate all projectiles, determine start and end positions
@@ -302,7 +307,6 @@ public class ProjectileSystem(
 
         // distribute projectile elements across available threads
         // TODO: in future do testing and better load balance this
-        val numProjectiles = this.projectiles.size
         val numProjectilesPerThread = 1 + (numProjectiles / this.numThreads)
         val elementsPerThread = IntArray(2 * this.numThreads, {_ -> 0}) // packed (start, count) pairs
 
