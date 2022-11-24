@@ -107,14 +107,20 @@ public fun XC.createExplosion(
                                 blastProtReduction,
                             )
 
-                            if ( target is Player && target.getHealth() > 0.0 && finalDamage >= target.getHealth() ) {
-                                this.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
-                                    player = target,
-                                    killer = source,
-                                    weaponType = weaponType,
-                                    weaponId = weaponId,
-                                    weaponMaterial = weaponMaterial,
-                                )
+                            if ( target is Player ) {
+                                // mark player entering combat
+                                this.addPlayerToCombatLogging(target)
+
+                                // player died
+                                if ( target.getHealth() > 0.0 && finalDamage >= target.getHealth() ) {
+                                    this.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                                        player = target,
+                                        killer = source,
+                                        weaponType = weaponType,
+                                        weaponId = weaponId,
+                                        weaponMaterial = weaponMaterial,
+                                    )
+                                }
                             }
                             
                             target.damage(finalDamage, null)

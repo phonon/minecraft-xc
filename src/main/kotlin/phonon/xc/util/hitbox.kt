@@ -272,7 +272,7 @@ public data class Hitbox(
             if ( entity.type == EntityType.PLAYER ) {
                 val playerEntity = entity as Player
                 if ( playerEntity.isSneaking() ) {
-                    ymax -= 0.3f
+                    ymax -= 0.2f
                 } else if ( playerEntity.isSwimming() ) {
                     ymax = ymin + 0.9f
                 }

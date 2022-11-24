@@ -16,6 +16,7 @@ import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.entity.EntityType
+import org.bukkit.scheduler.BukkitRunnable
 import phonon.xc.XC
 
 /**
@@ -29,12 +30,14 @@ public fun XC.calculateSway(
     var sway = gun.swayBase
 
     // player movement:
-    // - player sneak move: ~0.0647 blocks/tick
-    // - player walk:       ~0.2158 blocks/tick
-    // - player sprint:     ~0.2806 blocks/tick
-    // here motion will be gated at 0.1 before aim down sights stops
+    // | Crouch      |  1.31 block/s |
+    // | Walk        |  4.32 block/s |
+    // | Sprint      |  5.61 block/s |
+    // | Jump-sprint |  7.13 block/s |
+    // | Max horse   | 14.57 block/s |
+    // here motion will be gated at 2.50 block/tick before aim down sights stops
     // so that players can still move while sneaking.
-    if ( playerSpeed > 0.1 ) {
+    if ( playerSpeed > 2.50 ) {
         sway *= (1.0 + (playerSpeed * gun.swaySpeedMultiplier))
     } else {
         if ( player.isSneaking() || this.isCrawling(player) ) {
@@ -77,10 +80,102 @@ internal data class PlayersMotionState(
 )
 
 /**
+ * Async task to calculate player's speed based on difference in location
+ * between ticks. For each player, calculate speed as:
+ *      speed = |currLocation - prevLocation| / dt
+ * - `dt` is time in [s] between time this task is run
+ * - `currLocation` is player current location
+ * - `prevLocation` is player's previous location, stored in XC state in 
+ *   read-only map.
+ * Then perform exponential moving average on speed to smooth out
+ * random spikes: such as teleporting, or sometimes location reads same
+ * as previous location (even on non-async...wtf mineman).
+ * 
+ * This should be using only thread-safe checks on player state.
+ * However, we have to unsafely update the XC player speed and location
+ * state by overwriting these maps with newly updated maps. This is not
+ * technically thread safe since this can occur while players are shooting
+ * and need speed to calculate gun random sway. However, this will not
+ * corrupt any systems, and gameplay impact is negligble (only effect is
+ * some players will use newly updated player speed, which is moving averaged
+ * so difference between ticks is relatively low/smooth), so we will do
+ * this :^).
+ * 
+ * Roughly expected movement speeds are:
+ * - walking: 4.317 block/s
+ * - sprinting: 5.612 block/s
+ * - jump-sprinting: 7.127 block/s ??
+ * - max horse speed: 14.57 blocks/s
+ * https://minecraft.fandom.com/wiki/Sprinting
+ */
+internal class TaskCalculatePlayerSpeed(
+    val xc: XC,
+): BukkitRunnable() {
+    // max speed, for clamping speed to avoid large spikes
+    val maxSpeed: Double = 20.0
+
+    // exponential moving average factor, for how much to weight
+    // current speed, must be in range [0, 1]. old avg speed will be
+    // weighted (1 - alpha).
+    // https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+    val alpha = 0.3
+    val oneMinusAlpha = 1.0 - alpha
+    
+    // previous time this task was run, used to calculate delta time dt for speed
+    var tPrev = System.currentTimeMillis()
+    
+    override fun run() {
+        val tCurr = System.currentTimeMillis()
+        val dt = (tCurr - tPrev).toDouble() / 1000.0
+
+        val oldPlayerSpeeds: Map<UUID, Double> = xc.playerSpeed
+        val oldPlayerLocations: Map<UUID, Location> = xc.playerPreviousLocation
+        val newPlayerSpeeds = HashMap<UUID, Double>()
+        val newPlayerLocations = HashMap<UUID, Location>()
+
+        val players = Bukkit.getOnlinePlayers()
+        
+        for ( player in players ) {
+            val currLoc = player.getLocation()
+            val currSpeed = oldPlayerLocations[player.uniqueId]?.let { oldLoc ->
+                // we clamp speed within [0.0, 20.0] so that if player
+                // teleports large distance (e.g. warp or respawn), this won't
+                // spike speed for too long. 20.0 is chosen since max horse speed
+                // is ~15 blocks/s, so this is slightly faster than that.
+                (currLoc.distance(oldLoc) / dt).coerceIn(0.0, maxSpeed)
+            } ?: 0.0
+            val oldSpeed = oldPlayerSpeeds[player.uniqueId] ?: 0.0
+
+            // moving average of speed
+            val avgSpeed = alpha*currSpeed + oneMinusAlpha*oldSpeed
+
+            // if nan encountered convert to 0.0 (saw it happen in tests...)
+            val avgSpeedCleaned = if ( avgSpeed.isNaN() ) 0.0 else avgSpeed
+
+            newPlayerSpeeds[player.uniqueId] = avgSpeedCleaned
+            newPlayerLocations[player.uniqueId] = currLoc
+
+            // println("player ${player.name} speed: $avgSpeed")
+        }
+        
+        // replace xc's state object player speeds/locations
+        // this is not synchronized with main thread controls,
+        // but main thread is read-only. this will not significantly
+        // impact gameplay to replace in an unsafe way.
+        xc.playerSpeed = newPlayerSpeeds
+        xc.playerPreviousLocation = newPlayerLocations
+
+        // update time for next run
+        tPrev = tCurr
+    }
+}
+
+/**
  * System to calculate player speeds. Return maps:
  * player uuid => speed in blocks/tick
  * player uuid => location
  */
+@Deprecated(message = "Use async TaskCalculatePlayerSpeed system")
 internal fun XC.playerSpeedSystem(
     playerSpeed: HashMap<UUID, Double>,       // player uuid => previous speed
     playerLocation: HashMap<UUID, Location>, // player uuid => previous location
@@ -144,7 +239,11 @@ internal fun XC.playerSpeedSystem(
  * Player curr == prev which will cause speed to drop to 0.0.
  * No idea why mineman does this...retarded engine...
  * Must set avg smoothing to deal with these cases...
+ * 
+ * Note speed is clamped in [0, 10.0] to prevent large spikes when players
+ * teleport 1000s of blocks.
  */
+@Deprecated(message = "Use async TaskCalculatePlayerSpeed system")
 private fun calculatePlayerSpeed(
     player: Player,
     dt: Double, // time delta in ticks
@@ -153,7 +252,7 @@ private fun calculatePlayerSpeed(
 ) {
     val currLocation = player.getLocation()
     val dist = playerLocation[player.uniqueId]?.distance(currLocation) ?: 0.0
-    val speed = dist / dt
+    val speed = (dist / dt).coerceIn(0.0, 10.0) // clamp to prevent spikes from teleporting
     val oldSpeed = playerSpeed[player.uniqueId] ?: 0.0
     
     val playerId = player.getUniqueId()
@@ -169,6 +268,7 @@ private fun calculatePlayerSpeed(
 /**
  * Two-tick pipelined sway system.
  */
+@Deprecated(message = "Use async TaskCalculatePlayerSpeed system")
 private fun pipelinedPlayerSpeedSystem(
     players: Array<Player>,
     start: Int,

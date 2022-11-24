@@ -118,7 +118,10 @@ public val entityDamageHitHandler = fun(
 
         // player specific target handling
         if ( target is Player ) {
-            // custom death event
+            // mark player entering combat
+            xc.addPlayerToCombatLogging(target)
+
+            // player died -> custom death event
             if ( target.getHealth() > 0.0 && damage >= target.getHealth() ) {
                 xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
                     player = target,
@@ -180,7 +183,10 @@ public val entityExplosionHitHandler = fun(
 
         // player specific target handling
         if ( target is Player ) {
-            // custom death event
+            // mark player entering combat
+            xc.addPlayerToCombatLogging(target)
+
+            // player died -> custom death event
             if ( target.getHealth() > 0.0 && damage >= target.getHealth() ) {
                 xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
                     player = target,

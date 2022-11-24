@@ -176,14 +176,20 @@ public val entityDamageHitHandler = fun(
             throwable.throwDamageResistanceReduction,
         )
 
-        if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-            xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
-                player = target,
-                killer = source,
-                weaponType = XC.ITEM_TYPE_THROWABLE,
-                weaponId = throwable.itemModelDefault,
-                weaponMaterial = xc.config.materialThrowable,
-            )
+        if ( target is Player ) {
+            // mark player entering combat
+            xc.addPlayerToCombatLogging(target)
+
+            // player died -> custom death event
+            if ( target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+                xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                    player = target,
+                    killer = source,
+                    weaponType = XC.ITEM_TYPE_THROWABLE,
+                    weaponId = throwable.itemModelDefault,
+                    weaponMaterial = xc.config.materialThrowable,
+                )
+            }
         }
 
         target.damage(damage, null)
@@ -223,14 +229,20 @@ public val entityExplosionHitHandler = fun(
             throwable.throwDamageResistanceReduction,
         )
 
-        if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-            xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
-                player = target,
-                killer = source,
-                weaponType = XC.ITEM_TYPE_THROWABLE,
-                weaponId = throwable.itemModelDefault,
-                weaponMaterial = xc.config.materialThrowable,
-            )
+        if ( target is Player ) {
+            // mark player entering combat
+            xc.addPlayerToCombatLogging(target)
+
+            // player died -> custom death event
+            if ( target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+                xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                    player = target,
+                    killer = source,
+                    weaponType = XC.ITEM_TYPE_THROWABLE,
+                    weaponId = throwable.itemModelDefault,
+                    weaponMaterial = xc.config.materialThrowable,
+                )
+            }
         }
 
         target.damage(damage, null)

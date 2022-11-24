@@ -91,6 +91,13 @@ netherite_chestplate = 6
 netherite_helmet = 5
 netherite_leggings = 5
 
+# built-in anti combat logging module
+# punishes (kills) players for logging out during combat
+# can disable if you have another plugin that does this
+[anti_combat_log]
+enabled = true
+timeout = 20.0 # in seconds
+
 # ADVANCED ENGINE CONFIG
 # generally dont touch these...
 

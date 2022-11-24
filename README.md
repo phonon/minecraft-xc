@@ -33,3 +33,25 @@ minecraft-xc/
 ```
 
 Built `.jar` will appear in `build/libs/*.jar`.
+
+
+# Notes on Guns
+*TODO: move this into docs*
+
+## Gun Sway Settings
+Gun projectile random direction is based on player movement speed,
+calculated by an async background thread that calculates speed as a
+moving average of instantaneous speed = difference in player position 
+on each update tick divided by update tick time. The speed is calculated
+in `blocks/s`. Internally it is also clamped to `[0, 20]` so that speed
+does not become massive when players teleport to a new location.
+Sway is directly multiplied against this calculated moving average speed.
+Reference table of expected speed is below (<https://minecraft.fandom.com/wiki/Sprinting>).
+
+| Movement    | Speed [blocks/s] |
+| ----------- | ---------------- |
+| Crouch      |  1.31            |
+| Walk        |  4.32            |
+| Sprint      |  5.61            |
+| Jump-sprint |  7.13            |
+| Max horse   | 14.57            |

@@ -42,9 +42,12 @@ import phonon.xc.ammo.*
 import phonon.xc.armor.*
 import phonon.xc.gun.*
 import phonon.xc.gun.crawl.*
+import phonon.xc.gun.TaskCalculatePlayerSpeed
 import phonon.xc.landmine.*
 import phonon.xc.melee.*
 import phonon.xc.throwable.*
+import phonon.xc.util.anticombatlog.TaskAntiCombatLog
+import phonon.xc.util.anticombatlog.killCombatLoggerSystem
 import phonon.xc.util.EnumArrayMap
 import phonon.xc.util.mapToObject
 import phonon.xc.util.Hitbox
@@ -138,6 +141,11 @@ public class XC(
         public const val ITEM_TYPE_THROWABLE: Int = 3
         public const val ITEM_TYPE_HAT: Int = 4
         public const val ITEM_TYPE_LANDMINE: Int = 5
+        
+        // constant int for indicating player combat logged, instead of
+        // an int. used for player death events...yes this is dirty and
+        // not "type safe"
+        public const val COMBAT_LOGGED: Int = 1000
     }
     
     // namespaced keys for custom item stack properties
@@ -197,11 +205,11 @@ public class XC(
     // map of players => recoil multiplier
     internal var playerRecoil: HashMap<UUID, Double> = HashMap()
     
-    // map of players => speed for sway multiplier (in blocks/tick)
-    internal var playerSpeed: HashMap<UUID, Double> = HashMap() 
+    // immutable map of players => speed for sway multiplier (in blocks/tick)
+    internal var playerSpeed: Map<UUID, Double> = HashMap() 
 
-    // map of players => previous location
-    internal var playerPreviousLocation: HashMap<UUID, Location> = HashMap()
+    // immutable map of players => previous location
+    internal var playerPreviousLocation: Map<UUID, Location> = HashMap()
     
     // map of players => custom death messages
     internal val deathEvents: HashMap<UUID, XcPlayerDeathEvent> = HashMap()
@@ -288,6 +296,10 @@ public class XC(
     // hats
     internal var wearHatRequests: ArrayList<PlayerWearHatRequest> = ArrayList()
 
+    // player ids who combat logged >:(((
+    // they need to be killed when they login
+    internal var combatLoggers: HashSet<UUID> = HashSet()
+
     // ========================================================================
     // Async packet queues
     // ========================================================================
@@ -325,10 +337,11 @@ public class XC(
     internal var gunDebug: Gun = Gun()
 
     // ========================================================================
-    // RUNNING TASKS
+    // TASKS AND BACKGROUND ASYNC TASKS
     // ========================================================================
-    internal var engineTask: BukkitTask? = null
-        private set
+    private var engineTask: BukkitTask? = null
+    private var calculatePlayerSpeedTask: TaskCalculatePlayerSpeed = TaskCalculatePlayerSpeed(this)
+    private var antiCombatLogTask: TaskAntiCombatLog = TaskAntiCombatLog(this, this.config.antiCombatLogTimeout)
 
     /**
      * Setter for `usingWorldGuard` flag, set when plugin enabled and
@@ -342,13 +355,7 @@ public class XC(
      * Remove hooks to plugins and external APIs
      */
     internal fun onDisable() {
-        // cleanup crawl fake entity/packets
-        for ( (_playerId, crawlState) in crawling ) {
-            crawlState.cleanup()
-        }
-
-        // flush death stats save
-        TaskSavePlayerDeathRecords(playerDeathRecords, config.playerDeathLogSaveDir).run()
+        cleanup()
     }
 
     /**
@@ -369,8 +376,21 @@ public class XC(
         // flush death message and stats tracking
         try {
             TaskSavePlayerDeathRecords(playerDeathRecords, config.playerDeathLogSaveDir).run()
-        } catch (e: Exception) {
+        } catch ( e: Exception ) {
             e.printStackTrace()
+        }
+
+        // if these are not running, these will cause IllegalStateException...ignore!
+        try {
+            calculatePlayerSpeedTask.cancel()
+        } catch ( e: Exception ) {
+            logger.warning("Ignore error from cancelling calculatePlayerSpeedTask: ${e.message}")
+        }
+
+        try {
+            antiCombatLogTask.cancel()
+        } catch ( e: Exception ) {
+            logger.warning("Ignore error from cancelling antiCombatLogTask: ${e.message}")
         }
 
         // clear counters
@@ -437,18 +457,33 @@ public class XC(
         gunAmmoInfoMessageQueue = ArrayList()
         soundQueue = ArrayList()
         recoilQueue = ArrayList()
+
+        combatLoggers = HashSet()
     }
 
     /**
      * Inserts world specific queues for projectiles/weapons systems
      */
-    internal fun initializePerWorldSystems() {
+    internal fun initializeSystems() {
+        // create per-world systems
         Bukkit.getWorlds().forEach { world ->
             val worldId = world.getUID()
             projectileSystems.put(worldId, ProjectileSystem(world))
             thrownThrowables.put(worldId, ArrayList())
             expiredThrowables.put(worldId, ArrayList())
             landmineExplosions.put(worldId, ArrayList())
+        }
+        
+        // start player movement speed background async task
+        val newCalculatePlayerSpeedTask = TaskCalculatePlayerSpeed(this)
+        newCalculatePlayerSpeedTask.runTaskTimerAsynchronously(plugin, 0L, 0L)
+        calculatePlayerSpeedTask = newCalculatePlayerSpeedTask
+
+        // start anti-combat log background async task
+        if ( config.antiCombatLogEnabled ) {
+            val newAntiCombatLogTask = TaskAntiCombatLog(this, config.antiCombatLogTimeout)
+            newAntiCombatLogTask.runTaskTimerAsynchronously(plugin, 0L, 0L)
+            antiCombatLogTask = newAntiCombatLogTask
         }
     }
 
@@ -461,7 +496,7 @@ public class XC(
         this.cleanup()
 
         // create projectile and throwable systems for each world
-        this.initializePerWorldSystems()
+        this.initializeSystems()
         
         // reload main plugin config
         val pathConfigToml = Paths.get(plugin.getDataFolder().getPath(), "config.toml")
@@ -725,7 +760,7 @@ public class XC(
                         if ( errorAccumulator >= maxErrorsBeforeCleanup ) {
                             logger.severe("Engine reached error threshold...resetting to clean slate")
                             cleanup()
-                            initializePerWorldSystems()
+                            initializeSystems()
                             errorAccumulator = 0
                         }
                     }
@@ -871,6 +906,28 @@ public class XC(
         }
 
         return true
+    }
+
+    /**
+     * Helper for marking that player entered combat,
+     * if anti-combat logging enabled, sends message to combat logging
+     * thread.
+     */
+    fun addPlayerToCombatLogging(player: Player) {
+        if ( this.config.antiCombatLogEnabled ) {
+            this.antiCombatLogTask.playerTookDamage.add(player)
+        }
+    }
+
+    /**
+     * Helper for marking that player entered combat,
+     * if anti-combat logging enabled, sends message to combat logging
+     * thread.
+     */
+    fun removeDeadPlayerFromCombatLogging(player: Player) {
+        if ( this.config.antiCombatLogEnabled ) {
+            this.antiCombatLogTask.playerDied.add(player)
+        }
     }
 
     /**
@@ -1150,13 +1207,18 @@ public class XC(
         // timestamp for beginning update tick
         val timestamp = System.currentTimeMillis()
 
+        // kill combat loggers
+        if ( config.antiCombatLogEnabled ) {
+            killCombatLoggerSystem(this.antiCombatLogTask.detectedPlayerCombatLogged)
+        }
+
         // wear hats
         wearHatRequests = wearHatSystem(wearHatRequests)
 
         // run pipelined player movement check, for sway modifier
-        val (playerNewSpeed, playerNewLocation) = playerSpeedSystem(playerSpeed, playerPreviousLocation)
-        playerSpeed = playerNewSpeed
-        playerPreviousLocation = playerNewLocation
+        // val (playerNewSpeed, playerNewLocation) = playerSpeedSystem(playerSpeed, playerPreviousLocation)
+        // playerSpeed = playerNewSpeed
+        // playerPreviousLocation = playerNewLocation
 
         // crawl systems
         crawlStartQueue = startCrawlSystem(crawlStartQueue)

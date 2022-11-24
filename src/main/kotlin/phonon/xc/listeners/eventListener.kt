@@ -7,6 +7,7 @@ package phonon.xc.listeners
 import java.time.LocalDateTime
 import java.text.MessageFormat
 import org.bukkit.ChatColor
+import org.bukkit.Material
 import org.bukkit.attribute.Attribute
 import org.bukkit.entity.Player
 import org.bukkit.entity.EntityType
@@ -89,15 +90,26 @@ public class EventListener(
         // stop crawling (cleans up old crawl state)
         xc.crawlStopQueue.add(CrawlStop(player))
 
-        // initialize XC engine player data maps
-        xc.playerPreviousLocation[playerId] = player.getLocation()
-
         // if player joins and is holding a gun or custom wep,
         // do handle selection event
         xc.getGunInHand(player)?.let { _ -> 
             xc.playerGunSelectRequests.add(PlayerGunSelectRequest(
                 player = player,
             ))
+        }
+
+        // if player was marked as combat logger, kill player
+        if ( xc.config.antiCombatLogEnabled ) {
+            if ( xc.combatLoggers.remove(player.uniqueId) ) {
+                xc.deathEvents[player.uniqueId] = XcPlayerDeathEvent(
+                    player = player,
+                    killer = null,
+                    weaponType = XC.COMBAT_LOGGED,
+                    weaponId = 0,
+                    weaponMaterial = Material.AIR,
+                )
+                player.setHealth(0.0)
+            }
         }
     }
 
@@ -108,8 +120,6 @@ public class EventListener(
 
         // remove player from XC player data maps
         xc.playerShootDelay.remove(playerId)
-        xc.playerSpeed.remove(playerId)
-        xc.playerPreviousLocation.remove(playerId)
         
         // stop crawling (cleans up old crawl state)
         xc.crawlStopQueue.add(CrawlStop(player))
@@ -131,6 +141,9 @@ public class EventListener(
         if ( xc.isCrawling(player) ) {
             xc.crawlStopQueue.add(CrawlStop(player))
         }
+
+        // remove from combat logging
+        xc.removeDeadPlayerFromCombatLogging(player)
 
         // if player dies and is holding a gun or custom wep,
         // do reload cleanup
@@ -208,6 +221,14 @@ public class EventListener(
                             )
                             e.setDeathMessage(deathMessage)
                         }
+                    }
+
+                    // XC.ITEM_TYPE_MELEE -> {} // NOT NEEDED, USE VANILLA
+
+                    XC.COMBAT_LOGGED -> {
+                        deathCause = "CombatLogged"
+                        deathMessage = "$playerName was killed for combat logging"
+                        e.setDeathMessage(deathMessage)
                     }
                 }
             } catch ( err: Exception ) {
@@ -673,14 +694,20 @@ public class EventListener(
                             
                             // println("NEW MELEE DAMAGE base=${weapon.damage} final=$damage")
 
-                            if ( target is Player && target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-                                xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
-                                    player = target,
-                                    killer = player,
-                                    weaponType = XC.ITEM_TYPE_MELEE,
-                                    weaponId = weapon.itemModelDefault,
-                                    weaponMaterial = xc.config.materialMelee,
-                                )
+                            if ( target is Player ) {
+                                // mark player entering combat
+                                xc.addPlayerToCombatLogging(target)
+
+                                // player died -> custom death event
+                                if ( target.getHealth() > 0.0 && damage >= target.getHealth() ) {
+                                    xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                                        player = target,
+                                        killer = player,
+                                        weaponType = XC.ITEM_TYPE_MELEE,
+                                        weaponId = weapon.itemModelDefault,
+                                        weaponMaterial = xc.config.materialMelee,
+                                    )
+                                }
                             }
 
                             e.setDamage(damage)

@@ -25,6 +25,7 @@ import phonon.xc.util.Hitbox
 import phonon.xc.util.HitboxSize
 import phonon.xc.util.BlockCollisionHandler
 import phonon.xc.util.blockCollisionHandlers
+import phonon.xc.util.toml.getNumberAs
 
 
 /**
@@ -112,7 +113,13 @@ public data class Config(
     public val soundOnHitEnabled: Boolean = true, // flag t oplay sound when shooting entity
     public val soundOnHit: String = "",           // sound to play when successfully hitting entity
     public val soundOnHitVolume: Float = 1.0f,    // volume of sound when successfully hitting entity
+    
+    // ============================================================
+    // Built-in anti combat logging module
+    public val antiCombatLogEnabled: Boolean = true, // use built in anti combat logging
+    public val antiCombatLogTimeout: Double = 20.0,  // time in seconds to punish player for combat logging
 
+    // ============================================================
     // ADVANCED
 
     // stops player crawling when switching to a non-crawl to shoot weapon
@@ -280,6 +287,12 @@ public data class Config(
                     }
                     configOptions["armorValues"] = values
                 }
+            }
+            
+            // global sound effects
+            toml.getTable("anti_combat_log")?.let { antiCombatLog ->
+                antiCombatLog.getBoolean("enabled")?.let { configOptions["antiCombatLogEnabled"] = it }
+                antiCombatLog.getNumberAs<Double>("timeout")?.let { configOptions["antiCombatLogTimeout"] = it }
             }
 
             // default debug timings config
