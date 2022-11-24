@@ -223,11 +223,18 @@ public class EventListener(
                         }
                     }
 
-                    // XC.ITEM_TYPE_MELEE -> {} // NOT NEEDED, USE VANILLA
+                    XC.ITEM_TYPE_MELEE -> {
+                        xc.storage.melee[weaponId]?.let { weapon -> 
+                            deathCause = weapon.itemName
+                            deathMessage = "${playerName} was slain by ${killerName} using ${weapon.itemName}"
+                            // DON'T SET DEATH MESSAGE FOR MELEE
+                            // JUST USE VANILLA, IT'S BETTER!! 
+                        }
+                    }
 
                     XC.COMBAT_LOGGED -> {
                         deathCause = "CombatLogged"
-                        deathMessage = "$playerName was killed for combat logging"
+                        deathMessage = "${playerName} was killed for combat logging"
                         e.setDeathMessage(deathMessage)
                     }
                 }
