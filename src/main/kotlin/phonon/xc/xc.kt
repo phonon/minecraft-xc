@@ -10,13 +10,16 @@ package phonon.xc
 
 import java.nio.file.Paths
 import java.nio.file.Files
-import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadLocalRandom
 import java.util.EnumMap
 import java.util.EnumSet
 import java.util.UUID
 import java.util.logging.Logger
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.floor
 import kotlin.math.ceil
 import org.bukkit.Bukkit
@@ -336,6 +339,11 @@ public class XC(
     // ========================================================================
     // TASKS AND BACKGROUND ASYNC TASKS
     // ========================================================================
+    // common threadpool for systems. mainly used for parallelizing the projectile system
+    private var threadpool: ExecutorService = Executors.newSingleThreadExecutor() // single thread until config loaded
+    private var threadpoolSize: Int = 1
+
+    // main engine task
     private var engineTask: BukkitTask? = null
     private var calculatePlayerSpeedTask: TaskCalculatePlayerSpeed = TaskCalculatePlayerSpeed(this)
     private var antiCombatLogTask: TaskAntiCombatLog = TaskAntiCombatLog(this, this.config.antiCombatLogTimeout)
@@ -465,7 +473,7 @@ public class XC(
         // create per-world systems
         Bukkit.getWorlds().forEach { world ->
             val worldId = world.getUID()
-            projectileSystems.put(worldId, ProjectileSystem(world))
+            projectileSystems.put(worldId, ProjectileSystem(world, this.threadpool, this.threadpoolSize))
             thrownThrowables.put(worldId, ArrayList())
             expiredThrowables.put(worldId, ArrayList())
             landmineExplosions.put(worldId, ArrayList())
@@ -491,9 +499,6 @@ public class XC(
     internal fun reload(async: Boolean = false) {
         val timeStart = System.currentTimeMillis()
         this.cleanup()
-
-        // create projectile and throwable systems for each world
-        this.initializeSystems()
         
         // reload main plugin config
         val pathConfigToml = Paths.get(plugin.getDataFolder().getPath(), "config.toml")
@@ -705,10 +710,35 @@ public class XC(
             landmine = landmines,
         )
 
+        // create threadpool
+        val numThreadsHint = config.numProjectileThreads
+        val numThreads = if ( numThreadsHint < 0 ) {
+            // use number of cores
+            Runtime.getRuntime().availableProcessors()
+        } else if ( numThreadsHint > 0 ) {
+            // try to use hint
+            min(Runtime.getRuntime().availableProcessors(), numThreadsHint)
+        } else {
+            logger.warning("Invalid number of threads hint ${numThreadsHint}, using 1 thread")
+            1
+        }
+
+        if ( numThreads == 1 ) {
+            this.threadpool = Executors.newSingleThreadExecutor() 
+            this.threadpoolSize = 1
+        } else {
+            this.threadpool = Executors.newFixedThreadPool(numThreads)
+            this.threadpoolSize = numThreads
+        }
+
+        // create projectile and throwable systems for each world
+        this.initializeSystems()
+
         // start new engine runnable
         val timeEnd = System.currentTimeMillis()
         val timeLoad = timeEnd - timeStart
         logger.info("Reloaded in ${timeLoad}ms")
+        logger.info("Using ${numThreads} threads for projectiles")
         logger.info("- Guns: ${validGunIds.size}")
         logger.info("- Ammo: ${validAmmoIds.size}")
         logger.info("- Melee: ${validMeleeIds.size}")
@@ -1001,10 +1031,14 @@ public class XC(
                 dirX = shootDirX.toFloat(),
                 dirY = shootDirY.toFloat(),
                 dirZ = shootDirZ.toFloat(),
-                speed = gun.projectileVelocity,
-                gravity = gun.projectileGravity,
-                maxLifetime = gun.projectileLifetime,
-                maxDistance = gun.projectileMaxDistance,
+                // gravity = gun.projectileGravity,
+                // speed = gun.projectileVelocity,
+                // maxLifetime = gun.projectileLifetime,
+                // maxDistance = gun.projectileMaxDistance,
+                gravity = 0.0f,
+                speed = 1.0f,
+                maxLifetime = 100,
+                maxDistance = 200.0f,
             ))
         }
         projectileSystem.addProjectiles(projectiles)
@@ -1273,8 +1307,8 @@ public class XC(
         for ( (worldId, projSys) in this.projectileSystems ) {
             // first gather visited chunks for throwable items
             // (for potential explosion/entity hit calculations)
-            val visitedChunks = thrownThrowables[worldId]?.let { throwables -> getThrownThrowableVisitedChunksSystem(throwables) } ?: LinkedHashSet()
-            landmineExplosions[worldId]?.let { explosions -> visitedChunks.addAll(getLandmineExplosionVisitedChunksSystem(explosions)) }
+            val visitedChunks = thrownThrowables[worldId]?.let { throwables -> getThrownThrowableVisitedChunksSystem(throwables) } ?: HashSet()
+            landmineExplosions[worldId]?.let { explosions -> getLandmineExplosionVisitedChunksSystem(explosions, visitedChunks) }
 
             // run projectile system
             val (hitboxes, hitBlocksQueue, hitEntitiesQueue) = projSys.update(this, visitedChunks)

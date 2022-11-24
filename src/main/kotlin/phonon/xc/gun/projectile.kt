@@ -4,7 +4,14 @@
 
 package phonon.xc.gun
 
+import java.util.concurrent.Callable
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 import kotlin.math.min
 import kotlin.math.max
 import kotlin.math.floor
@@ -91,6 +98,66 @@ public data class Projectile(
     }
 }
 
+/**
+ * Worker task to calculate projectile dynamics on a slice of projectiles
+ * 
+ * Use linearized bullet dynamics to calculate next position
+ * at end of this tick. Dynamics for each tick step:
+ * v1 = v0 + g * t
+ * x1 = x0 + v0 * t + g * t^2/2
+ * 
+ * For each 2D chunk visited by projectile in this update step,
+ * add to `visitedChunks`. This is later used to gather hitboxes in
+ * all visited chunks.
+ */
+private class ProjectileDynamicsUpdateTask(
+    val world: World,
+    val projectiles: List<Projectile>,
+    val visitedChunks: MutableSet<ChunkCoord>,
+): Callable<Unit> {
+    override fun call(): Unit {
+        for ( projectile in projectiles ) {
+            projectile.xNext = projectile.x + projectile.velX
+            projectile.yNext = projectile.y + projectile.velY - projectile.gravity
+            projectile.zNext = projectile.z + projectile.velZ
+
+            projectile.velY -= projectile.gravity
+
+            // update normalized direction
+            val dx = projectile.xNext - projectile.x
+            val dy = projectile.yNext - projectile.y
+            val dz = projectile.zNext - projectile.z
+            val d = length(dx, dy, dz)
+            projectile.distToNext = d
+            projectile.dirX = dx / d
+            projectile.dirY = dy / d
+            projectile.dirZ = dz / d
+            
+            // Calculate 2D AABB of region traveled. Adds 8 block buffer
+            // to account for hitboxes that multiple span chunks.
+            // This assumes max size of a hitbox is 16x16x16. TODO: put in config somewhere
+            val xmin = (floor(min(projectile.x, projectile.xNext) - 8f)).toInt()
+            val zmin = (floor(min(projectile.z, projectile.zNext) - 8f)).toInt()
+            val xmax = (ceil(max(projectile.x, projectile.xNext) + 8f)).toInt()
+            val zmax = (ceil(max(projectile.z, projectile.zNext) + 8f)).toInt()
+
+            // converts into mineman chunk coords (divides by 16)
+            val cxmin = (xmin shr 4)
+            val czmin = (zmin shr 4)
+            val cxmax = (xmax shr 4)
+            val czmax = (zmax shr 4)
+            
+            for ( cx in cxmin..cxmax ) {
+                for ( cz in czmin..czmax ) {
+                    // only add if chunk loaded
+                    if ( world.isChunkLoaded(cx, cz) ) {
+                        visitedChunks.add(ChunkCoord(cx, cz))
+                    }
+                }
+            }
+        }
+    }
+}
 
 /**
  * Internal class indicating block was hit by projectile.
@@ -150,7 +217,11 @@ internal data class ProjectileSystemUpdate(
 /**
  * Projectile system for each world.
  */
-public class ProjectileSystem(public val world: World) {
+public class ProjectileSystem(
+    public val world: World,
+    private val threadpool: ExecutorService,
+    private val numThreads: Int,
+) {
     // Main list of projectiles to be updated each tick
     private var projectiles: ArrayDeque<Projectile> = ArrayDeque(2000)
 
@@ -196,7 +267,6 @@ public class ProjectileSystem(public val world: World) {
         } else {
             this.projectileCreateQueue.addAll(projectiles)
         }
-
     }
     
     /**
@@ -208,7 +278,7 @@ public class ProjectileSystem(public val world: World) {
      */
     internal fun update(
         xc: XC,
-        visitedChunks: LinkedHashSet<ChunkCoord>, // to force gathering entity hitboxes in these chunks
+        initialVisitedChunks: Set<ChunkCoord>, // to force gathering entity hitboxes in these chunks
     ): ProjectileSystemUpdate {
         // Push all waiting async projectiles
         if ( !this.projectileCreateQueue.isEmpty()) {
@@ -217,7 +287,11 @@ public class ProjectileSystem(public val world: World) {
 
         // timings probe
         val tStart = xc.debugNanoTime()
-        
+
+        // Convert initial visited chunks into concurrent hash set
+        val visitedChunks = ConcurrentHashMap.newKeySet<ChunkCoord>(1024)
+        visitedChunks.addAll(initialVisitedChunks)
+
         // First, iterate all projectiles, determine start and end positions
         // during tick, then map all potential chunks => hitboxes that 
         // projectile could visit. This coalesces all chunk.getEntities()
@@ -226,55 +300,60 @@ public class ProjectileSystem(public val world: World) {
         // hitboxes that intersect with the 3d chunk.
         val hitboxes = HashMap<ChunkCoord3D, ArrayList<Hitbox>>() 
 
+        // distribute projectile elements across available threads
+        // TODO: in future do testing and better load balance this
+        val numProjectiles = this.projectiles.size
+        val numProjectilesPerThread = 1 + (numProjectiles / this.numThreads)
+        val elementsPerThread = IntArray(2 * this.numThreads, {_ -> 0}) // packed (start, count) pairs
+
+        var cursor = 0
+        for ( i in 0 until this.numThreads ) {
+            val start = cursor
+            if ( start >= numProjectiles ) {
+                break
+            }
+            val count = min(numProjectilesPerThread, numProjectiles - cursor)
+            elementsPerThread[(2*i)] = start
+            elementsPerThread[(2*i) + 1] = count
+            cursor += count
+        }
+        
+        // println("elementsPerThread: ${elementsPerThread.contentToString()}")
         // Use linearized bullet dynamics to calculate next position
         // at end of this tick. Dynamics for each tick step:
         // v1 = v0 + g * t
         // x1 = x0 + v0 * t + g * t^2/2
-        for ( projectile in this.projectiles) { 
-            projectile.velY -= projectile.gravity
+        // also adds all chunks visited by projectiles to `visitedChunks`
+        if ( numProjectiles > 0 ) {
+            val projectileDynamicsTasks: ArrayList<Future<Unit>> = ArrayList(this.numThreads)
 
-            projectile.xNext = projectile.x + projectile.velX
-            projectile.yNext = projectile.y + projectile.velY - projectile.gravity
-            projectile.zNext = projectile.z + projectile.velZ
-
-            // update normalized direction
-            val dx = projectile.xNext - projectile.x
-            val dy = projectile.yNext - projectile.y
-            val dz = projectile.zNext - projectile.z
-            val d = length(dx, dy, dz)
-            projectile.distToNext = d
-            projectile.dirX = dx / d
-            projectile.dirY = dy / d
-            projectile.dirZ = dz / d
-            
-            // Calculate 2D AABB of region traveled. Adds 8 block buffer
-            // to account for hitboxes that multiple span chunks.
-            // This assumes max size of a hitbox is 16x16x16. TODO: put in config somewhere
-            val xmin = (floor(min(projectile.x, projectile.xNext) - 8f)).toInt()
-            val zmin = (floor(min(projectile.z, projectile.zNext) - 8f)).toInt()
-            val xmax = (ceil(max(projectile.x, projectile.xNext) + 8f)).toInt()
-            val zmax = (ceil(max(projectile.z, projectile.zNext) + 8f)).toInt()
-
-            // converts into mineman chunk coords (divides by 16)
-            val cxmin = (xmin shr 4)
-            val czmin = (zmin shr 4)
-            val cxmax = (xmax shr 4)
-            val czmax = (zmax shr 4)
-            
-            for ( cx in cxmin..cxmax ) {
-                for ( cz in czmin..czmax ) {
-                    // only add if chunk loaded
-                    if ( this.world.isChunkLoaded(cx, cz) ) {
-                        visitedChunks.add(ChunkCoord(cx, cz))
-                    }
+            for ( i in 0 until this.numThreads ) {
+                val start = elementsPerThread[(2*i)]
+                val count = elementsPerThread[(2*i) + 1]
+                if ( count == 0 ) {
+                    break
                 }
+
+                projectileDynamicsTasks.add(threadpool.submit(ProjectileDynamicsUpdateTask(
+                    this.world,
+                    this.projectiles.subList(start, start+count),
+                    visitedChunks,
+                )))
+            }
+            
+            try {
+                projectileDynamicsTasks.forEach{ it.get(1L, TimeUnit.SECONDS) }
+            } catch ( e: Exception ) {
+                e.printStackTrace()
             }
         }
+
+        // println("visitedChunks.size = ${visitedChunks.size}")
 
         // Get hitboxes for entities in visited chunks
         // Projectile chunk search should have already checked that
         // chunk is loaded.
-        for ( coord in visitedChunks ) { 
+        for ( coord in visitedChunks ) {
             val chunk = world.getChunkAt(coord.x, coord.z)
 
             // on newer versions, if entities not loaded, skip chunk

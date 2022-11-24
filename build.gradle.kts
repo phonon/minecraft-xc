@@ -10,7 +10,7 @@ import io.papermc.paperweight.userdev.PaperweightUser
 import io.papermc.paperweight.tasks.RemapJar
 
 // plugin versioning
-version = "0.0.0"
+version = "0.0.1"
 
 // base of output jar name
 val OUTPUT_JAR_NAME = "xc"

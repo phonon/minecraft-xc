@@ -53,8 +53,9 @@ public data class ChunkCoord3D(
         /**
          * Create chunk coord from block coordinates.
          */
-        public fun fromBlockCoords(x: Int, z: Int): ChunkCoord = ChunkCoord(
+        public fun fromBlockCoords(x: Int, y: Int, z: Int): ChunkCoord3D = ChunkCoord3D(
             x shr 4,
+            y shr 4,
             z shr 4,
         )
     }

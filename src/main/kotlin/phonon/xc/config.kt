@@ -134,15 +134,18 @@ public data class Config(
     // debug timings default value
     public val defaultDoDebugTimings: Boolean = false,
 
-    // use async tasks to send packets to players
-    public val asyncPackets: Boolean = true,
-
     // how often in ticks to schedule saving player death stats
     // default = 1 minute
     public val playerDeathRecordSaveInterval: Int = 20*60,
 
     // path to save player deaths stats to
     public val playerDeathLogSaveDir: String = "plugins/xc/logs",
+    
+    // use async tasks to send packets to players
+    public val asyncPackets: Boolean = true,
+
+    // number of threads to use for parallelizing projectiles
+    public val numProjectileThreads: Int = 4,
 ) {
 
     // Lookup table for Material => Int constant for plugin custom
@@ -307,6 +310,7 @@ public data class Config(
 
             // random advanced options
             toml.getBoolean("experimental.async_packets")?.let { configOptions["asyncPackets"] = it }
+            toml.getBoolean("experimental.num_projectile_threads")?.let { configOptions["numProjectileThreads"] = it }
 
 
             return mapToObject(configOptions, Config::class)

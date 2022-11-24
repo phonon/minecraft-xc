@@ -441,8 +441,8 @@ internal fun XC.handleExpiredThrowableSystem(
  */
 internal fun getThrownThrowableVisitedChunksSystem(
     requests: List<ThrownThrowable>,
-):  LinkedHashSet<ChunkCoord> {
-    val visitedChunks = LinkedHashSet<ChunkCoord>()
+): HashSet<ChunkCoord> {
+    val visitedChunks = HashSet<ChunkCoord>(20 + (requests.size * 9)) // estimated max size needed + margin
 
     for ( th in requests ) {
         // unpack

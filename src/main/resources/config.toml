@@ -118,3 +118,4 @@ do_timings_default = false # default state for whether to do debug timings
 # experimental stuff
 [experimental]
 async_packets = true # sends most packets using an async task
+num_projectile_threads = 4 # max number of threads to use for projectile system, use -1 for max available

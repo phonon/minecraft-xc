@@ -248,9 +248,8 @@ internal fun XC.landmineActivationSystem() {
  */
 internal fun getLandmineExplosionVisitedChunksSystem(
     requests: List<LandmineExplosionRequest>,
-):  LinkedHashSet<ChunkCoord> {
-    val visitedChunks = LinkedHashSet<ChunkCoord>()
-
+    visitedChunks: HashSet<ChunkCoord>,
+) {
     for ( r in requests ) {
         // unpack
         val block = r.block
@@ -276,8 +275,6 @@ internal fun getLandmineExplosionVisitedChunksSystem(
             }
         }
     }
-    
-    return visitedChunks
 }
 
 /**
