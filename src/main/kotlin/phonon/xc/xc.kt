@@ -171,9 +171,6 @@ public class XC(
     // ========================================================================
     // EXTERNAL PLUGIN APIs
     // ========================================================================
-    // flags for other plugins available
-    internal var usingProtocolLib: Boolean = false
-        private set
     internal var usingWorldGuard: Boolean = false
         private set
     
