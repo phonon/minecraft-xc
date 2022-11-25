@@ -1031,14 +1031,14 @@ public class XC(
                 dirX = shootDirX.toFloat(),
                 dirY = shootDirY.toFloat(),
                 dirZ = shootDirZ.toFloat(),
-                // gravity = gun.projectileGravity,
-                // speed = gun.projectileVelocity,
-                // maxLifetime = gun.projectileLifetime,
-                // maxDistance = gun.projectileMaxDistance,
-                gravity = 0.0f,
-                speed = 1.0f,
-                maxLifetime = 100,
-                maxDistance = 200.0f,
+                gravity = gun.projectileGravity,
+                speed = gun.projectileVelocity,
+                maxLifetime = gun.projectileLifetime,
+                maxDistance = gun.projectileMaxDistance,
+                // gravity = 0.0f,
+                // speed = 1.0f,
+                // maxLifetime = 100,
+                // maxDistance = 200.0f,
             ))
         }
         projectileSystem.addProjectiles(projectiles)
@@ -1244,40 +1244,87 @@ public class XC(
         }
 
         // wear hats
-        wearHatRequests = wearHatSystem(wearHatRequests)
+        wearHatSystem(wearHatRequests)
 
-        // run pipelined player movement check, for sway modifier
+        // DEPRECATED: run pipelined player movement check, for sway modifier
         // val (playerNewSpeed, playerNewLocation) = playerSpeedSystem(playerSpeed, playerPreviousLocation)
         // playerSpeed = playerNewSpeed
         // playerPreviousLocation = playerNewLocation
 
         // crawl systems
-        crawlStartQueue = startCrawlSystem(crawlStartQueue)
-        crawlStopQueue = stopCrawlSystem(crawlStopQueue)
-        crawling = crawlRefreshSystem(crawling)
+        startCrawlSystem(crawlStartQueue, crawling)
+        stopCrawlSystem(crawlStopQueue, crawling, crawlRequestTasks, crawlingAndReadyToShoot)
+        crawlRefreshSystem(crawling, crawlStopQueue)
         // finish crawl to shoot requests
         val crawlRequestFinishTasks = ArrayList<CrawlToShootRequestFinish>()
         val crawlRequestCancelTasks = ArrayList<CrawlToShootRequestCancel>()
         playerCrawlRequestFinishQueue.drainTo(crawlRequestFinishTasks)
         playerCrawlRequestCancelQueue.drainTo(crawlRequestCancelTasks)
-        finishCrawlToShootRequestSystem(crawlRequestFinishTasks)
-        cancelCrawlToShootRequestSystem(crawlRequestCancelTasks)
+        finishCrawlToShootRequestSystem(crawlRequestFinishTasks, crawling, crawlRequestTasks, crawlingAndReadyToShoot)
+        cancelCrawlToShootRequestSystem(crawlRequestCancelTasks, crawling, crawlRequestTasks, crawlStopQueue)
 
         // run gun controls systems (these emit new queues for next tick)
-        playerAimDownSightsRequests = gunAimDownSightsSystem(playerAimDownSightsRequests)
-        playerGunCleanupRequests = playerGunCleanupSystem(playerGunCleanupRequests)
-        itemGunCleanupRequests = gunItemCleanupSystem(itemGunCleanupRequests)
-        playerGunSelectRequests = gunSelectSystem(playerGunSelectRequests, timestamp)
-        playerReloadRequests = gunPlayerReloadSystem(playerReloadRequests, timestamp)
-        autoFiringPackets = autoFireRequestSystem(playerAutoFireRequests, autoFiringPackets, timestamp) // do auto fire request before single/burst fire
-        playerShootRequests = gunPlayerShootSystem(playerShootRequests, timestamp)
-        burstFiringPackets = burstFireSystem(burstFiringPackets, timestamp)
-        autoFiringPackets = autoFireSystem(autoFiringPackets)
-        playerRecoil = recoilRecoverySystem(playerRecoil)
-        crawlToShootRequestQueue = requestCrawlToShootSystem(crawlToShootRequestQueue, timestamp)
-
-        // queues that need to be manually re-created (cannot easily return tuples in kotlin/java)
-        playerAutoFireRequests = ArrayList()
+        gunAimDownSightsSystem(playerAimDownSightsRequests)
+        playerGunCleanupSystem(playerGunCleanupRequests)
+        gunItemCleanupSystem(itemGunCleanupRequests)
+        gunSelectSystem(
+            playerGunSelectRequests,
+            autoFiringPackets,
+            playerShootDelay,
+            timestamp,
+        )
+        gunPlayerReloadSystem(
+            playerReloadRequests,
+            autoFiringPackets,
+            burstFiringPackets,
+            playerReloadTaskQueue,
+            playerReloadCancelledTaskQueue,
+            timestamp,
+        ) 
+        autoFireRequestSystem( // do auto fire request before single/burst fire
+            playerAutoFireRequests,
+            autoFiringPackets,
+            playerShootDelay,
+            crawlingAndReadyToShoot,
+            crawlToShootRequestQueue,
+            timestamp,
+        ) 
+        gunPlayerShootSystem(
+            playerShootRequests,
+            autoFiringPackets,
+            burstFiringPackets,
+            playerShootDelay,
+            playerReloadRequests,
+            crawlingAndReadyToShoot,
+            crawlToShootRequestQueue,
+            projectileSystems,
+            timestamp,
+        )
+        burstFireSystem(
+            burstFiringPackets,
+            playerShootDelay,
+            playerReloadRequests,
+            projectileSystems,
+            timestamp,
+        )
+        autoFireSystem(
+            autoFiringPackets,
+            playerReloadRequests,
+            projectileSystems,
+        )
+        recoilRecoverySystem(
+            playerRecoil,
+            autoFiringPackets,
+            burstFiringPackets,
+        )
+        requestCrawlToShootSystem(
+            crawlToShootRequestQueue,
+            crawlStartQueue,
+            crawlRequestTasks,
+            playerCrawlRequestFinishQueue,
+            playerCrawlRequestCancelQueue,
+            timestamp,
+        )
 
         // ready and throw throwable systems
         // (tick for thrown throwable objects done with projectiles
@@ -1289,8 +1336,8 @@ public class XC(
 
         // landmine systems
         // (explosion handling done after hitboxes created in projectiles update block)
-        landmineFinishUseSystem() // note: finishes PREVIOUS tick's requests (a 1-tick delayed system)
-        landmineActivationSystem()
+        landmineFinishUseSystem(landmineFinishUseRequests) // note: finishes PREVIOUS tick's requests (a 1-tick delayed system)
+        landmineActivationSystem(landmineActivationRequests, landmineFinishUseRequests, landmineExplosions)
         
         // finish gun reloading tasks
         val tReloadSystem = debugNanoTime() // timing probe
@@ -1330,7 +1377,7 @@ public class XC(
             thrownThrowables[worldId] = tickThrownThrowableSystem(thrownThrowables[worldId] ?: listOf(), hitboxes)
 
             // per-world landmine tick systems (needs hitboxes)
-            landmineExplosions[worldId] = landmineHandleExplosionSystem(landmineExplosions[worldId] ?: listOf(), hitboxes, logger)
+            landmineExplosions[worldId] = landmineHandleExplosionSystem(landmineExplosions[worldId] ?: listOf(), hitboxes)
         }
 
         // ================================================

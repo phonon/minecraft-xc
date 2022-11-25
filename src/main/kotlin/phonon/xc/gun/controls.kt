@@ -9,6 +9,7 @@
 package phonon.xc.gun
 
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadLocalRandom
 import java.util.UUID
 import kotlin.math.max
@@ -348,59 +349,68 @@ private fun XC.doSingleShot(
  * System to aim down sights. This modifies player's gun item model if they
  * have aim down sights enabled.
  */
-internal fun XC.gunAimDownSightsSystem(requests: ArrayList<PlayerAimDownSightsRequest>): ArrayList<PlayerAimDownSightsRequest> {
-    for ( request in requests ) {
-        val player = request.player
+internal fun XC.gunAimDownSightsSystem(
+    playerAimDownSightsRequests: List<PlayerAimDownSightsRequest>,
+) {
+    for ( request in playerAimDownSightsRequests ) {
+        try {
+            val player = request.player
 
-        if ( this.dontUseAimDownSights.contains(player.getUniqueId()) ) {
-            continue
-        }
-
-        // Do redundant player main hand is gun check here
-        // since events could override the first shoot event, causing
-        // inventory slot or item to change
-        val equipment = player.getInventory()
-        val inventorySlot = equipment.getHeldItemSlot()
-        val item = equipment.getItem(inventorySlot)
-        if ( item == null ) {
-            continue
-        }
-
-        val gun = getGunFromItem(item)
-        if ( gun == null ) {
-            continue
-        }
-        
-        if ( gun.itemModelAimDownSights > 0 ) {
-            var itemMeta = item.getItemMeta()
-            val itemData = itemMeta.getPersistentDataContainer()
-
-            // skip if reloading
-            val isReloading = itemData.get(this.namespaceKeyItemReloading, PersistentDataType.INTEGER) ?: 0
-            if ( isReloading == TRUE ) {
+            if ( this.dontUseAimDownSights.contains(player.getUniqueId()) ) {
                 continue
             }
 
-            // only ads if ammo > 0
-            val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
-            if ( ammo > 0 ) {
-                val isShift = player.isSneaking()
-    
-                if ( isShift ) {
-                    itemMeta.setCustomModelData(gun.itemModelAimDownSights)
-                    this.createAimDownSightsOffhandModel(gun, player)
-                } else {
-                    itemMeta.setCustomModelData(gun.itemModelDefault)
-                    this.removeAimDownSightsOffhandModel(player)
-                }
-    
-                item.setItemMeta(itemMeta)
-                equipment.setItem(inventorySlot, item)
+            // Do redundant player main hand is gun check here
+            // since events could override the first shoot event, causing
+            // inventory slot or item to change
+            val equipment = player.getInventory()
+            val inventorySlot = equipment.getHeldItemSlot()
+            val item = equipment.getItem(inventorySlot)
+            if ( item == null ) {
+                continue
             }
+
+            val gun = getGunFromItem(item)
+            if ( gun == null ) {
+                continue
+            }
+            
+            if ( gun.itemModelAimDownSights > 0 ) {
+                var itemMeta = item.getItemMeta()
+                val itemData = itemMeta.getPersistentDataContainer()
+
+                // skip if reloading
+                val isReloading = itemData.get(this.namespaceKeyItemReloading, PersistentDataType.INTEGER) ?: 0
+                if ( isReloading == TRUE ) {
+                    continue
+                }
+
+                // only ads if ammo > 0
+                val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
+                if ( ammo > 0 ) {
+                    val isShift = player.isSneaking()
+        
+                    if ( isShift ) {
+                        itemMeta.setCustomModelData(gun.itemModelAimDownSights)
+                        this.createAimDownSightsOffhandModel(gun, player)
+                    } else {
+                        itemMeta.setCustomModelData(gun.itemModelDefault)
+                        this.removeAimDownSightsOffhandModel(player)
+                    }
+        
+                    item.setItemMeta(itemMeta)
+                    equipment.setItem(inventorySlot, item)
+                }
+            }
+        }
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to create aimdownsights model for player ${request.player.getName()}")
         }
     }
 
-    return ArrayList()
+    // clear request queue for next update tick
+    this.playerAimDownSightsRequests = ArrayList()
 }
 
 /**
@@ -408,77 +418,95 @@ internal fun XC.gunAimDownSightsSystem(requests: ArrayList<PlayerAimDownSightsRe
  * - reload flags
  * - aim down sights models
  */
-internal fun XC.playerGunCleanupSystem(requests: ArrayList<PlayerGunCleanupRequest>): ArrayList<PlayerGunCleanupRequest> {
-    for ( request in requests ) {
-        val (player, inventorySlotToCleanup) = request
+internal fun XC.playerGunCleanupSystem(
+    playerGunCleanupRequests: List<PlayerGunCleanupRequest>,
+) {
+    for ( request in playerGunCleanupRequests ) {
+        try {
+            val (player, inventorySlotToCleanup) = request
 
-        // Do redundant player main hand is gun check here
-        // since events could override the first shoot event, causing
-        // inventory slot or item to change
-        val equipment = player.getInventory()
-        val inventorySlot = if ( inventorySlotToCleanup == -1 ) {
-            equipment.getHeldItemSlot()
-        } else {
-            inventorySlotToCleanup
+            // Do redundant player main hand is gun check here
+            // since events could override the first shoot event, causing
+            // inventory slot or item to change
+            val equipment = player.getInventory()
+            val inventorySlot = if ( inventorySlotToCleanup == -1 ) {
+                equipment.getHeldItemSlot()
+            } else {
+                inventorySlotToCleanup
+            }
+
+            val item = equipment.getItem(inventorySlot)
+            if ( item == null ) {
+                continue
+            }
+
+            val gun = getGunFromItem(item)
+            if ( gun == null ) {
+                continue
+            }
+
+            // clean up aim down sights model
+            this.removeAimDownSightsOffhandModel(player)
+
+            // clean up gun item metadata
+            val itemMeta = item.getItemMeta()
+            val itemData = itemMeta.getPersistentDataContainer()
+            val newItemMeta = cleanupGunMeta(itemMeta, itemData, gun, false)
+            item.setItemMeta(newItemMeta)
+            equipment.setItem(inventorySlot, item)
         }
-
-        val item = equipment.getItem(inventorySlot)
-        if ( item == null ) {
-            continue
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to cleanup gun item for player ${request.player.getName()}")
         }
-
-        val gun = getGunFromItem(item)
-        if ( gun == null ) {
-            continue
-        }
-
-        // clean up aim down sights model
-        this.removeAimDownSightsOffhandModel(player)
-
-        // clean up gun item metadata
-        val itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
-        val newItemMeta = cleanupGunMeta(itemMeta, itemData, gun, false)
-        item.setItemMeta(newItemMeta)
-        equipment.setItem(inventorySlot, item)
     }
 
-    return ArrayList()
+    // clear request queue for next update tick
+    this.playerGunCleanupRequests = ArrayList()
 }
 
 /**
  * System to cleanup reload flags when item is dropped.
  */
-internal fun XC.gunItemCleanupSystem(requests: ArrayList<ItemGunCleanupRequest>): ArrayList<ItemGunCleanupRequest> {
-    for ( request in requests ) {
-        val (itemEntity, onDrop) = request
-        val item = itemEntity.getItemStack()
+internal fun XC.gunItemCleanupSystem(
+    itemGunCleanupRequests: List<ItemGunCleanupRequest>,
+) {
+    for ( request in itemGunCleanupRequests ) {
+        try {
+            val (itemEntity, onDrop) = request
+            val item = itemEntity.getItemStack()
 
-        val gun = getGunFromItem(item)
-        if ( gun == null ) {
-            continue
-        }
+            val gun = getGunFromItem(item)
+            if ( gun == null ) {
+                continue
+            }
 
-        // if item was thrown by a player, make sure to cleanup the
-        // player's aim down sights model
-        if ( onDrop ) {
-            val throwerUUID = itemEntity.getThrower()
-            if ( throwerUUID != null ) {
-                Bukkit.getPlayer(throwerUUID)?.let { player -> 
-                    this.removeAimDownSightsOffhandModel(player)
+            // if item was thrown by a player, make sure to cleanup the
+            // player's aim down sights model
+            if ( onDrop ) {
+                val throwerUUID = itemEntity.getThrower()
+                if ( throwerUUID != null ) {
+                    Bukkit.getPlayer(throwerUUID)?.let { player -> 
+                        this.removeAimDownSightsOffhandModel(player)
+                    }
                 }
             }
-        }
 
-        // clean up gun item reload metadata
-        val itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
-        val newItemMeta = cleanupGunMeta(itemMeta, itemData, gun, false)
-        item.setItemMeta(newItemMeta)
-        itemEntity.setItemStack(item)
+            // clean up gun item reload metadata
+            val itemMeta = item.getItemMeta()
+            val itemData = itemMeta.getPersistentDataContainer()
+            val newItemMeta = cleanupGunMeta(itemMeta, itemData, gun, false)
+            item.setItemMeta(newItemMeta)
+            itemEntity.setItemStack(item)
+        }
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to cleanup dropped gun item entity ${request.itemEntity}")
+        }
     }
 
-    return ArrayList()
+    // clear request queue for next update tick
+    this.itemGunCleanupRequests = ArrayList()
 }
 
 /**
@@ -487,478 +515,16 @@ internal fun XC.gunItemCleanupSystem(requests: ArrayList<ItemGunCleanupRequest>)
  * 2. Add shooting delay if swapping from another gun.
  * 3. Send ammo info to player.
  */
-internal fun XC.gunSelectSystem(requests: ArrayList<PlayerGunSelectRequest>, timestamp: Long): ArrayList<PlayerGunSelectRequest> {
-    for ( request in requests ) {
-        val player = request.player
-        val playerId = player.getUniqueId()
-
-        // Do redundant player main hand is gun check here
-        // since events could override the first shoot event, causing
-        // inventory slot or item to change
-        val equipment = player.getInventory()
-        val inventorySlot = equipment.getHeldItemSlot()
-        val item = equipment.getItem(inventorySlot)
-        if ( item == null ) {
-            continue
-        }
-
-        val gun = getGunFromItem(item)
-        if ( gun == null ) {
-            continue
-        }
-
-        // gun swap delay:
-        // -> goal is to block players fast swapping between guns
-        //    (e.g. using macros) to bypass gun shooting delays
-        //    or to swap between different types (e.g. rifle -> shotgun)
-        // See `docs/delay.md` for details.
-        if ( this.autoFiringPackets.contains(playerId) ) {
-            // must have swapped here while still auto firing: add a new shoot delay
-            val timestampShootDelay = timestamp + gun.equipDelayMillis
-
-            this.playerShootDelay[playerId] = ShootDelay(
-                timestampDelayAfterShoot = timestampShootDelay,
-                timestampCanShoot = timestampShootDelay,
-            )
-        } else {
-            // swapped from single or burst fire. add shoot delay
-            this.playerShootDelay[playerId]?.let { shootDelay ->
-                this.playerShootDelay[playerId] = shootDelay.copy(
-                    timestampCanShoot = shootDelay.timestampDelayAfterShoot + gun.equipDelayMillis,
-                )
-            }
-        }
-
-        var itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
-
-        // check if playing is aim down sights
-        val aimDownSights = useAimDownSights(player)
-
-        // send ammo info to player
-        val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
-        this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
-
-        // clean up gun item metadata
-        val newItemMeta = cleanupGunMeta(itemMeta, itemData, gun, aimDownSights)
-        item.setItemMeta(newItemMeta)
-        equipment.setItem(inventorySlot, item)
-
-        // if player is aim down sights, add offhand model
-        if ( ammo > 0 && aimDownSights && gun.itemModelAimDownSights > 0 ) {
-            this.createAimDownSightsOffhandModel(gun, player)
-        }
-    }
-
-    return ArrayList()
-}
-
-
-/**
- * Player single/burst fire shooting system.
- * Handles [LEFT MOUSE] click firing.
- */
-internal fun XC.gunPlayerShootSystem(requests: ArrayList<PlayerGunShootRequest>, timestamp: Long): ArrayList<PlayerGunShootRequest> {
-    val random = ThreadLocalRandom.current()
-    val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
-
-    for ( request in requests ) {
-        val player = request.player
-        val playerId = player.getUniqueId()
-        
-        if ( playerHandled.add(playerId) == false ) {
-            // false if already contained in set
-            continue
-        }
-
-        // Do redundant player main hand is gun check here
-        // since events could override the first shoot event, causing
-        // inventory slot or item to change
-        val equipment = player.getInventory()
-        val inventorySlot = equipment.getHeldItemSlot()
-        val item = equipment.getItem(inventorySlot)
-        if ( item == null ) {
-            continue
-        }
-
-        val gun = getGunFromItem(item)
-        if ( gun == null ) {
-            continue
-        }
-
-        // skip single shoot while auto firing
-        if ( this.autoFiringPackets.contains(playerId) ) {
-            continue
-        }
-
-        val loc = player.location
-        val world = loc.world
-        val projectileSystem = this.projectileSystems[world.getUID()]
-        if ( projectileSystem == null ) {
-            continue
-        }
-
-        var itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
-        
-        // check gun is reloading
-        // if reloading is past time + some margin, cancel reload and clear flags
-        val reloadTimeMillis = gun.reloadTimeMillis
-        val isReloading = itemData.get(this.namespaceKeyItemReloading, PersistentDataType.INTEGER) ?: 0
-        if ( isReloading == TRUE ) {
-            // Check reload timestamp, if current time > timestamp0 + reloadTime + 1000 ms,
-            // assume this gun's reload was broken somehow and continue with shoot.
-            // Else, this is still in a reload process: skip shooting
-            val reloadTimestamp = itemData.get(this.namespaceKeyItemReloadTimestamp, PersistentDataType.LONG)
-            if ( reloadTimestamp != null && timestamp < reloadTimestamp + reloadTimeMillis + 1000L ) {
-                continue
-            }
-
-            // clean up reloading flags
-            itemData.remove(this.namespaceKeyItemReloading)
-            itemData.remove(this.namespaceKeyItemReloadId)
-            itemData.remove(this.namespaceKeyItemReloadTimestamp)
-        }
-
-        // if crawling required, request crawl to shoot
-        if ( gun.crawlRequired && this.crawlingAndReadyToShoot[playerId] != true ) {
-            this.crawlToShootRequestQueue.add(CrawlToShootRequest(player))
-            continue
-        }
-
-        // check if still under shoot delay
-        val shootDelay = this.playerShootDelay[playerId]
-        if ( shootDelay != null && timestamp < shootDelay.timestampCanShoot ) {
-            continue
-        }
-
-        val fireMode = gun.singleFireMode
-
-        if ( fireMode == GunSingleFireMode.SINGLE ) {
-            
-            val newAmmo = if ( gun.shootConsumeOnUse ) { // removes gun item when used
-                equipment.setItem(inventorySlot, ItemStack(Material.AIR, 1))
-                -1
-            } else {
-                // check ammo and send ammo info message to player
-                val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
-                if ( ammo <= 0 ) {
-                    this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
-                    
-                    // play gun empty sound effect
-                    this.soundQueue.add(SoundPacket(
-                        sound = gun.soundEmpty,
-                        world = world,
-                        location = loc,
-                        volume = gun.soundEmptyVolume,
-                        pitch = gun.soundEmptyPitch,
-                    ))
-    
-                    if ( !gun.ammoIgnore ) {
-                        if ( this.config.autoReloadGuns ) {
-                            this.playerReloadRequests.add(PlayerGunReloadRequest(player))
-                        }
-                        continue
-                    }
-                }
-    
-                val newAmmo = max(0, ammo - 1)
-    
-                // update player item: set new ammo and set model
-                itemMeta = setGunItemMetaAmmo(itemMeta, gun, newAmmo)
-                itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo, useAimDownSights(player))
-                item.setItemMeta(itemMeta)
-                equipment.setItem(inventorySlot, item)
-
-                newAmmo
-            }
-
-            // fires projectiles
-            doSingleShot(
-                player,
-                loc,
-                gun,
-                newAmmo,
-                projectileSystem,
-                random,
-            )
-
-            // recoil handling:
-            doRecoil(player, gun.recoilSingleHorizontal, gun.recoilSingleVertical, gun.recoilSingleFireRamp)
-
-            // shoot delay
-            val timestampShootDelay = timestamp + gun.shootDelayMillis
-            this.playerShootDelay[playerId] = ShootDelay(
-                timestampDelayAfterShoot = timestampShootDelay,
-                timestampCanShoot = timestampShootDelay,
-            )
-            
-        } else if ( fireMode == GunSingleFireMode.BURST ) {
-            // add burst packet if not already burst firing
-            if ( !this.burstFiringPackets.contains(playerId) ) {
-                val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
-                
-                // // auto-reload instead of firing when empty
-                // // MOVED to inside burstFireSystem so that
-                // // players can hear the burst clicks before reload
-                // if ( ammo <= 0 ) {
-                //     if ( !gun.ammoIgnore ) {
-                //         if ( this.config.autoReloadGuns ) {
-                //             this.playerReloadRequests.add(PlayerGunReloadRequest(player))
-                //         }
-                //         continue
-                //     }
-                // }
-                
-                val burstFireId = this.newBurstFireId()
-
-                this.burstFiringPackets[playerId] = BurstFire(
-                    id = burstFireId,
-                    player = player,
-                    gun = gun,
-                    originalAmmo = ammo,
-                    ammo = ammo,
-                    item = item,
-                    itemMeta = itemMeta,
-                    itemData = itemData,
-                    inventorySlot = inventorySlot,
-                    totalTime = 0.0,
-                    ticksCooldown = 0,
-                    remainingCount = gun.burstFireCount,
-                    delayPatternIndex = 0,
-                )
-
-                // set item in hand's burst fire id
-                itemData.set(this.namespaceKeyItemBurstFireId, PersistentDataType.INTEGER, burstFireId)
-                item.setItemMeta(itemMeta)
-                equipment.setItem(inventorySlot, item)
-            }
-        } else { // fireMode == GunSingleFireMode.NONE
-            // no-op
-            continue
-        }
-
-    }
-
-    return ArrayList()
-}
-
-
-/**
- * Player burst fire shooting system. Return a new hashmap
- * of burst fire packets for next tick.
- */
-internal fun XC.burstFireSystem(requests: HashMap<UUID, BurstFire>, timestamp: Long): HashMap<UUID, BurstFire> {
-    val nextTickRequests = HashMap<UUID, BurstFire>()
-    val random = ThreadLocalRandom.current()
-
-    for ( (playerId, request) in requests ) {
-        val (
-            id,
-            player,
-            gun,
-            originalAmmo,
-            ammo,
-            item,
-            itemMeta,
-            itemData,
-            inventorySlot,
-            totalTime,
-            ticksCooldown,
-            remainingCount,
-            delayPatternIndex,
-        ) = request
-
-        val equipment = player.getInventory()
-        val currInventorySlot = equipment.getHeldItemSlot()
-
-        // check if player main hand item auto fire id matches
-        if ( player.isDead() ||
-            !player.isOnline() ||
-            currInventorySlot != inventorySlot ||
-            id != checkHandMaterialAndGetNbtIntKey(player, this.config.materialGun, this.nbtKeyItemBurstFireId)
-        ) {
-            // no cleanup here: event handlers should pick up this event and clean gun if possible
-            continue
-        }
-
-        // decrement burst delay
-        if ( ticksCooldown > 0 ) {
-            nextTickRequests[playerId] = BurstFire(
-                id = id,
-                player = player,
-                gun = gun,
-                originalAmmo = originalAmmo,
-                ammo = ammo,
-                item = item,
-                itemMeta = itemMeta,
-                itemData = itemData,
-                inventorySlot = inventorySlot,
-                totalTime = totalTime + 1,
-                ticksCooldown = ticksCooldown - 1,
-                remainingCount = remainingCount,
-                delayPatternIndex = delayPatternIndex,
-            )
-            continue
-        }
-
-        val loc = player.location
-        val world = loc.world
-        val projectileSystem = this.projectileSystems[world.getUID()]
-        if ( projectileSystem == null ) continue
-
-        // check ammo and send ammo info message to player
-        if ( ammo <= 0 ) {
-            this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
-            
-            // play gun empty sound effect
-            this.soundQueue.add(SoundPacket(
-                sound = gun.soundEmpty,
-                world = world,
-                location = loc,
-                volume = gun.soundEmptyVolume,
-                pitch = gun.soundEmptyPitch,
-            ))
-
-            if ( !gun.ammoIgnore ) {
-                // finish sequence before stopping
-                if ( remainingCount > 0 ) {
-                    // next firing cooldown and delay pattern index
-                    var nextDelayPatternIndex = delayPatternIndex
-                    val cooldown = if ( gun.useBurstFireDelayTickPattern ) {
-                        nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.burstFireDelayTickPattern.size) // required here to avoid modulo 0
-                        gun.burstFireDelayTickPattern[delayPatternIndex]
-                    } else {
-                        gun.burstFireDelayTicks
-                    }
-
-                    nextTickRequests[playerId] = BurstFire(
-                        id = id,
-                        player = player,
-                        gun = gun,
-                        originalAmmo = originalAmmo,
-                        ammo = 0,
-                        item = item,
-                        itemMeta = itemMeta,
-                        itemData = itemData,
-                        inventorySlot = inventorySlot,
-                        totalTime = totalTime + 1,
-                        ticksCooldown = cooldown,
-                        remainingCount = remainingCount - 1,
-                        delayPatternIndex = nextDelayPatternIndex,
-                    )
-                } else {
-                    // clean up item
-                    itemData.remove(this.namespaceKeyItemBurstFireId)
-                    val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
-                    item.setItemMeta(newItemMeta)
-                    equipment.setItem(currInventorySlot, item)
-
-                    // queue auto-reload (only if ammo = 0 when fired)
-                    if ( this.config.autoReloadGuns && originalAmmo <= 0 ) {
-                        this.playerReloadRequests.add(PlayerGunReloadRequest(player))
-                    }
-                }
-
-                continue
-            }
-        }
-
-        val newAmmo = max(0, ammo - 1)
-
-        // fires projectiles
-        doSingleShot(
-            player,
-            loc,
-            gun,
-            newAmmo,
-            projectileSystem,
-            random,
-        )
-
-        // recoil packet
-        doRecoil(player, gun.recoilSingleHorizontal, gun.recoilSingleVertical, gun.recoilSingleFireRamp)
-
-        // continue sequence if burst has remaining shots
-        if ( remainingCount > 1 ) {
-            // just update ammo data
-            itemData.set(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER, newAmmo)
-            item.setItemMeta(itemMeta)
-            equipment.setItem(inventorySlot, item)
-
-            // next firing cooldown and delay pattern index
-            var nextDelayPatternIndex = delayPatternIndex
-            val cooldown = if ( gun.useBurstFireDelayTickPattern ) {
-                nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.burstFireDelayTickPattern.size) // required here to avoid modulo 0
-                gun.burstFireDelayTickPattern[delayPatternIndex]
-            } else {
-                gun.burstFireDelayTicks
-            }
-
-            nextTickRequests[playerId] = BurstFire(
-                id = id,
-                player = player,
-                gun = gun,
-                originalAmmo = originalAmmo,
-                ammo = newAmmo,
-                item = item,
-                itemMeta = itemMeta,
-                itemData = itemData,
-                inventorySlot = inventorySlot,
-                totalTime = totalTime + 1,
-                ticksCooldown = cooldown,
-                remainingCount = remainingCount - 1,
-                delayPatternIndex = nextDelayPatternIndex,
-            )
-        } else {
-            // burst done.
-
-            // clean up item
-            itemData.remove(this.namespaceKeyItemBurstFireId)
-            val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, newAmmo, useAimDownSights(player))        
-            item.setItemMeta(newItemMeta)
-            equipment.setItem(currInventorySlot, item)
-
-            // add shooting delay
-            val timestampShootDelay = timestamp + gun.shootDelayMillis
-            this.playerShootDelay[playerId] = ShootDelay(
-                timestampDelayAfterShoot = timestampShootDelay,
-                timestampCanShoot = timestampShootDelay,
-            )
-        }
-    }
-
-    return nextTickRequests
-}
-
-/**
- * Automatic fire request system. Initiate or refresh an auto fire sequence.
- * Handles [RIGHT MOUSE] hold firing system.
- */
-internal fun XC.autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>, autoFiring: HashMap<UUID, AutoFire>, timestamp: Long): HashMap<UUID, AutoFire> {
-    val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
-
-    for ( request in requests ) {
-        val player = request.player
-        val playerId = player.getUniqueId()
-
-        if ( playerHandled.add(playerId) == false ) {
-            // false if already contained in set
-            continue
-        }
-
-        // check if still under shoot delay
-        val shootDelay = this.playerShootDelay[playerId]
-        if ( shootDelay != null && timestamp < shootDelay.timestampCanShoot ) {
-            continue
-        }
-
-        val currentAutoFire = autoFiring[playerId]
-        if ( currentAutoFire != null ) { // refresh current autofire request
-            autoFiring[playerId] = currentAutoFire.copy(
-                ticksSinceLastRequest = 0,
-            )
-        } else { // new auto fire request
+internal fun XC.gunSelectSystem(
+    playerGunSelectRequests: List<PlayerGunSelectRequest>,
+    autoFiringPackets: Map<UUID, AutoFire>,
+    playerShootDelay: HashMap<UUID, ShootDelay>,
+    timestamp: Long
+) {
+    for ( request in playerGunSelectRequests ) {
+        try {
+            val player = request.player
+            val playerId = player.getUniqueId()
 
             // Do redundant player main hand is gun check here
             // since events could override the first shoot event, causing
@@ -975,9 +541,117 @@ internal fun XC.autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>
                 continue
             }
 
+            // gun swap delay:
+            // -> goal is to block players fast swapping between guns
+            //    (e.g. using macros) to bypass gun shooting delays
+            //    or to swap between different types (e.g. rifle -> shotgun)
+            // See `docs/delay.md` for details.
+            if ( autoFiringPackets.contains(playerId) ) {
+                // must have swapped here while still auto firing: add a new shoot delay
+                val timestampShootDelay = timestamp + gun.equipDelayMillis
+
+                playerShootDelay[playerId] = ShootDelay(
+                    timestampDelayAfterShoot = timestampShootDelay,
+                    timestampCanShoot = timestampShootDelay,
+                )
+            } else {
+                // swapped from single or burst fire. add shoot delay
+                playerShootDelay[playerId]?.let { shootDelay ->
+                    playerShootDelay[playerId] = shootDelay.copy(
+                        timestampCanShoot = shootDelay.timestampDelayAfterShoot + gun.equipDelayMillis,
+                    )
+                }
+            }
+
             var itemMeta = item.getItemMeta()
             val itemData = itemMeta.getPersistentDataContainer()
 
+            // check if playing is aim down sights
+            val aimDownSights = useAimDownSights(player)
+
+            // send ammo info to player
+            val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
+            this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
+
+            // clean up gun item metadata
+            val newItemMeta = cleanupGunMeta(itemMeta, itemData, gun, aimDownSights)
+            item.setItemMeta(newItemMeta)
+            equipment.setItem(inventorySlot, item)
+
+            // if player is aim down sights, add offhand model
+            if ( ammo > 0 && aimDownSights && gun.itemModelAimDownSights > 0 ) {
+                this.createAimDownSightsOffhandModel(gun, player)
+            }
+        }
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to do gun item select handling for player ${request.player.getName()}")
+        }
+    }
+
+    // clear request queue for next update tick
+    this.playerGunSelectRequests = ArrayList()
+}
+
+
+/**
+ * Player single/burst fire shooting system. (No auto fire here)
+ * Handles [LEFT MOUSE] click firing.
+ */
+internal fun XC.gunPlayerShootSystem(
+    playerShootRequests: List<PlayerGunShootRequest>,
+    autoFiringPackets: Map<UUID, AutoFire>,
+    burstFiringPackets: HashMap<UUID, BurstFire>,
+    playerShootDelay: HashMap<UUID, ShootDelay>,
+    playerReloadRequests: ArrayList<PlayerGunReloadRequest>,
+    crawlingAndReadyToShoot: Map<UUID, Boolean>,
+    crawlToShootRequestQueue: ArrayList<CrawlToShootRequest>,
+    projectileSystems: Map<UUID, ProjectileSystem>,
+    timestamp: Long,
+) {
+    val random = ThreadLocalRandom.current()
+    val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
+
+    for ( request in playerShootRequests ) {
+        try {
+            val player = request.player
+            val playerId = player.getUniqueId()
+            
+            if ( playerHandled.add(playerId) == false ) {
+                // false if already contained in set
+                continue
+            }
+
+            // Do redundant player main hand is gun check here
+            // since events could override the first shoot event, causing
+            // inventory slot or item to change
+            val equipment = player.getInventory()
+            val inventorySlot = equipment.getHeldItemSlot()
+            val item = equipment.getItem(inventorySlot)
+            if ( item == null ) {
+                continue
+            }
+
+            val gun = getGunFromItem(item)
+            if ( gun == null ) {
+                continue
+            }
+
+            // skip single shoot while auto firing
+            if ( autoFiringPackets.contains(playerId) ) {
+                continue
+            }
+
+            val loc = player.location
+            val world = loc.world
+            val projectileSystem = projectileSystems[world.getUID()]
+            if ( projectileSystem == null ) {
+                continue
+            }
+
+            var itemMeta = item.getItemMeta()
+            val itemData = itemMeta.getPersistentDataContainer()
+            
             // check gun is reloading
             // if reloading is past time + some margin, cancel reload and clear flags
             val reloadTimeMillis = gun.reloadTimeMillis
@@ -998,39 +672,450 @@ internal fun XC.autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>
             }
 
             // if crawling required, request crawl to shoot
-            if ( gun.crawlRequired && this.crawlingAndReadyToShoot[playerId] != true ) {
-                this.crawlToShootRequestQueue.add(CrawlToShootRequest(player))
+            if ( gun.crawlRequired && crawlingAndReadyToShoot[playerId] != true ) {
+                crawlToShootRequestQueue.add(CrawlToShootRequest(player))
                 continue
             }
 
-            val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
+            // check if still under shoot delay
+            val shootDelay = playerShootDelay[playerId]
+            if ( shootDelay != null && timestamp < shootDelay.timestampCanShoot ) {
+                continue
+            }
 
-            val autoFireId = this.newAutoFireId()
+            val fireMode = gun.singleFireMode
 
-            autoFiring[playerId] = AutoFire(
-                id = autoFireId,
-                player = player,
-                gun = gun,
-                ammo = ammo,
-                item = item,
-                itemMeta = itemMeta,
-                itemData = itemData,
-                inventorySlot = inventorySlot,
-                totalTime = 0.0,
-                ticksCooldown = 0,
-                ticksSinceLastRequest = 0,
-                delayPatternIndex = 0,
-                ticksBeforeReload = this.config.autoFireTicksBeforeReload,
-            )
-            
-            // set item in hand's auto fire id
-            itemData.set(this.namespaceKeyItemAutoFireId, PersistentDataType.INTEGER, autoFireId)
-            item.setItemMeta(itemMeta)
-            equipment.setItem(inventorySlot, item)
+            if ( fireMode == GunSingleFireMode.SINGLE ) {
+                
+                val newAmmo = if ( gun.shootConsumeOnUse ) { // removes gun item when used
+                    equipment.setItem(inventorySlot, ItemStack(Material.AIR, 1))
+                    -1
+                } else {
+                    // check ammo and send ammo info message to player
+                    val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
+                    if ( ammo <= 0 ) {
+                        this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
+                        
+                        // play gun empty sound effect
+                        this.soundQueue.add(SoundPacket(
+                            sound = gun.soundEmpty,
+                            world = world,
+                            location = loc,
+                            volume = gun.soundEmptyVolume,
+                            pitch = gun.soundEmptyPitch,
+                        ))
+        
+                        if ( !gun.ammoIgnore ) {
+                            if ( this.config.autoReloadGuns ) {
+                                playerReloadRequests.add(PlayerGunReloadRequest(player))
+                            }
+                            continue
+                        }
+                    }
+        
+                    val newAmmo = max(0, ammo - 1)
+        
+                    // update player item: set new ammo and set model
+                    itemMeta = setGunItemMetaAmmo(itemMeta, gun, newAmmo)
+                    itemMeta = setGunItemMetaModel(itemMeta, gun, newAmmo, useAimDownSights(player))
+                    item.setItemMeta(itemMeta)
+                    equipment.setItem(inventorySlot, item)
+
+                    newAmmo
+                }
+
+                // fires projectiles
+                doSingleShot(
+                    player,
+                    loc,
+                    gun,
+                    newAmmo,
+                    projectileSystem,
+                    random,
+                )
+
+                // recoil handling:
+                doRecoil(player, gun.recoilSingleHorizontal, gun.recoilSingleVertical, gun.recoilSingleFireRamp)
+
+                // shoot delay
+                val timestampShootDelay = timestamp + gun.shootDelayMillis
+                playerShootDelay[playerId] = ShootDelay(
+                    timestampDelayAfterShoot = timestampShootDelay,
+                    timestampCanShoot = timestampShootDelay,
+                )
+                
+            } else if ( fireMode == GunSingleFireMode.BURST ) {
+                // add burst packet if not already burst firing
+                if ( !burstFiringPackets.contains(playerId) ) {
+                    val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
+                    
+                    // // auto-reload instead of firing when empty
+                    // // MOVED to inside burstFireSystem so that
+                    // // players can hear the burst clicks before reload
+                    // if ( ammo <= 0 ) {
+                    //     if ( !gun.ammoIgnore ) {
+                    //         if ( this.config.autoReloadGuns ) {
+                    //             this.playerReloadRequests.add(PlayerGunReloadRequest(player))
+                    //         }
+                    //         continue
+                    //     }
+                    // }
+                    
+                    val burstFireId = this.newBurstFireId()
+
+                    burstFiringPackets[playerId] = BurstFire(
+                        id = burstFireId,
+                        player = player,
+                        gun = gun,
+                        originalAmmo = ammo,
+                        ammo = ammo,
+                        item = item,
+                        itemMeta = itemMeta,
+                        itemData = itemData,
+                        inventorySlot = inventorySlot,
+                        totalTime = 0.0,
+                        ticksCooldown = 0,
+                        remainingCount = gun.burstFireCount,
+                        delayPatternIndex = 0,
+                    )
+
+                    // set item in hand's burst fire id
+                    itemData.set(this.namespaceKeyItemBurstFireId, PersistentDataType.INTEGER, burstFireId)
+                    item.setItemMeta(itemMeta)
+                    equipment.setItem(inventorySlot, item)
+                }
+            } else { // fireMode == GunSingleFireMode.NONE
+                // no-op
+                continue
+            }
+        }
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to process gun shoot request by player ${request.player.getName()}")
         }
     }
 
-    return autoFiring
+    // clear request queue for next tick
+    this.playerShootRequests = ArrayList()
+}
+
+
+/**
+ * Player burst fire shooting system. Return a new hashmap
+ * of burst fire packets for next tick.
+ */
+internal fun XC.burstFireSystem(
+    burstFiringPackets: HashMap<UUID, BurstFire>,
+    playerShootDelay: HashMap<UUID, ShootDelay>,
+    playerReloadRequests: ArrayList<PlayerGunReloadRequest>,
+    projectileSystems: Map<UUID, ProjectileSystem>,
+    timestamp: Long,
+) {
+    val nextTickRequests = HashMap<UUID, BurstFire>()
+    val random = ThreadLocalRandom.current()
+
+    for ( (playerId, request) in burstFiringPackets ) {
+        try {
+            val (
+                id,
+                player,
+                gun,
+                originalAmmo,
+                ammo,
+                item,
+                itemMeta,
+                itemData,
+                inventorySlot,
+                totalTime,
+                ticksCooldown,
+                remainingCount,
+                delayPatternIndex,
+            ) = request
+
+            val equipment = player.getInventory()
+            val currInventorySlot = equipment.getHeldItemSlot()
+
+            // check if player main hand item auto fire id matches
+            if ( player.isDead() ||
+                !player.isOnline() ||
+                currInventorySlot != inventorySlot ||
+                id != checkHandMaterialAndGetNbtIntKey(player, this.config.materialGun, this.nbtKeyItemBurstFireId)
+            ) {
+                // no cleanup here: event handlers should pick up this event and clean gun if possible
+                continue
+            }
+
+            // decrement burst delay
+            if ( ticksCooldown > 0 ) {
+                nextTickRequests[playerId] = BurstFire(
+                    id = id,
+                    player = player,
+                    gun = gun,
+                    originalAmmo = originalAmmo,
+                    ammo = ammo,
+                    item = item,
+                    itemMeta = itemMeta,
+                    itemData = itemData,
+                    inventorySlot = inventorySlot,
+                    totalTime = totalTime + 1,
+                    ticksCooldown = ticksCooldown - 1,
+                    remainingCount = remainingCount,
+                    delayPatternIndex = delayPatternIndex,
+                )
+                continue
+            }
+
+            val loc = player.location
+            val world = loc.world
+            val projectileSystem = projectileSystems[world.getUID()]
+            if ( projectileSystem == null ) continue
+
+            // check ammo and send ammo info message to player
+            if ( ammo <= 0 ) {
+                this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
+                
+                // play gun empty sound effect
+                this.soundQueue.add(SoundPacket(
+                    sound = gun.soundEmpty,
+                    world = world,
+                    location = loc,
+                    volume = gun.soundEmptyVolume,
+                    pitch = gun.soundEmptyPitch,
+                ))
+
+                if ( !gun.ammoIgnore ) {
+                    // finish sequence before stopping
+                    if ( remainingCount > 0 ) {
+                        // next firing cooldown and delay pattern index
+                        var nextDelayPatternIndex = delayPatternIndex
+                        val cooldown = if ( gun.useBurstFireDelayTickPattern ) {
+                            nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.burstFireDelayTickPattern.size) // required here to avoid modulo 0
+                            gun.burstFireDelayTickPattern[delayPatternIndex]
+                        } else {
+                            gun.burstFireDelayTicks
+                        }
+
+                        nextTickRequests[playerId] = BurstFire(
+                            id = id,
+                            player = player,
+                            gun = gun,
+                            originalAmmo = originalAmmo,
+                            ammo = 0,
+                            item = item,
+                            itemMeta = itemMeta,
+                            itemData = itemData,
+                            inventorySlot = inventorySlot,
+                            totalTime = totalTime + 1,
+                            ticksCooldown = cooldown,
+                            remainingCount = remainingCount - 1,
+                            delayPatternIndex = nextDelayPatternIndex,
+                        )
+                    } else {
+                        // clean up item
+                        itemData.remove(this.namespaceKeyItemBurstFireId)
+                        val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+                        item.setItemMeta(newItemMeta)
+                        equipment.setItem(currInventorySlot, item)
+
+                        // queue auto-reload (only if ammo = 0 when fired)
+                        if ( this.config.autoReloadGuns && originalAmmo <= 0 ) {
+                            playerReloadRequests.add(PlayerGunReloadRequest(player))
+                        }
+                    }
+
+                    continue
+                }
+            }
+
+            val newAmmo = max(0, ammo - 1)
+
+            // fires projectiles
+            doSingleShot(
+                player,
+                loc,
+                gun,
+                newAmmo,
+                projectileSystem,
+                random,
+            )
+
+            // recoil packet
+            doRecoil(player, gun.recoilSingleHorizontal, gun.recoilSingleVertical, gun.recoilSingleFireRamp)
+
+            // continue sequence if burst has remaining shots
+            if ( remainingCount > 1 ) {
+                // just update ammo data
+                itemData.set(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER, newAmmo)
+                item.setItemMeta(itemMeta)
+                equipment.setItem(inventorySlot, item)
+
+                // next firing cooldown and delay pattern index
+                var nextDelayPatternIndex = delayPatternIndex
+                val cooldown = if ( gun.useBurstFireDelayTickPattern ) {
+                    nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.burstFireDelayTickPattern.size) // required here to avoid modulo 0
+                    gun.burstFireDelayTickPattern[delayPatternIndex]
+                } else {
+                    gun.burstFireDelayTicks
+                }
+
+                nextTickRequests[playerId] = BurstFire(
+                    id = id,
+                    player = player,
+                    gun = gun,
+                    originalAmmo = originalAmmo,
+                    ammo = newAmmo,
+                    item = item,
+                    itemMeta = itemMeta,
+                    itemData = itemData,
+                    inventorySlot = inventorySlot,
+                    totalTime = totalTime + 1,
+                    ticksCooldown = cooldown,
+                    remainingCount = remainingCount - 1,
+                    delayPatternIndex = nextDelayPatternIndex,
+                )
+            } else {
+                // burst done.
+
+                // clean up item
+                itemData.remove(this.namespaceKeyItemBurstFireId)
+                val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, newAmmo, useAimDownSights(player))        
+                item.setItemMeta(newItemMeta)
+                equipment.setItem(currInventorySlot, item)
+
+                // add shooting delay
+                val timestampShootDelay = timestamp + gun.shootDelayMillis
+                playerShootDelay[playerId] = ShootDelay(
+                    timestampDelayAfterShoot = timestampShootDelay,
+                    timestampCanShoot = timestampShootDelay,
+                )
+            }
+        }
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to process burst firing packet for player ${request.player.name}")
+        }
+    }
+
+    // update active burst firing for next tick
+    this.burstFiringPackets = nextTickRequests
+}
+
+/**
+ * Automatic fire request system. Initiate or refresh an auto fire sequence.
+ * Handles [RIGHT MOUSE] hold firing system.
+ */
+internal fun XC.autoFireRequestSystem(
+    playerAutoFireRequests: List<PlayerAutoFireRequest>,
+    autoFiring: HashMap<UUID, AutoFire>,
+    playerShootDelay: Map<UUID, ShootDelay>,
+    crawlingAndReadyToShoot: Map<UUID, Boolean>,
+    crawlToShootRequestQueue: ArrayList<CrawlToShootRequest>,
+    timestamp: Long,
+) {
+    val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
+
+    for ( request in playerAutoFireRequests ) {
+        try {
+            val player = request.player
+            val playerId = player.getUniqueId()
+
+            if ( playerHandled.add(playerId) == false ) {
+                // false if already contained in set
+                continue
+            }
+
+            // check if still under shoot delay
+            val shootDelay = playerShootDelay[playerId]
+            if ( shootDelay != null && timestamp < shootDelay.timestampCanShoot ) {
+                continue
+            }
+
+            val currentAutoFire = autoFiring[playerId]
+            if ( currentAutoFire != null ) { // refresh current autofire request
+                autoFiring[playerId] = currentAutoFire.copy(
+                    ticksSinceLastRequest = 0,
+                )
+            } else { // new auto fire request
+
+                // Do redundant player main hand is gun check here
+                // since events could override the first shoot event, causing
+                // inventory slot or item to change
+                val equipment = player.getInventory()
+                val inventorySlot = equipment.getHeldItemSlot()
+                val item = equipment.getItem(inventorySlot)
+                if ( item == null ) {
+                    continue
+                }
+
+                val gun = getGunFromItem(item)
+                if ( gun == null ) {
+                    continue
+                }
+
+                var itemMeta = item.getItemMeta()
+                val itemData = itemMeta.getPersistentDataContainer()
+
+                // check gun is reloading
+                // if reloading is past time + some margin, cancel reload and clear flags
+                val reloadTimeMillis = gun.reloadTimeMillis
+                val isReloading = itemData.get(this.namespaceKeyItemReloading, PersistentDataType.INTEGER) ?: 0
+                if ( isReloading == TRUE ) {
+                    // Check reload timestamp, if current time > timestamp0 + reloadTime + 1000 ms,
+                    // assume this gun's reload was broken somehow and continue with shoot.
+                    // Else, this is still in a reload process: skip shooting
+                    val reloadTimestamp = itemData.get(this.namespaceKeyItemReloadTimestamp, PersistentDataType.LONG)
+                    if ( reloadTimestamp != null && timestamp < reloadTimestamp + reloadTimeMillis + 1000L ) {
+                        continue
+                    }
+
+                    // clean up reloading flags
+                    itemData.remove(this.namespaceKeyItemReloading)
+                    itemData.remove(this.namespaceKeyItemReloadId)
+                    itemData.remove(this.namespaceKeyItemReloadTimestamp)
+                }
+
+                // if crawling required, request crawl to shoot
+                if ( gun.crawlRequired && crawlingAndReadyToShoot[playerId] != true ) {
+                    crawlToShootRequestQueue.add(CrawlToShootRequest(player))
+                    continue
+                }
+
+                val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
+
+                val autoFireId = this.newAutoFireId()
+
+                autoFiring[playerId] = AutoFire(
+                    id = autoFireId,
+                    player = player,
+                    gun = gun,
+                    ammo = ammo,
+                    item = item,
+                    itemMeta = itemMeta,
+                    itemData = itemData,
+                    inventorySlot = inventorySlot,
+                    totalTime = 0.0,
+                    ticksCooldown = 0,
+                    ticksSinceLastRequest = 0,
+                    delayPatternIndex = 0,
+                    ticksBeforeReload = this.config.autoFireTicksBeforeReload,
+                )
+                
+                // set item in hand's auto fire id
+                itemData.set(this.namespaceKeyItemAutoFireId, PersistentDataType.INTEGER, autoFireId)
+                item.setItemMeta(itemMeta)
+                equipment.setItem(inventorySlot, item)
+            }
+        }
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to handle auto fire request for player ${request.player.name}")
+        }
+    }
+
+    // clear request queue for next update tick
+    this.playerAutoFireRequests = ArrayList()
+    // update auto firing players
+    this.autoFiringPackets = autoFiring
 }
 
 /**
@@ -1042,187 +1127,197 @@ internal fun XC.autoFireRequestSystem(requests: ArrayList<PlayerAutoFireRequest>
  * many players, we will defer setting item lore until
  * player stops auto firing or is cancelled.
  */
-internal fun XC.autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID, AutoFire> {
+internal fun XC.autoFireSystem(
+    autoFiringPackets: Map<UUID, AutoFire>,
+    playerReloadRequests: ArrayList<PlayerGunReloadRequest>,
+    projectileSystems: Map<UUID, ProjectileSystem>,
+) {
     val nextTickRequests = HashMap<UUID, AutoFire>()
     val random = ThreadLocalRandom.current()
     
-    for ( (playerId, request) in requests ) {
-        val (
-            id,
-            player,
-            gun,
-            ammo,
-            item,
-            itemMeta,
-            itemData,
-            inventorySlot,
-            totalTime,
-            ticksCooldown,
-            ticksSinceLastRequest,
-            delayPatternIndex,
-            ticksBeforeReload,
-        ) = request
+    for ( (playerId, request) in autoFiringPackets ) {
+        try {
+            val (
+                id,
+                player,
+                gun,
+                ammo,
+                item,
+                itemMeta,
+                itemData,
+                inventorySlot,
+                totalTime,
+                ticksCooldown,
+                ticksSinceLastRequest,
+                delayPatternIndex,
+                ticksBeforeReload,
+            ) = request
 
-        val equipment = player.getInventory()
-        val currInventorySlot = equipment.getHeldItemSlot()
+            val equipment = player.getInventory()
+            val currInventorySlot = equipment.getHeldItemSlot()
 
-        // check if player main hand item auto fire id matches
-        if ( player.isDead() ||
-            !player.isOnline() ||
-            currInventorySlot != inventorySlot ||
-            id != checkHandMaterialAndGetNbtIntKey(player, this.config.materialGun, this.nbtKeyItemAutoFireId)
-        ) {
-            // no cleanup here: event handlers should pick up this event and clean gun if possible
-            continue
-        }
-        
-        if ( ticksSinceLastRequest >= this.config.autoFireMaxTicksSinceLastRequest ) {
-            // clean up item
-            itemData.remove(this.namespaceKeyItemAutoFireId)
-            val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
-            item.setItemMeta(newItemMeta)
-            equipment.setItem(currInventorySlot, item)
-            continue
-        }
-
-        // decrement auto fire delay
-        if ( ticksCooldown > 0 ) {
-            nextTickRequests[playerId] = AutoFire(
-                id = id,
-                player = player,
-                gun = gun,
-                ammo = ammo,
-                item = item,
-                itemMeta = itemMeta,
-                itemData = itemData,
-                inventorySlot = inventorySlot,
-                totalTime = totalTime + 1,
-                ticksCooldown = ticksCooldown - 1,
-                ticksSinceLastRequest = ticksSinceLastRequest + 1,
-                delayPatternIndex = delayPatternIndex,
-                ticksBeforeReload = ticksBeforeReload,
-            )
-            continue
-        }
-
-        val loc = player.location
-        val world = loc.world
-        val projectileSystem = this.projectileSystems[world.getUID()]
-        if ( projectileSystem == null ) continue
-
-        // check ammo and send ammo info message to player
-        if ( ammo <= 0 ) {
-            this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
-            
-            // play gun empty sound effect
-            this.soundQueue.add(SoundPacket(
-                sound = gun.soundEmpty,
-                world = world,
-                location = loc,
-                volume = gun.soundEmptyVolume,
-                pitch = gun.soundEmptyPitch,
-            ))
-
-            if ( !gun.ammoIgnore ) {
-                if ( ticksBeforeReload > 0 ) { // decrement ticks first
-                    // next firing cooldown
-                    var nextDelayPatternIndex = delayPatternIndex
-                    val cooldown = if ( gun.useAutoFireDelayTickPattern ) {
-                        nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.autoFireDelayTickPattern.size) // required here to avoid modulo 0
-                        gun.autoFireDelayTickPattern[delayPatternIndex]
-                    } else {
-                        gun.autoFireDelayTicks
-                    }
-
-                    nextTickRequests[playerId] = AutoFire(
-                        id = id,
-                        player = player,
-                        gun = gun,
-                        ammo = 0,
-                        item = item,
-                        itemMeta = itemMeta,
-                        itemData = itemData,
-                        inventorySlot = inventorySlot,
-                        totalTime = totalTime + 1,
-                        ticksCooldown = cooldown,
-                        ticksSinceLastRequest = ticksSinceLastRequest + 1,
-                        delayPatternIndex = nextDelayPatternIndex,
-                        ticksBeforeReload = ticksBeforeReload - 1,
-                    )
-                } else {
-                    // clean up item
-                    itemData.remove(this.namespaceKeyItemAutoFireId)
-                    val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
-                    item.setItemMeta(newItemMeta)
-                    equipment.setItem(currInventorySlot, item)
-                    
-                    // queue auto-reload
-                    if ( this.config.autoReloadGuns ) {
-                        this.playerReloadRequests.add(PlayerGunReloadRequest(player))
-                    }
-                }
-
+            // check if player main hand item auto fire id matches
+            if ( player.isDead() ||
+                !player.isOnline() ||
+                currInventorySlot != inventorySlot ||
+                id != checkHandMaterialAndGetNbtIntKey(player, this.config.materialGun, this.nbtKeyItemAutoFireId)
+            ) {
+                // no cleanup here: event handlers should pick up this event and clean gun if possible
                 continue
             }
-        }
-
-        val newAmmo = max(0, ammo - 1)
-
-        // fires projectiles
-        doSingleShot(
-            player,
-            loc,
-            gun,
-            newAmmo,
-            projectileSystem,
-            random,
-        )
-
-        // recoil packet
-        doRecoil(player, gun.recoilAutoHorizontal, gun.recoilAutoVertical, gun.recoilAutoFireRamp)
-
-        // continue sequence if have ammo and burst has remaining shots
-        if ( gun.ammoIgnore || newAmmo > 0 ) {
-            // update ammo data
-            itemData.set(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER, newAmmo)
-            item.setItemMeta(itemMeta)
-            equipment.setItem(inventorySlot, item)
-
-            // next firing cooldown
-            var nextDelayPatternIndex = delayPatternIndex
-            val cooldown = if ( gun.useAutoFireDelayTickPattern ) {
-                nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.autoFireDelayTickPattern.size) // required here to avoid modulo 0
-                gun.autoFireDelayTickPattern[delayPatternIndex]
-            } else {
-                gun.autoFireDelayTicks
+            
+            if ( ticksSinceLastRequest >= this.config.autoFireMaxTicksSinceLastRequest ) {
+                // clean up item
+                itemData.remove(this.namespaceKeyItemAutoFireId)
+                val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+                item.setItemMeta(newItemMeta)
+                equipment.setItem(currInventorySlot, item)
+                continue
             }
 
-            nextTickRequests[playerId] = AutoFire(
-                id = id,
-                player = player,
-                gun = gun,
-                ammo = newAmmo,
-                item = item,
-                itemMeta = itemMeta,
-                itemData = itemData,
-                inventorySlot = inventorySlot,
-                totalTime = totalTime + 1,
-                ticksCooldown = cooldown,
-                ticksSinceLastRequest = ticksSinceLastRequest + 1,
-                delayPatternIndex = nextDelayPatternIndex,
-                ticksBeforeReload = ticksBeforeReload,
-            )
-        } else {
-            // clean up item
-            itemData.remove(this.namespaceKeyItemAutoFireId)
-            val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, newAmmo, useAimDownSights(player))        
-            item.setItemMeta(newItemMeta)
-            equipment.setItem(currInventorySlot, item)
-        }
+            // decrement auto fire delay
+            if ( ticksCooldown > 0 ) {
+                nextTickRequests[playerId] = AutoFire(
+                    id = id,
+                    player = player,
+                    gun = gun,
+                    ammo = ammo,
+                    item = item,
+                    itemMeta = itemMeta,
+                    itemData = itemData,
+                    inventorySlot = inventorySlot,
+                    totalTime = totalTime + 1,
+                    ticksCooldown = ticksCooldown - 1,
+                    ticksSinceLastRequest = ticksSinceLastRequest + 1,
+                    delayPatternIndex = delayPatternIndex,
+                    ticksBeforeReload = ticksBeforeReload,
+                )
+                continue
+            }
 
+            val loc = player.location
+            val world = loc.world
+            val projectileSystem = projectileSystems[world.getUID()]
+            if ( projectileSystem == null ) continue
+
+            // check ammo and send ammo info message to player
+            if ( ammo <= 0 ) {
+                this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
+                
+                // play gun empty sound effect
+                this.soundQueue.add(SoundPacket(
+                    sound = gun.soundEmpty,
+                    world = world,
+                    location = loc,
+                    volume = gun.soundEmptyVolume,
+                    pitch = gun.soundEmptyPitch,
+                ))
+
+                if ( !gun.ammoIgnore ) {
+                    if ( ticksBeforeReload > 0 ) { // decrement ticks first
+                        // next firing cooldown
+                        var nextDelayPatternIndex = delayPatternIndex
+                        val cooldown = if ( gun.useAutoFireDelayTickPattern ) {
+                            nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.autoFireDelayTickPattern.size) // required here to avoid modulo 0
+                            gun.autoFireDelayTickPattern[delayPatternIndex]
+                        } else {
+                            gun.autoFireDelayTicks
+                        }
+
+                        nextTickRequests[playerId] = AutoFire(
+                            id = id,
+                            player = player,
+                            gun = gun,
+                            ammo = 0,
+                            item = item,
+                            itemMeta = itemMeta,
+                            itemData = itemData,
+                            inventorySlot = inventorySlot,
+                            totalTime = totalTime + 1,
+                            ticksCooldown = cooldown,
+                            ticksSinceLastRequest = ticksSinceLastRequest + 1,
+                            delayPatternIndex = nextDelayPatternIndex,
+                            ticksBeforeReload = ticksBeforeReload - 1,
+                        )
+                    } else {
+                        // clean up item
+                        itemData.remove(this.namespaceKeyItemAutoFireId)
+                        val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, ammo, useAimDownSights(player))        
+                        item.setItemMeta(newItemMeta)
+                        equipment.setItem(currInventorySlot, item)
+                        
+                        // queue auto-reload
+                        if ( this.config.autoReloadGuns ) {
+                            playerReloadRequests.add(PlayerGunReloadRequest(player))
+                        }
+                    }
+
+                    continue
+                }
+            }
+
+            val newAmmo = max(0, ammo - 1)
+
+            // fires projectiles
+            doSingleShot(
+                player,
+                loc,
+                gun,
+                newAmmo,
+                projectileSystem,
+                random,
+            )
+
+            // recoil packet
+            doRecoil(player, gun.recoilAutoHorizontal, gun.recoilAutoVertical, gun.recoilAutoFireRamp)
+
+            // continue sequence if have ammo and burst has remaining shots
+            if ( gun.ammoIgnore || newAmmo > 0 ) {
+                // update ammo data
+                itemData.set(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER, newAmmo)
+                item.setItemMeta(itemMeta)
+                equipment.setItem(inventorySlot, item)
+
+                // next firing cooldown
+                var nextDelayPatternIndex = delayPatternIndex
+                val cooldown = if ( gun.useAutoFireDelayTickPattern ) {
+                    nextDelayPatternIndex = (delayPatternIndex + 1).mod(gun.autoFireDelayTickPattern.size) // required here to avoid modulo 0
+                    gun.autoFireDelayTickPattern[delayPatternIndex]
+                } else {
+                    gun.autoFireDelayTicks
+                }
+
+                nextTickRequests[playerId] = AutoFire(
+                    id = id,
+                    player = player,
+                    gun = gun,
+                    ammo = newAmmo,
+                    item = item,
+                    itemMeta = itemMeta,
+                    itemData = itemData,
+                    inventorySlot = inventorySlot,
+                    totalTime = totalTime + 1,
+                    ticksCooldown = cooldown,
+                    ticksSinceLastRequest = ticksSinceLastRequest + 1,
+                    delayPatternIndex = nextDelayPatternIndex,
+                    ticksBeforeReload = ticksBeforeReload,
+                )
+            } else {
+                // clean up item
+                itemData.remove(this.namespaceKeyItemAutoFireId)
+                val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, newAmmo, useAimDownSights(player))        
+                item.setItemMeta(newItemMeta)
+                equipment.setItem(currInventorySlot, item)
+            }
+        }
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to update auto firing for player ${request.player.name}")
+        }
     }
 
-    return nextTickRequests
+    // update active auto firing for next tick 
+    this.autoFiringPackets = nextTickRequests
 }
 
 
@@ -1230,12 +1325,16 @@ internal fun XC.autoFireSystem(requests: HashMap<UUID, AutoFire>): HashMap<UUID,
  * Player recoil recovery. Return a new hashmap with new player
  * recoil multipliers.
  */
-internal fun XC.recoilRecoverySystem(playerRecoil: HashMap<UUID, Double>): HashMap<UUID, Double> {
+internal fun XC.recoilRecoverySystem(
+    playerRecoil: Map<UUID, Double>,
+    autoFiringPackets: Map<UUID, AutoFire>,
+    burstFiringPackets: Map<UUID, BurstFire>,
+) {
     val newPlayerRecoil: HashMap<UUID, Double> = HashMap()
 
     for ( (playerId, recoil) in playerRecoil ) {
         // recoil recovery is player is not burst or auto firing
-        if ( !this.burstFiringPackets.contains(playerId) && !this.autoFiringPackets.contains(playerId) ) {
+        if ( !burstFiringPackets.contains(playerId) && !autoFiringPackets.contains(playerId) ) {
             val newRecoil = recoil - this.config.recoilRecoveryRate
             if ( newRecoil > 0.0 ) {
                 newPlayerRecoil[playerId] = newRecoil
@@ -1245,118 +1344,133 @@ internal fun XC.recoilRecoverySystem(playerRecoil: HashMap<UUID, Double>): HashM
         }
     }
 
-    return newPlayerRecoil
+    // update player recoil for next tick
+    this.playerRecoil = newPlayerRecoil
 }
 
 /**
  * Player reload request system
  */
-internal fun XC.gunPlayerReloadSystem(requests: ArrayList<PlayerGunReloadRequest>, timestamp: Long): ArrayList<PlayerGunReloadRequest> {
-    for ( request in requests ) {
-        val player = request.player
-        val playerId = player.getUniqueId()
+internal fun XC.gunPlayerReloadSystem(
+    playerReloadRequests: List<PlayerGunReloadRequest>,
+    autoFiringPackets: Map<UUID, AutoFire>,
+    burstFiringPackets: Map<UUID, BurstFire>,
+    playerReloadTaskQueue: LinkedBlockingQueue<PlayerReloadTask>,
+    playerReloadCancelledTaskQueue: LinkedBlockingQueue<PlayerReloadCancelledTask>,
+    timestamp: Long,
+) {
+    for ( request in playerReloadRequests ) {
+        try {
+            val player = request.player
+            val playerId = player.getUniqueId()
 
-        // Do redundant player main hand is gun check here
-        // since events could override the first shoot event, causing
-        // inventory slot or item to change
-        val equipment = player.getInventory()
-        val inventorySlot = equipment.getHeldItemSlot()
-        val item = equipment.getItem(inventorySlot)
-        if ( item == null ) {
-            continue
-        }
-
-        val gun = getGunFromItem(item)
-        if ( gun == null ) {
-            continue
-        }
-
-        // skip if player is burst firing or auto firing
-        if ( this.burstFiringPackets[playerId] != null || this.autoFiringPackets[playerId] != null ) {
-            continue
-        }
-
-        var itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
-        
-        // do reload if gun not reloading already and ammo less than max
-        val reloadTimeMillis = gun.reloadTimeMillis
-        val isReloading = itemData.get(this.namespaceKeyItemReloading, PersistentDataType.INTEGER) ?: 0
-        
-        if ( isReloading == TRUE ) {
-            // Check reload timestamp, if current time > timestamp0 + reloadTime + 1000 ms,
-            // assume this gun's reload was broken somehow and continue starting
-            // a new reload task. Otherwise, we are still reloading, so exit.
-            val reloadTimestamp = itemData.get(this.namespaceKeyItemReloadTimestamp, PersistentDataType.LONG)
-            if ( reloadTimestamp != null && timestamp < reloadTimestamp + reloadTimeMillis + 1000L ) {
+            // Do redundant player main hand is gun check here
+            // since events could override the first shoot event, causing
+            // inventory slot or item to change
+            val equipment = player.getInventory()
+            val inventorySlot = equipment.getHeldItemSlot()
+            val item = equipment.getItem(inventorySlot)
+            if ( item == null ) {
                 continue
             }
+
+            val gun = getGunFromItem(item)
+            if ( gun == null ) {
+                continue
+            }
+
+            // skip if player is burst firing or auto firing
+            if ( burstFiringPackets[playerId] != null || autoFiringPackets[playerId] != null ) {
+                continue
+            }
+
+            var itemMeta = item.getItemMeta()
+            val itemData = itemMeta.getPersistentDataContainer()
+            
+            // do reload if gun not reloading already and ammo less than max
+            val reloadTimeMillis = gun.reloadTimeMillis
+            val isReloading = itemData.get(this.namespaceKeyItemReloading, PersistentDataType.INTEGER) ?: 0
+            
+            if ( isReloading == TRUE ) {
+                // Check reload timestamp, if current time > timestamp0 + reloadTime + 1000 ms,
+                // assume this gun's reload was broken somehow and continue starting
+                // a new reload task. Otherwise, we are still reloading, so exit.
+                val reloadTimestamp = itemData.get(this.namespaceKeyItemReloadTimestamp, PersistentDataType.LONG)
+                if ( reloadTimestamp != null && timestamp < reloadTimestamp + reloadTimeMillis + 1000L ) {
+                    continue
+                }
+            }
+
+            val ammoCurrent = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
+            val ammoMax = gun.ammoMax
+            if ( ammoCurrent >= ammoMax ) {
+                continue
+            }
+
+            // check that player has enough ammo in inventory
+            val ammoId = gun.ammoId
+            if ( !inventoryContainsItem(player.getInventory(), this.config.materialAmmo, ammoId, 1) ) {
+                Message.announcement(player, "${ChatColor.DARK_RED}[No ammo in inventory]")
+                continue
+            }
+
+            // set reload flag and reloading id: this ensures this is same item
+            // being reloaded when reload task finishes
+            val reloadId = this.newReloadId()
+            itemData.set(this.namespaceKeyItemReloading, PersistentDataType.INTEGER, TRUE)
+            itemData.set(this.namespaceKeyItemReloadId, PersistentDataType.INTEGER, reloadId)
+
+            // set timestamp when reload started.
+            itemData.set(this.namespaceKeyItemReloadTimestamp, PersistentDataType.LONG, timestamp)
+            
+            // set reloading model
+            itemMeta = setGunItemMetaReloadModel(itemMeta, gun)
+
+            // update item meta with new data
+            item.setItemMeta(itemMeta)
+            equipment.setItem(inventorySlot, item)
+
+            // remove any aim down sights model
+            this.removeAimDownSightsOffhandModel(player)
+
+            // play reload start sound
+            val location = player.location
+            val world = location.world
+            if ( world != null ) {
+                this.soundQueue.add(SoundPacket(
+                    sound = gun.soundReloadStart,
+                    world = world,
+                    location = location,
+                    volume = gun.soundReloadStartVolume,
+                    pitch = gun.soundReloadStartPitch,
+                ))
+            }
+
+            // launch reload task
+            val reloadTask = GunReloadingTask(
+                player = player,
+                item = item,
+                gun = gun,
+                reloadId = reloadId,
+                inventorySlot = inventorySlot,
+                reloadTimeMillis = reloadTimeMillis.toDouble(),
+                startTimeMillis = timestamp,
+                itemGunMaterial = this.config.materialGun,
+                itemDataKeyReloadId = this.namespaceKeyItemReloadId,
+                reloadFinishTaskQueue = playerReloadTaskQueue,
+                reloadCancelledTaskQueue = playerReloadCancelledTaskQueue,
+            )
+            // runs every 2 ticks = 100 ms
+            reloadTask.runTaskTimerAsynchronously(this.plugin, 0L, 1L)
         }
-
-        val ammoCurrent = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
-        val ammoMax = gun.ammoMax
-        if ( ammoCurrent >= ammoMax ) {
-            continue
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to start gun reloading task for player ${request.player.name}")
         }
-
-        // check that player has enough ammo in inventory
-        val ammoId = gun.ammoId
-        if ( !inventoryContainsItem(player.getInventory(), this.config.materialAmmo, ammoId, 1) ) {
-            Message.announcement(player, "${ChatColor.DARK_RED}[No ammo in inventory]")
-            continue
-        }
-
-        // set reload flag and reloading id: this ensures this is same item
-        // being reloaded when reload task finishes
-        val reloadId = this.newReloadId()
-        itemData.set(this.namespaceKeyItemReloading, PersistentDataType.INTEGER, TRUE)
-        itemData.set(this.namespaceKeyItemReloadId, PersistentDataType.INTEGER, reloadId)
-
-        // set timestamp when reload started.
-        itemData.set(this.namespaceKeyItemReloadTimestamp, PersistentDataType.LONG, timestamp)
-        
-        // set reloading model
-        itemMeta = setGunItemMetaReloadModel(itemMeta, gun)
-
-        // update item meta with new data
-        item.setItemMeta(itemMeta)
-        equipment.setItem(inventorySlot, item)
-
-        // remove any aim down sights model
-        this.removeAimDownSightsOffhandModel(player)
-
-        // play reload start sound
-        val location = player.location
-        val world = location.world
-        if ( world != null ) {
-            this.soundQueue.add(SoundPacket(
-                sound = gun.soundReloadStart,
-                world = world,
-                location = location,
-                volume = gun.soundReloadStartVolume,
-                pitch = gun.soundReloadStartPitch,
-            ))
-        }
-
-        // launch reload task
-        val reloadTask = GunReloadingTask(
-            player = player,
-            item = item,
-            gun = gun,
-            reloadId = reloadId,
-            inventorySlot = inventorySlot,
-            reloadTimeMillis = reloadTimeMillis.toDouble(),
-            startTimeMillis = timestamp,
-            itemGunMaterial = this.config.materialGun,
-            itemDataKeyReloadId = this.namespaceKeyItemReloadId,
-            reloadFinishTaskQueue = this.playerReloadTaskQueue,
-            reloadCancelledTaskQueue = this.playerReloadCancelledTaskQueue,
-        )
-        // runs every 2 ticks = 100 ms
-        reloadTask.runTaskTimerAsynchronously(this.plugin, 0L, 1L)
     }
 
-    return ArrayList()
+    // clear request queue for next update tick
+    this.playerReloadRequests = ArrayList()
 }
 
 
@@ -1420,63 +1534,69 @@ internal class GunReloadingTask(
 /**
  * Finish reload task after async reload wait time finishes.
  */
-internal fun XC.doGunReload(tasks: ArrayList<PlayerReloadTask>) {
+internal fun XC.doGunReload(tasks: List<PlayerReloadTask>) {
     for ( task in tasks ) {
-        val (player, gun, item, reloadId, inventorySlot) = task
+        try {
+            val (player, gun, item, reloadId, inventorySlot) = task
 
-        // remove ammo item from player inventory
-        if ( !inventoryRemoveItem(player.getInventory(), this.config.materialAmmo, gun.ammoId, 1) ) {
-            Message.announcement(player, "${ChatColor.DARK_RED}[No ammo in inventory]")
-            continue
+            // remove ammo item from player inventory
+            if ( !inventoryRemoveItem(player.getInventory(), this.config.materialAmmo, gun.ammoId, 1) ) {
+                Message.announcement(player, "${ChatColor.DARK_RED}[No ammo in inventory]")
+                continue
+            }
+            
+            // check player main hand same and item same
+            val inventory = player.getInventory()
+            val currentMainHandSlot = inventory.getHeldItemSlot()
+            val itemInHandReloadId = checkHandMaterialAndGetNbtIntKey(player, this.config.materialGun, this.nbtKeyItemReloadId) 
+            if ( currentMainHandSlot != inventorySlot || itemInHandReloadId != reloadId ) {
+                // this should never actually happen...
+                Message.announcement(player, "${ChatColor.DARK_RED}[Item changed, reload cancelled]")
+                continue
+            }
+
+            // new ammo amount
+            // TODO: adjustable reloading, either load to max or add # of projectiles
+            val newAmmo = gun.ammoMax
+
+            // use ads flag
+            val aimDownSights = useAimDownSights(player)
+
+            // clear item reload data and set ammo
+            var itemMeta = item.getItemMeta()
+            val itemData = itemMeta.getPersistentDataContainer()
+            val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, newAmmo, aimDownSights)        
+            itemData.remove(this.namespaceKeyItemReloading)
+            itemData.remove(this.namespaceKeyItemReloadId)
+            itemData.remove(this.namespaceKeyItemReloadTimestamp)
+            item.setItemMeta(newItemMeta)
+
+            inventory.setItem(inventorySlot, item)
+            
+            // if player is aim down sights, add offhand model
+            if ( aimDownSights && gun.itemModelAimDownSights > 0 ) {
+                this.createAimDownSightsOffhandModel(gun, player)
+            }
+
+            // send ammo reloaded message
+            this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
+
+            // play reload finish sound
+            val location = player.location
+            val world = location.world
+            if ( world != null ) {
+                this.soundQueue.add(SoundPacket(
+                    sound = gun.soundReloadFinish,
+                    world = world,
+                    location = location,
+                    volume = gun.soundReloadFinishVolume,
+                    pitch = gun.soundReloadFinishPitch,
+                ))
+            }
         }
-        
-        // check player main hand same and item same
-        val inventory = player.getInventory()
-        val currentMainHandSlot = inventory.getHeldItemSlot()
-        val itemInHandReloadId = checkHandMaterialAndGetNbtIntKey(player, this.config.materialGun, this.nbtKeyItemReloadId) 
-        if ( currentMainHandSlot != inventorySlot || itemInHandReloadId != reloadId ) {
-            // this should never actually happen...
-            Message.announcement(player, "${ChatColor.DARK_RED}[Item changed, reload cancelled]")
-            continue
-        }
-
-        // new ammo amount
-        // TODO: adjustable reloading, either load to max or add # of projectiles
-        val newAmmo = gun.ammoMax
-
-        // use ads flag
-        val aimDownSights = useAimDownSights(player)
-
-        // clear item reload data and set ammo
-        var itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
-        val newItemMeta = setGunItemMetaAmmoAndModel(itemMeta, itemData, gun, newAmmo, aimDownSights)        
-        itemData.remove(this.namespaceKeyItemReloading)
-        itemData.remove(this.namespaceKeyItemReloadId)
-        itemData.remove(this.namespaceKeyItemReloadTimestamp)
-        item.setItemMeta(newItemMeta)
-
-        inventory.setItem(inventorySlot, item)
-        
-        // if player is aim down sights, add offhand model
-        if ( aimDownSights && gun.itemModelAimDownSights > 0 ) {
-            this.createAimDownSightsOffhandModel(gun, player)
-        }
-
-        // send ammo reloaded message
-        this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, newAmmo, gun.ammoMax))
-
-        // play reload finish sound
-        val location = player.location
-        val world = location.world
-        if ( world != null ) {
-            this.soundQueue.add(SoundPacket(
-                sound = gun.soundReloadFinish,
-                world = world,
-                location = location,
-                volume = gun.soundReloadFinishVolume,
-                pitch = gun.soundReloadFinishPitch,
-            ))
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to finish gun reloading task for player ${task.player.name}")
         }
     }
 }
@@ -1484,35 +1604,41 @@ internal fun XC.doGunReload(tasks: ArrayList<PlayerReloadTask>) {
 /**
  * Finish reload task after async reload wait time is
  */
-internal fun XC.doGunReloadCancelled(tasks: ArrayList<PlayerReloadCancelledTask>) {
+internal fun XC.doGunReloadCancelled(tasks: List<PlayerReloadCancelledTask>) {
     for ( task in tasks ) {
-        val (player, gun, reloadId, item, inventorySlot, playerDied) = task
-        
-        val inventory = player.getInventory()
-        val itemGunSlot = inventory.getItem(inventorySlot)
-        val itemGunSlotReloadId = itemGunSlot?.getItemMeta()?.getPersistentDataContainer()?.get(this.namespaceKeyItemReloadId, PersistentDataType.INTEGER) ?: -1
+        try {
+            val (player, gun, reloadId, item, inventorySlot, playerDied) = task
+            
+            val inventory = player.getInventory()
+            val itemGunSlot = inventory.getItem(inventorySlot)
+            val itemGunSlotReloadId = itemGunSlot?.getItemMeta()?.getPersistentDataContainer()?.get(this.namespaceKeyItemReloadId, PersistentDataType.INTEGER) ?: -1
 
-        // clear item reload data
-        val itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
-        itemData.remove(this.namespaceKeyItemReloading)
-        itemData.remove(this.namespaceKeyItemReloadId)
-        itemData.remove(this.namespaceKeyItemReloadTimestamp)
+            // clear item reload data
+            val itemMeta = item.getItemMeta()
+            val itemData = itemMeta.getPersistentDataContainer()
+            itemData.remove(this.namespaceKeyItemReloading)
+            itemData.remove(this.namespaceKeyItemReloadId)
+            itemData.remove(this.namespaceKeyItemReloadTimestamp)
 
-        // set model to either regular or empty model
-        val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
-        item.setItemMeta(setGunItemMetaModel(itemMeta, gun, ammo, useAimDownSights(player)))
-        
-        // if item in gun's slot is same, then replace that item.
-        // case where this is not true: if player picks up item from slot during reload
-        // avoid duplicating item in that case...
-        if ( itemGunSlotReloadId == reloadId ) {
-            inventory.setItem(inventorySlot, item)
+            // set model to either regular or empty model
+            val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
+            item.setItemMeta(setGunItemMetaModel(itemMeta, gun, ammo, useAimDownSights(player)))
+            
+            // if item in gun's slot is same, then replace that item.
+            // case where this is not true: if player picks up item from slot during reload
+            // avoid duplicating item in that case...
+            if ( itemGunSlotReloadId == reloadId ) {
+                inventory.setItem(inventorySlot, item)
+            }
+
+            // send player message
+            if ( !playerDied ) {
+                Message.announcement(player, "${ChatColor.DARK_RED}Reload cancelled...")
+            }
         }
-
-        // send player message
-        if ( !playerDied ) {
-            Message.announcement(player, "${ChatColor.DARK_RED}Reload cancelled...")
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to cancel gun reload task for player ${task.player.name}")
         }
     }
 }

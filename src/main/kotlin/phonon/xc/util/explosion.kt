@@ -52,7 +52,7 @@ public fun baseExplosionDamage(
  * Create explosion at location.
  */
 public fun XC.createExplosion(
-    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
     location: Location,
     source: Entity?,
     maxDistance: Double,

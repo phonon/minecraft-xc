@@ -113,75 +113,80 @@ internal fun XC.requestReadyThrowableSystem(
     val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
 
     for ( request in readyThrowableRequests ) {
-        val player = request.player
-        val playerId = player.getUniqueId()
-        
-        if ( playerHandled.add(playerId) == false ) {
-            // false if already contained in set
-            continue
-        }
-        
-        // Do redundant player main hand is throwable check here
-        // since other events could override and change inventory slot or item
-        val equipment = player.getInventory()
-        val inventorySlot = equipment.getHeldItemSlot()
-        val item = equipment.getItem(inventorySlot)
-        if ( item == null ) {
-            continue
-        }
-
-        val throwable = this.getThrowableFromItem(item)
-        if ( throwable == null ) {
-            continue
-        }
-
-        val itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
-
-        // check if throwable is already readied, if so continue
-        if ( itemData.has(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER) ) {
-            continue
-        }
-
-        // get new ready throwable item id
-        val throwId = this.newThrowableId()
-        itemData.set(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER, throwId)
-        
-        // set item model to ready state
-        if ( throwable.itemModelReady > 0 ) {
-            itemMeta.setCustomModelData(throwable.itemModelReady)
-        }
-
-        item.setItemMeta(itemMeta)
-        equipment.setItem(inventorySlot, item)
-
-        // track ready throwable
-        // NOTE: throwable ids are used inside the map
-        //      this.readyThrowable[throwId] -> ReadyThrowable
-        // It's technically possible for this to overflow and overwrite.
-        // But extremely unlikely, since throwables have a lifetime and
-        // should be removed from this map before 
-        // Integer.MAX_VALUE new throwables are created to overflow and
-        // overwrite the key.
-        readyThrowables[throwId] = ReadyThrowable(
-            throwable = throwable,
-            id = throwId,
-            ticksElapsed = 0,
-            holder = player,
-        )
-
-        // seems unnecessary so removed. put it in item lore instead
-        // Message.announcement(player, INFO_MESSAGE_THROWABLE_READY)
-
-        // play ready sound
-        // playing sound can fail if sound string formatted improperly
         try {
-            val world = player.getWorld()
-            val location = player.getLocation()
-            world.playSound(location, throwable.soundReady, 1f, 1f)
+            val player = request.player
+            val playerId = player.getUniqueId()
+            
+            if ( playerHandled.add(playerId) == false ) {
+                // false if already contained in set
+                continue
+            }
+            
+            // Do redundant player main hand is throwable check here
+            // since other events could override and change inventory slot or item
+            val equipment = player.getInventory()
+            val inventorySlot = equipment.getHeldItemSlot()
+            val item = equipment.getItem(inventorySlot)
+            if ( item == null ) {
+                continue
+            }
+
+            val throwable = this.getThrowableFromItem(item)
+            if ( throwable == null ) {
+                continue
+            }
+
+            val itemMeta = item.getItemMeta()
+            val itemData = itemMeta.getPersistentDataContainer()
+
+            // check if throwable is already readied, if so continue
+            if ( itemData.has(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER) ) {
+                continue
+            }
+
+            // get new ready throwable item id
+            val throwId = this.newThrowableId()
+            itemData.set(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER, throwId)
+            
+            // set item model to ready state
+            if ( throwable.itemModelReady > 0 ) {
+                itemMeta.setCustomModelData(throwable.itemModelReady)
+            }
+
+            item.setItemMeta(itemMeta)
+            equipment.setItem(inventorySlot, item)
+
+            // track ready throwable
+            // NOTE: throwable ids are used inside the map
+            //      this.readyThrowable[throwId] -> ReadyThrowable
+            // It's technically possible for this to overflow and overwrite.
+            // But extremely unlikely, since throwables have a lifetime and
+            // should be removed from this map before 
+            // Integer.MAX_VALUE new throwables are created to overflow and
+            // overwrite the key.
+            readyThrowables[throwId] = ReadyThrowable(
+                throwable = throwable,
+                id = throwId,
+                ticksElapsed = 0,
+                holder = player,
+            )
+
+            // seems unnecessary so removed. put it in item lore instead
+            // Message.announcement(player, INFO_MESSAGE_THROWABLE_READY)
+
+            // play ready sound
+            // playing sound can fail if sound string formatted improperly
+            try {
+                val world = player.getWorld()
+                val location = player.getLocation()
+                world.playSound(location, throwable.soundReady, 1f, 1f)
+            } catch ( e: Exception ) {
+                e.printStackTrace()
+                this.logger.severe("Failed to play sound: ${throwable.soundReady}")
+            }
         } catch ( e: Exception ) {
             e.printStackTrace()
-            this.logger?.severe("Failed to play sound: ${throwable.soundReady}")
+            this.logger.severe("Failed to ready throwable for player ${request.player.getName()}")
         }
     }
 
@@ -202,74 +207,80 @@ internal fun XC.requestThrowThrowableSystem(
     val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
 
     for ( request in throwThrowableRequests ) {
-        val player = request.player
-        val playerId = player.getUniqueId()
-        
-        if ( playerHandled.add(playerId) == false ) {
-            // false if already contained in set
-            continue
-        }
-
-        // Do redundant player main hand is throwable check here
-        // since other events could override and change inventory slot or item
-        val equipment = player.getInventory()
-        val inventorySlot = equipment.getHeldItemSlot()
-        val item = equipment.getItem(inventorySlot)
-        if ( item == null ) {
-            continue
-        }
-
-        val throwable = this.getThrowableFromItem(item)
-        if ( throwable == null ) {
-            continue
-        }
-
-        val itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
-
-        // check if throwable is readied. if not readied, skip
-        if ( !itemData.has(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER) ) {
-            Message.announcement(player, ERROR_MESSAGE_THROWABLE_NOT_READY)
-            continue
-        }
-
-        val world = player.getWorld()
-        val location = player.getEyeLocation()
-        val direction = location.getDirection()
-        val itemEntity = world.dropItem(location, item)
-
-        itemEntity.setPickupDelay(Integer.MAX_VALUE)
-        itemEntity.setVelocity(direction.multiply(throwable.throwSpeed))
-
-        equipment.setItem(inventorySlot, null)
-        
-        // throw id must exist (since we checked if key exists)
-        val throwId = itemData.get(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER)!!
-        // remove ready throwable (this should always exist...),
-        // and get current ticks elapsed from ready throwable tracking 
-        val ticksElapsed = readyThrowables.remove(throwId)?.ticksElapsed ?: 0
-
-        // create thrown throwable tracking
-        thrownThrowables[world.getUID()]?.let { throwables ->
-            throwables.add(ThrownThrowable(
-                throwable = throwable,
-                id = throwId,
-                ticksElapsed = ticksElapsed,
-                itemEntity = itemEntity,
-                thrower = player,
-                // prevLocX = location.x,
-                // prevLocY = location.y,
-                // prevLocZ = location.z,
-            ))
-        }
-
-        // play throw sound
-        // playing sound can fail if sound string formatted improperly
         try {
-            world.playSound(location, throwable.soundThrow, 1f, 1f)
-        } catch ( e: Exception ) {
+            val player = request.player
+            val playerId = player.getUniqueId()
+            
+            if ( playerHandled.add(playerId) == false ) {
+                // false if already contained in set
+                continue
+            }
+
+            // Do redundant player main hand is throwable check here
+            // since other events could override and change inventory slot or item
+            val equipment = player.getInventory()
+            val inventorySlot = equipment.getHeldItemSlot()
+            val item = equipment.getItem(inventorySlot)
+            if ( item == null ) {
+                continue
+            }
+
+            val throwable = this.getThrowableFromItem(item)
+            if ( throwable == null ) {
+                continue
+            }
+
+            val itemMeta = item.getItemMeta()
+            val itemData = itemMeta.getPersistentDataContainer()
+
+            // check if throwable is readied. if not readied, skip
+            if ( !itemData.has(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER) ) {
+                Message.announcement(player, ERROR_MESSAGE_THROWABLE_NOT_READY)
+                continue
+            }
+
+            val world = player.getWorld()
+            val location = player.getEyeLocation()
+            val direction = location.getDirection()
+            val itemEntity = world.dropItem(location, item)
+
+            itemEntity.setPickupDelay(Integer.MAX_VALUE)
+            itemEntity.setVelocity(direction.multiply(throwable.throwSpeed))
+
+            equipment.setItem(inventorySlot, null)
+            
+            // throw id must exist (since we checked if key exists)
+            val throwId = itemData.get(this.namespaceKeyItemThrowableId, PersistentDataType.INTEGER)!!
+            // remove ready throwable (this should always exist...),
+            // and get current ticks elapsed from ready throwable tracking 
+            val ticksElapsed = readyThrowables.remove(throwId)?.ticksElapsed ?: 0
+
+            // create thrown throwable tracking
+            thrownThrowables[world.getUID()]?.let { throwables ->
+                throwables.add(ThrownThrowable(
+                    throwable = throwable,
+                    id = throwId,
+                    ticksElapsed = ticksElapsed,
+                    itemEntity = itemEntity,
+                    thrower = player,
+                    // prevLocX = location.x,
+                    // prevLocY = location.y,
+                    // prevLocZ = location.z,
+                ))
+            }
+
+            // play throw sound
+            // playing sound can fail if sound string formatted improperly
+            try {
+                world.playSound(location, throwable.soundThrow, 1f, 1f)
+            } catch ( e: Exception ) {
+                e.printStackTrace()
+                this.logger.severe("Failed to play sound: ${throwable.soundThrow}")
+            }
+        }
+        catch ( e: Exception ) {
             e.printStackTrace()
-            this.logger?.severe("Failed to play sound: ${throwable.soundThrow}")
+            this.logger.severe("Failed to throw throwable for player ${request.player.getName()}")
         }
     }
 
@@ -288,46 +299,52 @@ internal fun XC.droppedThrowableSystem(
     thrownThrowables: HashMap<UUID, ArrayList<ThrownThrowable>>,
 ) {
     for ( request in droppedThrowables ) {
-        val (player, itemEntity) = request
-        val item = itemEntity.getItemStack()
+        try {
+            val (player, itemEntity) = request
+            val item = itemEntity.getItemStack()
 
-        // check if item is a readied throwable
-        val throwId = getItemIntDataIfMaterialMatches(
-            item,
-            this.config.materialThrowable,
-            this.nbtKeyItemThrowableId,
-        )
-        
-        if ( throwId == -1 ) { // skip if not readied throwable
-            continue
+            // check if item is a readied throwable
+            val throwId = getItemIntDataIfMaterialMatches(
+                item,
+                this.config.materialThrowable,
+                this.nbtKeyItemThrowableId,
+            )
+            
+            if ( throwId == -1 ) { // skip if not readied throwable
+                continue
+            }
+
+            val throwable = this.getThrowableFromItem(item)
+            if ( throwable == null ) {
+                continue
+            }
+
+            val world = itemEntity.getWorld()
+
+            // make item impossible to pick up
+            itemEntity.setPickupDelay(Integer.MAX_VALUE)
+
+            // remove ready throwable (this should always exist...),
+            // and get current ticks elapsed from ready throwable tracking 
+            val ticksElapsed = readyThrowables.remove(throwId)?.ticksElapsed ?: 0
+
+            // create thrown throwable tracking
+            thrownThrowables[world.getUID()]?.let { throwables ->
+                throwables.add(ThrownThrowable(
+                    throwable = throwable,
+                    id = throwId,
+                    ticksElapsed = ticksElapsed,
+                    itemEntity = itemEntity,
+                    thrower = player,
+                    // prevLocX = location.x,
+                    // prevLocY = location.y,
+                    // prevLocZ = location.z,
+                ))
+            }
         }
-
-        val throwable = this.getThrowableFromItem(item)
-        if ( throwable == null ) {
-            continue
-        }
-
-        val world = itemEntity.getWorld()
-
-        // make item impossible to pick up
-        itemEntity.setPickupDelay(Integer.MAX_VALUE)
-
-        // remove ready throwable (this should always exist...),
-        // and get current ticks elapsed from ready throwable tracking 
-        val ticksElapsed = readyThrowables.remove(throwId)?.ticksElapsed ?: 0
-
-        // create thrown throwable tracking
-        thrownThrowables[world.getUID()]?.let { throwables ->
-            throwables.add(ThrownThrowable(
-                throwable = throwable,
-                id = throwId,
-                ticksElapsed = ticksElapsed,
-                itemEntity = itemEntity,
-                thrower = player,
-                // prevLocX = location.x,
-                // prevLocY = location.y,
-                // prevLocZ = location.z,
-            ))
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to handle throwable (dropped by player ${request.player.getName()})")
         }
     }
 
@@ -351,53 +368,58 @@ internal fun XC.tickReadyThrowableSystem(
     val newThrowables = HashMap<Int, ReadyThrowable>()
 
     for ( th in readyThrowables.values ) {
-        // unpack
-        val (
-            throwable,
-            throwId,
-            ticksElapsed,
-            holder,
-        ) = th
-
-        // check if past lifetime: if so, remove and do timer expired handler
-        if ( ticksElapsed >= throwable.timeToExplode ) {            
-            // remove from player inventory
-            val slot = getInventorySlotForCustomItemWithNbtKey(
-                holder,
-                this.config.materialThrowable,
-                this.nbtKeyItemThrowableId,
+        try {
+            // unpack
+            val (
+                throwable,
                 throwId,
-            )
-            if ( slot != -1 ) {
-                val equipment = holder.getInventory()
-                equipment.setItem(slot, null)
+                ticksElapsed,
+                holder,
+            ) = th
+
+            // check if past lifetime: if so, remove and do timer expired handler
+            if ( ticksElapsed >= throwable.timeToExplode ) {            
+                // remove from player inventory
+                val slot = getInventorySlotForCustomItemWithNbtKey(
+                    holder,
+                    this.config.materialThrowable,
+                    this.nbtKeyItemThrowableId,
+                    throwId,
+                )
+                if ( slot != -1 ) {
+                    val equipment = holder.getInventory()
+                    equipment.setItem(slot, null)
+                }
+
+                // damage holder
+                if ( throwable.damageHolderOnTimerExpired > 0.0 ) {
+                    holder.damage(throwable.damageHolderOnTimerExpired, null)
+                    holder.setNoDamageTicks(0)
+                }
+
+                // queue expired throwable handler
+                expiredThrowables[holder.getWorld().getUID()]?.add(ExpiredThrowable(
+                    throwable = throwable,
+                    location = holder.location,
+                    entity = holder,
+                ))
+
+                continue
             }
-
-            // damage holder
-            if ( throwable.damageHolderOnTimerExpired > 0.0 ) {
-                holder.damage(throwable.damageHolderOnTimerExpired, null)
-                holder.setNoDamageTicks(0)
+            else {
+                // else, push into new throwables map
+                newThrowables[throwId] = ReadyThrowable(
+                    throwable = throwable,
+                    id = throwId,
+                    ticksElapsed = ticksElapsed + 1,
+                    holder = holder,
+                )
             }
-
-            // queue expired throwable handler
-            expiredThrowables[holder.getWorld().getUID()]?.add(ExpiredThrowable(
-                throwable = throwable,
-                location = holder.location,
-                entity = holder,
-            ))
-
-            continue
         }
-        else {
-            // else, push into new throwables map
-            newThrowables[throwId] = ReadyThrowable(
-                throwable = throwable,
-                id = throwId,
-                ticksElapsed = ticksElapsed + 1,
-                holder = holder,
-            )
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to tick ready throwable ${th.throwable.itemName}")
         }
-
     }
 
     // update ready throwables
@@ -413,7 +435,7 @@ internal fun XC.tickReadyThrowableSystem(
  */
 internal fun XC.handleExpiredThrowableSystem(
     requests: List<ExpiredThrowable>,
-    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
 ): ArrayList<ExpiredThrowable> {
     for ( th in requests ) {
         val (
@@ -481,7 +503,7 @@ internal fun getThrownThrowableVisitedChunksSystem(
  */
 internal fun XC.tickThrownThrowableSystem(
     requests: List<ThrownThrowable>,
-    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
 ): ArrayList<ThrownThrowable> {
     val newThrowables = ArrayList<ThrownThrowable>()
 

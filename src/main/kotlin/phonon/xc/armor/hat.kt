@@ -150,37 +150,45 @@ internal value class PlayerWearHatRequest(
 /**
  * System for handling player wear hat requests.
  * Puts hat item in main hand into head slot.
- * Return new empty array for next tick cycle.
+ * Reset empty request queue for next tick cycle.
  */
-internal fun XC.wearHatSystem(requests: ArrayList<PlayerWearHatRequest>): ArrayList<PlayerWearHatRequest> {
-    val playerHandled = HashSet<UUID>() // players ids already handled to avoid redundant requests
+internal fun XC.wearHatSystem(
+    wearHatRequests: List<PlayerWearHatRequest>,
+) {
+    val playerHandled = HashSet<UUID>(wearHatRequests.size) // players ids already handled to avoid redundant requests
 
-    for ( request in requests ) {
-        val player = request.player
-        val playerId = player.getUniqueId()
-        
-        if ( playerHandled.add(playerId) == false ) {
-            // false if already contained in set
-            continue
+    for ( request in wearHatRequests ) {
+        try {
+            val player = request.player
+            val playerId = player.getUniqueId()
+            
+            if ( playerHandled.add(playerId) == false ) {
+                // false if already contained in set
+                continue
+            }
+
+            // Do redundant player main hand is hat check here
+            // since events could override the first request, causing
+            // inventory slot or item to change
+            val hat = getHatInHand(player)
+            if ( hat == null ) {
+                continue
+            }
+
+            val playerInventory = player.getInventory()
+            val newHelmet = playerInventory.getItemInMainHand()
+            val currHelmet = playerInventory.getHelmet()
+            playerInventory.setItemInMainHand(currHelmet)
+            playerInventory.setHelmet(newHelmet)
+
+            // equip sound
+            player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_IRON, 1f, 1f)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            this.logger.severe("Failed to handle player wear hat request: ${e}")
         }
-
-        // Do redundant player main hand is hat check here
-        // since events could override the first request, causing
-        // inventory slot or item to change
-        val hat = getHatInHand(player)
-        if ( hat == null ) {
-            continue
-        }
-
-        val playerInventory = player.getInventory()
-        val newHelmet = playerInventory.getItemInMainHand()
-        val currHelmet = playerInventory.getHelmet()
-        playerInventory.setItemInMainHand(currHelmet)
-        playerInventory.setHelmet(newHelmet)
-
-        // equip sound
-        player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_IRON, 1f, 1f)
     }
 
-    return ArrayList()
+    // new empty queue for next tick
+    this.wearHatRequests = ArrayList(0)
 }

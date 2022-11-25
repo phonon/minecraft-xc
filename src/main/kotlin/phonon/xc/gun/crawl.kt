@@ -19,6 +19,7 @@ package phonon.xc.gun.crawl
 import kotlin.math.floor
 import java.util.UUID
 import java.util.concurrent.BlockingQueue
+import org.bukkit.Bukkit
 import org.bukkit.World
 import org.bukkit.block.data.BlockData
 import org.bukkit.ChatColor
@@ -263,75 +264,106 @@ private val NO_JUMP_EFFECT: PotionEffect = PotionEffect(PotionEffectType.JUMP, I
 /**
  * Process start crawl requests for players. Returns new queue for next tick.
  */
-public fun XC.startCrawlSystem(requests: List<CrawlStart>): ArrayList<CrawlStart> {
-    for ( r in requests ) {
-        val player = r.player
+internal fun XC.startCrawlSystem(
+    crawlStartQueue: List<CrawlStart>,
+    crawling: HashMap<UUID, Crawling>,
+) {
+    for ( r in crawlStartQueue ) {
+        try {
+            val player = r.player
 
-        // make sure we do not double start crawl
-        if ( this.isCrawling(player) ) {
-            continue
+            // make sure we do not double start crawl
+            if ( crawling.contains(player.getUniqueId()) ) {
+                continue
+            }
+
+            // unmount if player inside a vehicle
+            if ( player.isInsideVehicle() ) {
+                player.leaveVehicle()
+            }
+
+            // println("START CRAWL $player")
+            // println("CURRENT WALK SPEED: ${player.getWalkSpeed()}")
+
+            // send packet that cancels slowness fov change
+            // NOT NEEDED WHEN USING player.setWalkSpeed(0.0f)
+            // resetFovPacket(player)
+
+            crawling[player.getUniqueId()] = this.forceCrawl(player)
+
+            // start fake swimming motion
+            player.setSwimming(true)
+
+            // NOTE: adding no jump effect causes damage to player when they are forced down
+            // there is an event that must detect and cancel this damage.
+            // use the player isSwimming() check to proceed with that cancel
+            // SLOWNESS_EFFECT.apply(player)
+            NO_JUMP_EFFECT.apply(player)
+            player.setWalkSpeed(0.0f)
         }
-
-        // unmount if player inside a vehicle
-        if ( player.isInsideVehicle() ) {
-            player.leaveVehicle()
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed starting crawl for player ${r.player.getName()}")
         }
-
-        // println("START CRAWL $player")
-        // println("CURRENT WALK SPEED: ${player.getWalkSpeed()}")
-
-        // send packet that cancels slowness fov change
-        // NOT NEEDED WHEN USING player.setWalkSpeed(0.0f)
-        // resetFovPacket(player)
-
-        this.crawling[player.getUniqueId()] = this.forceCrawl(player)
-
-        // start fake swimming motion
-        player.setSwimming(true)
-
-        // NOTE: adding no jump effect causes damage to player when they are forced down
-        // there is an event that must detect and cancel this damage.
-        // use the player isSwimming() check to proceed with that cancel
-        // SLOWNESS_EFFECT.apply(player)
-        NO_JUMP_EFFECT.apply(player)
-        player.setWalkSpeed(0.0f)
     }
 
-    return ArrayList(4)
+    this.crawlStartQueue = ArrayList(4)
 }
 
 /**
  * Process stop crawl requests for players. Returns new queue for next tick.
+ * 
+ * NOTE BUG: when player toggles shift, it will cancel crawl
+ * However, if async crawl-to-shoot request task is still running, it could
+ * complete after a stop request added to this system. Occurs if player stop
+ * crawling immediately as crawl timer is finishing. This would be extremely
+ * rare to occur but should be handled at some point.
  */
-public fun XC.stopCrawlSystem(requests: List<CrawlStop>): ArrayList<CrawlStop> {
-    for ( r in requests ) {
-        val player = r.player
-        val playerId = player.getUniqueId()
+internal fun XC.stopCrawlSystem(
+    crawlStopQueue: List<CrawlStop>,
+    crawling: HashMap<UUID, Crawling>,
+    crawlRequestTasks: HashMap<UUID, CrawlToShootRequestTask>,
+    crawlingAndReadyToShoot: HashMap<UUID, Boolean>,
+) {
+    for ( r in crawlStopQueue ) {
+        try {
+            val player = r.player
+            val playerId = player.getUniqueId()
 
-        // player.removePotionEffect(PotionEffectType.SLOW)
-        player.removePotionEffect(PotionEffectType.JUMP)
-        player.setWalkSpeed(0.2f) // default speed
+            // player.removePotionEffect(PotionEffectType.SLOW)
+            player.removePotionEffect(PotionEffectType.JUMP)
+            player.setWalkSpeed(0.2f) // default speed
 
-        this.crawling.remove(playerId)?.cleanup()
+            crawling.remove(playerId)?.cleanup()
 
-        // remove and stop crawl request task
-        this.crawlRequestTasks.remove(playerId)?.let { task ->
-            task.cancel()
-            // blank the progress bar
-            Message.announcement(player, "")
+            // remove and stop crawl request task
+            crawlRequestTasks.remove(playerId)?.let { task ->
+                task.cancel()
+                // blank the progress bar, schedule on next tick
+                // since async task might still be finishing
+                Bukkit.getScheduler().runTaskLaterAsynchronously(this.plugin, object: Runnable {
+                    override fun run() {
+                        Message.announcement(player, "")
+                    }
+                }, 0L)
+            }
+            
+            // remove flag that player crawling and ready to shoot
+            crawlingAndReadyToShoot.remove(playerId)
+
+            // remove aim down sights model
+            this.removeAimDownSightsOffhandModel(player)
+
+            // stop fake swimming
+            player.setSwimming(false)
         }
-        
-        // remove flag that player crawling and ready to shoot
-        this.crawlingAndReadyToShoot.remove(playerId)
-
-        // remove aim down sights model
-        this.removeAimDownSightsOffhandModel(player)
-
-        // stop fake swimming
-        player.setSwimming(false)
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed stopping crawl for player ${r.player.getName()}")
+        }
     }
 
-    return ArrayList(4)
+    this.crawlStopQueue = ArrayList(4)
 }
 
 /**
@@ -349,78 +381,83 @@ private var crawlRefreshTickCounter = 0
  * Update tick for all crawling players.
  * Returns new HashMap with updated crawl state for players.
  */
-public fun XC.crawlRefreshSystem(requests: HashMap<UUID, Crawling>): HashMap<UUID, Crawling> {
+internal fun XC.crawlRefreshSystem(
+    crawling: Map<UUID, Crawling>,
+    crawlStopQueue: ArrayList<CrawlStop>,
+) {
     val newCrawlingState = HashMap<UUID, Crawling>()
     
     // update crawl refresh tick counter (oscillate between 0,1,0,1,...)
-    crawlRefreshTickCounter = if ( crawlRefreshTickCounter == 0 ) {
-        1
-    } else {
-        0
-    }
+    crawlRefreshTickCounter = (crawlRefreshTickCounter + 1) and 1
 
-    for ( (_playerId, prevCrawlState) in requests ) {
-        val (
-            tickId,
-            player,
-            initialLocation,
-            prevLocationX,
-            prevLocationY,
-            prevLocationZ,
-            blAboveX,
-            blAboveY,
-            blAboveZ,
-            prevBlAboveMaterial,
-            _boxEntity,
-        ) = prevCrawlState
+    for ( (_playerId, prevCrawlState) in crawling ) {
+        try {
+            val (
+                tickId,
+                player,
+                initialLocation,
+                prevLocationX,
+                prevLocationY,
+                prevLocationZ,
+                blAboveX,
+                blAboveY,
+                blAboveZ,
+                prevBlAboveMaterial,
+                _boxEntity,
+            ) = prevCrawlState
 
-        
-        // not needed, toggle event should cancel stop swimming event
-        // player.setSwimming(true)
-        
-        // if == refresh counter, do full refresh system
-        if ( tickId == crawlRefreshTickCounter ) {
             
-            // if player location has changed or block above changed, send crawl update packet
-            val currLocation = player.getLocation()
-            val currBlockAboveMaterial = currLocation.world?.getBlockAt(blAboveX, blAboveY, blAboveZ)?.getType() ?: Material.AIR
-            newCrawlingState[player.getUniqueId()] = if (
-                currLocation.x != prevLocationX ||
-                currLocation.y != prevLocationY ||
-                currLocation.z != prevLocationZ ||
-                currBlockAboveMaterial != prevBlAboveMaterial
-            ) {
-                // if travelled too far from initial location (e.g. water bucket or falling down)
-                // cancel crawl next tick
-                if ( initialLocation.distance(currLocation) > 1.5 ) {
-                    this.crawlStopQueue.add(CrawlStop(player))
+            // not needed, toggle event should cancel stop swimming event
+            // player.setSwimming(true)
+            
+            // if == refresh counter, do full refresh system
+            if ( tickId == crawlRefreshTickCounter ) {
+                
+                // if player location has changed or block above changed, send crawl update packet
+                val currLocation = player.getLocation()
+                val currBlockAboveMaterial = currLocation.world?.getBlockAt(blAboveX, blAboveY, blAboveZ)?.getType() ?: Material.AIR
+                newCrawlingState[player.getUniqueId()] = if (
+                    currLocation.x != prevLocationX ||
+                    currLocation.y != prevLocationY ||
+                    currLocation.z != prevLocationZ ||
+                    currBlockAboveMaterial != prevBlAboveMaterial
+                ) {
+                    // if travelled too far from initial location (e.g. water bucket or falling down)
+                    // cancel crawl next tick
+                    if ( initialLocation.distance(currLocation) > 1.5 ) {
+                        crawlStopQueue.add(CrawlStop(player))
+                    }
+
+                    prevCrawlState.update(currLocation)
+                } else {
+                    // just refresh block
+                    prevCrawlState.refreshBlock()
+
+                    prevCrawlState
                 }
 
-                prevCrawlState.update(currLocation)
-            } else {
-                // just refresh block
-                prevCrawlState.refreshBlock()
-
-                prevCrawlState
+            } else { // just copy crawl state to next tick
+                newCrawlingState[player.getUniqueId()] = prevCrawlState
             }
+            
 
-        } else { // just copy crawl state to next tick
-            newCrawlingState[player.getUniqueId()] = prevCrawlState
+            // if only allowed to crawl while using a crawl required weapon,
+            // check if player using a crawl weapon.
+            // if not, cancel crawl
+            if ( this.config.crawlOnlyAllowedOnCrawlWeapons ) {
+                val gun = getGunInHand(player)
+                if ( gun == null || gun.crawlRequired == false ) {
+                    crawlStopQueue.add(CrawlStop(player))
+                }
+            }
         }
-        
-
-        // if only allowed to crawl while using a crawl required weapon,
-        // check if player using a crawl weapon.
-        // if not, cancel crawl
-        if ( this.config.crawlOnlyAllowedOnCrawlWeapons ) {
-            val gun = getGunInHand(player)
-            if ( gun == null || gun.crawlRequired == false ) {
-                this.crawlStopQueue.add(CrawlStop(player))
-            }
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed refreshing crawl for player ${prevCrawlState.player.getName()}")
         }
     }
 
-    return newCrawlingState
+    this.crawling = newCrawlingState
 }
 
 
@@ -453,66 +490,79 @@ public value class CrawlToShootRequestCancel(
  * System that queues a "crawl to shoot" request.
  * Return new empty queue for next tick.
  */
-public fun XC.requestCrawlToShootSystem(requests: List<CrawlToShootRequest>, timestamp: Long): ArrayList<CrawlToShootRequest> {
-    for ( r in requests ) {
-        val player = r.player
-        val playerId = player.getUniqueId()
+internal fun XC.requestCrawlToShootSystem(
+    crawlToShootRequestQueue: List<CrawlToShootRequest>,
+    crawlStartQueue: ArrayList<CrawlStart>,
+    crawlRequestTasks: HashMap<UUID, CrawlToShootRequestTask>,
+    playerCrawlRequestFinishQueue: BlockingQueue<CrawlToShootRequestFinish>,
+    playerCrawlRequestCancelQueue: BlockingQueue<CrawlToShootRequestCancel>,
+    timestamp: Long,
+) {
+    for ( r in crawlToShootRequestQueue ) {
+        try {
+            val player = r.player
+            val playerId = player.getUniqueId()
 
-        // if request task already exists, skip if "stale" (measure as <5 seconds from previous task)
-        val previousTask = this.crawlRequestTasks[playerId]
-        if ( previousTask != null && timestamp < (previousTask.startTimestamp + 2000)  ) {
-            continue
+            // if request task already exists, skip if "stale" (measure as <5 seconds from previous task)
+            val previousTask = crawlRequestTasks[playerId]
+            if ( previousTask != null && timestamp < (previousTask.startTimestamp + 2000)  ) {
+                continue
+            }
+            
+            // Do redundant player main hand is gun check here
+            // since events could override the first shoot event, causing
+            // inventory slot or item to change
+            val equipment = player.getInventory()
+            val inventorySlot = equipment.getHeldItemSlot()
+            val item = equipment.getItem(inventorySlot)
+            if ( item == null ) {
+                continue
+            }
+
+            val gun = getGunFromItem(item)
+            if ( gun == null || gun.crawlRequired == false ) {
+                continue
+            }
+
+            var itemMeta = item.getItemMeta()
+            val itemData = itemMeta.getPersistentDataContainer()
+
+            // initiate crawling
+            crawlStartQueue.add(CrawlStart(player))
+
+            // set crawl to shoot id: this ensures this is same item
+            // being used to start crawl and to shoot
+            val crawlId = this.newCrawlToShootId()
+            itemData.set(this.namespaceKeyItemCrawlToShootId, PersistentDataType.INTEGER, crawlId)
+            
+            // update item meta with new data
+            item.setItemMeta(itemMeta)
+            equipment.setItem(inventorySlot, item)
+
+            // launch crawl to shoot preparation task
+            val task = CrawlToShootRequestTask(
+                player = player,
+                crawlId = crawlId,
+                finishTime = gun.crawlTimeMillis.toDouble(),
+                startTimestamp = timestamp,
+                itemGunMaterial = this.config.materialGun,
+                itemRequestIdKey = this.namespaceKeyItemCrawlToShootId,
+                finishTaskQueue = playerCrawlRequestFinishQueue,
+                cancelTaskQueue = playerCrawlRequestCancelQueue,
+            )
+
+            // runs every 2 ticks = 100 ms
+            task.runTaskTimerAsynchronously(this.plugin, 0L, 1L)
+            
+            crawlRequestTasks[playerId] = task
         }
-        
-        // Do redundant player main hand is gun check here
-        // since events could override the first shoot event, causing
-        // inventory slot or item to change
-        val equipment = player.getInventory()
-        val inventorySlot = equipment.getHeldItemSlot()
-        val item = equipment.getItem(inventorySlot)
-        if ( item == null ) {
-            continue
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed crawling to shoot request for player ${r.player.getName()}")
         }
-
-        val gun = getGunFromItem(item)
-        if ( gun == null || gun.crawlRequired == false ) {
-            continue
-        }
-
-        var itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
-
-        // initiate crawling
-        this.crawlStartQueue.add(CrawlStart(player))
-
-        // set crawl to shoot id: this ensures this is same item
-        // being used to start crawl and to shoot
-        val crawlId = this.newCrawlToShootId()
-        itemData.set(this.namespaceKeyItemCrawlToShootId, PersistentDataType.INTEGER, crawlId)
-        
-        // update item meta with new data
-        item.setItemMeta(itemMeta)
-        equipment.setItem(inventorySlot, item)
-
-        // launch crawl to shoot preparation task
-        val task = CrawlToShootRequestTask(
-            player = player,
-            crawlId = crawlId,
-            finishTime = gun.crawlTimeMillis.toDouble(),
-            startTimestamp = timestamp,
-            itemGunMaterial = this.config.materialGun,
-            itemRequestIdKey = this.namespaceKeyItemCrawlToShootId,
-            finishTaskQueue = this.playerCrawlRequestFinishQueue,
-            cancelTaskQueue = this.playerCrawlRequestCancelQueue,
-        )
-
-        // runs every 2 ticks = 100 ms
-        task.runTaskTimerAsynchronously(this.plugin, 0L, 1L)
-        
-        this.crawlRequestTasks[playerId] = task
     }
 
-    return ArrayList(4)
+    this.crawlToShootRequestQueue = ArrayList(4)
 }
 
 internal class CrawlToShootRequestTask(
@@ -542,12 +592,14 @@ internal class CrawlToShootRequestTask(
         val itemInHand = player.getInventory().getItemInMainHand()
         if ( itemInHand.getType() != itemGunMaterial ) {
             this.cancelTask()
+            Message.announcement(player, "") // clear progress bar
             return
         }
         val itemCurrData = itemInHand.getItemMeta().getPersistentDataContainer()
         val itemCrawlId = itemCurrData.get(itemRequestIdKey, PersistentDataType.INTEGER) ?: -1
         if ( itemCrawlId != crawlId ) {
             this.cancelTask()
+            Message.announcement(player, "") // clear progress bar
             return
         }
 
@@ -567,60 +619,71 @@ internal class CrawlToShootRequestTask(
  * Finish crawl to shoot requests.
  * Return new empty queue for next tick.
  */
-public fun XC.finishCrawlToShootRequestSystem(requests: List<CrawlToShootRequestFinish>) {
-    for ( r in requests ) {
-        val player = r.player
-        val playerId = player.getUniqueId()
+internal fun XC.finishCrawlToShootRequestSystem(
+    crawlRequestFinishTasks: List<CrawlToShootRequestFinish>,
+    crawling: Map<UUID, Crawling>,
+    crawlRequestTasks: HashMap<UUID, CrawlToShootRequestTask>,
+    crawlingAndReadyToShoot: HashMap<UUID, Boolean>,
+) {
+    for ( r in crawlRequestFinishTasks ) {
+        try {
+            val player = r.player
+            val playerId = player.getUniqueId()
 
-        // remove crawl request task
-        this.crawlRequestTasks.remove(playerId)
+            // remove crawl request task
+            crawlRequestTasks.remove(playerId)
 
-        // check if player still crawling: if not, skip
-        val crawling = this.crawling[player.getUniqueId()]
-        if ( crawling == null ) {
-            continue
+            // check if player still crawling: if not, skip
+            val playerCrawling = crawling[player.getUniqueId()]
+            if ( playerCrawling == null ) {
+                continue
+            }
+            // force a crawl update, in 1.18.2, sometimes player moving
+            // rapidly near half slab height offsets, player can be forced
+            // to crawl, then moved away into non-crawl position.
+            playerCrawling.update(player.location, forceUpdate = true)
+
+            // check player still using a crawl weapon
+            // TODO: todo properly need to check if crawl id same.
+            // but this case is so rare that it's not worth the effort.
+            val equipment = player.getInventory()
+            val inventorySlot = equipment.getHeldItemSlot()
+            val item = equipment.getItem(inventorySlot)
+            if ( item == null ) {
+                this.crawlStopQueue.add(CrawlStop(player))
+                continue
+            }
+
+            val gun = getGunFromItem(item)
+            if ( gun == null || gun.crawlRequired == false ) {
+                crawlStopQueue.add(CrawlStop(player))
+                continue
+            }
+
+            // set aim down sights model
+            var itemMeta = item.getItemMeta()
+            val itemData = itemMeta.getPersistentDataContainer()
+
+            // send ammo message
+            val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
+            this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
+
+            // if player is aim down sights, add offhand model
+            if ( useAimDownSights(player) ) {
+                itemMeta = setGunItemMetaModel(itemMeta, gun, ammo, true)
+                item.setItemMeta(itemMeta)
+                equipment.setItem(inventorySlot, item)
+
+                this.createAimDownSightsOffhandModel(gun, player)
+            }
+
+            // mark player ready to shoot
+            crawlingAndReadyToShoot[playerId] = true
         }
-        // force a crawl update, in 1.18.2, sometimes player moving
-        // rapidly near half slab height offsets, player can be forced
-        // to crawl, then moved away into non-crawl position.
-        crawling.update(player.location, forceUpdate = true)
-
-        // check player still using a crawl weapon
-        // TODO: todo properly need to check if crawl id same.
-        // but this case is so rare that it's not worth the effort.
-        val equipment = player.getInventory()
-        val inventorySlot = equipment.getHeldItemSlot()
-        val item = equipment.getItem(inventorySlot)
-        if ( item == null ) {
-            this.crawlStopQueue.add(CrawlStop(player))
-            continue
+        catch ( e: Exception ) {
+            e.printStackTrace()
+            this.logger.severe("Failed to finish crawling request for player ${r.player.getName()}")
         }
-
-        val gun = getGunFromItem(item)
-        if ( gun == null || gun.crawlRequired == false ) {
-            this.crawlStopQueue.add(CrawlStop(player))
-            continue
-        }
-
-        // set aim down sights model
-        var itemMeta = item.getItemMeta()
-        val itemData = itemMeta.getPersistentDataContainer()
-
-        // send ammo message
-        val ammo = itemData.get(this.namespaceKeyItemAmmo, PersistentDataType.INTEGER) ?: 0
-        this.gunAmmoInfoMessageQueue.add(AmmoInfoMessagePacket(player, ammo, gun.ammoMax))
-
-        // if player is aim down sights, add offhand model
-        if ( useAimDownSights(player) ) {
-            itemMeta = setGunItemMetaModel(itemMeta, gun, ammo, true)
-            item.setItemMeta(itemMeta)
-            equipment.setItem(inventorySlot, item)
-
-            this.createAimDownSightsOffhandModel(gun, player)
-        }
-
-        // mark player ready to shoot
-        this.crawlingAndReadyToShoot[playerId] = true
     }
 }
 
@@ -628,17 +691,22 @@ public fun XC.finishCrawlToShootRequestSystem(requests: List<CrawlToShootRequest
  * Finish cancelled crawl to shoot requests.
  * Return new empty queue for next tick.
  */
-public fun XC.cancelCrawlToShootRequestSystem(requests: List<CrawlToShootRequestCancel>) {
-    for ( r in requests ) {
+internal fun XC.cancelCrawlToShootRequestSystem(
+    crawlRequestCancelTasks: List<CrawlToShootRequestCancel>,
+    crawling: Map<UUID, Crawling>,
+    crawlRequestTasks: HashMap<UUID, CrawlToShootRequestTask>,
+    crawlStopQueue: ArrayList<CrawlStop>,
+) {
+    for ( r in crawlRequestCancelTasks ) {
         val player = r.player
         val playerId = player.getUniqueId()
 
         // remove crawl request task
-        this.crawlRequestTasks.remove(playerId)
+        crawlRequestTasks.remove(playerId)
 
         // stop crawling
-        if ( this.isCrawling(player) ) {
-            this.crawlStopQueue.add(CrawlStop(player))
+        if ( crawling.contains(player.getUniqueId()) ) {
+            crawlStopQueue.add(CrawlStop(player))
         }
         
         // clear crawl to shoot progress bar

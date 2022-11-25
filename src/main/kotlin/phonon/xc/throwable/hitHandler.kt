@@ -33,39 +33,39 @@ import phonon.xc.event.XCProjectileDamageEvent
  * Common throwable timer expired handler function type. Inputs are
  * (
  *  xc: XC,
- *  hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+ *  hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
  *  throwable: ThrowableItem,
  *  location: Location,
  *  source: Entity,
  * ) -> Unit
  */
-typealias ThrowableTimerExpiredHandler = (XC, HashMap<ChunkCoord3D, ArrayList<Hitbox>>, ThrowableItem, Location, Entity) -> Unit
+typealias ThrowableTimerExpiredHandler = (XC, Map<ChunkCoord3D, List<Hitbox>>, ThrowableItem, Location, Entity) -> Unit
 
 /**
  * Common hit block handler function type. Inputs are
  * (
  *  xc: XC,
- *  hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+ *  hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
  *  throwable: ThrowableItem,
  *  location: Location,
  *  target: Block,
  *  source: Entity,
  * ) -> Unit
  */
-typealias ThrowableBlockHitHandler = (XC, HashMap<ChunkCoord3D, ArrayList<Hitbox>>, ThrowableItem, Location, Block, Entity) -> Unit
+typealias ThrowableBlockHitHandler = (XC, Map<ChunkCoord3D, List<Hitbox>>, ThrowableItem, Location, Block, Entity) -> Unit
 
 /**
  * Common hit entity handler function type. Inputs are
  * (
  *  xc: XC,
- *  hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+ *  hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
  *  throwable: Throwable,
  *  location: Location,
  *  target: Entity,
  *  source: Entity,
  * ) -> Unit
  */
-typealias ThrowableEntityHitHandler = (XC, HashMap<ChunkCoord3D, ArrayList<Hitbox>>, ThrowableItem, Location, Entity, Entity) -> Unit
+typealias ThrowableEntityHitHandler = (XC, Map<ChunkCoord3D, List<Hitbox>>, ThrowableItem, Location, Entity, Entity) -> Unit
 
 
 /**
@@ -113,7 +113,7 @@ public val noTimerExpiredHandler: ThrowableTimerExpiredHandler = {_, _, _, _, _ 
  */
 public val timerExpiredExplosionHandler = fun(
     xc: XC,
-    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
     throwable: ThrowableItem,
     location: Location,
     source: Entity,
@@ -157,7 +157,7 @@ public val noEntityHitHandler: ThrowableEntityHitHandler = {_, _, _, _, _, _ -> 
  */
 public val entityDamageHitHandler = fun(
     xc: XC,
-    _hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    _hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
     throwable: ThrowableItem,
     location: Location,
     target: Entity,
@@ -210,7 +210,7 @@ public val entityDamageHitHandler = fun(
  */
 public val entityExplosionHitHandler = fun(
     xc: XC,
-    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
     throwable: ThrowableItem,
     location: Location,
     target: Entity,
@@ -295,7 +295,7 @@ public val noBlockHitHandler: ThrowableBlockHitHandler = {_, _, _, _, _, _ -> }
  */
 public val blockExplosionHitHandler = fun(
     xc: XC,
-    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
     throwable: ThrowableItem,
     location: Location,
     _block: Block,

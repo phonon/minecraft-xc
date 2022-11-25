@@ -33,20 +33,20 @@ import phonon.xc.event.XCProjectileDamageEvent
  * Common hit block handler function type. Inputs are
  * (
  *  xc: XC,
- *  hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+ *  hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
  *  gun: Gun,
  *  location: Location,
  *  target: Block,
  *  source: Entity,
  * ) -> Unit
  */
-typealias GunHitBlockHandler = (XC, HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, Location, Block, Entity) -> Unit
+typealias GunHitBlockHandler = (XC, Map<ChunkCoord3D, List<Hitbox>>, Gun, Location, Block, Entity) -> Unit
 
 /**
  * Common hit entity handler function type. Inputs are
  * (
  *  xc: XC,
- *  hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+ *  hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
  *  gun: Gun,
  *  location: Location,
  *  target: Entity,
@@ -54,7 +54,7 @@ typealias GunHitBlockHandler = (XC, HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gu
  *  distance: Double,
  * ) -> Unit
  */
-typealias GunHitEntityHandler = (XC, HashMap<ChunkCoord3D, ArrayList<Hitbox>>, Gun, Location, Entity, Entity, Double) -> Unit
+typealias GunHitEntityHandler = (XC, Map<ChunkCoord3D, List<Hitbox>>, Gun, Location, Entity, Entity, Double) -> Unit
 
 
 /**
@@ -90,7 +90,7 @@ public val noEntityHitHandler: GunHitEntityHandler = {_, _, _, _, _, _, _ -> }
  */
 public val entityDamageHitHandler = fun(
     xc: XC,
-    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
     gun: Gun,
     location: Location,
     target: Entity,
@@ -161,7 +161,7 @@ public val entityDamageHitHandler = fun(
  */
 public val entityExplosionHitHandler = fun(
     xc: XC,
-    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
     gun: Gun,
     location: Location,
     target: Entity,
@@ -251,7 +251,7 @@ public val noBlockHitHandler: GunHitBlockHandler = {_, _, _, _, _, _ -> }
  */
 public val blockExplosionHitHandler = fun(
     xc: XC,
-    hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
     gun: Gun,
     location: Location,
     _block: Block,
@@ -282,7 +282,7 @@ public val blockExplosionHitHandler = fun(
  */
 public val blockFireHitHandler = fun(
     xc: XC,
-    _hitboxes: HashMap<ChunkCoord3D, ArrayList<Hitbox>>,
+    _hitboxes: Map<ChunkCoord3D, List<Hitbox>>,
     gun: Gun,
     location: Location,
     block: Block,
