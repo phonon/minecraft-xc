@@ -8,7 +8,7 @@ import java.util.Stack
 public const val MAX_VEHICLE_ELEMENTS: Int = 10000
 
 public class VehicleStorage(
-        maxVehicles: Int
+    maxVehicles: Int
 ) {
     // lookup array VehicleId => Vehicle
     // encapsulated to do type safety w/ VehicleId
@@ -50,9 +50,18 @@ public class VehicleStorage(
 public class ComponentsStorage {
     // layout enum set => storage for lookup
     public val lookup: HashMap<EnumSet<VehicleComponentType>, ArchetypeStorage> = HashMap()
+    
     // just an array of archetypes, indices have no meaning, for iteration
     public val archetypes: ArrayList<ArchetypeStorage> = ArrayList()
 
+    // Cache for mapping components enum set => all archetypes that
+    // contain the components set. Used for iterator queries.
+    private val matchingArchetypesCache: HashMap<EnumSet<VehicleComponentType>, List<ArchetypeStorage>> = HashMap()
+
+    /**
+     * Add a new archetype to the storage based on its components set,
+     * if it does not exist.
+     */
     public fun addLayout(layout: EnumSet<VehicleComponentType>) {
         if ( !this.lookup.containsKey(layout) ) {
             val archetype = ArchetypeStorage(layout, MAX_VEHICLE_ELEMENTS)
@@ -61,15 +70,36 @@ public class ComponentsStorage {
         }
     }
 
-    // delete all component + archetype storage
-    // make sure you dont have dangling vehicles
-    // when you call
+    /**
+     * Delete all component + archetype storages.
+     * Make sure there are no dangling vehicles before calling.
+     */
     public fun clear() {
         lookup.clear()
         archetypes.forEach { it.clear() }
         archetypes.clear()
+        matchingArchetypesCache.clear()
         // TODO
         // I imagine there's some extra stuff that needs to be done
         // to clean up each ArchetypeStorage
+    }
+
+    /**
+     * Get list of all archetypes that contain the components set.
+     * i.e. all archetypes that are a superset of the components set.
+     *     Example:
+     *     - Archetype 1: [A, B, C]
+     *     - Archetype 2: [A, B]
+     *     - Archetype 3: [A, C]
+     *     getMatchingArchetypes([A, B]) => [Archetype 1, Archetype 2]
+     * This is used for iterator queries. The matching archetypes are
+     * cached when this is called.
+     */
+    public fun getMatchingArchetypes(components: EnumSet<VehicleComponentType>): List<ArchetypeStorage> {
+        return this.matchingArchetypesCache.getOrPut(components) {
+            // if not in cache, runs filter to find matching archetypes,
+            // this result is stored in cache
+            this.archetypes.filter { it.layout.containsAll(components) }
+        }
     }
 }

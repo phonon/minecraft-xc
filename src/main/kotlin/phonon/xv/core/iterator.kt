@@ -91,7 +91,7 @@ class ComponentTuple1Iterator<
     // `hasNext` must always know if there is a "next" valid archetype
     // that needs to be traversed.
     // TODO: this could be cached in a query object that creates the iterator
-    val validArchetypes = components.archetypes.filter { it.layout.containsAll(layout) && it.size > 0 }
+    val validArchetypes = components.getMatchingArchetypes(layout).filter { it.size > 0 }
 
     // archetype index within valid archetypes
     var currArchetypeIndex = 0
@@ -191,7 +191,7 @@ class ComponentTuple2Iterator<
     // `hasNext` must always know if there is a "next" valid archetype
     // that needs to be traversed.
     // TODO: this could be cached in a query object that creates the iterator
-    val validArchetypes = components.archetypes.filter { it.layout.containsAll(layout) && it.size > 0 }
+    val validArchetypes = components.getMatchingArchetypes(layout).filter { it.size > 0 }
 
     // archetype index within valid archetypes
     var currArchetypeIndex = 0
@@ -303,7 +303,7 @@ class ComponentTuple3Iterator<
     // `hasNext` must always know if there is a "next" valid archetype
     // that needs to be traversed.
     // TODO: this could be cached in a query object that creates the iterator
-    val validArchetypes = components.archetypes.filter { it.layout.containsAll(layout) && it.size > 0 }
+    val validArchetypes = components.getMatchingArchetypes(layout).filter { it.size > 0 }
 
     // archetype index within valid archetypes
     var currArchetypeIndex = 0
@@ -427,7 +427,7 @@ class ComponentTuple4Iterator<
     // `hasNext` must always know if there is a "next" valid archetype
     // that needs to be traversed.
     // TODO: this could be cached in a query object that creates the iterator
-    val validArchetypes = components.archetypes.filter { it.layout.containsAll(layout) && it.size > 0 }
+    val validArchetypes = components.getMatchingArchetypes(layout).filter { it.size > 0 }
 
     // archetype index within valid archetypes
     var currArchetypeIndex = 0
@@ -563,7 +563,7 @@ class ComponentTuple5Iterator<
     // `hasNext` must always know if there is a "next" valid archetype
     // that needs to be traversed.
     // TODO: this could be cached in a query object that creates the iterator
-    val validArchetypes = components.archetypes.filter { it.layout.containsAll(layout) && it.size > 0 }
+    val validArchetypes = components.getMatchingArchetypes(layout).filter { it.size > 0 }
 
     // archetype index within valid archetypes
     var currArchetypeIndex = 0
@@ -711,7 +711,7 @@ class ComponentTuple6Iterator<
     // `hasNext` must always know if there is a "next" valid archetype
     // that needs to be traversed.
     // TODO: this could be cached in a query object that creates the iterator
-    val validArchetypes = components.archetypes.filter { it.layout.containsAll(layout) && it.size > 0 }
+    val validArchetypes = components.getMatchingArchetypes(layout).filter { it.size > 0 }
 
     // archetype index within valid archetypes
     var currArchetypeIndex = 0
