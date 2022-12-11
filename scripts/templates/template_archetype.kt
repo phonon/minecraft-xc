@@ -114,6 +114,9 @@ public class ArchetypeStorage(
         elements[size] = newId
         // set new head of implicit linked list
         freedNext = denseLookup[freedNext]
+        if ( freedNext == -1 ) {
+            freedNext = size + 1
+        }
         // update dense lookup
         denseLookup[newId] = size
         size++
@@ -132,8 +135,16 @@ public class ArchetypeStorage(
         this.lookup[element.id] = element
         val denseIndex = denseLookup[element.id]
         {%- for c in components %}
-        if ( {{ c.storage }} != null )
-            this.{{ c.storage }}?.set(denseIndex, {{ c.storage }})
+        if ( {{ c.storage }} != null ) {
+            val storageSize = this.{{ c.storage }}!!.size
+            if (storageSize == denseIndex) {
+                this.{{ c.storage }}.add({{ c.storage }})
+            } else if (storageSize < denseIndex) {
+                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
+            } else {
+                this.{{ c.storage }}.set(denseIndex, {{ c.storage }})
+            }
+        }
         {%- endfor %}
     }
 
@@ -152,8 +163,8 @@ public class ArchetypeStorage(
         denseLookup[idAtLast] = index
         // make the swap in component arrays
         {%- for c in components %}
-        {{ c.storage }}?.set(size - 1, {{ c.storage }}.get(index))
-        {{ c.storage }}?.removeAt(size - 1)
+        {{ c.storage }}!!.set(index, {{ c.storage }}.get(size - 1))
+        {{ c.storage }}.removeAt(size - 1)
         {%- endfor %}
         size--
     }

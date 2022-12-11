@@ -15,6 +15,8 @@ import phonon.xv.core.*
 import phonon.xv.system.*
 import phonon.xv.common.UserInput
 import phonon.xv.util.file.listDirFiles
+import java.util.LinkedList
+import java.util.Queue
 
 public const val MAX_VEHICLES = 5000
 
@@ -55,7 +57,7 @@ public object XV {
     internal var mountRequests: ArrayList<MountVehicleRequest> = ArrayList()
     internal var dismountRequests: ArrayList<DismountVehicleRequest> = ArrayList()
     // vehicle creation requests
-    internal var createRequests: ArrayList<CreateVehicleRequest> = ArrayList()
+    internal var createRequests: Queue<CreateVehicleRequest> = LinkedList()
 
     // ========================================================================
     // RUNNING TASKS

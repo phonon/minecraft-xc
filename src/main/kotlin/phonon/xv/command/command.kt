@@ -20,6 +20,7 @@ import phonon.xv.XV
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.component.*
+import phonon.xv.system.CreateVehicleRequest
 import phonon.xv.util.Message
 
 
@@ -31,6 +32,7 @@ private val SUBCOMMANDS = listOf(
     "spawn",
     "start",
     "stop",
+    "create"
 )
 
 /**
@@ -58,6 +60,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             "spawn" -> spawn(sender, args)
             "start" -> start(sender)
             "stop" -> stop(sender)
+            "create" -> create(sender, args)
 
             else -> {
                 Message.error(sender, "Invalid /xc subcommand, use /xc help")
@@ -81,12 +84,45 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
                         return XV.vehiclePrototypeNames
                     }
                 }
+                "create" -> {
+                    if (args.size == 2) {
+                        if ( sender is Player && !sender.isOp() ) {
+                            return listOf()
+                        }
+
+                        return XV.vehiclePrototypeNames
+                    }
+                }
             }
 
             return listOf()
         }
 
         return SUBCOMMANDS
+    }
+
+    private fun create(sender: CommandSender, args: Array<String>) {
+        if ( sender !is Player ) {
+            sender.sendMessage("You must be a player to run this command!")
+            return
+        }
+        if ( args.size < 2) {
+            sender.sendMessage("Invalid Syntax: /xv create <prototype>")
+            return
+        }
+        val prototype = XV.vehiclePrototypes.get(args[1])
+        if ( prototype == null ) {
+            sender.sendMessage("Invalid prototype.")
+            return
+        }
+        XV.createRequests.add(
+                CreateVehicleRequest(
+                        sender,
+                        prototype,
+                        sender.location
+                )
+        )
+        sender.sendMessage("Queued create request at your location.")
     }
 
     private fun printHelp(sender: CommandSender?) {

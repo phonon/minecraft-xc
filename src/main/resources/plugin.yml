@@ -2,8 +2,8 @@ main: phonon.xv.XVPlugin
 name: xv
 version: 0.0
 api-version: 1.16
-depend: [kotlin]
-softdepend: [ProtocolLib, xc]
+depend: [kotlin, ProtocolLib]
+softdepend: [xc]
 commands:
   xv:
     description: xv

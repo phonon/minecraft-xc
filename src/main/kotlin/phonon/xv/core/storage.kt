@@ -43,7 +43,7 @@ public class VehicleStorage(
     fun freeId(id: VehicleId) {
         lookup[id] = null
         freeIds.push(id)
-        size++
+        size--
     }
 }
 

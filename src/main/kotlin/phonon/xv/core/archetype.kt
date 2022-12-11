@@ -129,6 +129,9 @@ public class ArchetypeStorage(
         elements[size] = newId
         // set new head of implicit linked list
         freedNext = denseLookup[freedNext]
+        if ( freedNext == -1 ) {
+            freedNext = size + 1
+        }
         // update dense lookup
         denseLookup[newId] = size
         size++
@@ -151,22 +154,86 @@ public class ArchetypeStorage(
     ) {
         this.lookup[element.id] = element
         val denseIndex = denseLookup[element.id]
-        if ( fuel != null )
-            this.fuel?.set(denseIndex, fuel)
-        if ( gunTurret != null )
-            this.gunTurret?.set(denseIndex, gunTurret)
-        if ( health != null )
-            this.health?.set(denseIndex, health)
-        if ( landMovementControls != null )
-            this.landMovementControls?.set(denseIndex, landMovementControls)
-        if ( model != null )
-            this.model?.set(denseIndex, model)
-        if ( seats != null )
-            this.seats?.set(denseIndex, seats)
-        if ( seatsRaycast != null )
-            this.seatsRaycast?.set(denseIndex, seatsRaycast)
-        if ( transform != null )
-            this.transform?.set(denseIndex, transform)
+        if ( fuel != null ) {
+            val storageSize = this.fuel!!.size
+            if (storageSize == denseIndex) {
+                this.fuel.add(fuel)
+            } else if (storageSize < denseIndex) {
+                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
+            } else {
+                this.fuel.set(denseIndex, fuel)
+            }
+        }
+        if ( gunTurret != null ) {
+            val storageSize = this.gunTurret!!.size
+            if (storageSize == denseIndex) {
+                this.gunTurret.add(gunTurret)
+            } else if (storageSize < denseIndex) {
+                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
+            } else {
+                this.gunTurret.set(denseIndex, gunTurret)
+            }
+        }
+        if ( health != null ) {
+            val storageSize = this.health!!.size
+            if (storageSize == denseIndex) {
+                this.health.add(health)
+            } else if (storageSize < denseIndex) {
+                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
+            } else {
+                this.health.set(denseIndex, health)
+            }
+        }
+        if ( landMovementControls != null ) {
+            val storageSize = this.landMovementControls!!.size
+            if (storageSize == denseIndex) {
+                this.landMovementControls.add(landMovementControls)
+            } else if (storageSize < denseIndex) {
+                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
+            } else {
+                this.landMovementControls.set(denseIndex, landMovementControls)
+            }
+        }
+        if ( model != null ) {
+            val storageSize = this.model!!.size
+            if (storageSize == denseIndex) {
+                this.model.add(model)
+            } else if (storageSize < denseIndex) {
+                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
+            } else {
+                this.model.set(denseIndex, model)
+            }
+        }
+        if ( seats != null ) {
+            val storageSize = this.seats!!.size
+            if (storageSize == denseIndex) {
+                this.seats.add(seats)
+            } else if (storageSize < denseIndex) {
+                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
+            } else {
+                this.seats.set(denseIndex, seats)
+            }
+        }
+        if ( seatsRaycast != null ) {
+            val storageSize = this.seatsRaycast!!.size
+            if (storageSize == denseIndex) {
+                this.seatsRaycast.add(seatsRaycast)
+            } else if (storageSize < denseIndex) {
+                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
+            } else {
+                this.seatsRaycast.set(denseIndex, seatsRaycast)
+            }
+        }
+        if ( transform != null ) {
+            val storageSize = this.transform!!.size
+            if (storageSize == denseIndex) {
+                this.transform.add(transform)
+            } else if (storageSize < denseIndex) {
+                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
+            } else {
+                this.transform.set(denseIndex, transform)
+            }
+        }
     }
 
     // mark id as deleted
@@ -183,22 +250,22 @@ public class ArchetypeStorage(
         freedNext = id
         denseLookup[idAtLast] = index
         // make the swap in component arrays
-        fuel?.set(size - 1, fuel.get(index))
-        fuel?.removeAt(size - 1)
-        gunTurret?.set(size - 1, gunTurret.get(index))
-        gunTurret?.removeAt(size - 1)
-        health?.set(size - 1, health.get(index))
-        health?.removeAt(size - 1)
-        landMovementControls?.set(size - 1, landMovementControls.get(index))
-        landMovementControls?.removeAt(size - 1)
-        model?.set(size - 1, model.get(index))
-        model?.removeAt(size - 1)
-        seats?.set(size - 1, seats.get(index))
-        seats?.removeAt(size - 1)
-        seatsRaycast?.set(size - 1, seatsRaycast.get(index))
-        seatsRaycast?.removeAt(size - 1)
-        transform?.set(size - 1, transform.get(index))
-        transform?.removeAt(size - 1)
+        fuel!!.set(index, fuel.get(size - 1))
+        fuel.removeAt(size - 1)
+        gunTurret!!.set(index, gunTurret.get(size - 1))
+        gunTurret.removeAt(size - 1)
+        health!!.set(index, health.get(size - 1))
+        health.removeAt(size - 1)
+        landMovementControls!!.set(index, landMovementControls.get(size - 1))
+        landMovementControls.removeAt(size - 1)
+        model!!.set(index, model.get(size - 1))
+        model.removeAt(size - 1)
+        seats!!.set(index, seats.get(size - 1))
+        seats.removeAt(size - 1)
+        seatsRaycast!!.set(index, seatsRaycast.get(size - 1))
+        seatsRaycast.removeAt(size - 1)
+        transform!!.set(index, transform.get(size - 1))
+        transform.removeAt(size - 1)
         size--
     }
 

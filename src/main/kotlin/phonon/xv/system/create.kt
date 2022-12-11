@@ -5,6 +5,7 @@ import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Player
 import phonon.xv.XV
 import phonon.xv.core.*
+import java.util.Queue
 import java.util.Stack
 
 public data class CreateVehicleRequest(
@@ -13,16 +14,16 @@ public data class CreateVehicleRequest(
         val location: Location
 )
 
-// TODO
-// when we create a vehicle its gonna give the player
+// TODO when we create a vehicle its gonna give the player
 // a loading bar, but this functionality is common
 // to refueling and reloading a cannon. (when we add that)
 // where do we put it?
 
 public fun systemCreateVehicle(
-        storage: ComponentsStorage,
-        requests: List<CreateVehicleRequest>
+        componentStorage: ComponentsStorage,
+        requests: Queue<CreateVehicleRequest>
 ) {
+    // recursive inline function
     fun buildElement(prototype: VehicleElementPrototype): VehicleElement {
         val childrenElts = ArrayList<VehicleElement>()
         // build children first
@@ -30,7 +31,7 @@ public fun systemCreateVehicle(
             val elt = buildElement(childPrototype)
             childrenElts.add(elt)
         }
-        val id = XV.storage.lookup[prototype.layout]!!.newId()
+        val id = componentStorage.lookup[prototype.layout]!!.newId()
         val elt = VehicleElement(
                 "${prototype.vehicle}.${prototype.name}${id}",
                 id,
@@ -44,8 +45,9 @@ public fun systemCreateVehicle(
         return elt
     }
 
-    for (req in requests) {
-        val (player, prototype, location) = req
+    // TODO consider pipelining
+    while ( requests.isNotEmpty() ) {
+        val (player, prototype, location) = requests.remove()
 
         val vehicleId = XV.vehicleStorage.newId()
         val elements = HashSet<VehicleElement>(prototype.elements.size)
@@ -75,7 +77,7 @@ public fun systemCreateVehicle(
 
         // TODO When adding components this will always need to be updated
         for ( elt in vehicle.elements ) {
-            XV.storage.lookup[elt.layout()]!!.inject(
+            componentStorage.lookup[elt.layout()]!!.inject(
                     elt,
                     elt.prototype.fuel?.copy(),
                     elt.prototype.gunTurret?.copy(),
@@ -108,13 +110,8 @@ public fun systemCreateVehicle(
                     )
             )
         }
-
-        // steps:
-        // 1. Reserve a VehicleId for the vehicle itself.
-        // 2. iterate thru VehicleElementPrototypes
-        // 3. Reserve a VehicleElementId in archetype storage (maybe update elementPrototypeData?)
-        // 4. Write components to storage
-        // 5. Spawn in armorstand, update entityVehicleData in main class
+        // test stuff
+        player.sendMessage("Created your vehicle at x:${location.x} y:${location.y} z:${location.z}")
     }
 
 
