@@ -24,7 +24,7 @@ public fun systemUpdateSeats(
             val player = seats.passengers[i]
 
             // debug
-            // println("armorstand: ${armorstand?.getUniqueId()}, player: $player, player.getVehicle() ${player?.getVehicle()?.getUniqueId()}")
+            // println("armorstand: ${armorstand?.getUniqueId()}, player: $player, player.getVehicle() ${ ?.getVehicle()?.getUniqueId()}")
 
             if ( player !== null ) {
                 val playerVehicle = player.getVehicle()

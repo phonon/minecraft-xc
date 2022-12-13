@@ -8,10 +8,16 @@ import phonon.xv.core.*
 import java.util.Queue
 import java.util.Stack
 
+public enum class CreateReason {
+    NEW,
+    LOAD
+}
+
 public data class CreateVehicleRequest(
         val player: Player,
         val prototype: VehiclePrototype,
-        val location: Location
+        val location: Location,
+        val reason: CreateReason = CreateReason.NEW
 )
 
 // TODO when we create a vehicle its gonna give the player
@@ -47,7 +53,8 @@ public fun systemCreateVehicle(
 
     // TODO consider pipelining
     while ( requests.isNotEmpty() ) {
-        val (player, prototype, location) = requests.remove()
+        val req = requests.remove()
+        val (player, prototype, location) = req
 
         val vehicleId = XV.vehicleStorage.newId()
         val elements = HashSet<VehicleElement>(prototype.elements.size)
@@ -72,43 +79,9 @@ public fun systemCreateVehicle(
                 prototype,
                 elements.toTypedArray()
         )
-        // now we build relevant data for all the components
-        // no codegen because some need special code :-D
 
-        // TODO When adding components this will always need to be updated
         for ( elt in vehicle.elements ) {
-            componentStorage.lookup[elt.layout()]!!.inject(
-                    elt,
-                    elt.prototype.fuel?.copy(),
-                    elt.prototype.gunTurret?.copy(),
-                    elt.prototype.health?.copy(),
-                    elt.prototype.landMovementControls?.copy(),
-                    if ( elt.prototype.model != null ) {
-                        // TODO use custom armorstand implementation
-                        val armorstand: ArmorStand = location.world!!.spawn(location, ArmorStand::class.java)
-                        armorstand.setGravity(false)
-                        armorstand.setVisible(true)
-                        // armorstand.getEquipment()!!.setHelmet(createModel(Tank.modelMaterial, this.modelDataBody))
-                        armorstand.setRotation(location.yaw, 0f)
-                        XV.entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
-                                elt.id,
-                                elt.layout(),
-                                VehicleComponentType.MODEL
-                        )
-                        elt.prototype.model.copy(armorstand = armorstand)
-                    } else {
-                        null
-                    },
-                    elt.prototype.seats?.copy(),
-                    elt.prototype.seatsRaycast?.copy(),
-                    elt.prototype.transform?.copy(
-                            world = location.world,
-                            x = location.x,
-                            y = location.y,
-                            z = location.z,
-                            yaw = location.yaw.toDouble()
-                    )
-            )
+            injectComponents(elt, req)
         }
         // test stuff
         player.sendMessage("Created your vehicle at x:${location.x} y:${location.y} z:${location.z}")

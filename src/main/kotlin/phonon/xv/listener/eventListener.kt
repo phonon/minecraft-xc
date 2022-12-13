@@ -80,7 +80,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
 
         // println("ON PLAYER INTERACT EVENT: ${action} (hand=${e.getHand()}) (use=${e.useInteractedBlock()})")
 
-        // ignores off hand event
+        // ignores main hand event
         if ( e.getHand() != EquipmentSlot.HAND ) {
             return
         }

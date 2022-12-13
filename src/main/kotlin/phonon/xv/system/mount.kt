@@ -225,7 +225,16 @@ public fun systemMountSeatRaycast(
     // max chunks checked <= requests * totalChunkRange^3
     val chunkRange = XV.config.seatRaycastChunkRange
     val totalChunkRange = 1 + (2 * chunkRange)
-    val archetypeSize = 10 // TODO: archetype.size
+    val matchingArchetypes = XV.storage.getMatchingArchetypes(
+            EnumSet.of(VehicleComponentType.TRANSFORM,
+                    VehicleComponentType.SEATS,
+                    VehicleComponentType.SEATS_RAYCAST)
+    )
+    var archetypeSize = 0
+    for ( archetype in matchingArchetypes )
+        archetypeSize += archetype.size
+    if ( archetypeSize == 0 )
+        return ArrayList()
     val maxChunks = archetypeSize * (totalChunkRange * totalChunkRange * totalChunkRange)
     val chunkVehicleElements = HashMap<ChunkCoord3D, ArrayList<VehicleElementId>>(maxChunks)
     var maxValidVehicleElements = 0
