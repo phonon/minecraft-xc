@@ -1,5 +1,6 @@
 package phonon.xv.component
 
+import com.google.gson.JsonObject
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.Location
@@ -71,6 +72,8 @@ public data class SeatsComponent(
         )
     }
 
+    fun toJson(): JsonObject? = null
+
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): SeatsComponent {
@@ -92,5 +95,7 @@ public data class SeatsComponent(
 
             return mapToObject(properties, SeatsComponent::class)
         }
+
+        public fun fromJson(json: JsonObject?, copy: SeatsComponent) = null
     }
 }

@@ -1,5 +1,6 @@
 package phonon.xv.component
 
+import com.google.gson.JsonObject
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import phonon.xv.core.VehicleComponent
@@ -42,6 +43,8 @@ public data class GunTurretComponent(
 ): VehicleComponent {
     override val type = VehicleComponentType.GUN_TURRET
 
+    fun toJson(): JsonObject? = null
+
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): GunTurretComponent {
@@ -67,5 +70,7 @@ public data class GunTurretComponent(
 
             return mapToObject(properties, GunTurretComponent::class)
         }
+
+        public fun fromJson(json: JsonObject?, copy: GunTurretComponent) = null
     }
 }

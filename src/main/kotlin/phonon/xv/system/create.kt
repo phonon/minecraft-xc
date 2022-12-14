@@ -79,6 +79,7 @@ public fun systemCreateVehicle(
                 prototype,
                 elements.toTypedArray()
         )
+        XV.uuidToVehicle[vehicle.uuid] = vehicle
 
         for ( elt in vehicle.elements ) {
             injectComponents(elt, req)

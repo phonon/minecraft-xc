@@ -1,5 +1,6 @@
 package phonon.xv.component
 
+import com.google.gson.JsonObject
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.entity.Entity
@@ -31,7 +32,9 @@ public data class ModelComponent(
     var armorstand: Entity? = null,
 ): VehicleComponent {
     override val type = VehicleComponentType.MODEL
-    
+
+    fun toJson(): JsonObject? = null
+
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): ModelComponent {
@@ -54,5 +57,7 @@ public data class ModelComponent(
 
             return mapToObject(properties, ModelComponent::class)
         }
+
+        public fun fromJson(json: JsonObject?, copy: ModelComponent) = null
     }
 }

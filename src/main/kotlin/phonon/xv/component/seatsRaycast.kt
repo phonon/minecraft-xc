@@ -1,5 +1,6 @@
 package phonon.xv.component
 
+import com.google.gson.JsonObject
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import phonon.xv.core.VehicleComponent
@@ -25,6 +26,8 @@ public data class SeatsRaycastComponent(
 
     override val type = VehicleComponentType.SEATS_RAYCAST
 
+    public fun toJson(): JsonObject? = null
+
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): SeatsRaycastComponent {
@@ -33,5 +36,7 @@ public data class SeatsRaycastComponent(
 
             return mapToObject(properties, SeatsRaycastComponent::class)
         }
+
+        public fun fromJson(json: JsonObject?, copy: SeatsRaycastComponent) = null
     }
 }

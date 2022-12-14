@@ -18,6 +18,7 @@ package phonon.xv.core
 
 import java.util.EnumSet
 import phonon.xv.core.INVALID_ELEMENT_ID
+import com.google.gson.JsonObject
 import phonon.xv.component.*
 import java.util.Stack
 
@@ -70,18 +71,18 @@ public class ArchetypeStorage(
     // fluffy start, vehicle element id manager + dense map/array
 
     // element id => element
-    val lookup: HashMap<VehicleElementId, VehicleElement> = HashMap()
+    private val lookup: HashMap<VehicleElementId, VehicleElement> = HashMap()
     // stack of free ids that are not at the end of the lookup array
     // lookup array vehicle element id => dense array index
     // the sets we're mapping have equal cardinality, we use a dense map
     // to keep all components in contiguous block in dense array
-    private val denseLookup: Array<Int> = Array(maxElements) { _ -> INVALID_DENSE_INDEX }
+    val denseLookup: Array<Int> = Array(maxElements) { _ -> INVALID_DENSE_INDEX }
 
     // dense array index => vehicle element id
     // only internal cuz iterator classes need it
     internal val elements: IntArray = IntArray(maxElements) { _ -> INVALID_ELEMENT_ID }
     // denseLookup implicit linked list head
-    private var freedNext: Int = 0
+    internal var freedNext: Int = 0
 
     /*
     // map from vehicle element id => element's dense array index
@@ -101,6 +102,16 @@ public class ArchetypeStorage(
     // element id => element lookup, function for type safety
     fun lookup(id: VehicleElementId): VehicleElement? {
         return lookup[id]
+    }
+
+    inline fun <reified T: VehicleComponent> getComponent(id: VehicleElementId): T? {
+        val denseIndex = this.denseLookup[id]
+        return when ( T::class ) {
+            {%- for c in components %}
+            {{ c.classname }}::class -> this.{{ c.storage }}?.get(denseIndex) as T
+            {%- endfor %}
+            else -> throw Exception("Unknown component type.")
+        }
     }
 
     // reserves a new element id and internally adds an entry in dense array

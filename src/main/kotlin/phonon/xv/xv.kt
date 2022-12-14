@@ -53,6 +53,11 @@ public object XV {
     // entity uuid => vehicle element data
     internal val entityVehicleData: HashMap<UUID, EntityVehicleData> = HashMap()
 
+    // element uuid -> element
+    internal val uuidToElement: HashMap<UUID, VehicleElement> = HashMap()
+    // vehicle uuid -> element
+    internal val uuidToVehicle: HashMap<UUID, Vehicle> = HashMap()
+
     // player mount and dismount requests
     internal var mountRequests: ArrayList<MountVehicleRequest> = ArrayList()
     internal var dismountRequests: ArrayList<DismountVehicleRequest> = ArrayList()

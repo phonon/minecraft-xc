@@ -1,5 +1,7 @@
 package phonon.xv.component
 
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.entity.Player
@@ -75,6 +77,13 @@ public data class LandMovementControlsComponent(
 ): VehicleComponent {
     override val type = VehicleComponentType.LAND_MOVEMENT_CONTROLS
 
+    fun toJson(): JsonObject {
+        val json = JsonObject()
+        json.add("speed", JsonPrimitive(speed))
+        json.add("yawRotationSpeed", JsonPrimitive(yawRotationAcceleration))
+        return json
+    }
+
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): LandMovementControlsComponent {
@@ -106,6 +115,11 @@ public data class LandMovementControlsComponent(
             }
 
             return mapToObject(properties, LandMovementControlsComponent::class)
+        }
+
+        public fun fromJson(json: JsonObject, copy: LandMovementControlsComponent) {
+            copy.speed = json["speed"].asDouble
+            copy.yawRotationSpeed = json["yawRotationSpeed"].asDouble
         }
     }
 }

@@ -1,5 +1,7 @@
 package phonon.xv.component
 
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import phonon.xv.core.VehicleComponent
@@ -17,6 +19,12 @@ public data class FuelComponent(
         current = current.coerceIn(0.0, max)
     }
 
+    fun toJson(): JsonObject? {
+        val json = JsonObject()
+        json.add("current", JsonPrimitive(current))
+        return json
+    }
+
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, logger: Logger? = null): FuelComponent {
@@ -27,6 +35,10 @@ public data class FuelComponent(
             toml.getNumberAs<Double>("max")?.let { properties["max"] = it }
 
             return mapToObject(properties, FuelComponent::class)
+        }
+
+        public fun fromJson(json: JsonObject, copy: FuelComponent) {
+            copy.current = json["current"].asDouble
         }
     }
 }

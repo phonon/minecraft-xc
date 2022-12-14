@@ -7,6 +7,7 @@
 package phonon.xv.core
 
 import java.util.EnumSet
+import java.util.UUID
 
 // Vehicle id is just wrapper for Int
 typealias VehicleId = Int
@@ -28,9 +29,12 @@ public const val INVALID_ELEMENT_ID: VehicleElementId = -1
  */
 public data class Vehicle(
         val name: String,
+        // integer id, may vary across restarts
         val id: VehicleId,
         val prototype: VehiclePrototype,
-        val elements: Array<VehicleElement>
+        val elements: Array<VehicleElement>,
+        // for persistence, static across restarts
+        val uuid: UUID = UUID.randomUUID()
 ) {
     public val rootElements: Array<VehicleElement>
     
@@ -46,6 +50,7 @@ public data class Vehicle(
  */
 public data class VehicleElement(
     val name: String,
+    // integer id, may vary across restarts
     val id: VehicleElementId,
     // EnumSet enforces only at most 1 of any component type.
     // Adding this set here simplifies deleting vehicle element.
@@ -53,6 +58,8 @@ public data class VehicleElement(
     val prototype: VehicleElementPrototype,
     // Element parent-child tree hierarchy
     val children: Array<VehicleElement>,
+    // for persistence, static across restarts
+    val uuid: UUID = UUID.randomUUID()
 ) {
     // parents are set lazily, but are set immediately after init
     var parent: VehicleElement? = null

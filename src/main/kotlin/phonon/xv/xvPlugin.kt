@@ -27,6 +27,7 @@ public class XVPlugin : JavaPlugin() {
 
         // register listeners
         pluginManager.registerEvents(EventListener(this), this)
+        pluginManager.registerEvents(ArmorstandListener(this), this)
         ProtocolLibrary.getProtocolManager().addPacketListener(ControlsListener(this))
 
         // register commands
