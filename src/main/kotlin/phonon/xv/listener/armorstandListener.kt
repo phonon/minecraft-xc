@@ -3,6 +3,7 @@ package phonon.xv.listener
 import java.util.UUID
 import org.bukkit.NamespacedKey
 import org.bukkit.entity.ArmorStand
+import org.bukkit.entity.EntityType
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
@@ -39,16 +40,21 @@ public class ArmorstandListener(val xv: XV): Listener {
                         entity.persistentDataContainer.get(modelReassociationKey, PersistentDataType.STRING)
                 )
                 val vehicleElement = xv.uuidToElement[elementUUID]
-                if ( vehicleElement == null ) {
-                    // vehicle element no longer exists,
-                    // just delete the stand
-                    entity.remove()
-                } else {
+                if ( vehicleElement != null ) {
                     // use archetype storage to set model component field
                     // to point to this armorstand
                     val archetype = xv.storage.lookup[vehicleElement.layout()]!!
                     val modelComponent = archetype.getComponent<ModelComponent>(vehicleElement.id)!!
                     modelComponent.armorstand = entity
+                } else {
+                    if ( xv.config.deleteInvalidArmorStands ) {
+                        // vehicle element no longer exists, just delete the stand
+                        // (only do if config set, by default avoid because any
+                        // error in loading that causes armor stand to vehicle
+                        // mappings to not be loaded will cause all vehicles to be
+                        // marked as invalid and deleted)
+                        entity.remove()
+                    }
                 }
             }
         }
@@ -62,16 +68,18 @@ public class ArmorstandListener(val xv: XV): Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public fun onArmorstandUnload(event: EntitiesUnloadEvent) {
         for ( entity in event.entities ) {
-            val entityVehicleData = xv.entityVehicleData[entity.uniqueId]
-            if ( entity is ArmorStand && entityVehicleData !== null ) {
-                val element = xv.storage.lookup[entityVehicleData.layout]!!.lookup(entityVehicleData.elementId)!!
-                if ( entityVehicleData.componentType == VehicleComponentType.MODEL ) {
+            if ( entity.type == EntityType.ARMOR_STAND ) {
+                val entityVehicleData = xv.entityVehicleData[entity.uniqueId]
+                if ( entityVehicleData !== null ) {
                     val element = xv.storage.lookup[entityVehicleData.layout]!!.lookup(entityVehicleData.elementId)!!
-                    entity.persistentDataContainer.set(
+                    if ( entityVehicleData.componentType == VehicleComponentType.MODEL ) {
+                        val element = xv.storage.lookup[entityVehicleData.layout]!!.lookup(entityVehicleData.elementId)!!
+                        entity.persistentDataContainer.set(
                             modelReassociationKey,
                             PersistentDataType.STRING,
                             element.uuid.toString()
-                    )
+                        )
+                    }
                 }
             }
         }

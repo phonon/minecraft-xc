@@ -56,6 +56,11 @@ public data class Config(
     val savePeriod: Int = 200,
     val savePipelineLength: Int = 2,
     val saveBackupPeriod: Int = 18000,
+
+    // delete invalid armor stands on load
+    // (default avoid, any error in load where vehicles not all loaded
+    // can cause all armor stands to be deleted)
+    val deleteInvalidArmorStands: Boolean = false,
 ) {
     
     companion object {
@@ -119,6 +124,10 @@ public data class Config(
                 save.getLong("period")?.let { configOptions["savePeriod"] = it.toInt() }
                 save.getLong("pipeline_length")?.let { configOptions["savePipelineLength"] = it.toInt() }
                 save.getLong("backup_period")?.let { configOptions["saveBackupPeriod"] = it.toInt() }
+            }
+
+            toml.getTable("misc")?.let { misc -> 
+                misc.getBoolean("delete_invalid_armor_stands")?.let { configOptions["deleteInvalidArmorStands"] = it }
             }
 
             return mapToObject(configOptions, Config::class)

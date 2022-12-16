@@ -41,3 +41,11 @@ backup = "backup"   # backup save states
 period = 200 # how often in ticks to run save
 pipeline_length = 2 # how many ticks to split vehicle save into
 backup_period = 18000 # how often in ticks to save a long-term backup, default = 15 min
+
+# misc random settings
+[misc]
+# Setting this true will delete invaid armor stands when 
+# entities loaded. Default AVOID THIS because any error in load
+# function can cause all player vehicles to be accidentally deleted
+# (because no armor stand mappings were properly loaded)
+delete_invalid_armor_stands = false
