@@ -62,7 +62,11 @@ public data class Config(
         /**
          * Parse and return a Config from a config.toml file.
          */
-        public fun fromToml(source: Path, logger: Logger? = null): Config {
+        public fun fromToml(
+            source: Path,
+            pluginDataFolder: Path,
+            logger: Logger? = null,
+        ): Config {
             val toml = Toml.parse(source)
 
             // map with keys as Config constructor property names
@@ -105,10 +109,9 @@ public data class Config(
 
             // paths
             toml.getTable("paths")?.let { paths -> 
-                val pluginDataFolder = XV.plugin!!.getDataFolder().getPath()
-                paths.getString("vehicle")?.let { configOptions["pathFilesVehicles"] = Paths.get(pluginDataFolder, it) }
-                paths.getString("backup")?.let { configOptions["pathFilesBackup"] = Paths.get(pluginDataFolder, it) }
-                paths.getString("save")?.let { configOptions["pathSave"] = Paths.get(pluginDataFolder, it) }
+                paths.getString("vehicle")?.let { configOptions["pathFilesVehicles"] = pluginDataFolder.resolve(it) }
+                paths.getString("backup")?.let { configOptions["pathFilesBackup"] =  pluginDataFolder.resolve(it) }
+                paths.getString("save")?.let { configOptions["pathSave"] =  pluginDataFolder.resolve(it) }
             }
 
             // save

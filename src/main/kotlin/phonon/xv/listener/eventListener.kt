@@ -8,7 +8,6 @@ import java.time.LocalDateTime
 import java.text.MessageFormat
 import org.bukkit.ChatColor
 import org.bukkit.attribute.Attribute
-import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.entity.Player
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.LivingEntity
@@ -48,15 +47,15 @@ import phonon.xv.XV
 import phonon.xv.system.MountVehicleRequest
 import phonon.xv.system.DismountVehicleRequest
 
-public class EventListener(val plugin: JavaPlugin): Listener {
+public class EventListener(val xv: XV): Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     public fun onPlayerEntityInteract(event: PlayerInteractAtEntityEvent) {
         val player = event.getPlayer()
         val entity = event.getRightClicked()
         val uuid = entity.getUniqueId()
-        val vehicleData = XV.entityVehicleData[uuid]
+        val vehicleData = xv.entityVehicleData[uuid]
         if ( vehicleData !== null ) {
-            XV.mountRequests.add(MountVehicleRequest(
+            xv.mountRequests.add(MountVehicleRequest(
                 player = player,
                 elementId = vehicleData.elementId,
                 componentType = vehicleData.componentType,
@@ -90,7 +89,7 @@ public class EventListener(val plugin: JavaPlugin): Listener {
             action == Action.RIGHT_CLICK_AIR ||
             action == Action.RIGHT_CLICK_BLOCK
         ) {
-            XV.mountRequests.add(MountVehicleRequest(
+            xv.mountRequests.add(MountVehicleRequest(
                 player = player,
                 doRaycast = true,
             ))
@@ -106,9 +105,9 @@ public class EventListener(val plugin: JavaPlugin): Listener {
         if ( player is Player ) {
             val entity = event.getDismounted()
             val uuid = entity.getUniqueId()
-            val vehicleData = XV.entityVehicleData[uuid]
+            val vehicleData = xv.entityVehicleData[uuid]
             if ( vehicleData !== null ) {
-                XV.dismountRequests.add(DismountVehicleRequest(
+                xv.dismountRequests.add(DismountVehicleRequest(
                     player = player,
                     elementId = vehicleData.elementId,
                     componentType = vehicleData.componentType,

@@ -24,11 +24,11 @@ public const val MAX_VEHICLES = 5000
  * XV engine global state.
  * Stores all game state and provide XV engine api.
  */
-public object XV {
-    // spigot plugin variable
-    internal var plugin: Plugin? = null
-    internal var logger: Logger? = null
-
+public class XV (
+    // spigot plugin variables links
+    internal val plugin: Plugin,
+    internal val logger: Logger,
+) {
     // ========================================================================
     // STORAGE
     // ========================================================================
@@ -70,23 +70,6 @@ public object XV {
     internal var engineTask: BukkitTask? = null
 
     /**
-     * onEnable:
-     * Set links to spigot plugin and logger.
-     */
-    internal fun onEnable(plugin: Plugin) {
-        XV.plugin = plugin
-        XV.logger = plugin.getLogger()
-    }
-
-    /**
-     * Remove hooks to plugins and external APIs
-     */
-    internal fun onDisable() {
-        XV.plugin = null
-        XV.logger = null
-    }
-
-    /**
      * Re-initialize storages and re-load config.
      * TODO: async
      */
@@ -94,16 +77,17 @@ public object XV {
         val timeStart = System.currentTimeMillis()
 
         // load main plugin config
-        val pathConfigToml = Paths.get(XV.plugin!!.getDataFolder().getPath(), "config.toml")
+        val pluginDataFolder = Paths.get(this.plugin.getDataFolder().getPath())
+        val pathConfigToml = pluginDataFolder.resolve("config.toml")
         val config = if ( Files.exists(pathConfigToml) ) {
-            Config.fromToml(pathConfigToml, XV.logger)
+            Config.fromToml(pathConfigToml, pluginDataFolder, this.logger)
         } else {
-            XV.logger!!.info("Creating default config.toml")
-            XV.plugin!!.saveResource("config.toml", false)
+            this.logger.info("Creating default config.toml")
+            this.plugin.saveResource("config.toml", false)
             Config()
         }
 
-        XV.config = config
+        this.config = config
 
         // clear current component/archetype storage
         storage.clear()
@@ -115,12 +99,12 @@ public object XV {
             "vehicle/debug_car.toml",
             "vehicle/debug_multi_turret.toml",
             "vehicle/debug_tank.toml",
-        ).forEach { p -> XV.plugin!!.saveResource(p, false) }
+        ).forEach { p -> this.plugin.saveResource(p, false) }
 
         val elementPrototypes = mutableMapOf<String, VehicleElementPrototype>()
 
         val vehiclePrototypes: Map<String, VehiclePrototype> = listDirFiles(config.pathFilesVehicles)
-            .map { f -> VehiclePrototype.fromTomlFile(config.pathFilesVehicles.resolve(f), XV.logger) }
+            .map { f -> VehiclePrototype.fromTomlFile(config.pathFilesVehicles.resolve(f), this.logger) }
             .filterNotNull()
             .map { v -> // add layouts of each element prototype
                 // perhaps we can relegate this to when vehicles are spawned
@@ -135,33 +119,36 @@ public object XV {
             }
             .toMap()
 
-        XV.vehicleElementPrototypes = elementPrototypes
-        XV.vehicleElementPrototypeNames = XV.vehicleElementPrototypes.keys.toList()
-        XV.vehiclePrototypes = vehiclePrototypes
-        XV.vehiclePrototypeNames = vehiclePrototypes.keys.toList()
+        this.vehicleElementPrototypes = elementPrototypes
+        this.vehicleElementPrototypeNames = this.vehicleElementPrototypes.keys.toList()
+        this.vehiclePrototypes = vehiclePrototypes
+        this.vehiclePrototypeNames = vehiclePrototypes.keys.toList()
         
         // finish: print stats
         val timeEnd = System.currentTimeMillis()
         val timeLoad = timeEnd - timeStart
-        XV.logger?.info("Reloaded in ${timeLoad}ms")
-        XV.logger?.info("- Prototypes: ${vehiclePrototypes.size}")
+        this.logger.info("Reloaded in ${timeLoad}ms")
+        this.logger.info("- Prototypes: ${vehiclePrototypes.size}")
     }
 
     /**
      * Starts running engine task
      */
     internal fun start() {
-        if ( XV.engineTask == null ) {
-            XV.engineTask = Bukkit.getScheduler().runTaskTimer(XV.plugin!!, object: Runnable {
+        if ( this.engineTask == null ) {
+            val xv = this // alias for lambda
+            
+            this.engineTask = Bukkit.getScheduler().runTaskTimer(this.plugin, object: Runnable {
+                
                 override fun run() {
-                    XV.update()
+                    xv.update()
                 }
             }, 0, 0)
 
-            XV.logger!!.info("Starting engine")
+            this.logger.info("Starting engine")
         }
         else {
-            XV.logger!!.warning("Engine already running")
+            this.logger.warning("Engine already running")
         }
     }
 
@@ -169,13 +156,13 @@ public object XV {
      * Stop running engine task
      */
     internal fun stop() {
-        val task = XV.engineTask
+        val task = this.engineTask
         if ( task != null ) {
             task.cancel()
-            XV.engineTask = null
-            XV.logger!!.info("Stopping engine")
+            this.engineTask = null
+            this.logger.info("Stopping engine")
         } else {
-            XV.logger!!.warning("Engine not running")
+            this.logger.warning("Engine not running")
         }
     }
 

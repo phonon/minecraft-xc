@@ -30,12 +30,14 @@ import java.util.EnumSet
  * element. This function will execute the construction, component-specific
  * init procedures, and registration in the appropriate archetype.
  */
-public fun injectComponents(
-        element: VehicleElement,
-        req: CreateVehicleRequest
+public fun XV.injectComponents(
+    element: VehicleElement,
+    req: CreateVehicleRequest
 ) {
+    val xv = this // alias
+
     val prototype = element.prototype
-    XV.storage.lookup[prototype.layout]!!.inject(
+    xv.storage.lookup[prototype.layout]!!.inject(
             element, 
             prototype.fuel, 
             prototype.gunTurret, 
@@ -49,7 +51,7 @@ public fun injectComponents(
                 armorstand.setVisible(true)
                 // armorstand.getEquipment()!!.setHelmet(createModel(Tank.modelMaterial, this.modelDataBody))
                 armorstand.setRotation(req.location.yaw, 0f)
-                XV.entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
+                xv.entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
                         element.id,
                         element.layout(),
                         VehicleComponentType.MODEL

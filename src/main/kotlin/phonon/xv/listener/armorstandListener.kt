@@ -1,5 +1,6 @@
 package phonon.xv.listener
 
+import java.util.UUID
 import org.bukkit.NamespacedKey
 import org.bukkit.entity.ArmorStand
 import org.bukkit.event.EventHandler
@@ -8,21 +9,19 @@ import org.bukkit.event.Listener
 import org.bukkit.event.world.EntitiesLoadEvent
 import org.bukkit.event.world.EntitiesUnloadEvent
 import org.bukkit.persistence.PersistentDataType
-import org.bukkit.plugin.java.JavaPlugin
 import phonon.xv.XV
 import phonon.xv.component.FuelComponent
 import phonon.xv.component.ModelComponent
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.core.VehicleComponentType
-import java.util.*
 
-public class ArmorstandListener(val plugin: JavaPlugin): Listener {
+public class ArmorstandListener(val xv: XV): Listener {
 
     // namespaced key to store id for armorstand reassociation. For now
     // this is just for model components
     // note that this is a VehicleElement's UUID, not their integer id.
     // UUIDs are static over restarts, integer IDs may be reassigned.
-    val modelReassociationKey = NamespacedKey(plugin, "element_uuid")
+    val modelReassociationKey = NamespacedKey(xv.plugin, "element_uuid")
 
     /**
      * When the entities of a chunk are loaded in, check
@@ -39,7 +38,7 @@ public class ArmorstandListener(val plugin: JavaPlugin): Listener {
                 val elementUUID = UUID.fromString(
                         entity.persistentDataContainer.get(modelReassociationKey, PersistentDataType.STRING)
                 )
-                val vehicleElement = XV.uuidToElement[elementUUID]
+                val vehicleElement = xv.uuidToElement[elementUUID]
                 if ( vehicleElement == null ) {
                     // vehicle element no longer exists,
                     // just delete the stand
@@ -47,7 +46,7 @@ public class ArmorstandListener(val plugin: JavaPlugin): Listener {
                 } else {
                     // use archetype storage to set model component field
                     // to point to this armorstand
-                    val archetype = XV.storage.lookup[vehicleElement.layout()]!!
+                    val archetype = xv.storage.lookup[vehicleElement.layout()]!!
                     val modelComponent = archetype.getComponent<ModelComponent>(vehicleElement.id)!!
                     modelComponent.armorstand = entity
                 }
@@ -63,12 +62,11 @@ public class ArmorstandListener(val plugin: JavaPlugin): Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public fun onArmorstandUnload(event: EntitiesUnloadEvent) {
         for ( entity in event.entities ) {
-            val entityVehicleData = XV.entityVehicleData[entity.uniqueId]
-            if ( entity is ArmorStand &&
-                    entityVehicleData !== null ) {
-                val element = XV.storage.lookup[entityVehicleData.layout]!!.lookup(entityVehicleData.elementId)!!
+            val entityVehicleData = xv.entityVehicleData[entity.uniqueId]
+            if ( entity is ArmorStand && entityVehicleData !== null ) {
+                val element = xv.storage.lookup[entityVehicleData.layout]!!.lookup(entityVehicleData.elementId)!!
                 if ( entityVehicleData.componentType == VehicleComponentType.MODEL ) {
-                    val element = XV.storage.lookup[entityVehicleData.layout]!!.lookup(entityVehicleData.elementId)!!
+                    val element = xv.storage.lookup[entityVehicleData.layout]!!.lookup(entityVehicleData.elementId)!!
                     entity.persistentDataContainer.set(
                             modelReassociationKey,
                             PersistentDataType.STRING,

@@ -38,10 +38,12 @@ public data class DismountVehicleRequest(
  * Return empty queue for next tick.
  * TODO: this will be generalized to an "interact" event system.
  */
-public fun systemMountVehicle(
+public fun XV.systemMountVehicle(
     storage: ComponentsStorage,
     requests: List<MountVehicleRequest>,
 ): ArrayList<MountVehicleRequest> {
+    val xv = this // alias for extension function this
+
     val requestsNotHandled = ArrayList<MountVehicleRequest>(requests.size)
 
     for ( req in requests ) {
@@ -84,7 +86,7 @@ public fun systemMountVehicle(
         )
 
         // TODO: this lookup should be main engine function
-        val archetype = XV.storage.lookup[layout]
+        val archetype = xv.storage.lookup[layout]
         if ( archetype == null ) {
             println("ERROR: archetype not found")
             continue
@@ -204,10 +206,11 @@ public fun systemDismountVehicle(
  * 
  */
 @Suppress("NAME_SHADOWING")
-public fun systemMountSeatRaycast(
+public fun XV.systemMountSeatRaycast(
     storage: ComponentsStorage,
     requests: List<MountVehicleRequest>,
 ): ArrayList<MountVehicleRequest> {
+    val xv = this // alias for extension function this
 
     // 1. Determine vehicle seat raycast chunk zones. Create map
     // for each chunk => vehicle elements in region.
@@ -223,9 +226,9 @@ public fun systemMountSeatRaycast(
     // chunks checked per player (on 3 axes) = totalChunkRange^3
     // worst case if no players overlap,
     // max chunks checked <= requests * totalChunkRange^3
-    val chunkRange = XV.config.seatRaycastChunkRange
+    val chunkRange = xv.config.seatRaycastChunkRange
     val totalChunkRange = 1 + (2 * chunkRange)
-    val matchingArchetypes = XV.storage.getMatchingArchetypes(
+    val matchingArchetypes = xv.storage.getMatchingArchetypes(
             EnumSet.of(VehicleComponentType.TRANSFORM,
                     VehicleComponentType.SEATS,
                     VehicleComponentType.SEATS_RAYCAST)
@@ -391,7 +394,7 @@ public fun systemMountSeatRaycast(
     }
 
     // 4. do player seat mount raycast seat AABB hitbox intersection tests
-    val maxRaycastDist = XV.config.seatRaycastDistance
+    val maxRaycastDist = xv.config.seatRaycastDistance
     val maxRaycastDistInChunks = maxRaycastDist / 16.0
 
     // player raycast distance should only be at max 1-2 blocks far.
@@ -504,7 +507,7 @@ public fun systemMountSeatRaycast(
                     }
 
                     // if debug, do particle visualization
-                    if ( XV.config.seatRaycastDebug ) {
+                    if ( xv.config.seatRaycastDebug ) {
                         hitbox.visualize(world, Particle.VILLAGER_HAPPY)
                     }
 

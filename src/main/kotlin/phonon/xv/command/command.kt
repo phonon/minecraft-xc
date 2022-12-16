@@ -6,7 +6,6 @@ import org.bukkit.Bukkit
 import org.bukkit.ChunkSnapshot
 import org.bukkit.ChatColor
 import org.bukkit.Location
-import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
@@ -38,7 +37,7 @@ private val SUBCOMMANDS = listOf(
 /**
  * Main /xv command. Route to subcommands.
  */
-public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
+public class Command(val xv: XV) : CommandExecutor, TabCompleter {
 
     override fun onCommand(sender: CommandSender, cmd: Command, commandLabel: String, args: Array<String>): Boolean {
         
@@ -81,7 +80,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
                             return listOf()
                         }
 
-                        return XV.vehiclePrototypeNames
+                        return xv.vehiclePrototypeNames
                     }
                 }
                 "create" -> {
@@ -90,7 +89,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
                             return listOf()
                         }
 
-                        return XV.vehiclePrototypeNames
+                        return xv.vehiclePrototypeNames
                     }
                 }
             }
@@ -110,12 +109,12 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             sender.sendMessage("Invalid Syntax: /xv create <prototype>")
             return
         }
-        val prototype = XV.vehiclePrototypes.get(args[1])
+        val prototype = xv.vehiclePrototypes.get(args[1])
         if ( prototype == null ) {
             sender.sendMessage("Invalid prototype.")
             return
         }
-        XV.createRequests.add(
+        xv.createRequests.add(
                 CreateVehicleRequest(
                         sender,
                         prototype,
@@ -135,7 +134,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         val player = if ( sender is Player ) sender else null
         if ( player === null || player.isOp() ) {
             Message.print(sender, "[xv] Reloading...")
-            XV.reload()
+            xv.reload()
             Message.print(sender, "[xv] Reloaded")
         }
         else {
@@ -147,7 +146,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         val player = if ( sender is Player ) sender else null
         if ( player === null || player.isOp() ) {
             Message.print(sender, "[xv] Starting engine...")
-            XV.start()
+            xv.start()
         }
         else {
             Message.error(sender, "[xv] Only operators can /xv start")
@@ -158,7 +157,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         val player = if ( sender is Player ) sender else null
         if ( player === null || player.isOp() ) {
             Message.print(sender, "[xv] Stopping engine...")
-            XV.stop()
+            xv.stop()
         }
         else {
             Message.error(sender, "[xv] Only operators can /xv stop")
@@ -169,7 +168,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
         val player = if ( sender is Player ) sender else null
         if ( player === null || player.isOp() ) {
             Message.print(sender, "[xv] Clearing archetypes...")
-            for ( archetype in XV.storage.archetypes ) {
+            for ( archetype in xv.storage.archetypes ) {
                 archetype.clear()
             }
         }
@@ -194,13 +193,13 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
 
         if ( args.size == 1 ) {
             Message.print(sender, "[xv] Prototypes:")
-            for ( (name, prototype) in XV.vehiclePrototypes ) {
+            for ( (name, prototype) in xv.vehiclePrototypes ) {
                 Message.print(sender, "  - ${name}")
             }
         }
         else if ( args.size == 2 ) {
             val name = args[1]
-            val prototype = XV.vehiclePrototypes[name]
+            val prototype = xv.vehiclePrototypes[name]
             if ( prototype === null ) {
                 Message.error(sender, "[xv] Prototype ${name} not found")
             }
@@ -244,7 +243,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
             "debug_car"
         }
 
-        val prototype = XV.vehiclePrototypes[vehicleName]
+        val prototype = xv.vehiclePrototypes[vehicleName]
         if ( prototype === null ) {
             Message.error(sender, "[xv] Prototype ${vehicleName} not found")
             return
@@ -263,8 +262,8 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
                 VehicleComponentType.SEATS_RAYCAST,
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS,
             )
-            XV.storage.addLayout(layout)
-            val archetype = XV.storage.lookup[layout]!!
+            xv.storage.addLayout(layout)
+            val archetype = xv.storage.lookup[layout]!!
             
             // only create vehicle for ptotoypes with [transform, model, landMovement]
             // TODO: a more generalized creation, likely needs codegen + delegation
@@ -279,7 +278,7 @@ public class Command(val plugin: JavaPlugin) : CommandExecutor, TabCompleter {
                 // to the end of a single archetype array
                 val elementId = archetype.size
 
-                XV.entityVehicleData[armorstand.getUniqueId()] = EntityVehicleData(
+                xv.entityVehicleData[armorstand.getUniqueId()] = EntityVehicleData(
                     elementId = elementId,
                     layout = element.layout,
                     componentType = VehicleComponentType.MODEL,

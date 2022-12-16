@@ -32,10 +32,10 @@ import phonon.xv.XV
 import phonon.xv.common.UserInput
 
 // return instance of PacketAdapter listener bound to this java plugin
-public fun ControlsListener(plugin: JavaPlugin): PacketAdapter {
+public fun ControlsListener(xv: XV): PacketAdapter {
 
     return object: PacketAdapter(PacketAdapter.AdapterParameteters()
-        .plugin(plugin)
+        .plugin(xv.plugin)
         .connectionSide(ConnectionSide.CLIENT_SIDE)
         .types(setOf(PacketType.Play.Client.STEER_VEHICLE))
         .listenerPriority(ListenerPriority.MONITOR)
@@ -63,7 +63,7 @@ public fun ControlsListener(plugin: JavaPlugin): PacketAdapter {
                         shift = isUnmount,
                     )
 
-                    XV.userInputs[player.getUniqueId()] = userInput
+                    xv.userInputs[player.getUniqueId()] = userInput
 
                     ////// DEPRECATED: only writes if this is a vehicle element
                     // val uuid = entity.getUniqueId()

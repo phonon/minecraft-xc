@@ -25,10 +25,12 @@ public data class CreateVehicleRequest(
 // to refueling and reloading a cannon. (when we add that)
 // where do we put it?
 
-public fun systemCreateVehicle(
-        componentStorage: ComponentsStorage,
-        requests: Queue<CreateVehicleRequest>
+public fun XV.systemCreateVehicle(
+    componentStorage: ComponentsStorage,
+    requests: Queue<CreateVehicleRequest>
 ) {
+    val xv = this // alias
+
     // recursive inline function
     fun buildElement(prototype: VehicleElementPrototype): VehicleElement {
         val childrenElts = ArrayList<VehicleElement>()
@@ -39,10 +41,10 @@ public fun systemCreateVehicle(
         }
         val id = componentStorage.lookup[prototype.layout]!!.newId()
         val elt = VehicleElement(
-                "${prototype.vehicle}.${prototype.name}${id}",
-                id,
-                prototype,
-                childrenElts.toTypedArray()
+            "${prototype.vehicle}.${prototype.name}${id}",
+            id,
+            prototype,
+            childrenElts.toTypedArray()
         )
         // go for another pass thru and set parent of children
         for ( child in childrenElts ) {
@@ -56,7 +58,7 @@ public fun systemCreateVehicle(
         val req = requests.remove()
         val (player, prototype, location) = req
 
-        val vehicleId = XV.vehicleStorage.newId()
+        val vehicleId = xv.vehicleStorage.newId()
         val elements = HashSet<VehicleElement>(prototype.elements.size)
 
         val stack = Stack<VehicleElement>()
@@ -74,12 +76,12 @@ public fun systemCreateVehicle(
         }
 
         val vehicle = Vehicle(
-                "${prototype.name}${vehicleId}",
-                vehicleId,
-                prototype,
-                elements.toTypedArray()
+            "${prototype.name}${vehicleId}",
+            vehicleId,
+            prototype,
+            elements.toTypedArray()
         )
-        XV.uuidToVehicle[vehicle.uuid] = vehicle
+        xv.uuidToVehicle[vehicle.uuid] = vehicle
 
         for ( elt in vehicle.elements ) {
             injectComponents(elt, req)

@@ -198,26 +198,29 @@ public data class VehicleElementPrototype(
     var children: Array<VehicleElementPrototype>? = null
     internal set
 
-    fun buildCopy(): VehicleElement {
-        val childrenElts = ArrayList<VehicleElement>()
-        // build children first
-        for ( childPrototype in this.children!! ) {
-            val elt = childPrototype.buildCopy()
-            childrenElts.add(elt)
-        }
-        val id = XV.storage.lookup[layout]!!.newId()
-        val elt = VehicleElement(
-                "${vehicle}.${name}${id}",
-                id,
-                this,
-                childrenElts.toTypedArray()
-        )
-        // go for another pass thru and set parent of children
-        for ( child in childrenElts ) {
-            child.parent = elt
-        }
-        return elt
-    }
+    // TODO: move this out elsewhere, vehicle prototype should be a 
+    // pure data class object, not requiring reference to storage
+    // - xeth
+    // fun buildCopy(): VehicleElement {
+    //     val childrenElts = ArrayList<VehicleElement>()
+    //     // build children first
+    //     for ( childPrototype in this.children!! ) {
+    //         val elt = childPrototype.buildCopy()
+    //         childrenElts.add(elt)
+    //     }
+    //     val id = XV.storage.lookup[layout]!!.newId()
+    //     val elt = VehicleElement(
+    //             "${vehicle}.${name}${id}",
+    //             id,
+    //             this,
+    //             childrenElts.toTypedArray()
+    //     )
+    //     // go for another pass thru and set parent of children
+    //     for ( child in childrenElts ) {
+    //         child.parent = elt
+    //     }
+    //     return elt
+    // }
 
     companion object {
         public fun fromToml(toml: TomlTable, logger: Logger? = null, vehicleName: String): VehicleElementPrototype {
