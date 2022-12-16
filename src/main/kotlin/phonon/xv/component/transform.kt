@@ -6,6 +6,7 @@ import org.bukkit.Bukkit
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.World
+import org.bukkit.entity.Player
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
@@ -36,8 +37,11 @@ public data class TransformComponent(
     // rotation
     var yaw: Double = 0.0,
     var pitch: Double = 0.0,
-): VehicleComponent {
+): VehicleComponent<TransformComponent> {
     override val type = VehicleComponentType.TRANSFORM
+
+    override fun self() = this
+
     // dirty flag
     var positionDirty: Boolean = false
 
@@ -51,7 +55,23 @@ public data class TransformComponent(
     // flag that vehicle in water
     var inWater: Boolean = false
 
-    public fun toJson(): JsonObject {
+    /**
+     * Inject player world position and rotation.
+     */
+    override fun injectPlayerProperties(
+        player: Player,
+    ): TransformComponent {
+        return this.copy(
+            world = player.world,
+            x = player.location.x,
+            y = player.location.y,
+            z = player.location.z,
+            yaw = player.location.yaw.toDouble(),
+            pitch = player.location.pitch.toDouble(),
+        )
+    }
+
+    override fun toJson(): JsonObject {
         val json = JsonObject()
         // properties
         json.add("world", JsonPrimitive(world!!.uid.toString())) // this shouldn't be an issue

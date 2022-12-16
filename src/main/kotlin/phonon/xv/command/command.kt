@@ -115,11 +115,11 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
             return
         }
         xv.createRequests.add(
-                CreateVehicleRequest(
-                        sender,
-                        prototype,
-                        sender.location
-                )
+            CreateVehicleRequest(
+                sender,
+                prototype,
+                sender.location
+            )
         )
         sender.sendMessage("Queued create request at your location.")
     }

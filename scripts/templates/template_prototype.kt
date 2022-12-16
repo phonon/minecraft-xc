@@ -30,13 +30,17 @@ package phonon.xv.core
 import java.nio.file.Path
 import java.util.EnumSet
 import java.util.logging.Logger
-import org.tomlj.Toml
-import org.tomlj.TomlTable
-import phonon.xv.XV
-import phonon.xv.component.*
 import java.util.LinkedList
 import java.util.Queue
 import kotlin.streams.toList
+import org.tomlj.Toml
+import org.tomlj.TomlTable
+import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataContainer
+import phonon.xv.XV
+import phonon.xv.component.*
 
 
 /**
@@ -193,25 +197,58 @@ public data class VehicleElementPrototype(
     var children: Array<VehicleElementPrototype>? = null
     internal set
 
-    fun buildCopy(): VehicleElement {
-        val childrenElts = ArrayList<VehicleElement>()
-        // build children first
-        for ( childPrototype in this.children!! ) {
-            val elt = childPrototype.buildCopy()
-            childrenElts.add(elt)
-        }
-        val id = XV.storage.lookup[layout]!!.newId()
-        val elt = VehicleElement(
-                "${vehicle}.${name}${id}",
-                id,
-                this,
-                childrenElts.toTypedArray()
+    // 
+    // fun buildCopy(): VehicleElement {
+    //     val childrenElts = ArrayList<VehicleElement>()
+    //     // build children first
+    //     for ( childPrototype in this.children!! ) {
+    //         val elt = childPrototype.buildCopy()
+    //         childrenElts.add(elt)
+    //     }
+    //     val id = XV.storage.lookup[layout]!!.newId()
+    //     val elt = VehicleElement(
+    //             "${vehicle}.${name}${id}",
+    //             id,
+    //             this,
+    //             childrenElts.toTypedArray()
+    //     )
+    //     // go for another pass thru and set parent of children
+    //     for ( child in childrenElts ) {
+    //         child.parent = elt
+    //     }
+    //     return elt
+    // }
+
+    /**
+     * During creation, inject player specific properties and generate
+     * a new instance of this prototype. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectPlayerProperties(
+        player: Player,
+    ): VehicleElementPrototype {
+        return copy(
+            {%- for c in components %}
+            {{ c.storage }} = {{ c.storage }}?.injectPlayerProperties(player),
+            {%- endfor %}
         )
-        // go for another pass thru and set parent of children
-        for ( child in childrenElts ) {
-            child.parent = elt
-        }
-        return elt
+    }
+
+    /**
+     * During creation, inject item specific properties and generate
+     * a new instance of this component. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectItemProperties(
+        item: ItemStack,
+        itemMeta: ItemMeta,
+        itemData: PersistentDataContainer,
+    ): VehicleElementPrototype {
+        return copy(
+            {%- for c in components %}
+            {{ c.storage }} = {{ c.storage }}?.injectItemProperties(item, itemMeta, itemData),
+            {%- endfor %}
+        )
     }
 
     companion object {

@@ -28,13 +28,13 @@ public const val INVALID_ELEMENT_ID: VehicleElementId = -1
  * elements together.
  */
 public data class Vehicle(
-        val name: String,
-        // integer id, may vary across restarts
-        val id: VehicleId,
-        val prototype: VehiclePrototype,
-        val elements: Array<VehicleElement>,
-        // for persistence, static across restarts
-        val uuid: UUID = UUID.randomUUID()
+    val name: String,
+    // integer id, may vary across restarts
+    val id: VehicleId,
+    val prototype: VehiclePrototype,
+    val elements: Array<VehicleElement>,
+    // for persistence, static across restarts
+    val uuid: UUID = UUID.randomUUID()
 ) {
     public val rootElements: Array<VehicleElement>
     

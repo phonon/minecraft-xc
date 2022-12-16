@@ -3,6 +3,10 @@ package phonon.xv.component
 import com.google.gson.JsonObject
 import java.util.logging.Logger
 import org.tomlj.TomlTable
+import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataContainer
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
@@ -40,10 +44,12 @@ public data class GunTurretComponent(
     val barrelPitchMin: Float = -15f,
     // max barrel pitch rotation in degs
     val barrelPitchMax: Float = 45f,
-): VehicleComponent {
+): VehicleComponent<GunTurretComponent> {
     override val type = VehicleComponentType.GUN_TURRET
 
-    fun toJson(): JsonObject? = null
+    override fun self() = this
+
+    override fun toJson(): JsonObject? = null
 
     companion object {
         @Suppress("UNUSED_PARAMETER")

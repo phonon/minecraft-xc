@@ -14,10 +14,10 @@ public enum class CreateReason {
 }
 
 public data class CreateVehicleRequest(
-        val player: Player,
-        val prototype: VehiclePrototype,
-        val location: Location,
-        val reason: CreateReason = CreateReason.NEW
+    val player: Player,
+    val prototype: VehiclePrototype,
+    val location: Location,
+    val reason: CreateReason = CreateReason.NEW
 )
 
 // TODO when we create a vehicle its gonna give the player
@@ -84,7 +84,7 @@ public fun XV.systemCreateVehicle(
         xv.uuidToVehicle[vehicle.uuid] = vehicle
 
         for ( elt in vehicle.elements ) {
-            injectComponents(elt, req)
+            injectComponents(componentStorage, xv.entityVehicleData, elt, req)
         }
         // test stuff
         player.sendMessage("Created your vehicle at x:${location.x} y:${location.y} z:${location.z}")

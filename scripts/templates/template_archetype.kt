@@ -37,7 +37,7 @@ public enum class VehicleComponentType {
         /**
          * Converts from compile-time generic vehicle component type. 
          */
-        public inline fun <reified T: VehicleComponent> from(): VehicleComponentType {
+        public inline fun <reified T: VehicleComponent<T>> from(): VehicleComponentType {
             return when ( T::class ) {
                 {%- for c in components %}
                 {{ c.classname }}::class -> VehicleComponentType.{{ c.enum }}
@@ -46,14 +46,6 @@ public enum class VehicleComponentType {
             }
         }
     }
-}
-
-/**
- * Component interface
- */
-public interface VehicleComponent {
-    // Vehicle component type enum.
-    val type: VehicleComponentType
 }
 
 /**
@@ -104,7 +96,7 @@ public class ArchetypeStorage(
         return lookup[id]
     }
 
-    inline fun <reified T: VehicleComponent> getComponent(id: VehicleElementId): T? {
+    inline fun <reified T: VehicleComponent<T>> getComponent(id: VehicleElementId): T? {
         val denseIndex = this.denseLookup[id]
         return when ( T::class ) {
             {%- for c in components %}
@@ -138,10 +130,10 @@ public class ArchetypeStorage(
     // into the archetype storage, this is assuming we've
     // already called newId() to reserve its id
     public fun inject(
-            element: VehicleElement,
-            {%- for c in components %}
-            {{ c.storage }}: {{ c.classname }}?,
-            {%- endfor %}
+        element: VehicleElement,
+        {%- for c in components %}
+        {{ c.storage }}: {{ c.classname }}?,
+        {%- endfor %}
     ) {
         this.lookup[element.id] = element
         val denseIndex = denseLookup[element.id]

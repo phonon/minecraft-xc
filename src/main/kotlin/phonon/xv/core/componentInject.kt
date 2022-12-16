@@ -17,8 +17,8 @@
 
 package phonon.xv.core
 
+import java.util.UUID
 import org.bukkit.entity.ArmorStand
-import phonon.xv.XV
 import phonon.xv.component.*
 import phonon.xv.system.CreateReason
 import phonon.xv.system.CreateVehicleRequest
@@ -30,14 +30,14 @@ import java.util.EnumSet
  * element. This function will execute the construction, component-specific
  * init procedures, and registration in the appropriate archetype.
  */
-public fun XV.injectComponents(
+public fun injectComponents(
+    storage: ComponentsStorage,
+    entityVehicleData: HashMap<UUID, EntityVehicleData>,
     element: VehicleElement,
     req: CreateVehicleRequest
 ) {
-    val xv = this // alias
-
     val prototype = element.prototype
-    xv.storage.lookup[prototype.layout]!!.inject(
+    storage.lookup[prototype.layout]!!.inject(
             element, 
             prototype.fuel, 
             prototype.gunTurret, 
@@ -51,10 +51,10 @@ public fun XV.injectComponents(
                 armorstand.setVisible(true)
                 // armorstand.getEquipment()!!.setHelmet(createModel(Tank.modelMaterial, this.modelDataBody))
                 armorstand.setRotation(req.location.yaw, 0f)
-                xv.entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
-                        element.id,
-                        element.layout(),
-                        VehicleComponentType.MODEL
+                entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
+                    element.id,
+                    element.layout(),
+                    VehicleComponentType.MODEL
                 )
                 element.prototype.model!!.copy(armorstand = armorstand)
             } else {
@@ -63,11 +63,11 @@ public fun XV.injectComponents(
             prototype.seats, 
             prototype.seatsRaycast, 
             prototype.transform?.copy(
-                    world = req.location.world,
-                    x = req.location.x,
-                    y = req.location.y,
-                    z = req.location.z,
-                    yaw = req.location.yaw.toDouble()
+                world = req.location.world,
+                x = req.location.x,
+                y = req.location.y,
+                z = req.location.z,
+                yaw = req.location.yaw.toDouble()
             ),
     )
 }

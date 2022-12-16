@@ -1,6 +1,6 @@
 public data class ComponentTuple{{ n }}<
     {%- for ty in types %}
-    {{ ty }}: VehicleComponent,
+    {{ ty }}: VehicleComponent<{{ ty }}>,
     {%- endfor %}
 >(
     val element: VehicleElementId,
@@ -17,7 +17,7 @@ public data class ComponentTuple{{ n }}<
          */
         public inline fun <
             {%- for ty in types %}
-            reified {{ ty }}: VehicleComponent,
+            reified {{ ty }}: VehicleComponent<{{ ty }}>,
             {%- endfor %}
         > query(components: ComponentsStorage): ComponentTuple{{ n }}Iterator<{{ types_list }}> {
             val layout = EnumSet.of(
@@ -43,7 +43,7 @@ public data class ComponentTuple{{ n }}<
 
 class ComponentTuple{{ n }}Iterator<
     {%- for ty in types %}
-    {{ ty }}: VehicleComponent,
+    {{ ty }}: VehicleComponent<{{ ty }}>,
     {%- endfor %}
 >(
     val layout: EnumSet<VehicleComponentType>,

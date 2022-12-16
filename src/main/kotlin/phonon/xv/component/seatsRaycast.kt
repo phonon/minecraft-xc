@@ -19,14 +19,16 @@ public data class SeatsRaycastComponent(
     val hitboxWidth: Double = 1.25,
     val hitboxHeight: Double = 1.50,
     val hitboxHeightOffset: Double = 0.25,
-): VehicleComponent {
+): VehicleComponent<SeatsRaycastComponent> {
     val hitboxHalfWidth = hitboxWidth / 2.0
     val hitboxYMin = hitboxHeightOffset
     val hitboxYMax = hitboxHeightOffset + hitboxHeight
 
     override val type = VehicleComponentType.SEATS_RAYCAST
 
-    public fun toJson(): JsonObject? = null
+    override fun self() = this
+
+    override fun toJson(): JsonObject? = null
 
     companion object {
         @Suppress("UNUSED_PARAMETER")

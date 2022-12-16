@@ -17,8 +17,8 @@
 
 package phonon.xv.core
 
+import java.util.UUID
 import org.bukkit.entity.ArmorStand
-import phonon.xv.XV
 import phonon.xv.component.*
 import phonon.xv.system.CreateReason
 import phonon.xv.system.CreateVehicleRequest
@@ -31,11 +31,13 @@ import java.util.EnumSet
  * init procedures, and registration in the appropriate archetype.
  */
 public fun injectComponents(
-        element: VehicleElement,
-        req: CreateVehicleRequest
+    storage: ComponentsStorage,
+    entityVehicleData: HashMap<UUID, EntityVehicleData>,
+    element: VehicleElement,
+    req: CreateVehicleRequest
 ) {
     val prototype = element.prototype
-    XV.storage.lookup[prototype.layout]!!.inject(
+    storage.lookup[prototype.layout]!!.inject(
             element,
             {%- for c in components %}
             {%- if c.storage == "model" %} {# Model Component Gen Override #}
@@ -47,10 +49,10 @@ public fun injectComponents(
                 armorstand.setVisible(true)
                 // armorstand.getEquipment()!!.setHelmet(createModel(Tank.modelMaterial, this.modelDataBody))
                 armorstand.setRotation(req.location.yaw, 0f)
-                XV.entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
-                        element.id,
-                        element.layout(),
-                        VehicleComponentType.MODEL
+                entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
+                    element.id,
+                    element.layout(),
+                    VehicleComponentType.MODEL
                 )
                 element.prototype.model!!.copy(armorstand = armorstand)
             } else {
@@ -58,11 +60,11 @@ public fun injectComponents(
             }
             {%- elif c.storage == "transform" %} {# Transform Component Gen Override #}
             prototype.{{ c.storage }}?.copy(
-                    world = req.location.world,
-                    x = req.location.x,
-                    y = req.location.y,
-                    z = req.location.z,
-                    yaw = req.location.yaw.toDouble()
+                world = req.location.world,
+                x = req.location.x,
+                y = req.location.y,
+                z = req.location.z,
+                yaw = req.location.yaw.toDouble()
             )
             {%- else %} {# Default component gen #}
             prototype.{{- c.storage }}

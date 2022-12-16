@@ -49,7 +49,7 @@ interface ComponentTuple {
 
 
 public data class ComponentTuple1<
-    A: VehicleComponent,
+    A: VehicleComponent<A>,
 >(
     val element: VehicleElementId,
     val a: A,
@@ -62,7 +62,7 @@ public data class ComponentTuple1<
          * vehicle element types.
          */
         public inline fun <
-            reified A: VehicleComponent,
+            reified A: VehicleComponent<A>,
         > query(components: ComponentsStorage): ComponentTuple1Iterator<A> {
             val layout = EnumSet.of(
                 VehicleComponentType.from<A>(),
@@ -81,7 +81,7 @@ public data class ComponentTuple1<
 
 
 class ComponentTuple1Iterator<
-    A: VehicleComponent,
+    A: VehicleComponent<A>,
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
@@ -141,8 +141,8 @@ class ComponentTuple1Iterator<
 }
 
 public data class ComponentTuple2<
-    A: VehicleComponent,
-    B: VehicleComponent,
+    A: VehicleComponent<A>,
+    B: VehicleComponent<B>,
 >(
     val element: VehicleElementId,
     val a: A,
@@ -156,8 +156,8 @@ public data class ComponentTuple2<
          * vehicle element types.
          */
         public inline fun <
-            reified A: VehicleComponent,
-            reified B: VehicleComponent,
+            reified A: VehicleComponent<A>,
+            reified B: VehicleComponent<B>,
         > query(components: ComponentsStorage): ComponentTuple2Iterator<A, B> {
             val layout = EnumSet.of(
                 VehicleComponentType.from<A>(),
@@ -179,8 +179,8 @@ public data class ComponentTuple2<
 
 
 class ComponentTuple2Iterator<
-    A: VehicleComponent,
-    B: VehicleComponent,
+    A: VehicleComponent<A>,
+    B: VehicleComponent<B>,
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
@@ -245,9 +245,9 @@ class ComponentTuple2Iterator<
 }
 
 public data class ComponentTuple3<
-    A: VehicleComponent,
-    B: VehicleComponent,
-    C: VehicleComponent,
+    A: VehicleComponent<A>,
+    B: VehicleComponent<B>,
+    C: VehicleComponent<C>,
 >(
     val element: VehicleElementId,
     val a: A,
@@ -262,9 +262,9 @@ public data class ComponentTuple3<
          * vehicle element types.
          */
         public inline fun <
-            reified A: VehicleComponent,
-            reified B: VehicleComponent,
-            reified C: VehicleComponent,
+            reified A: VehicleComponent<A>,
+            reified B: VehicleComponent<B>,
+            reified C: VehicleComponent<C>,
         > query(components: ComponentsStorage): ComponentTuple3Iterator<A, B, C> {
             val layout = EnumSet.of(
                 VehicleComponentType.from<A>(),
@@ -289,9 +289,9 @@ public data class ComponentTuple3<
 
 
 class ComponentTuple3Iterator<
-    A: VehicleComponent,
-    B: VehicleComponent,
-    C: VehicleComponent,
+    A: VehicleComponent<A>,
+    B: VehicleComponent<B>,
+    C: VehicleComponent<C>,
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
@@ -361,10 +361,10 @@ class ComponentTuple3Iterator<
 }
 
 public data class ComponentTuple4<
-    A: VehicleComponent,
-    B: VehicleComponent,
-    C: VehicleComponent,
-    D: VehicleComponent,
+    A: VehicleComponent<A>,
+    B: VehicleComponent<B>,
+    C: VehicleComponent<C>,
+    D: VehicleComponent<D>,
 >(
     val element: VehicleElementId,
     val a: A,
@@ -380,10 +380,10 @@ public data class ComponentTuple4<
          * vehicle element types.
          */
         public inline fun <
-            reified A: VehicleComponent,
-            reified B: VehicleComponent,
-            reified C: VehicleComponent,
-            reified D: VehicleComponent,
+            reified A: VehicleComponent<A>,
+            reified B: VehicleComponent<B>,
+            reified C: VehicleComponent<C>,
+            reified D: VehicleComponent<D>,
         > query(components: ComponentsStorage): ComponentTuple4Iterator<A, B, C, D> {
             val layout = EnumSet.of(
                 VehicleComponentType.from<A>(),
@@ -411,10 +411,10 @@ public data class ComponentTuple4<
 
 
 class ComponentTuple4Iterator<
-    A: VehicleComponent,
-    B: VehicleComponent,
-    C: VehicleComponent,
-    D: VehicleComponent,
+    A: VehicleComponent<A>,
+    B: VehicleComponent<B>,
+    C: VehicleComponent<C>,
+    D: VehicleComponent<D>,
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
@@ -489,11 +489,11 @@ class ComponentTuple4Iterator<
 }
 
 public data class ComponentTuple5<
-    A: VehicleComponent,
-    B: VehicleComponent,
-    C: VehicleComponent,
-    D: VehicleComponent,
-    E: VehicleComponent,
+    A: VehicleComponent<A>,
+    B: VehicleComponent<B>,
+    C: VehicleComponent<C>,
+    D: VehicleComponent<D>,
+    E: VehicleComponent<E>,
 >(
     val element: VehicleElementId,
     val a: A,
@@ -510,11 +510,11 @@ public data class ComponentTuple5<
          * vehicle element types.
          */
         public inline fun <
-            reified A: VehicleComponent,
-            reified B: VehicleComponent,
-            reified C: VehicleComponent,
-            reified D: VehicleComponent,
-            reified E: VehicleComponent,
+            reified A: VehicleComponent<A>,
+            reified B: VehicleComponent<B>,
+            reified C: VehicleComponent<C>,
+            reified D: VehicleComponent<D>,
+            reified E: VehicleComponent<E>,
         > query(components: ComponentsStorage): ComponentTuple5Iterator<A, B, C, D, E> {
             val layout = EnumSet.of(
                 VehicleComponentType.from<A>(),
@@ -545,11 +545,11 @@ public data class ComponentTuple5<
 
 
 class ComponentTuple5Iterator<
-    A: VehicleComponent,
-    B: VehicleComponent,
-    C: VehicleComponent,
-    D: VehicleComponent,
-    E: VehicleComponent,
+    A: VehicleComponent<A>,
+    B: VehicleComponent<B>,
+    C: VehicleComponent<C>,
+    D: VehicleComponent<D>,
+    E: VehicleComponent<E>,
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
@@ -629,12 +629,12 @@ class ComponentTuple5Iterator<
 }
 
 public data class ComponentTuple6<
-    A: VehicleComponent,
-    B: VehicleComponent,
-    C: VehicleComponent,
-    D: VehicleComponent,
-    E: VehicleComponent,
-    F: VehicleComponent,
+    A: VehicleComponent<A>,
+    B: VehicleComponent<B>,
+    C: VehicleComponent<C>,
+    D: VehicleComponent<D>,
+    E: VehicleComponent<E>,
+    F: VehicleComponent<F>,
 >(
     val element: VehicleElementId,
     val a: A,
@@ -652,12 +652,12 @@ public data class ComponentTuple6<
          * vehicle element types.
          */
         public inline fun <
-            reified A: VehicleComponent,
-            reified B: VehicleComponent,
-            reified C: VehicleComponent,
-            reified D: VehicleComponent,
-            reified E: VehicleComponent,
-            reified F: VehicleComponent,
+            reified A: VehicleComponent<A>,
+            reified B: VehicleComponent<B>,
+            reified C: VehicleComponent<C>,
+            reified D: VehicleComponent<D>,
+            reified E: VehicleComponent<E>,
+            reified F: VehicleComponent<F>,
         > query(components: ComponentsStorage): ComponentTuple6Iterator<A, B, C, D, E, F> {
             val layout = EnumSet.of(
                 VehicleComponentType.from<A>(),
@@ -691,12 +691,12 @@ public data class ComponentTuple6<
 
 
 class ComponentTuple6Iterator<
-    A: VehicleComponent,
-    B: VehicleComponent,
-    C: VehicleComponent,
-    D: VehicleComponent,
-    E: VehicleComponent,
-    F: VehicleComponent,
+    A: VehicleComponent<A>,
+    B: VehicleComponent<B>,
+    C: VehicleComponent<C>,
+    D: VehicleComponent<D>,
+    E: VehicleComponent<E>,
+    F: VehicleComponent<F>,
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,

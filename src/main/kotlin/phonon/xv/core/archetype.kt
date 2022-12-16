@@ -42,7 +42,7 @@ public enum class VehicleComponentType {
         /**
          * Converts from compile-time generic vehicle component type. 
          */
-        public inline fun <reified T: VehicleComponent> from(): VehicleComponentType {
+        public inline fun <reified T: VehicleComponent<T>> from(): VehicleComponentType {
             return when ( T::class ) {
                 FuelComponent::class -> VehicleComponentType.FUEL
                 GunTurretComponent::class -> VehicleComponentType.GUN_TURRET
@@ -56,14 +56,6 @@ public enum class VehicleComponentType {
             }
         }
     }
-}
-
-/**
- * Component interface
- */
-public interface VehicleComponent {
-    // Vehicle component type enum.
-    val type: VehicleComponentType
 }
 
 /**
@@ -119,7 +111,7 @@ public class ArchetypeStorage(
         return lookup[id]
     }
 
-    inline fun <reified T: VehicleComponent> getComponent(id: VehicleElementId): T? {
+    inline fun <reified T: VehicleComponent<T>> getComponent(id: VehicleElementId): T? {
         val denseIndex = this.denseLookup[id]
         return when ( T::class ) {
             FuelComponent::class -> this.fuel?.get(denseIndex) as T
@@ -158,15 +150,15 @@ public class ArchetypeStorage(
     // into the archetype storage, this is assuming we've
     // already called newId() to reserve its id
     public fun inject(
-            element: VehicleElement,
-            fuel: FuelComponent?,
-            gunTurret: GunTurretComponent?,
-            health: HealthComponent?,
-            landMovementControls: LandMovementControlsComponent?,
-            model: ModelComponent?,
-            seats: SeatsComponent?,
-            seatsRaycast: SeatsRaycastComponent?,
-            transform: TransformComponent?,
+        element: VehicleElement,
+        fuel: FuelComponent?,
+        gunTurret: GunTurretComponent?,
+        health: HealthComponent?,
+        landMovementControls: LandMovementControlsComponent?,
+        model: ModelComponent?,
+        seats: SeatsComponent?,
+        seatsRaycast: SeatsRaycastComponent?,
+        transform: TransformComponent?,
     ) {
         this.lookup[element.id] = element
         val denseIndex = denseLookup[element.id]

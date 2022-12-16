@@ -30,10 +30,12 @@ public data class ModelComponent(
     // @skipall
     // armor stand entity
     var armorstand: Entity? = null,
-): VehicleComponent {
+): VehicleComponent<ModelComponent> {
     override val type = VehicleComponentType.MODEL
 
-    fun toJson(): JsonObject? = null
+    override fun self() = this
+
+    override fun toJson(): JsonObject? = null
 
     companion object {
         @Suppress("UNUSED_PARAMETER")

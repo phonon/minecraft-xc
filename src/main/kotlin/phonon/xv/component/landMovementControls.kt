@@ -74,10 +74,12 @@ public data class LandMovementControlsComponent(
     // current motion state
     var speed: Double = 0.0,
     var yawRotationSpeed: Double = 0.0,
-): VehicleComponent {
+): VehicleComponent<LandMovementControlsComponent> {
     override val type = VehicleComponentType.LAND_MOVEMENT_CONTROLS
 
-    fun toJson(): JsonObject {
+    override fun self() = this
+
+    override fun toJson(): JsonObject {
         val json = JsonObject()
         json.add("speed", JsonPrimitive(speed))
         json.add("yawRotationSpeed", JsonPrimitive(yawRotationAcceleration))

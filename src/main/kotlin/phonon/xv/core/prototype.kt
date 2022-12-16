@@ -30,13 +30,17 @@ package phonon.xv.core
 import java.nio.file.Path
 import java.util.EnumSet
 import java.util.logging.Logger
-import org.tomlj.Toml
-import org.tomlj.TomlTable
-import phonon.xv.XV
-import phonon.xv.component.*
 import java.util.LinkedList
 import java.util.Queue
 import kotlin.streams.toList
+import org.tomlj.Toml
+import org.tomlj.TomlTable
+import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataContainer
+import phonon.xv.XV
+import phonon.xv.component.*
 
 
 /**
@@ -198,9 +202,6 @@ public data class VehicleElementPrototype(
     var children: Array<VehicleElementPrototype>? = null
     internal set
 
-    // TODO: move this out elsewhere, vehicle prototype should be a 
-    // pure data class object, not requiring reference to storage
-    // - xeth
     // fun buildCopy(): VehicleElement {
     //     val childrenElts = ArrayList<VehicleElement>()
     //     // build children first
@@ -221,6 +222,48 @@ public data class VehicleElementPrototype(
     //     }
     //     return elt
     // }
+
+    /**
+     * During creation, inject player specific properties and generate
+     * a new instance of this prototype. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectPlayerProperties(
+        player: Player,
+    ): VehicleElementPrototype {
+        return copy(
+            fuel = fuel?.injectPlayerProperties(player),
+            gunTurret = gunTurret?.injectPlayerProperties(player),
+            health = health?.injectPlayerProperties(player),
+            landMovementControls = landMovementControls?.injectPlayerProperties(player),
+            model = model?.injectPlayerProperties(player),
+            seats = seats?.injectPlayerProperties(player),
+            seatsRaycast = seatsRaycast?.injectPlayerProperties(player),
+            transform = transform?.injectPlayerProperties(player),
+        )
+    }
+
+    /**
+     * During creation, inject item specific properties and generate
+     * a new instance of this component. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectItemProperties(
+        item: ItemStack,
+        itemMeta: ItemMeta,
+        itemData: PersistentDataContainer,
+    ): VehicleElementPrototype {
+        return copy(
+            fuel = fuel?.injectItemProperties(item, itemMeta, itemData),
+            gunTurret = gunTurret?.injectItemProperties(item, itemMeta, itemData),
+            health = health?.injectItemProperties(item, itemMeta, itemData),
+            landMovementControls = landMovementControls?.injectItemProperties(item, itemMeta, itemData),
+            model = model?.injectItemProperties(item, itemMeta, itemData),
+            seats = seats?.injectItemProperties(item, itemMeta, itemData),
+            seatsRaycast = seatsRaycast?.injectItemProperties(item, itemMeta, itemData),
+            transform = transform?.injectItemProperties(item, itemMeta, itemData),
+        )
+    }
 
     companion object {
         public fun fromToml(toml: TomlTable, logger: Logger? = null, vehicleName: String): VehicleElementPrototype {

@@ -40,9 +40,13 @@ public data class SeatsComponent(
     val offsets: DoubleArray = doubleArrayOf(
         0.0, 0.0, 0.0,
     ),
-): VehicleComponent {
+): VehicleComponent<SeatsComponent> {
     override val type = VehicleComponentType.SEATS
-    
+
+    override fun self() = this
+
+    override fun toJson(): JsonObject? = null
+
     // armor stand entities
     var armorstands: Array<Entity?> = Array(count) { null }
 
@@ -72,7 +76,6 @@ public data class SeatsComponent(
         )
     }
 
-    fun toJson(): JsonObject? = null
 
     companion object {
         @Suppress("UNUSED_PARAMETER")
