@@ -36,6 +36,8 @@ public class XVPlugin : JavaPlugin() {
 
         // register commands
         this.getCommand("xv")?.setExecutor(Command(xv))
+        this.getCommand("vehicledecal")?.setExecutor(VehicleDecalCommand(xv))
+        this.getCommand("vehicleskin")?.setExecutor(VehicleSkinCommand(xv))
         
         // override command aliases tab complete if they exist
         this.getCommand("xv")?.setTabCompleter(this.getCommand("xv")?.getExecutor() as TabCompleter)

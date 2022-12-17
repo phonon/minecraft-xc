@@ -51,6 +51,8 @@ public data class Config(
     // paths to vehicle save state and backups
     val pathFilesBackup: Path = Paths.get("plugins", "xv", "backup"),
     val pathSave: Path = Paths.get("plugins", "xv", "save.json"),
+    // path to vehicle skin/decals configs
+    val pathFilesSkins: Path = Paths.get("plugins", "xv", "skin"),
 
     // save settings
     val savePeriod: Int = 200,
@@ -117,6 +119,7 @@ public data class Config(
                 paths.getString("vehicle")?.let { configOptions["pathFilesVehicles"] = pluginDataFolder.resolve(it) }
                 paths.getString("backup")?.let { configOptions["pathFilesBackup"] =  pluginDataFolder.resolve(it) }
                 paths.getString("save")?.let { configOptions["pathSave"] =  pluginDataFolder.resolve(it) }
+                paths.getString("skin")?.let { configOptions["pathFilesSkins"] =  pluginDataFolder.resolve(it) }
             }
 
             // save

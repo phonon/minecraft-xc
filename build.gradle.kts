@@ -10,9 +10,6 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 // plugin versioning
 version = "0.0.0"
 
-// jvm target
-val JVM = 17 // 1.8 for 8, 11 for 11, 17 for 17
-
 // base of output jar name
 val OUTPUT_JAR_NAME = "xv"
 
@@ -25,9 +22,6 @@ plugins {
     id("org.jetbrains.kotlin.jvm") version "1.6.10"
     id("com.github.johnrengelman.shadow") version "7.0.0"
     // maven() // no longer needed in gradle 7
-
-    // Apply the application plugin to add support for building a CLI application.
-    application
 }
 
 repositories {
@@ -40,12 +34,6 @@ repositories {
     }
     maven { // protocol lib
         url = uri("https://repo.dmulloy2.net/nexus/repository/public/")
-    }
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(JVM))
     }
 }
 
@@ -72,7 +60,8 @@ dependencies {
     
     // google json
     compileOnly("com.google.code.gson:gson:2.8.0")
-    configurations["resolvableImplementation"]("com.google.code.gson:gson:2.8.0")
+    // uncomment to shadow into jar
+    // configurations["resolvableImplementation"]("com.google.code.gson:gson:2.8.0")
 
     // toml parsing library
     compileOnly("org.tomlj:tomlj:1.0.0")
@@ -99,19 +88,29 @@ dependencies {
         compileOnly("com.destroystokyo.paper:paper-api:1.12.2-R0.1-SNAPSHOT")
         target = "1.12"
     } else if ( project.hasProperty("1.16") === true ) {
+        java.toolchain.languageVersion.set(JavaLanguageVersion.of(16)) // need java==16 for 1.16.5
         paperDevBundle("1.16.5-R0.1-SNAPSHOT")
         compileOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
         target = "1.16"
     } else if ( project.hasProperty("1.18") === true ) {
+        java.toolchain.languageVersion.set(JavaLanguageVersion.of(17)) // need java==17 for 1.18.2
         paperDevBundle("1.18.2-R0.1-SNAPSHOT")
         compileOnly("io.papermc.paper:paper-api:1.18.2-R0.1-SNAPSHOT")
         target = "1.18"
-    }
-}
 
-application {
-    // Define the main class for the application.
-    mainClassName = "phonon.xv.XVPluginKt"
+        tasks {
+            assemble {
+                // must write it like below because in 1.16 config, reobfJar does not exist
+                // so the simpler definition below wont compile
+                // dependsOn(reobfJar) // won't compile :^(
+                dependsOn(project.tasks.first { it.name.contains("reobfJar") })
+            }
+        }
+
+        tasks.named("reobfJar") {
+            base.archivesBaseName = "${OUTPUT_JAR_NAME}-${target}-SNAPSHOT"
+        }
+    }
 }
 
 tasks.withType<KotlinCompile> {
@@ -130,7 +129,7 @@ tasks {
 
         classifier = ""
         configurations = mutableListOf(project.configurations.named("resolvableImplementation").get())
-        relocate("com.google", "phonon.xc.shadow.gson")
+        // relocate("com.google", "phonon.xc.shadow.gson") // unneeded
     }
 }
 

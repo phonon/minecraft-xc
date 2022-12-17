@@ -9,3 +9,11 @@ commands:
     description: xv
     permission: xv.command
     usage: /xv help
+  vehicledecal:
+    aliases: [vdecal]
+    permission: xv.vehicledecal
+    usage: /vehicledecal [name]
+  vehicleskin:
+    aliases: [vskin]
+    permission: xv.vehicleskin
+    usage: /vehicleskin [name]

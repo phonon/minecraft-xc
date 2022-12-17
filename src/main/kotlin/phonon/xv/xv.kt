@@ -47,6 +47,9 @@ public class XV (
     internal val storage: ComponentsStorage = ComponentsStorage()
     internal val vehicleStorage: VehicleStorage = VehicleStorage(MAX_VEHICLES)
 
+    // vehicle skins/decals definitions
+    internal var skins: SkinStorage = SkinStorage.empty()
+
     // user input controls when mounted on entities
     internal val userInputs: HashMap<UUID, UserInput> = HashMap()
 
@@ -92,6 +95,13 @@ public class XV (
         // clear current component/archetype storage
         storage.clear()
 
+        // load vehicle skin files (do before vehicles because vehicles
+        // may reference skins)
+        val skinConfigFiles = listDirFiles(config.pathFilesSkins)
+            .filter { f -> f.toString().lowercase().endsWith(".toml") }
+            .map { f -> config.pathFilesSkins.resolve(f) }
+        this.skins = SkinStorage.fromTomlFiles(skinConfigFiles, this.logger)
+
         // load vehicle config files
 
         // wtf why isnt it saving this shit automatically??
@@ -129,6 +139,7 @@ public class XV (
         val timeLoad = timeEnd - timeStart
         this.logger.info("Reloaded in ${timeLoad}ms")
         this.logger.info("- Prototypes: ${vehiclePrototypes.size}")
+        this.logger.info("- Skins: ${this.skins.size}")
     }
 
     /**
