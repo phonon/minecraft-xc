@@ -62,7 +62,7 @@ public data class VehicleElement(
     var parent: VehicleElement? = null
         internal set
     
-    var children: Array<VehicleElement> = arrayOf()
+    var children: List<VehicleElement> = listOf()
         internal set
 }
 

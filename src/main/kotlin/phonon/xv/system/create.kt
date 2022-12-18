@@ -55,28 +55,6 @@ public fun XV.systemCreateVehicle(
 ) {
     val xv = this // alias
 
-    // recursive inline function
-    // fun buildElement(prototype: VehicleElementPrototype): VehicleElement {
-    //     val childrenElts = ArrayList<VehicleElement>()
-    //     // build children first
-    //     for ( childPrototype in prototype.children!! ) {
-    //         val elt = buildElement(childPrototype)
-    //         childrenElts.add(elt)
-    //     }
-    //     val id = componentStorage.lookup[prototype.layout]!!.newId()
-    //     val elt = VehicleElement(
-    //         "${prototype.vehicleName}.${prototype.name}.${id}",
-    //         id,
-    //         prototype,
-    //         childrenElts.toTypedArray()
-    //     )
-    //     // go for another pass thru and set parent of children
-    //     for ( child in childrenElts ) {
-    //         child.parent = elt
-    //     }
-    //     return elt
-    // }
-
     while ( requests.isNotEmpty() ) {
         val (
             prototype,
@@ -166,7 +144,7 @@ public fun XV.systemCreateVehicle(
                 
                 val childrenIdx = prototype.childrenIndices[idx]
                 if ( childrenIdx.isNotEmpty() ) {
-                    elem.children = childrenIdx.map { elements[it] }.toTypedArray()
+                    elem.children = childrenIdx.map { elements[it] }
                 }
             }
             
@@ -207,6 +185,4 @@ public fun XV.systemCreateVehicle(
             e.printStackTrace()
         }
     }
-
-
 }
