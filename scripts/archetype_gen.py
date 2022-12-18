@@ -28,17 +28,12 @@ components = get_components()
 # ==================================================
 template_archetype = env.get_template("template_archetype.kt")
 template_prototype = env.get_template("template_prototype.kt")
-template_component_inject = env.get_template("template_component_inject.kt")
 
 archetype_kt = template_archetype.render(
     components=components,
 )
 
 prototype_kt = template_prototype.render(
-    components=components,
-)
-
-component_inject_kt = template_component_inject.render(
     components=components,
 )
 
@@ -89,8 +84,3 @@ path_archetype_kt = os.path.join(DIR_OUTPUT, "core", "archetype.kt")
 with open(path_archetype_kt, "w+") as f:
     print(f"{path_archetype_kt}")
     f.write(archetype_kt)
-
-path_component_inject_kt = os.path.join(DIR_OUTPUT, "core", "componentInject.kt")
-with open(path_component_inject_kt, "w+") as f:
-    print(f"{path_component_inject_kt}")
-    f.write(component_inject_kt)

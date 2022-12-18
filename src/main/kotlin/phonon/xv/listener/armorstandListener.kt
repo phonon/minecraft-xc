@@ -34,10 +34,9 @@ public class ArmorstandListener(val xv: XV): Listener {
     public fun onArmorstandLoad(event: EntitiesLoadEvent) {
         for ( entity in event.entities ) {
             // check if armorstand and custom tag is there
-            if ( entity is ArmorStand
-                    && entity.persistentDataContainer.has(modelReassociationKey, PersistentDataType.STRING) ) {
+            if ( entity.type == EntityType.ARMOR_STAND && entity.persistentDataContainer.has(XV.entityReassociationKey, PersistentDataType.STRING) ) {
                 val elementUUID = UUID.fromString(
-                        entity.persistentDataContainer.get(modelReassociationKey, PersistentDataType.STRING)
+                    entity.persistentDataContainer.get(XV.entityReassociationKey, PersistentDataType.STRING)
                 )
                 val vehicleElement = xv.uuidToElement[elementUUID]
                 if ( vehicleElement != null ) {
@@ -54,31 +53,6 @@ public class ArmorstandListener(val xv: XV): Listener {
                         // mappings to not be loaded will cause all vehicles to be
                         // marked as invalid and deleted)
                         entity.remove()
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * When entities of a chunk are unloaded, tag the
-     * armorstands with their respective owning
-     * element uuid.
-     */
-    @EventHandler(priority = EventPriority.MONITOR)
-    public fun onArmorstandUnload(event: EntitiesUnloadEvent) {
-        for ( entity in event.entities ) {
-            if ( entity.type == EntityType.ARMOR_STAND ) {
-                val entityVehicleData = xv.entityVehicleData[entity.uniqueId]
-                if ( entityVehicleData !== null ) {
-                    val element = xv.storage.lookup[entityVehicleData.layout]!!.lookup(entityVehicleData.elementId)!!
-                    if ( entityVehicleData.componentType == VehicleComponentType.MODEL ) {
-                        val element = xv.storage.lookup[entityVehicleData.layout]!!.lookup(entityVehicleData.elementId)!!
-                        entity.persistentDataContainer.set(
-                            modelReassociationKey,
-                            PersistentDataType.STRING,
-                            element.uuid.toString()
-                        )
                     }
                 }
             }

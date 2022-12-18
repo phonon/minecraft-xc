@@ -14,17 +14,21 @@ import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.Particle
 import phonon.xv.XV
-import phonon.xv.core.*
+import phonon.xv.core.ComponentsStorage
+import phonon.xv.core.INVALID_ELEMENT_ID
+import phonon.xv.core.VehicleElementId
+import phonon.xv.core.VehicleComponentType
+import phonon.xv.core.iter.*
 import phonon.xv.component.SeatsComponent
 import phonon.xv.component.SeatsRaycastComponent
 import phonon.xv.component.TransformComponent
 import phonon.xv.util.CustomArmorStand
 
 public data class MountVehicleRequest(
-        val player: Player,
-        val elementId: VehicleElementId = INVALID_ELEMENT_ID,
-        val componentType: VehicleComponentType = VehicleComponentType.MODEL,
-        val doRaycast: Boolean = false,
+    val player: Player,
+    val elementId: VehicleElementId = INVALID_ELEMENT_ID,
+    val componentType: VehicleComponentType = VehicleComponentType.MODEL,
+    val doRaycast: Boolean = false,
 )
 
 public data class DismountVehicleRequest(

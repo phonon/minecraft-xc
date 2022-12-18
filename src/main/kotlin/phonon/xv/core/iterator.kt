@@ -35,10 +35,10 @@
  * iterating different component tuple sizes.
  */
 
-package phonon.xv.core
+package phonon.xv.core.iter
 
 import java.util.EnumSet
-
+import phonon.xv.core.*
 
 /**
  * TODO: do we even need?
@@ -68,7 +68,7 @@ public data class ComponentTuple1<
                 VehicleComponentType.from<A>(),
             )
             
-            val getStorageA: (ArchetypeStorage) -> ArrayList<A> = ArchetypeStorage.accessor()
+            val getStorageA: (ArchetypeStorage) -> List<A> = ArchetypeStorage.accessor()
 
             return ComponentTuple1Iterator<A>(
                 layout,
@@ -85,7 +85,7 @@ class ComponentTuple1Iterator<
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
-    val getStorageA: (ArchetypeStorage) -> ArrayList<A>,
+    val getStorageA: (ArchetypeStorage) -> List<A>,
 ): Iterator<ComponentTuple1<A>> {
     // get list of matching archetypes. simplifies logic because
     // `hasNext` must always know if there is a "next" valid archetype
@@ -164,8 +164,8 @@ public data class ComponentTuple2<
                 VehicleComponentType.from<B>(),
             )
             
-            val getStorageA: (ArchetypeStorage) -> ArrayList<A> = ArchetypeStorage.accessor()
-            val getStorageB: (ArchetypeStorage) -> ArrayList<B> = ArchetypeStorage.accessor()
+            val getStorageA: (ArchetypeStorage) -> List<A> = ArchetypeStorage.accessor()
+            val getStorageB: (ArchetypeStorage) -> List<B> = ArchetypeStorage.accessor()
 
             return ComponentTuple2Iterator<A, B>(
                 layout,
@@ -184,8 +184,8 @@ class ComponentTuple2Iterator<
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
-    val getStorageA: (ArchetypeStorage) -> ArrayList<A>,
-    val getStorageB: (ArchetypeStorage) -> ArrayList<B>,
+    val getStorageA: (ArchetypeStorage) -> List<A>,
+    val getStorageB: (ArchetypeStorage) -> List<B>,
 ): Iterator<ComponentTuple2<A, B>> {
     // get list of matching archetypes. simplifies logic because
     // `hasNext` must always know if there is a "next" valid archetype
@@ -272,9 +272,9 @@ public data class ComponentTuple3<
                 VehicleComponentType.from<C>(),
             )
             
-            val getStorageA: (ArchetypeStorage) -> ArrayList<A> = ArchetypeStorage.accessor()
-            val getStorageB: (ArchetypeStorage) -> ArrayList<B> = ArchetypeStorage.accessor()
-            val getStorageC: (ArchetypeStorage) -> ArrayList<C> = ArchetypeStorage.accessor()
+            val getStorageA: (ArchetypeStorage) -> List<A> = ArchetypeStorage.accessor()
+            val getStorageB: (ArchetypeStorage) -> List<B> = ArchetypeStorage.accessor()
+            val getStorageC: (ArchetypeStorage) -> List<C> = ArchetypeStorage.accessor()
 
             return ComponentTuple3Iterator<A, B, C>(
                 layout,
@@ -295,9 +295,9 @@ class ComponentTuple3Iterator<
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
-    val getStorageA: (ArchetypeStorage) -> ArrayList<A>,
-    val getStorageB: (ArchetypeStorage) -> ArrayList<B>,
-    val getStorageC: (ArchetypeStorage) -> ArrayList<C>,
+    val getStorageA: (ArchetypeStorage) -> List<A>,
+    val getStorageB: (ArchetypeStorage) -> List<B>,
+    val getStorageC: (ArchetypeStorage) -> List<C>,
 ): Iterator<ComponentTuple3<A, B, C>> {
     // get list of matching archetypes. simplifies logic because
     // `hasNext` must always know if there is a "next" valid archetype
@@ -392,10 +392,10 @@ public data class ComponentTuple4<
                 VehicleComponentType.from<D>(),
             )
             
-            val getStorageA: (ArchetypeStorage) -> ArrayList<A> = ArchetypeStorage.accessor()
-            val getStorageB: (ArchetypeStorage) -> ArrayList<B> = ArchetypeStorage.accessor()
-            val getStorageC: (ArchetypeStorage) -> ArrayList<C> = ArchetypeStorage.accessor()
-            val getStorageD: (ArchetypeStorage) -> ArrayList<D> = ArchetypeStorage.accessor()
+            val getStorageA: (ArchetypeStorage) -> List<A> = ArchetypeStorage.accessor()
+            val getStorageB: (ArchetypeStorage) -> List<B> = ArchetypeStorage.accessor()
+            val getStorageC: (ArchetypeStorage) -> List<C> = ArchetypeStorage.accessor()
+            val getStorageD: (ArchetypeStorage) -> List<D> = ArchetypeStorage.accessor()
 
             return ComponentTuple4Iterator<A, B, C, D>(
                 layout,
@@ -418,10 +418,10 @@ class ComponentTuple4Iterator<
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
-    val getStorageA: (ArchetypeStorage) -> ArrayList<A>,
-    val getStorageB: (ArchetypeStorage) -> ArrayList<B>,
-    val getStorageC: (ArchetypeStorage) -> ArrayList<C>,
-    val getStorageD: (ArchetypeStorage) -> ArrayList<D>,
+    val getStorageA: (ArchetypeStorage) -> List<A>,
+    val getStorageB: (ArchetypeStorage) -> List<B>,
+    val getStorageC: (ArchetypeStorage) -> List<C>,
+    val getStorageD: (ArchetypeStorage) -> List<D>,
 ): Iterator<ComponentTuple4<A, B, C, D>> {
     // get list of matching archetypes. simplifies logic because
     // `hasNext` must always know if there is a "next" valid archetype
@@ -524,11 +524,11 @@ public data class ComponentTuple5<
                 VehicleComponentType.from<E>(),
             )
             
-            val getStorageA: (ArchetypeStorage) -> ArrayList<A> = ArchetypeStorage.accessor()
-            val getStorageB: (ArchetypeStorage) -> ArrayList<B> = ArchetypeStorage.accessor()
-            val getStorageC: (ArchetypeStorage) -> ArrayList<C> = ArchetypeStorage.accessor()
-            val getStorageD: (ArchetypeStorage) -> ArrayList<D> = ArchetypeStorage.accessor()
-            val getStorageE: (ArchetypeStorage) -> ArrayList<E> = ArchetypeStorage.accessor()
+            val getStorageA: (ArchetypeStorage) -> List<A> = ArchetypeStorage.accessor()
+            val getStorageB: (ArchetypeStorage) -> List<B> = ArchetypeStorage.accessor()
+            val getStorageC: (ArchetypeStorage) -> List<C> = ArchetypeStorage.accessor()
+            val getStorageD: (ArchetypeStorage) -> List<D> = ArchetypeStorage.accessor()
+            val getStorageE: (ArchetypeStorage) -> List<E> = ArchetypeStorage.accessor()
 
             return ComponentTuple5Iterator<A, B, C, D, E>(
                 layout,
@@ -553,11 +553,11 @@ class ComponentTuple5Iterator<
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
-    val getStorageA: (ArchetypeStorage) -> ArrayList<A>,
-    val getStorageB: (ArchetypeStorage) -> ArrayList<B>,
-    val getStorageC: (ArchetypeStorage) -> ArrayList<C>,
-    val getStorageD: (ArchetypeStorage) -> ArrayList<D>,
-    val getStorageE: (ArchetypeStorage) -> ArrayList<E>,
+    val getStorageA: (ArchetypeStorage) -> List<A>,
+    val getStorageB: (ArchetypeStorage) -> List<B>,
+    val getStorageC: (ArchetypeStorage) -> List<C>,
+    val getStorageD: (ArchetypeStorage) -> List<D>,
+    val getStorageE: (ArchetypeStorage) -> List<E>,
 ): Iterator<ComponentTuple5<A, B, C, D, E>> {
     // get list of matching archetypes. simplifies logic because
     // `hasNext` must always know if there is a "next" valid archetype
@@ -668,12 +668,12 @@ public data class ComponentTuple6<
                 VehicleComponentType.from<F>(),
             )
             
-            val getStorageA: (ArchetypeStorage) -> ArrayList<A> = ArchetypeStorage.accessor()
-            val getStorageB: (ArchetypeStorage) -> ArrayList<B> = ArchetypeStorage.accessor()
-            val getStorageC: (ArchetypeStorage) -> ArrayList<C> = ArchetypeStorage.accessor()
-            val getStorageD: (ArchetypeStorage) -> ArrayList<D> = ArchetypeStorage.accessor()
-            val getStorageE: (ArchetypeStorage) -> ArrayList<E> = ArchetypeStorage.accessor()
-            val getStorageF: (ArchetypeStorage) -> ArrayList<F> = ArchetypeStorage.accessor()
+            val getStorageA: (ArchetypeStorage) -> List<A> = ArchetypeStorage.accessor()
+            val getStorageB: (ArchetypeStorage) -> List<B> = ArchetypeStorage.accessor()
+            val getStorageC: (ArchetypeStorage) -> List<C> = ArchetypeStorage.accessor()
+            val getStorageD: (ArchetypeStorage) -> List<D> = ArchetypeStorage.accessor()
+            val getStorageE: (ArchetypeStorage) -> List<E> = ArchetypeStorage.accessor()
+            val getStorageF: (ArchetypeStorage) -> List<F> = ArchetypeStorage.accessor()
 
             return ComponentTuple6Iterator<A, B, C, D, E, F>(
                 layout,
@@ -700,12 +700,12 @@ class ComponentTuple6Iterator<
 >(
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
-    val getStorageA: (ArchetypeStorage) -> ArrayList<A>,
-    val getStorageB: (ArchetypeStorage) -> ArrayList<B>,
-    val getStorageC: (ArchetypeStorage) -> ArrayList<C>,
-    val getStorageD: (ArchetypeStorage) -> ArrayList<D>,
-    val getStorageE: (ArchetypeStorage) -> ArrayList<E>,
-    val getStorageF: (ArchetypeStorage) -> ArrayList<F>,
+    val getStorageA: (ArchetypeStorage) -> List<A>,
+    val getStorageB: (ArchetypeStorage) -> List<B>,
+    val getStorageC: (ArchetypeStorage) -> List<C>,
+    val getStorageD: (ArchetypeStorage) -> List<D>,
+    val getStorageE: (ArchetypeStorage) -> List<E>,
+    val getStorageF: (ArchetypeStorage) -> List<F>,
 ): Iterator<ComponentTuple6<A, B, C, D, E, F>> {
     // get list of matching archetypes. simplifies logic because
     // `hasNext` must always know if there is a "next" valid archetype

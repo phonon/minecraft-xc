@@ -18,9 +18,6 @@ public const val INVALID_VEHICLE_ID: VehicleId = -1
 // this is unique in the ArchetypeStorage that it is stored in
 typealias VehicleElementId = Int
 
-// Constant placeholder to indicate invalid id (equivalent to a null)
-public const val INVALID_ELEMENT_ID: VehicleElementId = -1
-
 /**
  * Vehicle is just a set of vehicle elements. The elements hold
  * component references accessed via element id. Vehicle links

@@ -16,13 +16,43 @@
 
 package phonon.xv.core
 
+import java.util.logging.Logger
 import java.util.EnumSet
-import phonon.xv.core.INVALID_ELEMENT_ID
 import com.google.gson.JsonObject
 import phonon.xv.component.*
 import java.util.Stack
 
-public const val INVALID_DENSE_INDEX: Int = -1
+// Const indicating invalid dense array index
+public const val INVALID_ELEMENT_ID: Int = -1
+
+/**
+ * Helper function to push an element into a dense array.
+ * Validates that the index is at the end of the array.
+ */
+private fun <T> ArrayList<T>.pushAtDenseIndex(index: Int, value: T) {
+    val storageSize = this.size
+    if ( storageSize == index ) {
+        this.add(value)
+    } else {
+        throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size: ${index} (size = ${storageSize})")
+    }
+}
+
+/**
+ * Helper function to remove an element by swapping it with the last 
+ * element in the array.
+ */
+private fun <T> ArrayList<T>.swapRemove(index: Int) {
+    val storageSize = this.size
+    if ( storageSize == index ) {
+        this.removeAt(index)
+    } else {
+        // swap with last element
+        val last = this[storageSize - 1]
+        this[index] = last
+        this.removeAt(storageSize - 1)
+    }
+}
 
 /**
  * Note: keep in alphabetical order.
@@ -58,128 +88,156 @@ public class ArchetypeStorage(
     val maxElements: Int,
 ) {
     public var size: Int = 0
-        // private set // TODO: when implemented, outside should never change size
+        internal set
 
-    // fluffy start, vehicle element id manager + dense map/array
+    // sparse lookup from id => element
+    // (note vehicle element id is just a typealias for int)
+    // Internally lookup also stores a linked list of next free element,
+    // so initialize with each element pointing to the next element
+    // (e.g. next free element is the next element in the array)
+    private val lookup: IntArray = IntArray(maxElements, { i -> i + 1 })
 
-    // element id => element
-    private val lookup: HashMap<VehicleElementId, VehicleElement> = HashMap()
-    // stack of free ids that are not at the end of the lookup array
-    // lookup array vehicle element id => dense array index
-    // the sets we're mapping have equal cardinality, we use a dense map
-    // to keep all components in contiguous block in dense array
-    val denseLookup: Array<Int> = Array(maxElements) { _ -> INVALID_DENSE_INDEX }
-
-    // dense array index => vehicle element id
+    // reverse lookup from dense array index => vehicle element id
     // only internal cuz iterator classes need it
     internal val elements: IntArray = IntArray(maxElements) { _ -> INVALID_ELEMENT_ID }
-    // denseLookup implicit linked list head
-    internal var freedNext: Int = 0
 
-    /*
-    // map from vehicle element id => element's dense array index
-    // TODO: replace with specialized Densemap
-    public val lookup: HashMap<VehicleElementId, Int> = HashMap()
+    // lookup implicit linked list head
+    internal var nextFree: Int = 0
 
-    // dense packed element ids
-    public val elements: IntArray = IntArray(maxElements, {_ -> INVALID_ELEMENT_ID})
-    */
-
-    // dense packed components
+    // dense packed components storages
     // only components in layout will be non-null
     {%- for c in components %}
-    public val {{ c.storage }}: ArrayList<{{ c.classname }}>? = if ( layout.contains(VehicleComponentType.{{ c.enum }}) ) ArrayList() else null
+    internal val {{ c.storage }}: ArrayList<{{ c.classname }}>? = if ( layout.contains(VehicleComponentType.{{ c.enum }}) ) ArrayList() else null
     {%- endfor %}
 
-    // element id => element lookup, function for type safety
-    fun lookup(id: VehicleElementId): VehicleElement? {
-        return lookup[id]
-    }
+    // public getter "view"s: only expose immutable List interface
+    {%- for c in components %}
+    public val {{ c.storage }}View: List<{{ c.classname }}>?
+        get() = this.{{ c.storage }}
+    {%- endfor %}
 
+    /**
+     * Get component by id. Returns null if component is not in archetype.
+     */
     inline fun <reified T: VehicleComponent<T>> getComponent(id: VehicleElementId): T? {
-        val denseIndex = this.denseLookup[id]
+        val denseIndex = this.getDenseIndex(id)
+        if ( denseIndex == INVALID_ELEMENT_ID ) {
+            return null
+        }
+        
         return when ( T::class ) {
             {%- for c in components %}
-            {{ c.classname }}::class -> this.{{ c.storage }}?.get(denseIndex) as T
+            {{ c.classname }}::class -> this.{{ c.storage }}View?.get(denseIndex) as T
             {%- endfor %}
             else -> throw Exception("Unknown component type.")
         }
     }
 
-    // reserves a new element id and internally adds an entry in dense array
-    // YOU NEED TO UPDATE THE LOOKUP MAP YOURSELF!
-    public fun newId(): VehicleElementId {
-        if ( size >= MAX_VEHICLE_ELEMENTS )
-            return INVALID_ELEMENT_ID
-        // new id is head of linked list
-        val newId = freedNext
-        // update dense array
-        elements[size] = newId
-        // set new head of implicit linked list
-        freedNext = denseLookup[freedNext]
-        if ( freedNext == -1 ) {
-            freedNext = size + 1
-        }
-        // update dense lookup
-        denseLookup[newId] = size
-        size++
-        return newId
+    /**
+     * Get dense index from id.
+     */
+    public fun getDenseIndex(id: VehicleElementId): Int {
+        return this.lookup[id]
     }
 
-    // inject the vehicle element w/ its component data
-    // into the archetype storage, this is assuming we've
-    // already called newId() to reserve its id
-    public fun inject(
-        element: VehicleElement,
-        {%- for c in components %}
-        {{ c.storage }}: {{ c.classname }}?,
-        {%- endfor %}
-    ) {
-        this.lookup[element.id] = element
-        val denseIndex = denseLookup[element.id]
-        {%- for c in components %}
-        if ( {{ c.storage }} != null ) {
-            val storageSize = this.{{ c.storage }}!!.size
-            if (storageSize == denseIndex) {
-                this.{{ c.storage }}.add({{ c.storage }})
-            } else if (storageSize < denseIndex) {
-                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
-            } else {
-                this.{{ c.storage }}.set(denseIndex, {{ c.storage }})
+    /**
+     * Insert a prototype into the archetype. Returns a new element id
+     * corresponding to its lookup index in the archetype.
+     * Returns null if layout does not match or if the archetype is full.
+     */
+    public fun insert(
+        prototype: VehicleElementPrototype,
+    ): VehicleElementId? {
+        if ( this.layout != prototype.layout ) {
+            return null
+        }
+
+        // try to allocate a new element id (lookup id)
+        if ( size >= maxElements ) {
+            return null
+        }
+        // new id is head of linked list
+        val id = nextFree
+        // set new head of implicit linked list
+        nextFree = lookup[nextFree]
+        // get dense index
+        val denseIndex = size
+        size += 1
+        
+        // set sparse <-> dense element mappings
+        lookup[id] = denseIndex
+        elements[denseIndex] = id
+
+        // push prototype components into storages
+        for ( c in prototype.layout ) {
+            when ( c ) {
+                {%- for c in components %}
+                VehicleComponentType.{{ c.enum }} -> {
+                    this.{{ c.storage }}?.pushAtDenseIndex(denseIndex, prototype.{{ c.storage }}!!)
+                }
+                {% endfor %}
+                null -> {}
             }
         }
-        {%- endfor %}
+
+        return id
     }
 
-    // mark id as deleted
-    public fun freeId(id: VehicleElementId) {
-        lookup.remove(id)
-        // index in dense array to delete
-        val index = denseLookup[id]
+    /**
+     * Frees an element from the archetype. Removes all components
+     * and frees element id.
+     */
+    public fun free(id: VehicleElementId, logger: Logger? = null) {
+        // validate id is inside storage
+        if ( id < 0 || id >= maxElements ) {
+            logger?.severe("Archetype.remove() invalid element id: $id")
+            return
+        }
+
+        // validate id inside dense array == id
+        val denseIndex = lookup[id]
+        if ( elements[denseIndex] != id ) {
+            logger?.severe("Archetype.remove() element id not in array: $id")
+            return
+        }
+
         // swap values in dense array w/ last elt
-        val idAtLast = elements[size - 1]
-        elements[index] = idAtLast
-        elements[size - 1] = -1
-        // update in dense lookup and implicit list head
-        denseLookup[id] = freedNext
-        freedNext = id
-        denseLookup[idAtLast] = index
-        // make the swap in component arrays
-        {%- for c in components %}
-        {{ c.storage }}!!.set(index, {{ c.storage }}.get(size - 1))
-        {{ c.storage }}.removeAt(size - 1)
-        {%- endfor %}
-        size--
-    }
+        val lastDenseIndex = size - 1
+        val lastId = elements[lastDenseIndex]
+        elements[denseIndex] = lastId
+        elements[lastDenseIndex] = INVALID_ELEMENT_ID
 
-    // fluffy end
+        // update lookup and implicit list head
+        lookup[id] = nextFree
+        nextFree = id
+        lookup[lastId] = denseIndex
+
+        // swap remove elements in component arrays
+        for ( c in layout ) {
+            when ( c ) {
+                {%- for c in components %}
+                VehicleComponentType.{{ c.enum }} -> {{ c.storage }}?.swapRemove(denseIndex)
+                {%- endfor %}
+                null -> {}
+            }
+        }
+        
+        // decrement archetype size
+        size -= 1
+    }
     
     /**
      * Remove all elements from archetype.
      */
     public fun clear() {
         size = 0
-        lookup.clear()
+
+        // reset lookup implicit linked
+        for ( i in 0 until maxElements ) {
+            lookup[i] = i + 1
+            elements[i] = INVALID_ELEMENT_ID
+        }
+        nextFree = 0
 
         {%- for c in components %}
         {{ c.storage }}?.clear()
@@ -201,10 +259,10 @@ public class ArchetypeStorage(
          * in future.
          */
         @Suppress("UNCHECKED_CAST")
-        public inline fun <reified T> accessor(): (ArchetypeStorage) -> ArrayList<T> {
+        public inline fun <reified T> accessor(): (ArchetypeStorage) -> List<T> {
             return when ( T::class ) {
                 {%- for c in components %}
-                {{ c.classname }}::class -> { archetype -> archetype.{{ c.storage }} as ArrayList<T> }
+                {{ c.classname }}::class -> { archetype -> archetype.{{ c.storage }}View as List<T> }
                 {%- endfor %}
                 else -> throw Exception("Unknown component type")
             }

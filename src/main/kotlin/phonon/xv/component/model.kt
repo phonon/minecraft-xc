@@ -1,17 +1,19 @@
 package phonon.xv.component
 
 import com.google.gson.JsonObject
+import java.util.UUID
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.Location
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
+import org.bukkit.persistence.PersistentDataType
+import phonon.xv.XV
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
 import phonon.xv.util.toml.*
-
 
 /**
  * Represents an ArmorStand model
@@ -33,6 +35,8 @@ public data class ModelComponent(
     // @skipall
     // armor stand entity
     var armorstand: Entity? = null,
+    // uuid of this model, for reassociating armor stand <-> model
+    val uuid: UUID = UUID.randomUUID(),
 ): VehicleComponent<ModelComponent> {
     override val type = VehicleComponentType.MODEL
 
@@ -45,13 +49,22 @@ public data class ModelComponent(
         location: Location,
         player: Player?,
     ): ModelComponent {
-        // spawn armor stand
+        // spawn armor stand, for simplicity steal the armorstand uuid
         val armorstand: ArmorStand = location.world.spawn(location, ArmorStand::class.java)
         armorstand.setGravity(false)
         armorstand.setVisible(true)
         // armorstand.getEquipment()!!.setHelmet(createModel(Tank.modelMaterial, this.modelDataBody))
         armorstand.setRotation(location.yaw, 0f)
 
+        // add a stable entity reassociation key used to associate entity
+        // with element this should be stable even if the armor stand
+        // entity needs to be re-created
+        armorstand.persistentDataContainer.set(
+            XV.entityReassociationKey,
+            PersistentDataType.STRING,
+            uuid.toString(),
+        )
+        
         return this.copy(
             armorstand = armorstand,
         )

@@ -1,5 +1,7 @@
 package phonon.xv.system
 
+import java.util.Queue
+import java.util.Stack
 import com.google.gson.JsonObject
 import org.bukkit.Location
 import org.bukkit.entity.ArmorStand
@@ -8,9 +10,10 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import phonon.xv.XV
-import phonon.xv.core.*
-import java.util.Queue
-import java.util.Stack
+import phonon.xv.core.ComponentsStorage
+import phonon.xv.core.VehicleComponentType
+import phonon.xv.core.VehicleElementPrototype
+import phonon.xv.core.VehiclePrototype
 
 /**
  * Indicates reason for creating a vehicle. Customizes what creation
@@ -48,26 +51,26 @@ public fun XV.systemCreateVehicle(
     val xv = this // alias
 
     // recursive inline function
-    fun buildElement(prototype: VehicleElementPrototype): VehicleElement {
-        val childrenElts = ArrayList<VehicleElement>()
-        // build children first
-        for ( childPrototype in prototype.children!! ) {
-            val elt = buildElement(childPrototype)
-            childrenElts.add(elt)
-        }
-        val id = componentStorage.lookup[prototype.layout]!!.newId()
-        val elt = VehicleElement(
-            "${prototype.vehicleName}.${prototype.name}.${id}",
-            id,
-            prototype,
-            childrenElts.toTypedArray()
-        )
-        // go for another pass thru and set parent of children
-        for ( child in childrenElts ) {
-            child.parent = elt
-        }
-        return elt
-    }
+    // fun buildElement(prototype: VehicleElementPrototype): VehicleElement {
+    //     val childrenElts = ArrayList<VehicleElement>()
+    //     // build children first
+    //     for ( childPrototype in prototype.children!! ) {
+    //         val elt = buildElement(childPrototype)
+    //         childrenElts.add(elt)
+    //     }
+    //     val id = componentStorage.lookup[prototype.layout]!!.newId()
+    //     val elt = VehicleElement(
+    //         "${prototype.vehicleName}.${prototype.name}.${id}",
+    //         id,
+    //         prototype,
+    //         childrenElts.toTypedArray()
+    //     )
+    //     // go for another pass thru and set parent of children
+    //     for ( child in childrenElts ) {
+    //         child.parent = elt
+    //     }
+    //     return elt
+    // }
 
     while ( requests.isNotEmpty() ) {
         val (
@@ -126,30 +129,30 @@ public fun XV.systemCreateVehicle(
         //     }
         // }
 
-        val vehicleId = xv.vehicleStorage.newId()
-        val elements = HashSet<VehicleElement>(prototype.elements.size)
+        // val vehicleId = xv.vehicleStorage.newId()
+        // val elements = HashSet<VehicleElement>(prototype.elements.size)
 
-        val stack = Stack<VehicleElement>()
-        for ( rootPrototype in prototype.rootElements ) {
-            val rootElt = buildElement(rootPrototype)
-            // traverse tree and add elts
-            stack.push(rootElt)
-            while ( !stack.isEmpty() ) {
-                val elt = stack.pop()
-                elements.add(elt)
-                for ( child in elt.children ) {
-                    stack.push(child)
-                }
-            }
-        }
+        // val stack = Stack<VehicleElement>()
+        // for ( rootPrototype in prototype.rootElements ) {
+        //     val rootElt = buildElement(rootPrototype)
+        //     // traverse tree and add elts
+        //     stack.push(rootElt)
+        //     while ( !stack.isEmpty() ) {
+        //         val elt = stack.pop()
+        //         elements.add(elt)
+        //         for ( child in elt.children ) {
+        //             stack.push(child)
+        //         }
+        //     }
+        // }
 
-        val vehicle = Vehicle(
-            "${prototype.name}${vehicleId}",
-            vehicleId,
-            prototype,
-            elements.toTypedArray()
-        )
-        xv.uuidToVehicle[vehicle.uuid] = vehicle
+        // val vehicle = Vehicle(
+        //     "${prototype.name}${vehicleId}",
+        //     vehicleId,
+        //     prototype,
+        //     elements.toTypedArray()
+        // )
+        // xv.uuidToVehicle[vehicle.uuid] = vehicle
 
         // for ( elt in vehicle.elements ) {
         //     injectComponents(componentStorage, xv.entityVehicleData, elt, req)

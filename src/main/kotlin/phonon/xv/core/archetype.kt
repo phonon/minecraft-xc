@@ -16,13 +16,43 @@
 
 package phonon.xv.core
 
+import java.util.logging.Logger
 import java.util.EnumSet
-import phonon.xv.core.INVALID_ELEMENT_ID
 import com.google.gson.JsonObject
 import phonon.xv.component.*
 import java.util.Stack
 
-public const val INVALID_DENSE_INDEX: Int = -1
+// Const indicating invalid dense array index
+public const val INVALID_ELEMENT_ID: Int = -1
+
+/**
+ * Helper function to push an element into a dense array.
+ * Validates that the index is at the end of the array.
+ */
+private fun <T> ArrayList<T>.pushAtDenseIndex(index: Int, value: T) {
+    val storageSize = this.size
+    if ( storageSize == index ) {
+        this.add(value)
+    } else {
+        throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size: ${index} (size = ${storageSize})")
+    }
+}
+
+/**
+ * Helper function to remove an element by swapping it with the last 
+ * element in the array.
+ */
+private fun <T> ArrayList<T>.swapRemove(index: Int) {
+    val storageSize = this.size
+    if ( storageSize == index ) {
+        this.removeAt(index)
+    } else {
+        // swap with last element
+        val last = this[storageSize - 1]
+        this[index] = last
+        this.removeAt(storageSize - 1)
+    }
+}
 
 /**
  * Note: keep in alphabetical order.
@@ -68,223 +98,210 @@ public class ArchetypeStorage(
     val maxElements: Int,
 ) {
     public var size: Int = 0
-        // private set // TODO: when implemented, outside should never change size
+        internal set
 
-    // fluffy start, vehicle element id manager + dense map/array
+    // sparse lookup from id => element
+    // (note vehicle element id is just a typealias for int)
+    // Internally lookup also stores a linked list of next free element,
+    // so initialize with each element pointing to the next element
+    // (e.g. next free element is the next element in the array)
+    private val lookup: IntArray = IntArray(maxElements, { i -> i + 1 })
 
-    // element id => element
-    private val lookup: HashMap<VehicleElementId, VehicleElement> = HashMap()
-    // stack of free ids that are not at the end of the lookup array
-    // lookup array vehicle element id => dense array index
-    // the sets we're mapping have equal cardinality, we use a dense map
-    // to keep all components in contiguous block in dense array
-    val denseLookup: Array<Int> = Array(maxElements) { _ -> INVALID_DENSE_INDEX }
-
-    // dense array index => vehicle element id
+    // reverse lookup from dense array index => vehicle element id
     // only internal cuz iterator classes need it
     internal val elements: IntArray = IntArray(maxElements) { _ -> INVALID_ELEMENT_ID }
-    // denseLookup implicit linked list head
-    internal var freedNext: Int = 0
 
-    /*
-    // map from vehicle element id => element's dense array index
-    // TODO: replace with specialized Densemap
-    public val lookup: HashMap<VehicleElementId, Int> = HashMap()
+    // lookup implicit linked list head
+    internal var nextFree: Int = 0
 
-    // dense packed element ids
-    public val elements: IntArray = IntArray(maxElements, {_ -> INVALID_ELEMENT_ID})
-    */
-
-    // dense packed components
+    // dense packed components storages
     // only components in layout will be non-null
-    public val fuel: ArrayList<FuelComponent>? = if ( layout.contains(VehicleComponentType.FUEL) ) ArrayList() else null
-    public val gunTurret: ArrayList<GunTurretComponent>? = if ( layout.contains(VehicleComponentType.GUN_TURRET) ) ArrayList() else null
-    public val health: ArrayList<HealthComponent>? = if ( layout.contains(VehicleComponentType.HEALTH) ) ArrayList() else null
-    public val landMovementControls: ArrayList<LandMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.LAND_MOVEMENT_CONTROLS) ) ArrayList() else null
-    public val model: ArrayList<ModelComponent>? = if ( layout.contains(VehicleComponentType.MODEL) ) ArrayList() else null
-    public val seats: ArrayList<SeatsComponent>? = if ( layout.contains(VehicleComponentType.SEATS) ) ArrayList() else null
-    public val seatsRaycast: ArrayList<SeatsRaycastComponent>? = if ( layout.contains(VehicleComponentType.SEATS_RAYCAST) ) ArrayList() else null
-    public val transform: ArrayList<TransformComponent>? = if ( layout.contains(VehicleComponentType.TRANSFORM) ) ArrayList() else null
+    internal val fuel: ArrayList<FuelComponent>? = if ( layout.contains(VehicleComponentType.FUEL) ) ArrayList() else null
+    internal val gunTurret: ArrayList<GunTurretComponent>? = if ( layout.contains(VehicleComponentType.GUN_TURRET) ) ArrayList() else null
+    internal val health: ArrayList<HealthComponent>? = if ( layout.contains(VehicleComponentType.HEALTH) ) ArrayList() else null
+    internal val landMovementControls: ArrayList<LandMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.LAND_MOVEMENT_CONTROLS) ) ArrayList() else null
+    internal val model: ArrayList<ModelComponent>? = if ( layout.contains(VehicleComponentType.MODEL) ) ArrayList() else null
+    internal val seats: ArrayList<SeatsComponent>? = if ( layout.contains(VehicleComponentType.SEATS) ) ArrayList() else null
+    internal val seatsRaycast: ArrayList<SeatsRaycastComponent>? = if ( layout.contains(VehicleComponentType.SEATS_RAYCAST) ) ArrayList() else null
+    internal val transform: ArrayList<TransformComponent>? = if ( layout.contains(VehicleComponentType.TRANSFORM) ) ArrayList() else null
 
-    // element id => element lookup, function for type safety
-    fun lookup(id: VehicleElementId): VehicleElement? {
-        return lookup[id]
-    }
+    // public getter "view"s: only expose immutable List interface
+    public val fuelView: List<FuelComponent>?
+        get() = this.fuel
+    public val gunTurretView: List<GunTurretComponent>?
+        get() = this.gunTurret
+    public val healthView: List<HealthComponent>?
+        get() = this.health
+    public val landMovementControlsView: List<LandMovementControlsComponent>?
+        get() = this.landMovementControls
+    public val modelView: List<ModelComponent>?
+        get() = this.model
+    public val seatsView: List<SeatsComponent>?
+        get() = this.seats
+    public val seatsRaycastView: List<SeatsRaycastComponent>?
+        get() = this.seatsRaycast
+    public val transformView: List<TransformComponent>?
+        get() = this.transform
 
+    /**
+     * Get component by id. Returns null if component is not in archetype.
+     */
     inline fun <reified T: VehicleComponent<T>> getComponent(id: VehicleElementId): T? {
-        val denseIndex = this.denseLookup[id]
+        val denseIndex = this.getDenseIndex(id)
+        if ( denseIndex == INVALID_ELEMENT_ID ) {
+            return null
+        }
+        
         return when ( T::class ) {
-            FuelComponent::class -> this.fuel?.get(denseIndex) as T
-            GunTurretComponent::class -> this.gunTurret?.get(denseIndex) as T
-            HealthComponent::class -> this.health?.get(denseIndex) as T
-            LandMovementControlsComponent::class -> this.landMovementControls?.get(denseIndex) as T
-            ModelComponent::class -> this.model?.get(denseIndex) as T
-            SeatsComponent::class -> this.seats?.get(denseIndex) as T
-            SeatsRaycastComponent::class -> this.seatsRaycast?.get(denseIndex) as T
-            TransformComponent::class -> this.transform?.get(denseIndex) as T
+            FuelComponent::class -> this.fuelView?.get(denseIndex) as T
+            GunTurretComponent::class -> this.gunTurretView?.get(denseIndex) as T
+            HealthComponent::class -> this.healthView?.get(denseIndex) as T
+            LandMovementControlsComponent::class -> this.landMovementControlsView?.get(denseIndex) as T
+            ModelComponent::class -> this.modelView?.get(denseIndex) as T
+            SeatsComponent::class -> this.seatsView?.get(denseIndex) as T
+            SeatsRaycastComponent::class -> this.seatsRaycastView?.get(denseIndex) as T
+            TransformComponent::class -> this.transformView?.get(denseIndex) as T
             else -> throw Exception("Unknown component type.")
         }
     }
 
-    // reserves a new element id and internally adds an entry in dense array
-    // YOU NEED TO UPDATE THE LOOKUP MAP YOURSELF!
-    public fun newId(): VehicleElementId {
-        if ( size >= MAX_VEHICLE_ELEMENTS )
-            return INVALID_ELEMENT_ID
+    /**
+     * Get dense index from id.
+     */
+    public fun getDenseIndex(id: VehicleElementId): Int {
+        return this.lookup[id]
+    }
+
+    /**
+     * Insert a prototype into the archetype. Returns a new element id
+     * corresponding to its lookup index in the archetype.
+     * Returns null if layout does not match or if the archetype is full.
+     */
+    public fun insert(
+        prototype: VehicleElementPrototype,
+    ): VehicleElementId? {
+        if ( this.layout != prototype.layout ) {
+            return null
+        }
+
+        // try to allocate a new element id (lookup id)
+        if ( size >= maxElements ) {
+            return null
+        }
         // new id is head of linked list
-        val newId = freedNext
-        // update dense array
-        elements[size] = newId
+        val id = nextFree
         // set new head of implicit linked list
-        freedNext = denseLookup[freedNext]
-        if ( freedNext == -1 ) {
-            freedNext = size + 1
+        nextFree = lookup[nextFree]
+        // get dense index
+        val denseIndex = size
+        size += 1
+        
+        // set sparse <-> dense element mappings
+        lookup[id] = denseIndex
+        elements[denseIndex] = id
+
+        // push prototype components into storages
+        for ( c in prototype.layout ) {
+            when ( c ) {
+                VehicleComponentType.FUEL -> {
+                    this.fuel?.pushAtDenseIndex(denseIndex, prototype.fuel!!)
+                }
+                
+                VehicleComponentType.GUN_TURRET -> {
+                    this.gunTurret?.pushAtDenseIndex(denseIndex, prototype.gunTurret!!)
+                }
+                
+                VehicleComponentType.HEALTH -> {
+                    this.health?.pushAtDenseIndex(denseIndex, prototype.health!!)
+                }
+                
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> {
+                    this.landMovementControls?.pushAtDenseIndex(denseIndex, prototype.landMovementControls!!)
+                }
+                
+                VehicleComponentType.MODEL -> {
+                    this.model?.pushAtDenseIndex(denseIndex, prototype.model!!)
+                }
+                
+                VehicleComponentType.SEATS -> {
+                    this.seats?.pushAtDenseIndex(denseIndex, prototype.seats!!)
+                }
+                
+                VehicleComponentType.SEATS_RAYCAST -> {
+                    this.seatsRaycast?.pushAtDenseIndex(denseIndex, prototype.seatsRaycast!!)
+                }
+                
+                VehicleComponentType.TRANSFORM -> {
+                    this.transform?.pushAtDenseIndex(denseIndex, prototype.transform!!)
+                }
+                
+                null -> {}
+            }
         }
-        // update dense lookup
-        denseLookup[newId] = size
-        size++
-        return newId
+
+        return id
     }
 
-    // inject the vehicle element w/ its component data
-    // into the archetype storage, this is assuming we've
-    // already called newId() to reserve its id
-    public fun inject(
-        element: VehicleElement,
-        fuel: FuelComponent?,
-        gunTurret: GunTurretComponent?,
-        health: HealthComponent?,
-        landMovementControls: LandMovementControlsComponent?,
-        model: ModelComponent?,
-        seats: SeatsComponent?,
-        seatsRaycast: SeatsRaycastComponent?,
-        transform: TransformComponent?,
-    ) {
-        this.lookup[element.id] = element
-        val denseIndex = denseLookup[element.id]
-        if ( fuel != null ) {
-            val storageSize = this.fuel!!.size
-            if (storageSize == denseIndex) {
-                this.fuel.add(fuel)
-            } else if (storageSize < denseIndex) {
-                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
-            } else {
-                this.fuel.set(denseIndex, fuel)
-            }
+    /**
+     * Frees an element from the archetype. Removes all components
+     * and frees element id.
+     */
+    public fun free(id: VehicleElementId, logger: Logger? = null) {
+        // validate id is inside storage
+        if ( id < 0 || id >= maxElements ) {
+            logger?.severe("Archetype.remove() invalid element id: $id")
+            return
         }
-        if ( gunTurret != null ) {
-            val storageSize = this.gunTurret!!.size
-            if (storageSize == denseIndex) {
-                this.gunTurret.add(gunTurret)
-            } else if (storageSize < denseIndex) {
-                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
-            } else {
-                this.gunTurret.set(denseIndex, gunTurret)
-            }
-        }
-        if ( health != null ) {
-            val storageSize = this.health!!.size
-            if (storageSize == denseIndex) {
-                this.health.add(health)
-            } else if (storageSize < denseIndex) {
-                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
-            } else {
-                this.health.set(denseIndex, health)
-            }
-        }
-        if ( landMovementControls != null ) {
-            val storageSize = this.landMovementControls!!.size
-            if (storageSize == denseIndex) {
-                this.landMovementControls.add(landMovementControls)
-            } else if (storageSize < denseIndex) {
-                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
-            } else {
-                this.landMovementControls.set(denseIndex, landMovementControls)
-            }
-        }
-        if ( model != null ) {
-            val storageSize = this.model!!.size
-            if (storageSize == denseIndex) {
-                this.model.add(model)
-            } else if (storageSize < denseIndex) {
-                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
-            } else {
-                this.model.set(denseIndex, model)
-            }
-        }
-        if ( seats != null ) {
-            val storageSize = this.seats!!.size
-            if (storageSize == denseIndex) {
-                this.seats.add(seats)
-            } else if (storageSize < denseIndex) {
-                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
-            } else {
-                this.seats.set(denseIndex, seats)
-            }
-        }
-        if ( seatsRaycast != null ) {
-            val storageSize = this.seatsRaycast!!.size
-            if (storageSize == denseIndex) {
-                this.seatsRaycast.add(seatsRaycast)
-            } else if (storageSize < denseIndex) {
-                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
-            } else {
-                this.seatsRaycast.set(denseIndex, seatsRaycast)
-            }
-        }
-        if ( transform != null ) {
-            val storageSize = this.transform!!.size
-            if (storageSize == denseIndex) {
-                this.transform.add(transform)
-            } else if (storageSize < denseIndex) {
-                throw IllegalStateException("Archetype storage attempted to insert an element at a dense index larger than current size. index: ${denseIndex}")
-            } else {
-                this.transform.set(denseIndex, transform)
-            }
-        }
-    }
 
-    // mark id as deleted
-    public fun freeId(id: VehicleElementId) {
-        lookup.remove(id)
-        // index in dense array to delete
-        val index = denseLookup[id]
+        // validate id inside dense array == id
+        val denseIndex = lookup[id]
+        if ( elements[denseIndex] != id ) {
+            logger?.severe("Archetype.remove() element id not in array: $id")
+            return
+        }
+
         // swap values in dense array w/ last elt
-        val idAtLast = elements[size - 1]
-        elements[index] = idAtLast
-        elements[size - 1] = -1
-        // update in dense lookup and implicit list head
-        denseLookup[id] = freedNext
-        freedNext = id
-        denseLookup[idAtLast] = index
-        // make the swap in component arrays
-        fuel!!.set(index, fuel.get(size - 1))
-        fuel.removeAt(size - 1)
-        gunTurret!!.set(index, gunTurret.get(size - 1))
-        gunTurret.removeAt(size - 1)
-        health!!.set(index, health.get(size - 1))
-        health.removeAt(size - 1)
-        landMovementControls!!.set(index, landMovementControls.get(size - 1))
-        landMovementControls.removeAt(size - 1)
-        model!!.set(index, model.get(size - 1))
-        model.removeAt(size - 1)
-        seats!!.set(index, seats.get(size - 1))
-        seats.removeAt(size - 1)
-        seatsRaycast!!.set(index, seatsRaycast.get(size - 1))
-        seatsRaycast.removeAt(size - 1)
-        transform!!.set(index, transform.get(size - 1))
-        transform.removeAt(size - 1)
-        size--
-    }
+        val lastDenseIndex = size - 1
+        val lastId = elements[lastDenseIndex]
+        elements[denseIndex] = lastId
+        elements[lastDenseIndex] = INVALID_ELEMENT_ID
 
-    // fluffy end
+        // update lookup and implicit list head
+        lookup[id] = nextFree
+        nextFree = id
+        lookup[lastId] = denseIndex
+
+        // swap remove elements in component arrays
+        for ( c in layout ) {
+            when ( c ) {
+                VehicleComponentType.FUEL -> fuel?.swapRemove(denseIndex)
+                VehicleComponentType.GUN_TURRET -> gunTurret?.swapRemove(denseIndex)
+                VehicleComponentType.HEALTH -> health?.swapRemove(denseIndex)
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.swapRemove(denseIndex)
+                VehicleComponentType.MODEL -> model?.swapRemove(denseIndex)
+                VehicleComponentType.SEATS -> seats?.swapRemove(denseIndex)
+                VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.swapRemove(denseIndex)
+                VehicleComponentType.TRANSFORM -> transform?.swapRemove(denseIndex)
+                null -> {}
+            }
+        }
+        
+        // decrement archetype size
+        size -= 1
+    }
     
     /**
      * Remove all elements from archetype.
      */
     public fun clear() {
         size = 0
-        lookup.clear()
+
+        // reset lookup implicit linked
+        for ( i in 0 until maxElements ) {
+            lookup[i] = i + 1
+            elements[i] = INVALID_ELEMENT_ID
+        }
+        nextFree = 0
         fuel?.clear()
         gunTurret?.clear()
         health?.clear()
@@ -310,16 +327,16 @@ public class ArchetypeStorage(
          * in future.
          */
         @Suppress("UNCHECKED_CAST")
-        public inline fun <reified T> accessor(): (ArchetypeStorage) -> ArrayList<T> {
+        public inline fun <reified T> accessor(): (ArchetypeStorage) -> List<T> {
             return when ( T::class ) {
-                FuelComponent::class -> { archetype -> archetype.fuel as ArrayList<T> }
-                GunTurretComponent::class -> { archetype -> archetype.gunTurret as ArrayList<T> }
-                HealthComponent::class -> { archetype -> archetype.health as ArrayList<T> }
-                LandMovementControlsComponent::class -> { archetype -> archetype.landMovementControls as ArrayList<T> }
-                ModelComponent::class -> { archetype -> archetype.model as ArrayList<T> }
-                SeatsComponent::class -> { archetype -> archetype.seats as ArrayList<T> }
-                SeatsRaycastComponent::class -> { archetype -> archetype.seatsRaycast as ArrayList<T> }
-                TransformComponent::class -> { archetype -> archetype.transform as ArrayList<T> }
+                FuelComponent::class -> { archetype -> archetype.fuelView as List<T> }
+                GunTurretComponent::class -> { archetype -> archetype.gunTurretView as List<T> }
+                HealthComponent::class -> { archetype -> archetype.healthView as List<T> }
+                LandMovementControlsComponent::class -> { archetype -> archetype.landMovementControlsView as List<T> }
+                ModelComponent::class -> { archetype -> archetype.modelView as List<T> }
+                SeatsComponent::class -> { archetype -> archetype.seatsView as List<T> }
+                SeatsRaycastComponent::class -> { archetype -> archetype.seatsRaycastView as List<T> }
+                TransformComponent::class -> { archetype -> archetype.transformView as List<T> }
                 else -> throw Exception("Unknown component type")
             }
         }

@@ -9,6 +9,7 @@ import java.nio.file.Files
 import java.util.UUID
 import java.util.logging.Logger
 import org.bukkit.Bukkit
+import org.bukkit.NamespacedKey
 import org.bukkit.plugin.Plugin
 import org.bukkit.scheduler.BukkitTask
 import phonon.xv.core.*
@@ -66,6 +67,15 @@ public class XV (
     internal var dismountRequests: ArrayList<DismountVehicleRequest> = ArrayList()
     // vehicle creation requests
     internal var createRequests: Queue<CreateVehicleRequest> = LinkedList()
+
+    // global properties
+    companion object {
+        /**
+         * Namespaced key for associating vehicle model entities with element uuid.
+         */
+        @Suppress("Deprecated")
+        public val entityReassociationKey = NamespacedKey("xv", "element_uuid")
+    }
 
     // ========================================================================
     // RUNNING TASKS

@@ -275,33 +275,6 @@ public data class VehicleElementPrototype(
     val seatsRaycast: SeatsRaycastComponent? = null,
     val transform: TransformComponent? = null,
 ) {
-
-    // references to children elements
-    var children: Array<VehicleElementPrototype>? = null
-    internal set
-
-    // 
-    // fun buildCopy(): VehicleElement {
-    //     val childrenElts = ArrayList<VehicleElement>()
-    //     // build children first
-    //     for ( childPrototype in this.children!! ) {
-    //         val elt = childPrototype.buildCopy()
-    //         childrenElts.add(elt)
-    //     }
-    //     val id = XV.storage.lookup[layout]!!.newId()
-    //     val elt = VehicleElement(
-    //             "${vehicle}.${name}${id}",
-    //             id,
-    //             this,
-    //             childrenElts.toTypedArray()
-    //     )
-    //     // go for another pass thru and set parent of children
-    //     for ( child in childrenElts ) {
-    //         child.parent = elt
-    //     }
-    //     return elt
-    // }
-
     /**
      * During creation, inject player specific properties and generate
      * a new instance of this prototype. Delegates injecting property

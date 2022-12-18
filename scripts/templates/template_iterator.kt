@@ -35,10 +35,10 @@
  * iterating different component tuple sizes.
  */
 
-package phonon.xv.core
+package phonon.xv.core.iter
 
 import java.util.EnumSet
-
+import phonon.xv.core.*
 
 /**
  * TODO: do we even need?

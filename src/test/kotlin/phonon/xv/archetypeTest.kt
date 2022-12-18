@@ -5,18 +5,95 @@ package phonon.xv.test.core
 
 import kotlin.test.Test
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertEquals
 import kotlin.test.fail
 
 import java.util.EnumSet
 import phonon.xv.component.*
 import phonon.xv.core.*
+import phonon.xv.core.iter.*
 
 
 public class ArchetypeTest() {
 
     /**
-     * Test iterating an archetype
+     * Test basic insertion and removal of archetypes
+     */
+    @Test
+    fun basicInsertRemove() {
+        val archetype =ArchetypeStorage(
+            EnumSet.of(
+                VehicleComponentType.FUEL,
+            ),
+            100,
+        )
+
+        for ( i in 0..3 ) {
+            val fuel = VehicleElementPrototype(
+                name = "fuel",
+                parent = null,
+                vehicleName = "test",
+                layout = EnumSet.of(
+                    VehicleComponentType.FUEL,
+                ),
+                fuel = FuelComponent(420.0, i.toDouble()),
+            )
+            val id = archetype.insert(fuel)
+            assertEquals(i, id)
+        }
+
+        assertEquals(4, archetype.size)
+
+        // verify swap remove
+        archetype.free(0)
+        assertEquals(3.0, archetype.fuelView!![0].max)
+        archetype.free(1)
+        assertEquals(2.0, archetype.fuelView!![1].max)
+        archetype.free(2)
+        assertEquals(3.0, archetype.fuelView!![0].max)
+        archetype.free(3)
+
+        assertEquals(0, archetype.size)
+    }
+    
+    /**
+     * Test inserting to limit and failing.
+     */
+    @Test
+    fun insertToCapacity() {
+        val capacity = 100
+
+        val archetype =ArchetypeStorage(
+            EnumSet.of(
+                VehicleComponentType.FUEL,
+            ),
+            capacity,
+        )
+
+        for ( i in 0..200 ) {
+            val fuel = VehicleElementPrototype(
+                name = "fuel",
+                parent = null,
+                vehicleName = "test",
+                layout = EnumSet.of(
+                    VehicleComponentType.FUEL,
+                ),
+                fuel = FuelComponent(420.0, i.toDouble()),
+            )
+            val id = archetype.insert(fuel)
+            if ( i < capacity ) {
+                assertEquals(i, id)
+            } else {
+                assertNull(id)
+            }
+        }
+
+        assertEquals(100, archetype.size)
+    }
+
+    /**
+     * Test iterating across archetypes.
      */
     @Test
     fun iterator() {

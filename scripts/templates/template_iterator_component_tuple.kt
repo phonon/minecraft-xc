@@ -26,7 +26,7 @@ public data class ComponentTuple{{ n }}<
                 {%- endfor %}
             )
             {% for ty in types %}
-            val getStorage{{ ty }}: (ArchetypeStorage) -> ArrayList<{{ ty }}> = ArchetypeStorage.accessor()
+            val getStorage{{ ty }}: (ArchetypeStorage) -> List<{{ ty }}> = ArchetypeStorage.accessor()
             {%- endfor %}
 
             return ComponentTuple{{ n }}Iterator<{{ types_list }}>(
@@ -49,7 +49,7 @@ class ComponentTuple{{ n }}Iterator<
     val layout: EnumSet<VehicleComponentType>,
     val components: ComponentsStorage,
     {%- for ty in types %}
-    val getStorage{{ ty }}: (ArchetypeStorage) -> ArrayList<{{ ty }}>,
+    val getStorage{{ ty }}: (ArchetypeStorage) -> List<{{ ty }}>,
     {%- endfor %}
 ): Iterator<ComponentTuple{{ n }}<{{ types_list }}>> {
     // get list of matching archetypes. simplifies logic because
