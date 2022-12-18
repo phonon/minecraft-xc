@@ -285,6 +285,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
                 val elementId = archetype.size
 
                 xv.entityVehicleData[armorstand.getUniqueId()] = EntityVehicleData(
+                    vehicleId = 0,
                     elementId = elementId,
                     layout = element.layout,
                     componentType = VehicleComponentType.MODEL,

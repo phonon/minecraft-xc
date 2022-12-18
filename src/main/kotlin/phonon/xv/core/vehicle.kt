@@ -28,16 +28,18 @@ public data class Vehicle(
     val name: String,
     // integer id, may vary across restarts
     val id: VehicleId,
+    // prototype contains hiearchy of elements
     val prototype: VehiclePrototype,
-    val elements: Array<VehicleElement>,
+    // elements in this vehicle
+    val elements: List<VehicleElement>,
     // for persistence, static across restarts
-    val uuid: UUID = UUID.randomUUID()
+    val uuid: UUID = UUID.randomUUID(),
 ) {
-    public val rootElements: Array<VehicleElement>
+    public val rootElements: List<VehicleElement>
     
     init {
         // find root elements from elements without parents
-        rootElements = elements.filter { it.parent == null }.toTypedArray()
+        rootElements = elements.filter { it.parent == null }
     }
 }
 
@@ -52,24 +54,28 @@ public data class VehicleElement(
     // EnumSet enforces only at most 1 of any component type.
     // Adding this set here simplifies deleting vehicle element.
     // This is similar to a "bitset" ECS data layout.
-    val prototype: VehicleElementPrototype,
-    // Element parent-child tree hierarchy
-    val children: Array<VehicleElement>,
+    val layout: EnumSet<VehicleComponentType>,
     // for persistence, static across restarts
     val uuid: UUID = UUID.randomUUID()
 ) {
-    // parents are set lazily, but are set immediately after init
+    // parent and children hierarchy set lazily after creation
     var parent: VehicleElement? = null
         internal set
-
-    fun layout(): EnumSet<VehicleComponentType> = prototype.layout
+    
+    var children: Array<VehicleElement> = arrayOf()
+        internal set
 }
 
 /**
- * Data linking entity with its vehicle element.
+ * Data linking entity with its vehicle and vehicle element.
  */
 public data class EntityVehicleData(
+    // vehicle id
+    val vehicleId: VehicleId,
+    // vehicle element id in vehicle
     val elementId: VehicleElementId,
+    // vehicle element component layout
     val layout: EnumSet<VehicleComponentType>,
+    // specific component this entity is linked to
     val componentType: VehicleComponentType,
 )

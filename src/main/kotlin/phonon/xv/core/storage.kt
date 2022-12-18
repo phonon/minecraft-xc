@@ -3,47 +3,81 @@
 package phonon.xv.core
 
 import java.util.EnumSet
-import java.util.Stack
+import java.util.ArrayDeque
 
 public const val MAX_VEHICLE_ELEMENTS: Int = 10000
 
 public class VehicleStorage(
-    maxVehicles: Int
+    val maxVehicles: Int
 ) {
-    // lookup array VehicleId => Vehicle
-    // encapsulated to do type safety w/ VehicleId
+    // fixed-size lookup map VehicleId => Vehicle
     private val lookup: Array<Vehicle?> = Array(maxVehicles) { _ -> null }
-    // stack to keep track of free id between 0 and size (exclusive)
-    private val freeIds: Stack<Int> = Stack()
-    // keep track of "size" of arr, equivalent to largest id + 1
-    private var size: Int = 0
+    // free ids stack
+    private val freeIds: ArrayDeque <Int> = ArrayDeque()
+    // count of vehicles in storage
+    public var size: Int = 0
+        private set
+    
+    init {
+        // initialize free ids stack
+        for ( i in maxVehicles - 1 downTo 0 ) {
+            freeIds.push(i)
+        }
+    }
 
-    fun lookup(id: VehicleId): Vehicle? {
+    /**
+     * Get a vehicle by its id if it exists.
+     */
+    fun get(id: VehicleId): Vehicle? {
         return this.lookup[id]
     }
 
-    // get new id either from implicit list or
-    // -1 if we've reached MAX_VEHICLE_ELEMENTS
-    fun newId(): VehicleId {
+    /**
+     * Get new id from stack of free ids, increments size of storage.
+     * Returns INVALID_VEHICLE_ID if no free ids are available.
+     */
+    internal fun newId(): VehicleId {
         // no freeIds between index 0 and size
         return if ( freeIds.isEmpty() ) {
-            // we're at max capacity, just return invalid
-            if ( size >= MAX_VEHICLE_ELEMENTS ) {
-                INVALID_VEHICLE_ID
-            } else { // otherwise just use size as index
-                size++
-            }
+            INVALID_VEHICLE_ID
         } else {
-            size++
+            size += 1
             freeIds.pop()
         }
     }
 
-    // mark id as free for use , and remove ref from array
-    fun freeId(id: VehicleId) {
-        lookup[id] = null
-        freeIds.push(id)
-        size--
+    /**
+     * Mark id as free for use and remove ref from array if it exists.
+     */
+    internal fun freeId(id: VehicleId) {
+        if ( lookup[id] !== null ) {
+            lookup[id] = null
+            freeIds.push(id)
+            size -= 1
+        }
+    }
+
+    /**
+     * Inserts a vehicle into this storage from its prototype
+     * and final created elements.
+     */
+    fun insert(
+        prototype: VehiclePrototype,
+        elements: List<VehicleElement>,
+    ): VehicleId {
+        val id = this.newId()
+        if ( id == INVALID_VEHICLE_ID ) {
+            return INVALID_VEHICLE_ID
+        }
+
+        this.lookup[id] = Vehicle(
+            "${prototype.name}.${id}",
+            id,
+            prototype,
+            elements,
+        )
+
+        return id
     }
 }
 

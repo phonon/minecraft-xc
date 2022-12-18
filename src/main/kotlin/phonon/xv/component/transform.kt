@@ -57,7 +57,7 @@ public data class TransformComponent(
     var inWater: Boolean = false
 
     /**
-     * Inject player world position and rotation.
+     * Inject world position and rotation.
      */
     override fun injectSpawnProperties(
         location: Location,

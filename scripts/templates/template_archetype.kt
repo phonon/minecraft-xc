@@ -44,8 +44,8 @@ private fun <T> ArrayList<T>.pushAtDenseIndex(index: Int, value: T) {
  */
 private fun <T> ArrayList<T>.swapRemove(index: Int) {
     val storageSize = this.size
-    if ( storageSize == index ) {
-        this.removeAt(index)
+    if ( storageSize == 1 ) {
+        this.removeAt(0)
     } else {
         // swap with last element
         val last = this[storageSize - 1]
@@ -202,15 +202,15 @@ public class ArchetypeStorage(
         }
 
         // swap values in dense array w/ last elt
-        val lastDenseIndex = size - 1
-        val lastId = elements[lastDenseIndex]
-        elements[denseIndex] = lastId
-        elements[lastDenseIndex] = INVALID_ELEMENT_ID
+        val swappedDenseIndex = size - 1
+        val swappedId = elements[swappedDenseIndex]
+        elements[denseIndex] = swappedId
+        elements[swappedDenseIndex] = INVALID_ELEMENT_ID
 
         // update lookup and implicit list head
         lookup[id] = nextFree
         nextFree = id
-        lookup[lastId] = denseIndex
+        lookup[swappedId] = denseIndex
 
         // swap remove elements in component arrays
         for ( c in layout ) {

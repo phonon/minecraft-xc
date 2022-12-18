@@ -14,6 +14,7 @@ components = {
     "MODEL": "ModelComponent",
     "SEATS": "SeatsComponent",
     "SEATS_RAYCAST": "SeatsRaycastComponent",
+    "SPAWN": "SpawnComponent",
     "TRANSFORM": "TransformComponent",
 }
 

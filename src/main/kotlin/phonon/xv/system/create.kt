@@ -11,7 +11,12 @@ import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import phonon.xv.XV
 import phonon.xv.core.ComponentsStorage
+import phonon.xv.core.INVALID_VEHICLE_ID
+import phonon.xv.core.EntityVehicleData
+import phonon.xv.core.Vehicle
 import phonon.xv.core.VehicleComponentType
+import phonon.xv.core.VehicleElement
+import phonon.xv.core.VehicleElementId
 import phonon.xv.core.VehicleElementPrototype
 import phonon.xv.core.VehiclePrototype
 
@@ -82,84 +87,125 @@ public fun XV.systemCreateVehicle(
             json,
         ) = requests.remove()
 
-        // creation item meta and persistent data container
-        val itemMeta = item?.itemMeta
-        val itemData = itemMeta?.persistentDataContainer
+        if ( xv.vehicleStorage.size >= xv.vehicleStorage.maxVehicles ) {
+            xv.logger.severe("Failed to create new vehicle ${prototype.name} at ${location}: vehicle storage full")
+            continue
+        }
+        
+        try {
+            // creation item meta and persistent data container
+            val itemMeta = item?.itemMeta
+            val itemData = itemMeta?.persistentDataContainer
 
-        // inject creation properties into all element prototypes
-        val elementPrototypes: Array<VehicleElementPrototype> = prototype.elements.map { elemPrototype ->
-            when ( reason ) {
-                CreateVehicleReason.NEW -> {
-                    var proto = elemPrototype
-                    // inject creation time properties, keep in this order:
+            // inject creation properties into all element prototypes
+            val elementPrototypes: List<VehicleElementPrototype> = prototype.elements.map { elemPrototype ->
+                when ( reason ) {
+                    // spawning a new vehicle ingame from item or command
+                    CreateVehicleReason.NEW -> {
+                        var proto = elemPrototype
+                        // inject creation time properties, keep in this order:
 
-                    // item properties stored in item meta
-                    proto = if ( item !== null ) {
-                        proto.injectItemProperties(item, itemMeta!!, itemData!!)
-                    } else {
+                        // item properties stored in item meta
+                        proto = if ( item !== null ) {
+                            proto.injectItemProperties(item, itemMeta!!, itemData!!)
+                        } else {
+                            proto
+                        }
+
+                        // main spawn player, location, etc. properties
+                        // player properties (this creates armor stands internally)
+                        proto = proto.injectSpawnProperties(location, player)
+                        
                         proto
                     }
-
-                    // main spawn player, location, etc. properties
-                    // player properties (this creates armor stands internally)
-                    proto = proto.injectSpawnProperties(location, player)
                     
-                    proto
-                }
-    
-                CreateVehicleReason.LOAD -> {
-                    var proto = elemPrototype
-                    // TODO: inject json load properties
-                    proto
+                    // loading from serialized json: only inject json properties
+                    CreateVehicleReason.LOAD -> {
+                        elemPrototype.injectJsonProperties(json)
+                    }
                 }
             }
-        }.toTypedArray()
 
-        // TODO: for elements with components that have armorstands,
-        // add entity -> element mapping
-        // for ( elem in elementPrototypes ) {
-        //     if ( elem.layout.contains(VehicleComponentType.MODEL) ) {
-        //         val armorstand = elem.model?.armorstand?.let { armorstand -> 
-        //             entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
-        //                 elem.id,
-        //                 elem.layout(),
-        //                 VehicleComponentType.MODEL
-        //             )
-        //         }
-        //     }
-        // }
+            // try to insert each prototype into its archetype
+            val elementIds: List<VehicleElementId?> = elementPrototypes.map { elemPrototype ->
+                componentStorage.lookup[elemPrototype.layout]!!.insert(elemPrototype)
+            }
+            
+            // if any are null, creation failed. remove non-null created elements
+            // from their archetypes
+            if ( elementIds.any { it === null } ) {
+                xv.logger.severe("Failed to create vehicle ${prototype.name} at ${location}")
 
-        // val vehicleId = xv.vehicleStorage.newId()
-        // val elements = HashSet<VehicleElement>(prototype.elements.size)
+                elementIds.forEachIndexed { index, id ->
+                    if ( id !== null ) {
+                        componentStorage.lookup[elementPrototypes[index].layout]?.free(id)
+                    } else {
+                        xv.logger.severe("Failed to create element ${elementPrototypes[index].name}")
+                    }
+                }
 
-        // val stack = Stack<VehicleElement>()
-        // for ( rootPrototype in prototype.rootElements ) {
-        //     val rootElt = buildElement(rootPrototype)
-        //     // traverse tree and add elts
-        //     stack.push(rootElt)
-        //     while ( !stack.isEmpty() ) {
-        //         val elt = stack.pop()
-        //         elements.add(elt)
-        //         for ( child in elt.children ) {
-        //             stack.push(child)
-        //         }
-        //     }
-        // }
+                // skip this request
+                continue
+            }
 
-        // val vehicle = Vehicle(
-        //     "${prototype.name}${vehicleId}",
-        //     vehicleId,
-        //     prototype,
-        //     elements.toTypedArray()
-        // )
-        // xv.uuidToVehicle[vehicle.uuid] = vehicle
+            // create vehicle elements
+            val elements = elementIds.mapIndexed { idx, id ->
+                VehicleElement(
+                    name="${prototype.name}.${elementPrototypes[idx].name}.${id}",
+                    id=id!!,
+                    layout=elementPrototypes[idx].layout,
+                )
+            }
+            
+            // set parent/children hierarchy
+            for ( (idx, elem) in elements.withIndex() ) {
+                val parentIdx = prototype.parentIndex[idx]
+                if ( parentIdx != -1 ) {
+                    elem.parent = elements[parentIdx]
+                }
+                
+                val childrenIdx = prototype.childrenIndices[idx]
+                if ( childrenIdx.isNotEmpty() ) {
+                    elem.children = childrenIdx.map { elements[it] }.toTypedArray()
+                }
+            }
+            
+            // insert new vehicle
+            val vehicleId = xv.vehicleStorage.insert(
+                prototype=prototype,
+                elements=elements,
+            )
 
-        // for ( elt in vehicle.elements ) {
-        //     injectComponents(componentStorage, xv.entityVehicleData, elt, req)
-        // }
+            // this should never happen, but check
+            if ( vehicleId == INVALID_VEHICLE_ID ) {
+                xv.logger.severe("Failed to create vehicle ${prototype.name} at ${location}: vehicle storage full")
+                // free elements
+                elements.forEach { elem -> componentStorage.lookup[elem.layout]?.free(elem.id) }
+                continue
+            }
 
-        // test stuff
-        player?.sendMessage("Created your vehicle at x:${location.x} y:${location.y} z:${location.z}")
+            // for elements with components that have armorstands,
+            // add entity -> element mapping
+            for ( (idx, elem) in elementPrototypes.withIndex() ) {
+                if ( elem.layout.contains(VehicleComponentType.MODEL) ) {
+                    val armorstand = elem.model?.armorstand?.let { armorstand -> 
+                        entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
+                            vehicleId,
+                            elements[idx].id,
+                            elem.layout,
+                            VehicleComponentType.MODEL
+                        )
+                    }
+                }
+            }
+
+            // test stuff
+            player?.sendMessage("Created your vehicle at x:${location.x} y:${location.y} z:${location.z}")
+        }
+        catch ( e: Exception ) {
+            xv.logger.severe("Failed to create vehicle ${prototype.name} at ${location}")
+            e.printStackTrace()
+        }
     }
 
 

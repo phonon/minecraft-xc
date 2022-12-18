@@ -44,8 +44,8 @@ private fun <T> ArrayList<T>.pushAtDenseIndex(index: Int, value: T) {
  */
 private fun <T> ArrayList<T>.swapRemove(index: Int) {
     val storageSize = this.size
-    if ( storageSize == index ) {
-        this.removeAt(index)
+    if ( storageSize == 1 ) {
+        this.removeAt(0)
     } else {
         // swap with last element
         val last = this[storageSize - 1]
@@ -65,6 +65,7 @@ public enum class VehicleComponentType {
     MODEL,
     SEATS,
     SEATS_RAYCAST,
+    SPAWN,
     TRANSFORM,
     ;
 
@@ -81,6 +82,7 @@ public enum class VehicleComponentType {
                 ModelComponent::class -> VehicleComponentType.MODEL
                 SeatsComponent::class -> VehicleComponentType.SEATS
                 SeatsRaycastComponent::class -> VehicleComponentType.SEATS_RAYCAST
+                SpawnComponent::class -> VehicleComponentType.SPAWN
                 TransformComponent::class -> VehicleComponentType.TRANSFORM
                 else -> throw Exception("Unknown component type")
             }
@@ -123,6 +125,7 @@ public class ArchetypeStorage(
     internal val model: ArrayList<ModelComponent>? = if ( layout.contains(VehicleComponentType.MODEL) ) ArrayList() else null
     internal val seats: ArrayList<SeatsComponent>? = if ( layout.contains(VehicleComponentType.SEATS) ) ArrayList() else null
     internal val seatsRaycast: ArrayList<SeatsRaycastComponent>? = if ( layout.contains(VehicleComponentType.SEATS_RAYCAST) ) ArrayList() else null
+    internal val spawn: ArrayList<SpawnComponent>? = if ( layout.contains(VehicleComponentType.SPAWN) ) ArrayList() else null
     internal val transform: ArrayList<TransformComponent>? = if ( layout.contains(VehicleComponentType.TRANSFORM) ) ArrayList() else null
 
     // public getter "view"s: only expose immutable List interface
@@ -140,6 +143,8 @@ public class ArchetypeStorage(
         get() = this.seats
     public val seatsRaycastView: List<SeatsRaycastComponent>?
         get() = this.seatsRaycast
+    public val spawnView: List<SpawnComponent>?
+        get() = this.spawn
     public val transformView: List<TransformComponent>?
         get() = this.transform
 
@@ -160,6 +165,7 @@ public class ArchetypeStorage(
             ModelComponent::class -> this.modelView?.get(denseIndex) as T
             SeatsComponent::class -> this.seatsView?.get(denseIndex) as T
             SeatsRaycastComponent::class -> this.seatsRaycastView?.get(denseIndex) as T
+            SpawnComponent::class -> this.spawnView?.get(denseIndex) as T
             TransformComponent::class -> this.transformView?.get(denseIndex) as T
             else -> throw Exception("Unknown component type.")
         }
@@ -231,6 +237,10 @@ public class ArchetypeStorage(
                     this.seatsRaycast?.pushAtDenseIndex(denseIndex, prototype.seatsRaycast!!)
                 }
                 
+                VehicleComponentType.SPAWN -> {
+                    this.spawn?.pushAtDenseIndex(denseIndex, prototype.spawn!!)
+                }
+                
                 VehicleComponentType.TRANSFORM -> {
                     this.transform?.pushAtDenseIndex(denseIndex, prototype.transform!!)
                 }
@@ -261,15 +271,15 @@ public class ArchetypeStorage(
         }
 
         // swap values in dense array w/ last elt
-        val lastDenseIndex = size - 1
-        val lastId = elements[lastDenseIndex]
-        elements[denseIndex] = lastId
-        elements[lastDenseIndex] = INVALID_ELEMENT_ID
+        val swappedDenseIndex = size - 1
+        val swappedId = elements[swappedDenseIndex]
+        elements[denseIndex] = swappedId
+        elements[swappedDenseIndex] = INVALID_ELEMENT_ID
 
         // update lookup and implicit list head
         lookup[id] = nextFree
         nextFree = id
-        lookup[lastId] = denseIndex
+        lookup[swappedId] = denseIndex
 
         // swap remove elements in component arrays
         for ( c in layout ) {
@@ -281,6 +291,7 @@ public class ArchetypeStorage(
                 VehicleComponentType.MODEL -> model?.swapRemove(denseIndex)
                 VehicleComponentType.SEATS -> seats?.swapRemove(denseIndex)
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.swapRemove(denseIndex)
+                VehicleComponentType.SPAWN -> spawn?.swapRemove(denseIndex)
                 VehicleComponentType.TRANSFORM -> transform?.swapRemove(denseIndex)
                 null -> {}
             }
@@ -309,6 +320,7 @@ public class ArchetypeStorage(
         model?.clear()
         seats?.clear()
         seatsRaycast?.clear()
+        spawn?.clear()
         transform?.clear()
     }
 
@@ -336,6 +348,7 @@ public class ArchetypeStorage(
                 ModelComponent::class -> { archetype -> archetype.modelView as List<T> }
                 SeatsComponent::class -> { archetype -> archetype.seatsView as List<T> }
                 SeatsRaycastComponent::class -> { archetype -> archetype.seatsRaycastView as List<T> }
+                SpawnComponent::class -> { archetype -> archetype.spawnView as List<T> }
                 TransformComponent::class -> { archetype -> archetype.transformView as List<T> }
                 else -> throw Exception("Unknown component type")
             }

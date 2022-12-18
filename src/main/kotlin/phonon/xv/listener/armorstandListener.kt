@@ -42,9 +42,11 @@ public class ArmorstandListener(val xv: XV): Listener {
                 if ( vehicleElement != null ) {
                     // use archetype storage to set model component field
                     // to point to this armorstand
-                    val archetype = xv.storage.lookup[vehicleElement.layout()]!!
-                    val modelComponent = archetype.getComponent<ModelComponent>(vehicleElement.id)!!
-                    modelComponent.armorstand = entity
+                    val archetype = xv.storage.lookup[vehicleElement.layout]
+                    if ( archetype != null ) {
+                        val modelComponent = archetype.getComponent<ModelComponent>(vehicleElement.id)
+                        modelComponent?.armorstand = entity
+                    }
                 } else {
                     if ( xv.config.deleteInvalidArmorStands ) {
                         // vehicle element no longer exists, just delete the stand

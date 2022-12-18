@@ -33,8 +33,9 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
     fun self(): T 
 
     /**
-     * During creation, inject player specific properties and generate
-     * a new instance of this component.
+     * During creation, inject spawn specific properties and generate
+     * a new instance of this component. Such as spawn location, player
+     * who spawned the vehicle, etc.
      */
     fun injectSpawnProperties(
         location: Location,
@@ -45,7 +46,8 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
 
     /**
      * During creation, inject item specific properties and generate
-     * a new instance of this component.
+     * a new instance of this component. Such as properties stored in
+     * the item, such as vehicle skin, health remaining, etc.
      */
     fun injectItemProperties(
         item: ItemStack,
@@ -57,10 +59,11 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
 
     /**
      * During creation, inject json specific properties and generate
-     * a new instance of this component.
+     * a new instance of this component. Used to load serialized vehicle
+     * state from stored json objects.
      */
     fun injectJsonProperties(
-            json: JsonObject?
+        json: JsonObject?,
     ): T {
         return this.self()
     }

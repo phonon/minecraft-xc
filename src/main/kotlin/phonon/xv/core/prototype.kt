@@ -274,6 +274,7 @@ public data class VehicleElementPrototype(
     val model: ModelComponent? = null,
     val seats: SeatsComponent? = null,
     val seatsRaycast: SeatsRaycastComponent? = null,
+    val spawn: SpawnComponent? = null,
     val transform: TransformComponent? = null,
 ) {
     /**
@@ -293,6 +294,7 @@ public data class VehicleElementPrototype(
             model = model?.injectSpawnProperties(location, player),
             seats = seats?.injectSpawnProperties(location, player),
             seatsRaycast = seatsRaycast?.injectSpawnProperties(location, player),
+            spawn = spawn?.injectSpawnProperties(location, player),
             transform = transform?.injectSpawnProperties(location, player),
         )
     }
@@ -315,7 +317,30 @@ public data class VehicleElementPrototype(
             model = model?.injectItemProperties(item, itemMeta, itemData),
             seats = seats?.injectItemProperties(item, itemMeta, itemData),
             seatsRaycast = seatsRaycast?.injectItemProperties(item, itemMeta, itemData),
+            spawn = spawn?.injectItemProperties(item, itemMeta, itemData),
             transform = transform?.injectItemProperties(item, itemMeta, itemData),
+        )
+    }
+    
+    /**
+     * During creation, inject json specific properties and generate
+     * a new instance of this component. Used to load serialized vehicle
+     * state from stored json objects. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectJsonProperties(
+        json: JsonObject?,
+    ): VehicleElementPrototype {
+        return copy(
+            fuel = fuel?.injectJsonProperties(json),
+            gunTurret = gunTurret?.injectJsonProperties(json),
+            health = health?.injectJsonProperties(json),
+            landMovementControls = landMovementControls?.injectJsonProperties(json),
+            model = model?.injectJsonProperties(json),
+            seats = seats?.injectJsonProperties(json),
+            seatsRaycast = seatsRaycast?.injectJsonProperties(json),
+            spawn = spawn?.injectJsonProperties(json),
+            transform = transform?.injectJsonProperties(json),
         )
     }
 
@@ -333,6 +358,7 @@ public data class VehicleElementPrototype(
             var model: ModelComponent? = null
             var seats: SeatsComponent? = null
             var seatsRaycast: SeatsRaycastComponent? = null
+            var spawn: SpawnComponent? = null
             var transform: TransformComponent? = null
 
             // parse components from matching keys in toml
@@ -369,6 +395,10 @@ public data class VehicleElementPrototype(
                         layout.add(VehicleComponentType.SEATS_RAYCAST)
                         seatsRaycast = SeatsRaycastComponent.fromToml(toml.getTable(k)!!, logger)
                     }
+                    "spawn" -> {
+                        layout.add(VehicleComponentType.SPAWN)
+                        spawn = SpawnComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
                     "transform" -> {
                         layout.add(VehicleComponentType.TRANSFORM)
                         transform = TransformComponent.fromToml(toml.getTable(k)!!, logger)
@@ -389,6 +419,7 @@ public data class VehicleElementPrototype(
                 model,
                 seats,
                 seatsRaycast,
+                spawn,
                 transform,
             )
         }

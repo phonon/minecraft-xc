@@ -303,6 +303,22 @@ public data class VehicleElementPrototype(
             {%- endfor %}
         )
     }
+    
+    /**
+     * During creation, inject json specific properties and generate
+     * a new instance of this component. Used to load serialized vehicle
+     * state from stored json objects. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectJsonProperties(
+        json: JsonObject?,
+    ): VehicleElementPrototype {
+        return copy(
+            {%- for c in components %}
+            {{ c.storage }} = {{ c.storage }}?.injectJsonProperties(json),
+            {%- endfor %}
+        )
+    }
 
     companion object {
         public fun fromToml(toml: TomlTable, logger: Logger? = null, vehicleName: String): VehicleElementPrototype {
