@@ -31,10 +31,12 @@ import java.nio.file.Path
 import java.util.EnumSet
 import java.util.logging.Logger
 import java.util.LinkedList
-import java.util.Queue
-import kotlin.streams.toList
+import java.util.ArrayDeque
+import java.util.Collections
+import kotlin.math.max
 import org.tomlj.Toml
 import org.tomlj.TomlTable
+import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
@@ -45,16 +47,184 @@ import phonon.xv.component.*
 
 /**
  * VehiclePrototype defines elements in a vehicle. Used as a base
- * object to create new vehicles.
+ * object to create new vehicles. The elements form a tree and must
+ * always be depth sorted.
  */
 public data class VehiclePrototype(
     val name: String,
-    val elements: Array<VehicleElementPrototype>,
+    // tree depth-sorted elements
+    val elements: List<VehicleElementPrototype>,
+    // index of parent element in elements list
+    val parentIndex: IntArray,
+    // depth of each element in the tree
+    val elementsDepth: IntArray,
+    // vehicle element tree max depth
+    val maxDepth: Int,
 ) {
+    // root elements have no parent
+    val rootElements: List<VehicleElementPrototype> = elements.filter { e -> e.parent == null }.toList()
 
-    val rootElements: Array<VehicleElementPrototype> = elements.filter { e -> e.parent == null }.toTypedArray()
+    // pre-computed children indices for each element
+    // (referenced by the element index in elements list)
+    val childrenIndices: Array<IntArray>
+
+    init {
+        val children = Array<ArrayList<Int>>(elements.size, { ArrayList() })
+        for ( (idx, p) in parentIndex.withIndex() ) {
+            if ( p != -1 ) {
+                children[p].add(idx)
+            }
+        }
+        childrenIndices = Array(children.size, { children[it].toIntArray() })
+    }
 
     companion object {
+        /**
+         * Tries to create a vehicle prototype from a list of unsorted
+         * element prototypes. This returns null if any cycle is detected
+         * between elements. This uses Kahn's algorithm to sort the elements
+         * topologically, so that we can sort and detect cycles at same time
+         * (even though topological sort normally unneeded since only 1 parent
+         * per node).
+         */
+        public fun fromUnsortedElements(
+            name: String,
+            unsortedElements: List<VehicleElementPrototype>,
+            logger: Logger? = null,
+        ): VehiclePrototype? {
+            
+            // build map from name -> unsorted index
+            // also validates and makes sure no duplicate names
+            val nameToIndex = HashMap<String, Int>()
+            for ( (idx, e) in unsortedElements.withIndex() ) {
+                if ( nameToIndex.put(e.name, idx) !== null ) { // fails if name already in set
+                    logger?.warning("VehiclePrototype.fromUnsortedElements: duplicate element name ${e.name} while creating prototype ${name}")
+                    return null
+                }
+            }
+
+            // build parent-children adjacency list as arrays, each index
+            // 'n' corresponds to the element at unsortedElements[n]'s parent
+            // and children:
+            //
+            // parents =  [ - ]   [ 0 ] [ 0 ] ...
+            // children = [[1,2]] [[] ] [[] ] ...
+            //
+            //              ^             ^
+            //              |             |
+            //            node0          node2
+            //        parent = -1        parent = 0
+            //        children = [1,2]   children = []
+            val children = Array<ArrayList<Int>>(unsortedElements.size, { ArrayList() })
+            val unsortedParents = IntArray(unsortedElements.size, { -1 })
+            for ( (idx, e) in unsortedElements.withIndex() ) {
+                val parentName = e.parent
+                if ( parentName != null ) {
+                    val parentIdx = nameToIndex[parentName]
+                    if ( parentIdx == null ) {
+                        logger?.warning("VehiclePrototype.fromUnsortedElements: element ${e.name} has parent ${parentName} which does not exist in prototype ${name}")
+                        return null
+                    }
+                    unsortedParents[idx] = parentIdx
+                    children[parentIdx].add(idx)
+                }
+            }
+
+            // first topologically sort using kahn's algorithm
+            // (in retrospect, unnecessary since we only allow 1 parent,
+            // but at least this is non-recursive)
+
+            // queue of nodes with no incoming edges (e.g. no children)
+            val queue = ArrayDeque<Int>()
+            for ( (idx, c) in children.withIndex() ) {
+                if ( c.isEmpty() ) {
+                    queue.add(idx)
+                }
+            }
+
+            // make sure queue size > 0, otherwise no root elements
+            if ( queue.isEmpty() ) {
+                logger?.warning("VehiclePrototype.fromUnsortedElements: no root elements in prototype ${name}")
+                return null
+            }
+            
+            // sorted elements and sorted parents
+            val sorted = ArrayList<VehicleElementPrototype>(unsortedElements.size)
+            val parents = ArrayList<Int>(unsortedElements.size)
+
+            while ( !queue.isEmpty() ) {
+                val n = queue.removeFirst()
+                sorted.add(unsortedElements[n])
+                parents.add(unsortedParents[n])
+
+                // remove node n from tree
+                val parentIdx = unsortedParents[n]
+                if ( parentIdx != -1 ) {
+                    children[parentIdx].remove(n) // removes n, not the index n
+
+                    // if parent has no more children, add to queue
+                    if ( children[parentIdx].isEmpty() ) {
+                        queue.add(parentIdx)
+                    }
+                }
+            }
+            
+            // if we didn't add all elements to sorted, then there was a cycle
+            if ( sorted.size != unsortedElements.size ) {
+                logger?.warning("VehiclePrototype.fromUnsortedElements: cycle detected in prototype ${name} (sorted.size ${sorted.size} != unsortedElements.size ${unsortedElements.size}})")
+                return null
+            }
+            
+            // reverse sorted list so that it iterates from parents to children
+            Collections.reverse(sorted)
+            Collections.reverse(parents)
+
+            // re-order topologically sorted list to be tree depth-sorted
+            // just iterate and increment depth of parent
+            val depth = IntArray(unsortedElements.size, { 0 })
+            var maxDepth = 0
+            for ( (idx, p) in parents.withIndex() ) {
+                if ( p != -1 ) {
+                    depth[idx] = depth[p] + 1
+                    maxDepth = max(maxDepth, depth[idx])
+                }
+            }
+            
+            // scatter the topologically sorted elements into depth-sorted bin indices
+            // 1. create bin sizes and current bin indices 
+            // 2. scatter elements into bin at offset, then increment offset
+            val depthSortedIndices = IntArray(unsortedElements.size, { -1 })
+            val depthSortedParents = IntArray(unsortedElements.size, { -1 })
+            val depthSortedDepths = IntArray(unsortedElements.size, { -1 })
+            val depthBinSizes = IntArray(maxDepth + 1, { 0 })
+            val depthBinOffsets = IntArray(maxDepth + 1, { 0 })
+            for ( d in depth ) {
+                depthBinSizes[d] += 1
+            }
+            for ( d in 1..maxDepth ) {
+                depthBinOffsets[d] = depthBinOffsets[d-1] + depthBinSizes[d-1]
+            }
+            for ( (idx, d) in depth.withIndex() ) {
+                val i = depthBinOffsets[d] // output scatter index
+                depthSortedIndices[i] = idx
+                depthSortedParents[i] = parents[idx]
+                depthSortedDepths[i] = d
+
+                depthBinOffsets[d] += 1
+            }
+
+            // use depth sorted indices to scatter sort elements
+            val depthSortedElements = depthSortedIndices.map { unsortedElements[it] }
+            
+            return VehiclePrototype(
+                name,
+                depthSortedElements,
+                depthSortedParents,
+                depthSortedDepths,
+                maxDepth,
+            )
+        }
+        
         /**
          * Try to load a vehicle prototype from a toml file.
          * If any of the internal elements fails to parse, this will
@@ -64,111 +234,19 @@ public data class VehiclePrototype(
             try {
                 val toml = Toml.parse(source)
 
+                // main vehicle name
                 val name = toml.getString("name") ?: ""
+                val unsortedElements = ArrayList<VehicleElementPrototype>()
 
-                val childParentMap = HashMap<String, ArrayList<String>>() // parent->child
                 // if this contains an elements table, parse each element
                 // else, parse entire doc as single toml table
-                val elementsMap: Map<String, VehicleElementPrototype> = if ( toml.getArray("elements") != null ) {
-                    toml.getArray("elements")?.let { elems ->
-                        ( 0 until elems.size() )
-                                .map { i ->
-                                    val elt = VehicleElementPrototype.fromToml(elems.getTable(i), vehicleName = name)
-                                    if ( elt.parent != null ) {
-                                        if ( childParentMap[elt.parent] == null ) {
-                                            childParentMap[elt.parent] = ArrayList()
-                                        }
-                                        childParentMap[elt.parent]!!.add(elt.name)
-                                    }
-                                    elt.name to elt
-                                }.toMap()
-                    }!!
-                } else {
-                    val elt = VehicleElementPrototype.fromToml(toml, vehicleName = name)
-                    mapOf(Pair(elt.name, elt))
-                }
-                val elements = elementsMap.values.toTypedArray()
-
-                // build children list
-                for ( e in elements ) {
-                    val childNameList = childParentMap[e.name]
-                    if ( childNameList == null ) {
-                        e.children = Array(0) { null!! } // 0_0
-                        continue;
+                toml.getArray("elements")?.let { elems ->
+                    for ( i in 0 until elems.size() ) {
+                        unsortedElements.add(VehicleElementPrototype.fromToml(elems.getTable(i), vehicleName = name))
                     }
-                    val children = childNameList.stream()
-                            .map { n -> elementsMap[n]!! }
-                            .toList()
-                    e.children = children.toTypedArray()
-                }
+                } ?: unsortedElements.add(VehicleElementPrototype.fromToml(toml, vehicleName = name))
 
-                // what 3am coding does to a mf
-                // this is topological sort to create build order
-                // for element prototypes
-                // instead u can just construct this top-down from the root nodes
-                // truly.... just fucking stupid retard moment...
-                /*
-                // we're gonna sort the elements so that we build children
-                // first then parents in the tree
-
-                // we build a graph of elements, element.parent are directed edges
-                // use topological sort to sort array
-                val graph = HashMap<String, String>() // children -> parent
-                val indegree = HashMap<String, Int>()
-                val reverse = HashMap<String, ArrayList<String>>() // parent -> children
-                // build the graph
-                elementsMap.values.forEach { e ->
-                    if ( !indegree.containsKey(e.name) ) {
-                        indegree[e.name] = 0
-                    }
-
-                    if ( e.parent != null ) {
-                        graph[e.name] = e.parent
-                        if ( !reverse.containsKey(e.parent) ) {
-                            reverse[e.parent] = ArrayList()
-                        }
-                        reverse[e.parent]!!.add(e.name)
-                        if ( !indegree.containsKey(e.parent) ) {
-                            indegree[e.parent] = 0
-                        }
-                        indegree[e.parent] = indegree[e.parent]!! + 1
-                    }
-                }
-                // kahn's algo, O(V+E)
-                // basically, push all nodes w/ indegree 0 to queue
-                // process nodes on queue, remove processed nodes and
-                // incident edges from graph & update indegree, push
-                // nodes w/ indegree 0 to stack, then we're done!
-
-                // push all nodes of indegree 0 onto queue
-                val queue: Queue<String> = LinkedList()
-                for ((key, num) in indegree) {
-                    if (num == 0)
-                        queue.add(key)
-                }
-                val elements = ArrayList<VehicleElementPrototype>(elementsMap.keys.size)
-                // main algo
-                while ( !queue.isEmpty() ) {
-                    val next = queue.remove()
-                    // update indegrees & push to stack
-                    indegree[graph[next]!!] = indegree[graph[next]]!! - 1
-                    if ( indegree[graph[next]] == 0 ) {
-                        queue.add(graph[next])
-                    }
-                    // process node
-                    elements.add(elementsMap[next]!!)
-                }
-
-                // build children list
-                for ( e in elements ) {
-                    val children = ArrayList<VehicleElementPrototype>()
-                    for ( childName in reverse[e.name]!! ) {
-                        children.add(elementsMap[childName]!!)
-                    }
-                    e.children = children.toTypedArray()
-                }*/
-
-                return VehiclePrototype(name, elementsMap.values.toTypedArray())
+                return VehiclePrototype.fromUnsortedElements(name, unsortedElements)
             } catch (e: Exception) {
                 logger?.warning("Failed to parse landmine file: ${source.toString()}, ${e}")
                 e.printStackTrace()
@@ -186,7 +264,7 @@ public data class VehiclePrototype(
 public data class VehicleElementPrototype(
     val name: String,
     val parent: String?,
-    val vehicle: String,
+    val vehicleName: String,
     val layout: EnumSet<VehicleComponentType>,
     val fuel: FuelComponent? = null,
     val gunTurret: GunTurretComponent? = null,
@@ -198,10 +276,11 @@ public data class VehicleElementPrototype(
     val transform: TransformComponent? = null,
 ) {
 
-    // DONT SET THIS SHIT!!!
+    // references to children elements
     var children: Array<VehicleElementPrototype>? = null
     internal set
 
+    // 
     // fun buildCopy(): VehicleElement {
     //     val childrenElts = ArrayList<VehicleElement>()
     //     // build children first
@@ -228,18 +307,19 @@ public data class VehicleElementPrototype(
      * a new instance of this prototype. Delegates injecting property
      * effects to each individual component.
      */
-    fun injectPlayerProperties(
-        player: Player,
+    fun injectSpawnProperties(
+        location: Location,
+        player: Player?,
     ): VehicleElementPrototype {
         return copy(
-            fuel = fuel?.injectPlayerProperties(player),
-            gunTurret = gunTurret?.injectPlayerProperties(player),
-            health = health?.injectPlayerProperties(player),
-            landMovementControls = landMovementControls?.injectPlayerProperties(player),
-            model = model?.injectPlayerProperties(player),
-            seats = seats?.injectPlayerProperties(player),
-            seatsRaycast = seatsRaycast?.injectPlayerProperties(player),
-            transform = transform?.injectPlayerProperties(player),
+            fuel = fuel?.injectSpawnProperties(location, player),
+            gunTurret = gunTurret?.injectSpawnProperties(location, player),
+            health = health?.injectSpawnProperties(location, player),
+            landMovementControls = landMovementControls?.injectSpawnProperties(location, player),
+            model = model?.injectSpawnProperties(location, player),
+            seats = seats?.injectSpawnProperties(location, player),
+            seatsRaycast = seatsRaycast?.injectSpawnProperties(location, player),
+            transform = transform?.injectSpawnProperties(location, player),
         )
     }
 

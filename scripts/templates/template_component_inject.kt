@@ -20,7 +20,7 @@ package phonon.xv.core
 import java.util.UUID
 import org.bukkit.entity.ArmorStand
 import phonon.xv.component.*
-import phonon.xv.system.CreateReason
+import phonon.xv.system.CreateVehicleReason
 import phonon.xv.system.CreateVehicleRequest
 import phonon.xv.util.CustomArmorStand
 import java.util.EnumSet
@@ -43,7 +43,7 @@ public fun injectComponents(
             {%- if c.storage == "model" %} {# Model Component Gen Override #}
             if ( prototype.{{ c.storage }} == null )
                 null
-            else if ( req.reason == CreateReason.NEW) {
+            else if ( req.reason == CreateVehicleReason.NEW) {
                 val armorstand: ArmorStand = CustomArmorStand.create(req.location.world, req.location)
                 armorstand.setGravity(false)
                 armorstand.setVisible(true)

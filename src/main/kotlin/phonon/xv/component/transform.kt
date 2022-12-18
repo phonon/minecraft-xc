@@ -5,6 +5,7 @@ import com.google.gson.JsonPrimitive
 import org.bukkit.Bukkit
 import java.util.logging.Logger
 import org.tomlj.TomlTable
+import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.entity.Player
 import phonon.xv.core.VehicleComponent
@@ -58,16 +59,17 @@ public data class TransformComponent(
     /**
      * Inject player world position and rotation.
      */
-    override fun injectPlayerProperties(
-        player: Player,
+    override fun injectSpawnProperties(
+        location: Location,
+        player: Player?,
     ): TransformComponent {
         return this.copy(
-            world = player.world,
-            x = player.location.x,
-            y = player.location.y,
-            z = player.location.z,
-            yaw = player.location.yaw.toDouble(),
-            pitch = player.location.pitch.toDouble(),
+            world = location.world,
+            x = location.x,
+            y = location.y,
+            z = location.z,
+            yaw = location.yaw.toDouble(),
+            pitch = location.pitch.toDouble(),
         )
     }
 

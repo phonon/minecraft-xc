@@ -150,9 +150,36 @@ public class XV (
             val xv = this // alias for lambda
             
             this.engineTask = Bukkit.getScheduler().runTaskTimer(this.plugin, object: Runnable {
-                
+                // number of successive errors caught on each update
+                var errorAccumulator = 0
+
+                // max errors before resetting engine to clean slate
+                val maxErrorsBeforeCleanup = 100
+
                 override fun run() {
-                    xv.update()
+                    // wrap update in try catch...
+                    // right now engine is very fragile, a single in loop can 
+                    // basically cause loop to keep failing at same spot...need to make
+                    // each system more resilient with internal try/catch...
+                    // but for now just catch an err, accumulate error count, then after
+                    // threshold hit, reset engine to a clean state
+                    try {
+                        xv.update()
+                        errorAccumulator = 0
+                    } catch ( e: Exception ) {
+                        logger.severe("Engine update failed:")
+                        e.printStackTrace()
+                        
+                        // accumulate errors. if we reach past threshold,
+                        // reset engine to clean slate
+                        errorAccumulator += 1
+                        if ( errorAccumulator >= maxErrorsBeforeCleanup ) {
+                            logger.severe("Engine reached error threshold...resetting to clean slate")
+                            // cleanup() // TODO
+                            // initializeSystems() // TODO
+                            errorAccumulator = 0
+                        }
+                    }
                 }
             }, 0, 0)
 

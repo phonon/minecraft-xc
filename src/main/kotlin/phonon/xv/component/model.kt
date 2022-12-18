@@ -3,7 +3,10 @@ package phonon.xv.component
 import com.google.gson.JsonObject
 import java.util.logging.Logger
 import org.tomlj.TomlTable
+import org.bukkit.Location
+import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Entity
+import org.bukkit.entity.Player
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
@@ -34,6 +37,25 @@ public data class ModelComponent(
     override val type = VehicleComponentType.MODEL
 
     override fun self() = this
+
+    /**
+     * Create armor stand at spawn location.
+     */
+    override fun injectSpawnProperties(
+        location: Location,
+        player: Player?,
+    ): ModelComponent {
+        // spawn armor stand
+        val armorstand: ArmorStand = location.world.spawn(location, ArmorStand::class.java)
+        armorstand.setGravity(false)
+        armorstand.setVisible(true)
+        // armorstand.getEquipment()!!.setHelmet(createModel(Tank.modelMaterial, this.modelDataBody))
+        armorstand.setRotation(location.yaw, 0f)
+
+        return this.copy(
+            armorstand = armorstand,
+        )
+    }
 
     override fun toJson(): JsonObject? = null
 

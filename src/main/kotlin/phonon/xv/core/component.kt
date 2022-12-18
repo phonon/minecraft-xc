@@ -5,6 +5,7 @@
 package phonon.xv.core
 
 import com.google.gson.JsonObject
+import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
@@ -35,8 +36,9 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
      * During creation, inject player specific properties and generate
      * a new instance of this component.
      */
-    fun injectPlayerProperties(
-        player: Player,
+    fun injectSpawnProperties(
+        location: Location,
+        player: Player?,
     ): T {
         return this.self()
     }

@@ -1,23 +1,39 @@
 package phonon.xv.system
 
+import com.google.gson.JsonObject
 import org.bukkit.Location
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataContainer
 import phonon.xv.XV
 import phonon.xv.core.*
 import java.util.Queue
 import java.util.Stack
 
-public enum class CreateReason {
+/**
+ * Indicates reason for creating a vehicle. Customizes what creation
+ * time specific parameters are injected into the vehicle.
+ */
+public enum class CreateVehicleReason {
     NEW,
-    LOAD
+    LOAD,
+    ;
 }
 
+/**
+ * A request to create a vehicle, containing optional creation sources
+ * (player, item, json object, etc.) which are used to gather specific
+ * creation parameters.
+ */
 public data class CreateVehicleRequest(
-    val player: Player,
     val prototype: VehiclePrototype,
+    val reason: CreateVehicleReason,
     val location: Location,
-    val reason: CreateReason = CreateReason.NEW
+    val player: Player? = null,
+    val item: ItemStack? = null,
+    val json: JsonObject? = null,
 )
 
 // TODO when we create a vehicle its gonna give the player
@@ -41,7 +57,7 @@ public fun XV.systemCreateVehicle(
         }
         val id = componentStorage.lookup[prototype.layout]!!.newId()
         val elt = VehicleElement(
-            "${prototype.vehicle}.${prototype.name}${id}",
+            "${prototype.vehicleName}.${prototype.name}.${id}",
             id,
             prototype,
             childrenElts.toTypedArray()
@@ -53,10 +69,62 @@ public fun XV.systemCreateVehicle(
         return elt
     }
 
-    // TODO consider pipelining
     while ( requests.isNotEmpty() ) {
-        val req = requests.remove()
-        val (player, prototype, location) = req
+        val (
+            prototype,
+            reason,
+            location,
+            player,
+            item,
+            json,
+        ) = requests.remove()
+
+        // creation item meta and persistent data container
+        val itemMeta = item?.itemMeta
+        val itemData = itemMeta?.persistentDataContainer
+
+        // inject creation properties into all element prototypes
+        val elementPrototypes: Array<VehicleElementPrototype> = prototype.elements.map { elemPrototype ->
+            when ( reason ) {
+                CreateVehicleReason.NEW -> {
+                    var proto = elemPrototype
+                    // inject creation time properties, keep in this order:
+
+                    // item properties stored in item meta
+                    proto = if ( item !== null ) {
+                        proto.injectItemProperties(item, itemMeta!!, itemData!!)
+                    } else {
+                        proto
+                    }
+
+                    // main spawn player, location, etc. properties
+                    // player properties (this creates armor stands internally)
+                    proto = proto.injectSpawnProperties(location, player)
+                    
+                    proto
+                }
+    
+                CreateVehicleReason.LOAD -> {
+                    var proto = elemPrototype
+                    // TODO: inject json load properties
+                    proto
+                }
+            }
+        }.toTypedArray()
+
+        // TODO: for elements with components that have armorstands,
+        // add entity -> element mapping
+        // for ( elem in elementPrototypes ) {
+        //     if ( elem.layout.contains(VehicleComponentType.MODEL) ) {
+        //         val armorstand = elem.model?.armorstand?.let { armorstand -> 
+        //             entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
+        //                 elem.id,
+        //                 elem.layout(),
+        //                 VehicleComponentType.MODEL
+        //             )
+        //         }
+        //     }
+        // }
 
         val vehicleId = xv.vehicleStorage.newId()
         val elements = HashSet<VehicleElement>(prototype.elements.size)
@@ -83,11 +151,12 @@ public fun XV.systemCreateVehicle(
         )
         xv.uuidToVehicle[vehicle.uuid] = vehicle
 
-        for ( elt in vehicle.elements ) {
-            injectComponents(componentStorage, xv.entityVehicleData, elt, req)
-        }
+        // for ( elt in vehicle.elements ) {
+        //     injectComponents(componentStorage, xv.entityVehicleData, elt, req)
+        // }
+
         // test stuff
-        player.sendMessage("Created your vehicle at x:${location.x} y:${location.y} z:${location.z}")
+        player?.sendMessage("Created your vehicle at x:${location.x} y:${location.y} z:${location.z}")
     }
 
 

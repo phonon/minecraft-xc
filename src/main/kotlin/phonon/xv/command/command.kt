@@ -20,6 +20,7 @@ import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.component.*
 import phonon.xv.system.CreateVehicleRequest
+import phonon.xv.system.CreateVehicleReason
 import phonon.xv.util.Message
 
 
@@ -105,23 +106,28 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
             sender.sendMessage("You must be a player to run this command!")
             return
         }
+
         if ( args.size < 2) {
             sender.sendMessage("Invalid Syntax: /xv create <prototype>")
             return
         }
+
         val prototype = xv.vehiclePrototypes.get(args[1])
         if ( prototype == null ) {
             sender.sendMessage("Invalid prototype.")
             return
         }
+
         xv.createRequests.add(
             CreateVehicleRequest(
-                sender,
                 prototype,
-                sender.location
+                CreateVehicleReason.NEW,
+                sender.location,
+                player = sender,
             )
         )
-        sender.sendMessage("Queued create request at your location.")
+
+        sender.sendMessage("Queued create request at your location ${sender.location}")
     }
 
     private fun printHelp(sender: CommandSender?) {
