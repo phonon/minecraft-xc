@@ -26,8 +26,6 @@ public data class SpawnComponent(
 
     override fun self() = this
 
-    override fun toJson(): JsonObject? = null
-
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, logger: Logger? = null): SpawnComponent {

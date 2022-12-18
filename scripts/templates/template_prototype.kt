@@ -27,6 +27,7 @@
 
 package phonon.xv.core
 
+import com.google.gson.JsonObject
 import java.nio.file.Path
 import java.util.EnumSet
 import java.util.logging.Logger

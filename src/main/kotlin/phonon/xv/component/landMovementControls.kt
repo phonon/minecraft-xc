@@ -86,6 +86,14 @@ public data class LandMovementControlsComponent(
         return json
     }
 
+    override fun injectJsonProperties(json: JsonObject?): LandMovementControlsComponent {
+        if ( json === null ) return this.self()
+        return this.copy(
+            speed = json["speed"].asDouble,
+            yawRotationSpeed = json["yawRotationSpeed"].asDouble
+        )
+    }
+
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): LandMovementControlsComponent {
@@ -117,11 +125,6 @@ public data class LandMovementControlsComponent(
             }
 
             return mapToObject(properties, LandMovementControlsComponent::class)
-        }
-
-        public fun fromJson(json: JsonObject, copy: LandMovementControlsComponent) {
-            copy.speed = json["speed"].asDouble
-            copy.yawRotationSpeed = json["yawRotationSpeed"].asDouble
         }
     }
 }

@@ -45,8 +45,6 @@ public data class SeatsComponent(
 
     override fun self() = this
 
-    override fun toJson(): JsonObject? = null
-
     // armor stand entities
     var armorstands: Array<Entity?> = Array(count) { null }
 
@@ -98,7 +96,5 @@ public data class SeatsComponent(
 
             return mapToObject(properties, SeatsComponent::class)
         }
-
-        public fun fromJson(json: JsonObject?, copy: SeatsComponent) = null
     }
 }

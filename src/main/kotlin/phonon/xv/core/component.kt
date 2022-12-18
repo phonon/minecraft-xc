@@ -56,8 +56,20 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
     }
 
     /**
+     * During creation, inject json specific properties and generate
+     * a new instance of this component.
+     */
+    fun injectJsonProperties(
+            json: JsonObject?
+    ): T {
+        return this.self()
+    }
+
+    /**
      * Convert this component to a JSON object for serializing state.
      * Used for saving vehicle state to disk.
      */
-    fun toJson(): JsonObject?
+    fun toJson(): JsonObject? {
+        return null
+    }
 }

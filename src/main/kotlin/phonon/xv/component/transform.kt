@@ -30,7 +30,7 @@ public data class TransformComponent(
     // @skipall
     // RUNTIME MOTION STATE BELOW
     // minecraft world, immutable, don't allow moving between worlds :^(
-    var world: World? = null, // need to change 2 var for it to work w/ serde system
+    val world: World? = null,
     // current world position @skip runtime state
     var x: Double = 0.0,
     var y: Double = 0.0,
@@ -85,6 +85,18 @@ public data class TransformComponent(
         return json
     }
 
+    override fun injectJsonProperties(json: JsonObject?): TransformComponent {
+        if ( json === null ) return this.self()
+        return this.copy(
+            world = Bukkit.getWorld( UUID.fromString(json["world"].asString) ),
+            x = json["x"].asDouble,
+            y = json["y"].asDouble,
+            z = json["z"].asDouble,
+            yaw = json["yaw"].asDouble,
+            pitch = json["pitch"].asDouble
+        )
+    }
+
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): TransformComponent {
@@ -98,15 +110,6 @@ public data class TransformComponent(
             }
 
             return mapToObject(properties, TransformComponent::class)
-        }
-
-        public fun fromJson(json: JsonObject, copy: TransformComponent) {
-            copy.world = Bukkit.getWorld( UUID.fromString(json["world"].asString) )
-            copy.x = json["x"].asDouble
-            copy.y = json["y"].asDouble
-            copy.z = json["z"].asDouble
-            copy.yaw = json["yaw"].asDouble
-            copy.pitch = json["pitch"].asDouble
         }
     }
 }

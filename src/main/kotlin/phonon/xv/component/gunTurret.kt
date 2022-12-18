@@ -49,8 +49,6 @@ public data class GunTurretComponent(
 
     override fun self() = this
 
-    override fun toJson(): JsonObject? = null
-
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): GunTurretComponent {
@@ -76,7 +74,5 @@ public data class GunTurretComponent(
 
             return mapToObject(properties, GunTurretComponent::class)
         }
-
-        public fun fromJson(json: JsonObject?, copy: GunTurretComponent) = null
     }
 }

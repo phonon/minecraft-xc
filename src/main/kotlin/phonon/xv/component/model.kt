@@ -70,8 +70,6 @@ public data class ModelComponent(
         )
     }
 
-    override fun toJson(): JsonObject? = null
-
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): ModelComponent {
@@ -94,7 +92,5 @@ public data class ModelComponent(
 
             return mapToObject(properties, ModelComponent::class)
         }
-
-        public fun fromJson(json: JsonObject?, copy: ModelComponent) = null
     }
 }

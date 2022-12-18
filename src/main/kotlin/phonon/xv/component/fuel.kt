@@ -37,10 +37,17 @@ public data class FuelComponent(
         return this
     }
 
-    override fun toJson(): JsonObject? {
+    override fun toJson(): JsonObject {
         val json = JsonObject()
         json.add("current", JsonPrimitive(current))
         return json
+    }
+
+    override fun injectJsonProperties(json: JsonObject?): FuelComponent {
+        if ( json === null ) return this.self()
+        return this.copy(
+            current = json["current"].asDouble.coerceIn(0.0, this.max)
+        )
     }
 
     companion object {
@@ -53,10 +60,6 @@ public data class FuelComponent(
             toml.getNumberAs<Double>("max")?.let { properties["max"] = it }
 
             return mapToObject(properties, FuelComponent::class)
-        }
-
-        public fun fromJson(json: JsonObject, copy: FuelComponent) {
-            copy.current = json["current"].asDouble
         }
     }
 }

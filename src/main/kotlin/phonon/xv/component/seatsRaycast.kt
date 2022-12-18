@@ -28,8 +28,6 @@ public data class SeatsRaycastComponent(
 
     override fun self() = this
 
-    override fun toJson(): JsonObject? = null
-
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): SeatsRaycastComponent {
@@ -38,7 +36,5 @@ public data class SeatsRaycastComponent(
 
             return mapToObject(properties, SeatsRaycastComponent::class)
         }
-
-        public fun fromJson(json: JsonObject?, copy: SeatsRaycastComponent) = null
     }
 }
