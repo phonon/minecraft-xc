@@ -33,7 +33,7 @@ public data class Vehicle(
     // elements in this vehicle
     val elements: List<VehicleElement>,
     // for persistence, static across restarts
-    val uuid: UUID = UUID.randomUUID()
+    val uuid: UUID
 ) {
     public val rootElements: List<VehicleElement>
     
@@ -57,7 +57,7 @@ public data class VehicleElement(
     val layout: EnumSet<VehicleComponentType>,
     val prototype: VehicleElementPrototype,
     // for persistence, static across restarts
-    val uuid: UUID = UUID.randomUUID()
+    val uuid: UUID
 ) {
     // parent and children hierarchy set lazily after creation
     var parent: VehicleElement? = null

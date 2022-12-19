@@ -78,6 +78,7 @@ public class VehicleStorage(
             id,
             prototype,
             elements,
+            uuid
         )
 
         return id
