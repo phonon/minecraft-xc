@@ -19,6 +19,7 @@ import phonon.xv.core.VehicleElement
 import phonon.xv.core.VehicleElementId
 import phonon.xv.core.VehicleElementPrototype
 import phonon.xv.core.VehiclePrototype
+import java.util.UUID
 
 /**
  * Indicates reason for creating a vehicle. Customizes what creation
@@ -38,7 +39,7 @@ public enum class CreateVehicleReason {
 public data class CreateVehicleRequest(
     val prototype: VehiclePrototype,
     val reason: CreateVehicleReason,
-    val location: Location,
+    val location: Location? = null,
     val player: Player? = null,
     val item: ItemStack? = null,
     val json: JsonObject? = null,
@@ -77,10 +78,10 @@ public fun XV.systemCreateVehicle(
 
             // inject creation properties into all element prototypes
             val elementPrototypes: List<VehicleElementPrototype> = prototype.elements.map { elemPrototype ->
+                var proto = elemPrototype
                 when ( reason ) {
                     // spawning a new vehicle ingame from item or command
                     CreateVehicleReason.NEW -> {
-                        var proto = elemPrototype
                         // inject creation time properties, keep in this order:
 
                         // item properties stored in item meta
@@ -93,13 +94,22 @@ public fun XV.systemCreateVehicle(
                         // main spawn player, location, etc. properties
                         // player properties (this creates armor stands internally)
                         proto = proto.injectSpawnProperties(location, player)
-                        
+
                         proto
                     }
                     
                     // loading from serialized json: only inject json properties
                     CreateVehicleReason.LOAD -> {
-                        elemPrototype.injectJsonProperties(json)
+                        json!!
+                        // current json object is the whole vehicle json, we
+                        // want just the json object with our element
+                        val elemJson = json["elements"]!!
+                                .asJsonObject[proto.name]!!
+                                .asJsonObject
+
+                        proto = elemPrototype.injectJsonProperties(elemJson)
+
+                        proto
                     }
                 }
             }
@@ -132,6 +142,7 @@ public fun XV.systemCreateVehicle(
                     name="${prototype.name}.${elementPrototypes[idx].name}.${id}",
                     id=id!!,
                     layout=elementPrototypes[idx].layout,
+                    elementPrototypes[idx]
                 )
             }
             
@@ -147,9 +158,15 @@ public fun XV.systemCreateVehicle(
                     elem.children = childrenIdx.map { elements[it] }
                 }
             }
-            
+
+            val vehicleUuid = when ( reason ) {
+                CreateVehicleReason.NEW -> UUID.randomUUID() // generate random uuid if new
+                // use existing if load
+                CreateVehicleReason.LOAD -> UUID.fromString( json!!["uuid"]!!.asString )
+            }
             // insert new vehicle
             val vehicleId = xv.vehicleStorage.insert(
+                vehicleUuid,
                 prototype=prototype,
                 elements=elements,
             )
@@ -178,7 +195,7 @@ public fun XV.systemCreateVehicle(
             }
 
             // test stuff
-            player?.sendMessage("Created your vehicle at x:${location.x} y:${location.y} z:${location.z}")
+            player?.sendMessage("Created your vehicle at x:${location}")
         }
         catch ( e: Exception ) {
             xv.logger.severe("Failed to create vehicle ${prototype.name} at ${location}")

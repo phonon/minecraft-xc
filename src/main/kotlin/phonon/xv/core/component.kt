@@ -38,7 +38,7 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
      * who spawned the vehicle, etc.
      */
     fun injectSpawnProperties(
-        location: Location,
+        location: Location?,
         player: Player?,
     ): T {
         return this.self()

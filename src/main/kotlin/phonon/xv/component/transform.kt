@@ -60,9 +60,11 @@ public data class TransformComponent(
      * Inject world position and rotation.
      */
     override fun injectSpawnProperties(
-        location: Location,
+        location: Location?,
         player: Player?,
     ): TransformComponent {
+        if ( location === null )
+            return this.self()
         return this.copy(
             world = location.world,
             x = location.x,

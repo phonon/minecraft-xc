@@ -2,14 +2,17 @@
 
 package phonon.xv.core
 
-import java.util.EnumSet
-import java.util.ArrayDeque
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 public const val MAX_VEHICLE_ELEMENTS: Int = 10000
 
+
+
 public class VehicleStorage(
     val maxVehicles: Int
-) {
+): Iterable<Vehicle> {
     // fixed-size lookup map VehicleId => Vehicle
     private val lookup: Array<Vehicle?> = Array(maxVehicles) { _ -> null }
     // free ids stack
@@ -62,6 +65,7 @@ public class VehicleStorage(
      * and final created elements.
      */
     fun insert(
+        uuid: UUID,
         prototype: VehiclePrototype,
         elements: List<VehicleElement>,
     ): VehicleId {
@@ -69,7 +73,6 @@ public class VehicleStorage(
         if ( id == INVALID_VEHICLE_ID ) {
             return INVALID_VEHICLE_ID
         }
-
         this.lookup[id] = Vehicle(
             "${prototype.name}.${id}",
             id,
@@ -78,6 +81,39 @@ public class VehicleStorage(
         )
 
         return id
+    }
+
+    /**
+     * Iterator for non-null values of lookup array.
+     * Used for iterating over vehicle elements when
+     * saving all vehicles.
+     */
+    override fun iterator(): Iterator<Vehicle> {
+        return VehicleStorageIterator(this)
+    }
+
+    inner class VehicleStorageIterator(
+            val storage: VehicleStorage
+    ): Iterator<Vehicle> {
+        var nextIdx = 0
+        init {
+            while ( nextIdx < lookup.size && lookup[nextIdx] === null ) {
+                nextIdx++
+            }
+        }
+
+        override fun hasNext(): Boolean {
+            return nextIdx < lookup.size
+        }
+
+        override fun next(): Vehicle {
+            val retVal = lookup[nextIdx]
+            while ( nextIdx < lookup.size && lookup[nextIdx] === null ) {
+                nextIdx++
+            }
+            return retVal!!
+        }
+
     }
 }
 

@@ -58,6 +58,7 @@ public data class Config(
     val savePeriod: Int = 200,
     val savePipelineLength: Int = 2,
     val saveBackupPeriod: Int = 18000,
+    val savePrettyPrintingJson: Boolean = true,
 
     // delete invalid armor stands on load
     // (default avoid, any error in load where vehicles not all loaded
@@ -127,6 +128,7 @@ public data class Config(
                 save.getLong("period")?.let { configOptions["savePeriod"] = it.toInt() }
                 save.getLong("pipeline_length")?.let { configOptions["savePipelineLength"] = it.toInt() }
                 save.getLong("backup_period")?.let { configOptions["saveBackupPeriod"] = it.toInt() }
+                save.getBoolean("json_pretty_printing")?.let { configOptions["savePrettyPrintingJson"] = it }
             }
 
             toml.getTable("misc")?.let { misc -> 

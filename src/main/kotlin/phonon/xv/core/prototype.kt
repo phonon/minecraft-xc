@@ -44,6 +44,7 @@ import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import phonon.xv.XV
 import phonon.xv.component.*
+import java.util.UUID
 
 
 /**
@@ -78,6 +79,8 @@ public data class VehiclePrototype(
         }
         childrenIndices = Array(children.size, { children[it].toIntArray() })
     }
+
+    val uuid: UUID = UUID.randomUUID()
 
     companion object {
         /**
@@ -276,14 +279,19 @@ public data class VehicleElementPrototype(
     val seatsRaycast: SeatsRaycastComponent? = null,
     val spawn: SpawnComponent? = null,
     val transform: TransformComponent? = null,
+    val uuid: UUID = UUID.randomUUID()
 ) {
+    // uuid to be passed into constructor of
+    // vehicle element
+
+
     /**
      * During creation, inject player specific properties and generate
      * a new instance of this prototype. Delegates injecting property
      * effects to each individual component.
      */
     fun injectSpawnProperties(
-        location: Location,
+        location: Location?,
         player: Player?,
     ): VehicleElementPrototype {
         return copy(
@@ -327,20 +335,27 @@ public data class VehicleElementPrototype(
      * a new instance of this component. Used to load serialized vehicle
      * state from stored json objects. Delegates injecting property
      * effects to each individual component.
+     *
+     * The json object passed into this function should be the one
+     * storing the data for the singular element, NOT the object
+     * storing the entire vehicle. See the serde file for more details
+     * on schema.
      */
     fun injectJsonProperties(
-        json: JsonObject?,
+        json: JsonObject,
     ): VehicleElementPrototype {
+        val componentsJson = json["components"]!!.asJsonObject
         return copy(
-            fuel = fuel?.injectJsonProperties(json),
-            gunTurret = gunTurret?.injectJsonProperties(json),
-            health = health?.injectJsonProperties(json),
-            landMovementControls = landMovementControls?.injectJsonProperties(json),
-            model = model?.injectJsonProperties(json),
-            seats = seats?.injectJsonProperties(json),
-            seatsRaycast = seatsRaycast?.injectJsonProperties(json),
-            spawn = spawn?.injectJsonProperties(json),
-            transform = transform?.injectJsonProperties(json),
+            uuid = UUID.fromString( json["uuid"].asString ),
+            fuel = fuel?.injectJsonProperties( componentsJson["fuel"]?.asJsonObject ),
+            gunTurret = gunTurret?.injectJsonProperties( componentsJson["gunTurret"]?.asJsonObject ),
+            health = health?.injectJsonProperties( componentsJson["health"]?.asJsonObject ),
+            landMovementControls = landMovementControls?.injectJsonProperties( componentsJson["landMovementControls"]?.asJsonObject ),
+            model = model?.injectJsonProperties( componentsJson["model"]?.asJsonObject ),
+            seats = seats?.injectJsonProperties( componentsJson["seats"]?.asJsonObject ),
+            seatsRaycast = seatsRaycast?.injectJsonProperties( componentsJson["seatsRaycast"]?.asJsonObject ),
+            spawn = spawn?.injectJsonProperties( componentsJson["spawn"]?.asJsonObject ),
+            transform = transform?.injectJsonProperties( componentsJson["transform"]?.asJsonObject ),
         )
     }
 

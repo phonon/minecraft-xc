@@ -33,7 +33,7 @@ public data class Vehicle(
     // elements in this vehicle
     val elements: List<VehicleElement>,
     // for persistence, static across restarts
-    val uuid: UUID = UUID.randomUUID(),
+    val uuid: UUID = UUID.randomUUID()
 ) {
     public val rootElements: List<VehicleElement>
     
@@ -55,6 +55,7 @@ public data class VehicleElement(
     // Adding this set here simplifies deleting vehicle element.
     // This is similar to a "bitset" ECS data layout.
     val layout: EnumSet<VehicleComponentType>,
+    val prototype: VehicleElementPrototype,
     // for persistence, static across restarts
     val uuid: UUID = UUID.randomUUID()
 ) {

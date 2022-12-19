@@ -46,9 +46,11 @@ public data class ModelComponent(
      * Create armor stand at spawn location.
      */
     override fun injectSpawnProperties(
-        location: Location,
+        location: Location?,
         player: Player?,
     ): ModelComponent {
+        if ( location === null)
+            return this.self()
         // spawn armor stand, for simplicity steal the armorstand uuid
         val armorstand: ArmorStand = location.world.spawn(location, ArmorStand::class.java)
         armorstand.setGravity(false)

@@ -41,6 +41,7 @@ backup = "backup"   # backup save states
 period = 200 # how often in ticks to run save
 pipeline_length = 2 # how many ticks to split vehicle save into
 backup_period = 18000 # how often in ticks to save a long-term backup, default = 15 min
+json_pretty_printing = true # are vehicles saved in human-readable json, or all on one line
 
 # misc random settings
 [misc]

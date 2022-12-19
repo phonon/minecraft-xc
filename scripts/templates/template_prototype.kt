@@ -44,6 +44,7 @@ import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import phonon.xv.XV
 import phonon.xv.component.*
+import java.util.UUID
 
 
 /**
@@ -78,6 +79,8 @@ public data class VehiclePrototype(
         }
         childrenIndices = Array(children.size, { children[it].toIntArray() })
     }
+
+    val uuid: UUID = UUID.randomUUID()
 
     companion object {
         /**
@@ -270,14 +273,19 @@ public data class VehicleElementPrototype(
     {%- for c in components %}
     val {{ c.storage }}: {{ c.classname }}? = null,
     {%- endfor %}
+    val uuid: UUID = UUID.randomUUID()
 ) {
+    // uuid to be passed into constructor of
+    // vehicle element
+
+
     /**
      * During creation, inject player specific properties and generate
      * a new instance of this prototype. Delegates injecting property
      * effects to each individual component.
      */
     fun injectSpawnProperties(
-        location: Location,
+        location: Location?,
         player: Player?,
     ): VehicleElementPrototype {
         return copy(
@@ -309,13 +317,20 @@ public data class VehicleElementPrototype(
      * a new instance of this component. Used to load serialized vehicle
      * state from stored json objects. Delegates injecting property
      * effects to each individual component.
+     *
+     * The json object passed into this function should be the one
+     * storing the data for the singular element, NOT the object
+     * storing the entire vehicle. See the serde file for more details
+     * on schema.
      */
     fun injectJsonProperties(
-        json: JsonObject?,
+        json: JsonObject,
     ): VehicleElementPrototype {
+        val componentsJson = json["components"]!!.asJsonObject
         return copy(
+            uuid = UUID.fromString( json["uuid"].asString ),
             {%- for c in components %}
-            {{ c.storage }} = {{ c.storage }}?.injectJsonProperties(json),
+            {{ c.storage }} = {{ c.storage }}?.injectJsonProperties( componentsJson["{{ c.storage }}"]?.asJsonObject ),
             {%- endfor %}
         )
     }
