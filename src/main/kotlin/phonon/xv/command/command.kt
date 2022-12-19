@@ -21,7 +21,6 @@ import phonon.xv.core.EntityVehicleData
 import phonon.xv.component.*
 import phonon.xv.system.CreateVehicleRequest
 import phonon.xv.system.CreateVehicleReason
-import phonon.xv.system.NewVehicleRequest
 import phonon.xv.util.Message
 
 
@@ -120,11 +119,11 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         }
 
         xv.createRequests.add(
-            NewVehicleRequest(
+            CreateVehicleRequest(
                 prototype,
-                sender.location,
-                sender,
-                null
+                CreateVehicleReason.NEW,
+                location = sender.location,
+                player = sender,
             )
         )
 
