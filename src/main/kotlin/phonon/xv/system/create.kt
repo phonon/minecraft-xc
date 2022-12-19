@@ -142,7 +142,8 @@ public fun XV.systemCreateVehicle(
                     name="${prototype.name}.${elementPrototypes[idx].name}.${id}",
                     id=id!!,
                     layout=elementPrototypes[idx].layout,
-                    elementPrototypes[idx]
+                    elementPrototypes[idx],
+                    elementPrototypes[idx].uuid
                 )
             }
             
