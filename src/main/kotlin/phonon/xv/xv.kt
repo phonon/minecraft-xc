@@ -9,7 +9,6 @@ import java.nio.file.Files
 import java.util.UUID
 import java.util.logging.Logger
 import org.bukkit.Bukkit
-import org.bukkit.NamespacedKey
 import org.bukkit.plugin.Plugin
 import org.bukkit.scheduler.BukkitTask
 import phonon.xv.core.*
@@ -68,15 +67,6 @@ public class XV (
     // vehicle creation requests
     internal var createRequests: Queue<CreateVehicleRequest> = LinkedList()
 
-    // global properties
-    companion object {
-        /**
-         * Namespaced key for associating vehicle model entities with element uuid.
-         */
-        @Suppress("Deprecated")
-        public val entityReassociationKey = NamespacedKey("xv", "element_uuid")
-    }
-
     // ========================================================================
     // RUNNING TASKS
     // ========================================================================
@@ -116,7 +106,9 @@ public class XV (
 
         // wtf why isnt it saving this shit automatically??
         listOf(
+            "vehicle/debug_cannon.toml",
             "vehicle/debug_car.toml",
+            "vehicle/debug_mortar.toml",
             "vehicle/debug_multi_turret.toml",
             "vehicle/debug_tank.toml",
         ).forEach { p -> this.plugin.saveResource(p, false) }

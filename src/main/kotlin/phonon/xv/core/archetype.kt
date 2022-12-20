@@ -58,7 +58,9 @@ private fun <T> ArrayList<T>.swapRemove(index: Int) {
  * Note: keep in alphabetical order.
  */
 public enum class VehicleComponentType {
+    AMMO,
     FUEL,
+    GUN_BARREL,
     GUN_TURRET,
     HEALTH,
     LAND_MOVEMENT_CONTROLS,
@@ -75,7 +77,9 @@ public enum class VehicleComponentType {
          */
         public inline fun <reified T: VehicleComponent<T>> from(): VehicleComponentType {
             return when ( T::class ) {
+                AmmoComponent::class -> VehicleComponentType.AMMO
                 FuelComponent::class -> VehicleComponentType.FUEL
+                GunBarrelComponent::class -> VehicleComponentType.GUN_BARREL
                 GunTurretComponent::class -> VehicleComponentType.GUN_TURRET
                 HealthComponent::class -> VehicleComponentType.HEALTH
                 LandMovementControlsComponent::class -> VehicleComponentType.LAND_MOVEMENT_CONTROLS
@@ -118,7 +122,9 @@ public class ArchetypeStorage(
 
     // dense packed components storages
     // only components in layout will be non-null
+    internal val ammo: ArrayList<AmmoComponent>? = if ( layout.contains(VehicleComponentType.AMMO) ) ArrayList() else null
     internal val fuel: ArrayList<FuelComponent>? = if ( layout.contains(VehicleComponentType.FUEL) ) ArrayList() else null
+    internal val gunBarrel: ArrayList<GunBarrelComponent>? = if ( layout.contains(VehicleComponentType.GUN_BARREL) ) ArrayList() else null
     internal val gunTurret: ArrayList<GunTurretComponent>? = if ( layout.contains(VehicleComponentType.GUN_TURRET) ) ArrayList() else null
     internal val health: ArrayList<HealthComponent>? = if ( layout.contains(VehicleComponentType.HEALTH) ) ArrayList() else null
     internal val landMovementControls: ArrayList<LandMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.LAND_MOVEMENT_CONTROLS) ) ArrayList() else null
@@ -129,8 +135,12 @@ public class ArchetypeStorage(
     internal val transform: ArrayList<TransformComponent>? = if ( layout.contains(VehicleComponentType.TRANSFORM) ) ArrayList() else null
 
     // public getter "view"s: only expose immutable List interface
+    public val ammoView: List<AmmoComponent>?
+        get() = this.ammo
     public val fuelView: List<FuelComponent>?
         get() = this.fuel
+    public val gunBarrelView: List<GunBarrelComponent>?
+        get() = this.gunBarrel
     public val gunTurretView: List<GunTurretComponent>?
         get() = this.gunTurret
     public val healthView: List<HealthComponent>?
@@ -158,7 +168,9 @@ public class ArchetypeStorage(
         }
         
         return when ( T::class ) {
+            AmmoComponent::class -> this.ammoView?.get(denseIndex) as T
             FuelComponent::class -> this.fuelView?.get(denseIndex) as T
+            GunBarrelComponent::class -> this.gunBarrelView?.get(denseIndex) as T
             GunTurretComponent::class -> this.gunTurretView?.get(denseIndex) as T
             HealthComponent::class -> this.healthView?.get(denseIndex) as T
             LandMovementControlsComponent::class -> this.landMovementControlsView?.get(denseIndex) as T
@@ -209,8 +221,16 @@ public class ArchetypeStorage(
         // push prototype components into storages
         for ( c in prototype.layout ) {
             when ( c ) {
+                VehicleComponentType.AMMO -> {
+                    this.ammo?.pushAtDenseIndex(denseIndex, prototype.ammo!!)
+                }
+                
                 VehicleComponentType.FUEL -> {
                     this.fuel?.pushAtDenseIndex(denseIndex, prototype.fuel!!)
+                }
+                
+                VehicleComponentType.GUN_BARREL -> {
+                    this.gunBarrel?.pushAtDenseIndex(denseIndex, prototype.gunBarrel!!)
                 }
                 
                 VehicleComponentType.GUN_TURRET -> {
@@ -284,7 +304,9 @@ public class ArchetypeStorage(
         // swap remove elements in component arrays
         for ( c in layout ) {
             when ( c ) {
+                VehicleComponentType.AMMO -> ammo?.swapRemove(denseIndex)
                 VehicleComponentType.FUEL -> fuel?.swapRemove(denseIndex)
+                VehicleComponentType.GUN_BARREL -> gunBarrel?.swapRemove(denseIndex)
                 VehicleComponentType.GUN_TURRET -> gunTurret?.swapRemove(denseIndex)
                 VehicleComponentType.HEALTH -> health?.swapRemove(denseIndex)
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.swapRemove(denseIndex)
@@ -313,7 +335,9 @@ public class ArchetypeStorage(
             elements[i] = INVALID_ELEMENT_ID
         }
         nextFree = 0
+        ammo?.clear()
         fuel?.clear()
+        gunBarrel?.clear()
         gunTurret?.clear()
         health?.clear()
         landMovementControls?.clear()
@@ -341,7 +365,9 @@ public class ArchetypeStorage(
         @Suppress("UNCHECKED_CAST")
         public inline fun <reified T> accessor(): (ArchetypeStorage) -> List<T> {
             return when ( T::class ) {
+                AmmoComponent::class -> { archetype -> archetype.ammoView as List<T> }
                 FuelComponent::class -> { archetype -> archetype.fuelView as List<T> }
+                GunBarrelComponent::class -> { archetype -> archetype.gunBarrelView as List<T> }
                 GunTurretComponent::class -> { archetype -> archetype.gunTurretView as List<T> }
                 HealthComponent::class -> { archetype -> archetype.healthView as List<T> }
                 LandMovementControlsComponent::class -> { archetype -> archetype.landMovementControlsView as List<T> }

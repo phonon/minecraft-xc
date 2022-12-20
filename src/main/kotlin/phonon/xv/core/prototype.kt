@@ -30,6 +30,7 @@ package phonon.xv.core
 import com.google.gson.JsonObject
 import java.nio.file.Path
 import java.util.EnumSet
+import java.util.UUID
 import java.util.logging.Logger
 import java.util.LinkedList
 import java.util.ArrayDeque
@@ -44,7 +45,6 @@ import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import phonon.xv.XV
 import phonon.xv.component.*
-import java.util.UUID
 
 
 /**
@@ -270,7 +270,9 @@ public data class VehicleElementPrototype(
     val parent: String?,
     val vehicleName: String,
     val layout: EnumSet<VehicleComponentType>,
+    val ammo: AmmoComponent? = null,
     val fuel: FuelComponent? = null,
+    val gunBarrel: GunBarrelComponent? = null,
     val gunTurret: GunTurretComponent? = null,
     val health: HealthComponent? = null,
     val landMovementControls: LandMovementControlsComponent? = null,
@@ -295,7 +297,9 @@ public data class VehicleElementPrototype(
         player: Player?,
     ): VehicleElementPrototype {
         return copy(
+            ammo = ammo?.injectSpawnProperties(location, player),
             fuel = fuel?.injectSpawnProperties(location, player),
+            gunBarrel = gunBarrel?.injectSpawnProperties(location, player),
             gunTurret = gunTurret?.injectSpawnProperties(location, player),
             health = health?.injectSpawnProperties(location, player),
             landMovementControls = landMovementControls?.injectSpawnProperties(location, player),
@@ -318,7 +322,9 @@ public data class VehicleElementPrototype(
         itemData: PersistentDataContainer,
     ): VehicleElementPrototype {
         return copy(
+            ammo = ammo?.injectItemProperties(item, itemMeta, itemData),
             fuel = fuel?.injectItemProperties(item, itemMeta, itemData),
+            gunBarrel = gunBarrel?.injectItemProperties(item, itemMeta, itemData),
             gunTurret = gunTurret?.injectItemProperties(item, itemMeta, itemData),
             health = health?.injectItemProperties(item, itemMeta, itemData),
             landMovementControls = landMovementControls?.injectItemProperties(item, itemMeta, itemData),
@@ -347,7 +353,9 @@ public data class VehicleElementPrototype(
         val componentsJson = json["components"]!!.asJsonObject
         return copy(
             uuid = UUID.fromString( json["uuid"].asString ),
+            ammo = ammo?.injectJsonProperties( componentsJson["ammo"]?.asJsonObject ),
             fuel = fuel?.injectJsonProperties( componentsJson["fuel"]?.asJsonObject ),
+            gunBarrel = gunBarrel?.injectJsonProperties( componentsJson["gunBarrel"]?.asJsonObject ),
             gunTurret = gunTurret?.injectJsonProperties( componentsJson["gunTurret"]?.asJsonObject ),
             health = health?.injectJsonProperties( componentsJson["health"]?.asJsonObject ),
             landMovementControls = landMovementControls?.injectJsonProperties( componentsJson["landMovementControls"]?.asJsonObject ),
@@ -358,6 +366,90 @@ public data class VehicleElementPrototype(
             transform = transform?.injectJsonProperties( componentsJson["transform"]?.asJsonObject ),
         )
     }
+    
+    /**
+     * During creation, for each component, send post creation properties,
+     * for post-processing after the vehicle has been created. Such as
+     * setting up entity to vehicle mappings for armor stands.
+     */
+    fun afterVehicleCreated(
+        vehicleId: VehicleId,
+        elementId: VehicleElementId,
+        elementLayout: EnumSet<VehicleComponentType>,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+    ) {
+        for ( c in layout ) {
+            when ( c ) {
+                VehicleComponentType.AMMO -> ammo?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.FUEL -> fuel?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.GUN_BARREL -> gunBarrel?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.GUN_TURRET -> gunTurret?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.HEALTH -> health?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.MODEL -> model?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.SEATS -> seats?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.SPAWN -> spawn?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.TRANSFORM -> transform?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                null -> {}
+            }
+        }
+    }
 
     companion object {
         public fun fromToml(toml: TomlTable, logger: Logger? = null, vehicleName: String): VehicleElementPrototype {
@@ -366,7 +458,9 @@ public data class VehicleElementPrototype(
             val parent = toml.getString("parent")
             
             // all possible components to be parsed
+            var ammo: AmmoComponent? = null
             var fuel: FuelComponent? = null
+            var gunBarrel: GunBarrelComponent? = null
             var gunTurret: GunTurretComponent? = null
             var health: HealthComponent? = null
             var landMovementControls: LandMovementControlsComponent? = null
@@ -382,9 +476,17 @@ public data class VehicleElementPrototype(
             for ( k in keys ) {
                 when ( k ) {
                     "name", "parent" -> continue
+                    "ammo" -> {
+                        layout.add(VehicleComponentType.AMMO)
+                        ammo = AmmoComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
                     "fuel" -> {
                         layout.add(VehicleComponentType.FUEL)
                         fuel = FuelComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "gun_barrel" -> {
+                        layout.add(VehicleComponentType.GUN_BARREL)
+                        gunBarrel = GunBarrelComponent.fromToml(toml.getTable(k)!!, logger)
                     }
                     "gun_turret" -> {
                         layout.add(VehicleComponentType.GUN_TURRET)
@@ -427,7 +529,9 @@ public data class VehicleElementPrototype(
                 parent,
                 vehicleName,
                 layout,
+                ammo,
                 fuel,
+                gunBarrel,
                 gunTurret,
                 health,
                 landMovementControls,

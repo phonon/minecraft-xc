@@ -4,6 +4,8 @@
 
 package phonon.xv.core
 
+import java.util.EnumSet
+import java.util.UUID
 import com.google.gson.JsonObject
 import org.bukkit.Location
 import org.bukkit.entity.Player
@@ -75,4 +77,16 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
     fun toJson(): JsonObject? {
         return null
     }
+    
+    /**
+     * During creation, for each component, send post creation properties,
+     * for post-processing after the vehicle has been created. Such as
+     * setting up entity to vehicle mappings for armor stands.
+     */
+    fun afterVehicleCreated(
+        vehicleId: VehicleId,
+        elementId: VehicleElementId,
+        elementLayout: EnumSet<VehicleComponentType>,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+    ) {}
 }

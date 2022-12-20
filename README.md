@@ -72,3 +72,9 @@ and generates their `*.toml` config example. It assumes all constructor
 parameters are configurable options, but there are custom tokens defined
 inside `documentation_gen.py` to modify the documentation generation, look
 inside to see details and look at `component.kt` source files as reference.
+
+
+# Resourcepack
+For built-in debug vehicles, this contains a test resourcepack contained
+in the `resourcepack` folder. Copypaste that folder into your mineman
+resource packs.

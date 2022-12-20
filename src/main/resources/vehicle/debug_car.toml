@@ -11,15 +11,16 @@ name = "debug_car"
 
 # armor stand model
 [model]
+model_id = 102000
 
 # seats, needed for controllable vehicle
 [seats]
 count = 4
 offsets = [
-    1.0, -0.75, 1.0,   # front left
-    -1.0, -0.75, 1.0,  # front right
-    1.0, -0.75, -1.0,  # back left
-    -1.0, -0.75, -1.0, # back right
+    0.9, -0.3, 0.0,   # front left
+    -0.9, -0.3, 0.0,  # front right
+    0.9, -0.3, -1.0,  # back left
+    -0.9, -0.3, -1.0, # back right
 ]
 
 # use seat raycasting for mounting

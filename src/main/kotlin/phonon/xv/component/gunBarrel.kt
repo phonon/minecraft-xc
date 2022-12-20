@@ -1,15 +1,18 @@
 package phonon.xv.component
 
-import com.google.gson.JsonObject
 import java.util.UUID
 import java.util.EnumSet
 import java.util.logging.Logger
+import com.google.gson.JsonObject
 import org.tomlj.TomlTable
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataContainer
 import phonon.xv.XV
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
@@ -22,19 +25,27 @@ import phonon.xv.util.entity.setVehicleUuid
 import phonon.xv.util.item.createCustomModelItem
 
 /**
- * Represents an ArmorStand model
+ * WASD-controlled single barrel. Direction is the yaw of the vehicle.
+ * Barrel pitch is moved up/down with W/S keys. Example usage is a barrel
+ * for a cannon vehicle.
+ * 
+ * Contains LOCAL position/rotation offsets from base element transform.
+ * Controls system functions should always use this in combination
+ * with a TransformComponent as the base transform position.
+ * 
+ * This also internally manages rendering armor stand models
+ * for barrel.
  */
-public data class ModelComponent(
-    // armor stand local offset
-    // @prop offset = [0.0, 0.0, 0.0]
-    val offsetX: Double = 0.0, // @skip
-    val offsetY: Double = 0.0, // @skip
-    val offsetZ: Double = 0.0, // @skip
-    // hitbox size in blocks, at local position
-    // @prop hitbox = [2.0, 2.0, 2.0]
-    val hitboxX: Double = 2.0, // @skip
-    val hitboxY: Double = 2.0, // @skip
-    val hitboxZ: Double = 2.0, // @skip
+public data class GunBarrelComponent(
+    // barrel local offset relative to transform
+    // @prop barrel_offset = [0.0, 1.0, 0.0]
+    val barrelX: Double = 0.0, // @skip
+    val barrelY: Double = 1.0, // @skip
+    val barrelZ: Double = 0.0, // @skip
+    // min barrel pitch rotation in degs
+    val barrelPitchMin: Float = -15f,
+    // max barrel pitch rotation in degs
+    val barrelPitchMax: Float = 45f,
     // seat to mount when armorstand clicked
     val seatToMount: Int = -1, // -1 for none
     // material for model
@@ -53,8 +64,8 @@ public data class ModelComponent(
     var armorstand: ArmorStand? = null,
     // uuid of this model, for reassociating armor stand <-> model
     val uuid: UUID = UUID.randomUUID(),
-): VehicleComponent<ModelComponent> {
-    override val type = VehicleComponentType.MODEL
+): VehicleComponent<GunBarrelComponent> {
+    override val type = VehicleComponentType.GUN_BARREL
 
     override fun self() = this
 
@@ -64,10 +75,10 @@ public data class ModelComponent(
     override fun injectSpawnProperties(
         location: Location?,
         player: Player?,
-    ): ModelComponent {
+    ): GunBarrelComponent {
         if ( location === null) return this.self()
 
-        val locSpawn = location.clone().add(offsetX, offsetY, offsetZ)
+        val locSpawn = location.clone().add(barrelX, barrelY, barrelZ)
 
         val armorstand: ArmorStand = locSpawn.world.spawn(locSpawn, ArmorStand::class.java)
         armorstand.setGravity(false)
@@ -95,8 +106,6 @@ public data class ModelComponent(
         elementLayout: EnumSet<VehicleComponentType>,
         entityVehicleData: HashMap<UUID, EntityVehicleData>
     ) {
-        // println("afterVehicleCreated")
-        // println("model_id: ${this.modelId}")
         val armorstand = this.armorstand
         if ( armorstand !== null ) {
             // entity -> vehicle mapping
@@ -104,7 +113,7 @@ public data class ModelComponent(
                 vehicleId,
                 elementId,
                 elementLayout,
-                VehicleComponentType.MODEL
+                VehicleComponentType.GUN_BARREL
             )
 
             // add model to armorstand
@@ -116,21 +125,18 @@ public data class ModelComponent(
 
     companion object {
         @Suppress("UNUSED_PARAMETER")
-        public fun fromToml(toml: TomlTable, logger: Logger? = null): ModelComponent {
+        public fun fromToml(toml: TomlTable, logger: Logger? = null): GunBarrelComponent {
             // map with keys as constructor property names
             val properties = HashMap<String, Any>()
-
-            toml.getArray("offset")?.let { arr ->
-                properties["offsetX"] = arr.getNumberAs<Double>(0)
-                properties["offsetY"] = arr.getNumberAs<Double>(1)
-                properties["offsetZ"] = arr.getNumberAs<Double>(2)
-            }
             
-            toml.getArray("hitbox")?.let { arr ->
-                properties["hitboxX"] = arr.getNumberAs<Double>(0)
-                properties["hitboxY"] = arr.getNumberAs<Double>(1)
-                properties["hitboxZ"] = arr.getNumberAs<Double>(2)
+            toml.getArray("barrel_offset")?.let { arr ->
+                properties["barrelX"] = arr.getNumberAs<Double>(0)
+                properties["barrelY"] = arr.getNumberAs<Double>(1)
+                properties["barrelZ"] = arr.getNumberAs<Double>(2)
             }
+
+            toml.getNumberAs<Double>("barrel_pitch_min")?.let { properties["barrelPitchMin"] = it.toFloat() }
+            toml.getNumberAs<Double>("barrel_pitch_max")?.let { properties["barrelPitchMax"] = it.toFloat() }
 
             toml.getLong("seat_to_mount")?.let { properties["seatToMount"] = it.toInt() }
 
@@ -147,7 +153,7 @@ public data class ModelComponent(
             
             toml.getBoolean("armorstand_visible")?.let { properties["armorstandVisible"] = it }
 
-            return mapToObject(properties, ModelComponent::class)
+            return mapToObject(properties, GunBarrelComponent::class)
         }
     }
 }

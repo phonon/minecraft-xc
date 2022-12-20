@@ -30,6 +30,7 @@ package phonon.xv.core
 import com.google.gson.JsonObject
 import java.nio.file.Path
 import java.util.EnumSet
+import java.util.UUID
 import java.util.logging.Logger
 import java.util.LinkedList
 import java.util.ArrayDeque
@@ -44,7 +45,6 @@ import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import phonon.xv.XV
 import phonon.xv.component.*
-import java.util.UUID
 
 
 /**
@@ -333,6 +333,32 @@ public data class VehicleElementPrototype(
             {{ c.storage }} = {{ c.storage }}?.injectJsonProperties( componentsJson["{{ c.storage }}"]?.asJsonObject ),
             {%- endfor %}
         )
+    }
+    
+    /**
+     * During creation, for each component, send post creation properties,
+     * for post-processing after the vehicle has been created. Such as
+     * setting up entity to vehicle mappings for armor stands.
+     */
+    fun afterVehicleCreated(
+        vehicleId: VehicleId,
+        elementId: VehicleElementId,
+        elementLayout: EnumSet<VehicleComponentType>,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+    ) {
+        for ( c in layout ) {
+            when ( c ) {
+                {%- for c in components %}
+                VehicleComponentType.{{ c.enum }} -> {{ c.storage }}?.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elementId,
+                    elementLayout=elementLayout,
+                    entityVehicleData=entityVehicleData,
+                )
+                {%- endfor %}
+                null -> {}
+            }
+        }
     }
 
     companion object {

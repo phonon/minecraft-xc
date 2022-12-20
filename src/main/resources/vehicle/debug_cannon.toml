@@ -4,31 +4,27 @@
 # Parser will do a scan and recognize this only needs a
 # single anonymous element.
 
-name = "debug_tank"
+name = "debug_cannon"
 
 # contains position, rotation, etc.
 [transform]
 
-# armor stand model
+# base model
 [model]
-model_id = 104001
+barrel_offset = [0.0, -0.25, 0.0]
+model_id = 100001
+seat_to_mount = 0 # seat mounted when clicked
+
+# rotating gun barrel model
+# moves up/down with WASD controls
+[gun_barrel]
+barrel_offset = [0.0, -0.4, 0.0]
+barrel_pitch_min = -15.0
+barrel_pitch_max = 45.0
+model_id = 100002
 seat_to_mount = 0 # seat mounted when clicked
 
 # seats, needed for controllable vehicle
 [seats]
 count = 1
-offsets = [
-    -0.7, 0.25, 0.0,
-]
-
-# seat raycasting for mounting
-# TODO: should be removed, only here for testing because
-# only 1 archetype layout supported
-[seats_raycast]
-
-# handles player's input controls for land movement
-[land_movement_controls]
-seat_controller = 0
-acceleration = 0.03
-speed_max_forward = 0.3
-speed_max_reverse = 0.2
+offsets = [0.0, -1.0, -1.0]

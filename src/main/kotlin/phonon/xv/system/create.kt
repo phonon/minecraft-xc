@@ -180,19 +180,16 @@ public fun XV.systemCreateVehicle(
                 continue
             }
 
-            // for elements with components that have armorstands,
-            // add entity -> element mapping
-            for ( (idx, elem) in elementPrototypes.withIndex() ) {
-                if ( elem.layout.contains(VehicleComponentType.MODEL) ) {
-                    val armorstand = elem.model?.armorstand?.let { armorstand -> 
-                        entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
-                            vehicleId,
-                            elements[idx].id,
-                            elem.layout,
-                            VehicleComponentType.MODEL
-                        )
-                    }
-                }
+            // do element post-processing (note: can use prototype because
+            // it still holds references to components)
+            // for elements with armorstands models, this does entity -> element mapping
+            for ( (idx, elemProto) in elementPrototypes.withIndex() ) {
+                elemProto.afterVehicleCreated(
+                    vehicleId=vehicleId,
+                    elementId=elements[idx].id,
+                    elementLayout=elemProto.layout,
+                    entityVehicleData=entityVehicleData,
+                )
             }
 
             // test stuff

@@ -7,7 +7,9 @@ Common list of all components for code generation.
 
 # Mappings from ENUM => ComponentType
 components = {
+    "AMMO": "AmmoComponent",
     "FUEL": "FuelComponent",
+    "GUN_BARREL": "GunBarrelComponent",
     "GUN_TURRET": "GunTurretComponent",
     "HEALTH": "HealthComponent",
     "LAND_MOVEMENT_CONTROLS": "LandMovementControlsComponent",

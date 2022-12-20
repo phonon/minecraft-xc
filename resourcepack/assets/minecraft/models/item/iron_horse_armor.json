@@ -1,0 +1,44 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/iron_horse_armor"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 100000
+      },
+      "model": "item/vehicle/cannon_1700s_xeth_item"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 101000
+      },
+      "model": "item/vehicle/mortar_m2_xeth"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 102000
+      },
+      "model": "item/vehicle/modern_humvee_xeth"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 103000
+      },
+      "model": "item/vehicle/modern_humvee_mg_xeth_item"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 104000
+      },
+      "model": "item/vehicle/panzer_ii_tomate_item"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 105000
+      },
+      "model": "item/vehicle/biplane_xeth_test"
+    }
+  ]
+}

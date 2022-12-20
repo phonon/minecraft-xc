@@ -28,7 +28,7 @@ public data class Config(
     // world settings
     val seaLevel: Double = 63.0,
 
-    // material types for custom items    
+    // material types for custom items
     val materialVehicle: Material = Material.IRON_HORSE_ARMOR,
 
     // culling system parameters

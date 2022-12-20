@@ -27,6 +27,7 @@ import phonon.xv.util.CustomArmorStand
 public data class MountVehicleRequest(
     val player: Player,
     val elementId: VehicleElementId = INVALID_ELEMENT_ID,
+    val layout: EnumSet<VehicleComponentType> = EnumSet.noneOf(VehicleComponentType::class.java),
     val componentType: VehicleComponentType = VehicleComponentType.MODEL,
     val doRaycast: Boolean = false,
 )
@@ -51,74 +52,76 @@ public fun XV.systemMountVehicle(
     val requestsNotHandled = ArrayList<MountVehicleRequest>(requests.size)
 
     for ( req in requests ) {
-        val (
-            player,
-            elementId,
-            componentType,
-            doRaycast,
-        ) = req
+        try {
+            val (
+                player,
+                elementId,
+                layout,
+                componentType,
+                doRaycast,
+            ) = req
 
-        // if raycast request, skip
-        if ( doRaycast ) {
-            requestsNotHandled.add(req)
-            continue
-        }
+            // if raycast request, skip
+            if ( doRaycast ) {
+                requestsNotHandled.add(req)
+                continue
+            }
 
-        /**
-         * What we want to do here:
-         * -> Player clicked vehicle for some interaction.
-         * Just handle mount for now...
-         * 
-         * 1. Find the vehicle element from clicked id
-         * 2. Check if element has a seat component
-         *    NOTE: just within element not entire vehicle
-         * 3. Get the seat component from archetype
-         * 4. Determine which seat should be mounted from
-         *    the interacted component.
-         * 5. Mount the player to that seat index.
-         * 
-         */
+            /**
+             * What we want to do here:
+             * -> Player clicked vehicle for some interaction.
+             * Just handle mount for now...
+             * 
+             * 1. Find the vehicle element from clicked id
+             * 2. Check if element has a seat component
+             *    NOTE: just within element not entire vehicle
+             * 3. Get the seat component from archetype
+             * 4. Determine which seat should be mounted from
+             *    the interacted component.
+             * 5. Mount the player to that seat index.
+             * 
+             */
+            
+            // hard-coded layout, need to change when we implement an function
+            // for element id => archetype
+
+            // TODO: this lookup should be main engine function
+            val archetype = xv.storage.lookup[layout]
+            if ( archetype == null ) {
+                println("ERROR: archetype not found")
+                continue
+            }
+
+            // TODO: create archetype component tuple lookup
+            val transformComponent = archetype.transform!![elementId]!!
+            val seatsComponent = archetype.seats!![elementId]!!
+
+            val seatToMount = when ( componentType ) {
+                VehicleComponentType.MODEL -> archetype.model!![elementId]!!.seatToMount
+                VehicleComponentType.GUN_BARREL -> archetype.gunBarrel!![elementId]!!.seatToMount
+                else -> -1
+            }
+
+            if ( seatToMount >= 0 ) {
+                val world = player.world
+                val locSeat = seatsComponent.getSeatLocation(seatToMount, transformComponent)
+                val seatEntity = CustomArmorStand.create(world, locSeat)
+                // val seatEntity = world.spawn(locSeat, ArmorStand::class.java)
+                seatEntity.setGravity(false)
+                seatEntity.setVisible(true)
+                seatEntity.addPassenger(player)
         
-        // hard-coded layout, need to change when we implement an function
-        // for element id => archetype
-        val layout = EnumSet.of(
-            VehicleComponentType.TRANSFORM,
-            VehicleComponentType.MODEL,
-            VehicleComponentType.SEATS,
-            VehicleComponentType.SEATS_RAYCAST,
-            VehicleComponentType.LAND_MOVEMENT_CONTROLS,
-        )
-
-        // TODO: this lookup should be main engine function
-        val archetype = xv.storage.lookup[layout]
-        if ( archetype == null ) {
-            println("ERROR: archetype not found")
-            continue
+                seatsComponent.armorstands[seatToMount] = seatEntity
+                seatsComponent.passengers[seatToMount] = player
+            } else {
+                // not mounting directly, try raycast
+                requestsNotHandled.add(req)
+                continue
+            }
+        } catch ( e: Exception ) {
+            xv.logger.severe("ERROR: exception in systemMountVehicle")
+            e.printStackTrace()
         }
-
-        val transformComponent = archetype.transform!![elementId]!!
-        val modelComponent = archetype.model!![elementId]!!
-        val seatsComponent = archetype.seats!![elementId]!!
-
-        val seatToMount = modelComponent.seatToMount
-
-        if ( seatToMount >= 0 ) {
-            val world = player.world
-            val locSeat = seatsComponent.getSeatLocation(seatToMount, transformComponent)
-            val seatEntity = CustomArmorStand.create(world, locSeat)
-            // val seatEntity = world.spawn(locSeat, ArmorStand::class.java)
-            seatEntity.setGravity(false)
-            seatEntity.setVisible(true)
-            seatEntity.addPassenger(player)
-    
-            seatsComponent.armorstands[seatToMount] = seatEntity
-            seatsComponent.passengers[seatToMount] = player
-        } else {
-            // not mounting directly, try raycast
-            requestsNotHandled.add(req)
-            continue
-        }
-
     }
 
     return requestsNotHandled

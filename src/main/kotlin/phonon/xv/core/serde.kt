@@ -97,7 +97,9 @@ fun VehicleElement.toJson(xv: XV): JsonObject {
     for ( c in this.layout ) {
         // serialize component state in json
         val cJson = when ( c ) {
+            VehicleComponentType.AMMO -> archetype.getComponent<AmmoComponent>(this.id)!!.toJson()
             VehicleComponentType.FUEL -> archetype.getComponent<FuelComponent>(this.id)!!.toJson()
+            VehicleComponentType.GUN_BARREL -> archetype.getComponent<GunBarrelComponent>(this.id)!!.toJson()
             VehicleComponentType.GUN_TURRET -> archetype.getComponent<GunTurretComponent>(this.id)!!.toJson()
             VehicleComponentType.HEALTH -> archetype.getComponent<HealthComponent>(this.id)!!.toJson()
             VehicleComponentType.LAND_MOVEMENT_CONTROLS -> archetype.getComponent<LandMovementControlsComponent>(this.id)!!.toJson()
@@ -112,7 +114,9 @@ fun VehicleElement.toJson(xv: XV): JsonObject {
         if ( cJson !== null ) {
             // just get storage string of
             val propertyLabel = when ( c ) {
+                VehicleComponentType.AMMO -> "ammo"
                 VehicleComponentType.FUEL -> "fuel"
+                VehicleComponentType.GUN_BARREL -> "gunBarrel"
                 VehicleComponentType.GUN_TURRET -> "gunTurret"
                 VehicleComponentType.HEALTH -> "health"
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> "landMovementControls"
@@ -205,7 +209,7 @@ fun XV.loadVehicles(readFrom: Path) {
             xv.createRequests.add(
                     CreateVehicleRequest(
                             prototype,
-                            CreateVehicleReason.LOAD,
+                            CreateVehicleReason.NEW,
                             json = json
                     )
             )

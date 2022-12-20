@@ -58,6 +58,7 @@ public class EventListener(val xv: XV): Listener {
             xv.mountRequests.add(MountVehicleRequest(
                 player = player,
                 elementId = vehicleData.elementId,
+                layout = vehicleData.layout,
                 componentType = vehicleData.componentType,
             ))
         }
