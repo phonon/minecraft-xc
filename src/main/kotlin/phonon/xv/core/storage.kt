@@ -108,7 +108,7 @@ public class VehicleStorage(
         }
 
         override fun next(): Vehicle {
-            val retVal = lookup[nextIdx]
+            val retVal = lookup[nextIdx++]
             while ( nextIdx < lookup.size && lookup[nextIdx] === null ) {
                 nextIdx++
             }

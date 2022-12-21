@@ -83,6 +83,7 @@ import phonon.xv.system.CreateVehicleRequest
 import java.io.FileReader
 import java.io.FileWriter
 import java.nio.file.Path
+import java.util.logging.Logger
 
 /**
  * Extension function to serialize VehicleElement to
@@ -152,36 +153,40 @@ fun Vehicle.toJson(xv: XV): JsonObject {
  * This function is intended to be run on the main thread, so
  * while it is backup safe,
  */
-fun XV.saveVehicles(saveTo: Path) {
-    val xv = this
-    // set up json stuff
-    val json = JsonObject()
-    val vehiclesArrayJson = JsonArray()
-    // iterate and parse vehicles
-    for ( vehicle in xv.vehicleStorage ) {
-        vehiclesArrayJson.add( vehicle.toJson(xv) )
-    }
-    json.add("vehicles", vehiclesArrayJson)
+fun XV.saveVehicles(saveTo: Path, logger: Logger? = null) {
+    try {
+        val xv = this
+        // set up json stuff
+        val json = JsonObject()
+        val vehiclesArrayJson = JsonArray()
+        // iterate and parse vehicles
+        for (vehicle in xv.vehicleStorage) {
+            vehiclesArrayJson.add(vehicle.toJson(xv))
+        }
+        json.add("vehicles", vehiclesArrayJson)
 
-    // json object built, now we gotta do the IO
-    val saveFile = saveTo.toFile()
+        // json object built, now we gotta do the IO
+        val saveFile = saveTo.toFile()
 
-    // create new file if not exists
-    if ( !saveFile.exists() )
-        saveFile.createNewFile()
+        // create new file if not exists
+        if (!saveFile.exists())
+            saveFile.createNewFile()
 
-    // gson lib instance, handles parsing
-    val gson = if ( xv.config.savePrettyPrintingJson ) {
-        GsonBuilder()
-                .setPrettyPrinting()
-                .create()
-    } else {
-        Gson()
-    }
+        // gson lib instance, handles parsing
+        val gson = if (xv.config.savePrettyPrintingJson) {
+            GsonBuilder()
+                    .setPrettyPrinting()
+                    .create()
+        } else {
+            Gson()
+        }
 
-    // write data
-    FileWriter(saveFile).use {
-        gson.toJson(json, it)
+        // write data
+        FileWriter(saveFile).use {
+            gson.toJson(json, it)
+        }
+    } catch ( e: Exception ) {
+        logger?.severe("Encountered an issue saving vehicle data from file: $saveTo")
     }
 }
 
@@ -190,31 +195,35 @@ fun XV.saveVehicles(saveTo: Path) {
  * startup/restart. This can also be called during runtime,
  * but make sure to clear all the storages first!
  */
-fun XV.loadVehicles(readFrom: Path) {
-    val xv = this
-    // IO
-    val file = readFrom.toFile()
-    if ( !file.exists() )
-        return
+fun XV.loadVehicles(readFrom: Path, logger: Logger? = null) {
+    try {
+        val xv = this
+        // IO
+        val file = readFrom.toFile()
+        if ( !file.exists() )
+            return
 
-    val json = FileReader(file).use {
-        JsonParser.parseReader(it)
-    }.asJsonObject
+        val json = FileReader(file).use {
+            JsonParser.parseReader(it)
+        }.asJsonObject
 
-    val vehiclesArrayJson = json["vehicles"].asJsonArray
-    for ( vehicleJson in vehiclesArrayJson ) {
-        if ( vehicleJson is JsonObject ) {
-            val prototype = xv.vehiclePrototypes[ vehicleJson["prototype"]!!.asString ]!!
+        val vehiclesArrayJson = json["vehicles"].asJsonArray
+        for ( vehicleJson in vehiclesArrayJson ) {
+            if ( vehicleJson is JsonObject ) {
+                val prototype = xv.vehiclePrototypes[ vehicleJson["prototype"]!!.asString ]!!
 
-            xv.createRequests.add(
-                    CreateVehicleRequest(
-                            prototype,
-                            CreateVehicleReason.NEW,
-                            json = json
-                    )
-            )
-        } else {
-            throw Exception("Unexpected non-JSON object in array of vehicles in file ${file}: \n${vehicleJson.toString()}")
+                xv.createRequests.add(
+                        CreateVehicleRequest(
+                                prototype,
+                                CreateVehicleReason.NEW,
+                                json = json
+                        )
+                )
+            } else {
+                logger?.warning("Encountered malformed JSON structure while loading save data from file: ${file}")
+            }
         }
+    } catch ( e: Exception ) {
+        logger?.severe("Encountered an issue loading vehicle data from file: $readFrom")
     }
 }

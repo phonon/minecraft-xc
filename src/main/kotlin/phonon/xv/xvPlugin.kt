@@ -11,7 +11,10 @@ import kotlin.system.measureTimeMillis
 import com.comphenix.protocol.ProtocolLibrary
 import phonon.xv.XV
 import phonon.xv.command.*
+import phonon.xv.core.loadVehicles
+import phonon.xv.core.saveVehicles
 import phonon.xv.listener.*
+import java.util.logging.Level
 
 public class XVPlugin : JavaPlugin() {
 
@@ -42,8 +45,11 @@ public class XVPlugin : JavaPlugin() {
         // override command aliases tab complete if they exist
         this.getCommand("xv")?.setTabCompleter(this.getCommand("xv")?.getExecutor() as TabCompleter)
         
-        // load configs, save data, etc. and start engine
+        // load configs, etc.
         xv.reload()
+        // load data
+        // xv.loadVehicles(xv.config.pathSave)
+        // start engine
         xv.start()
 
         // print load time
@@ -59,6 +65,8 @@ public class XVPlugin : JavaPlugin() {
         xv.stop()
         HandlerList.unregisterAll(this)
         ProtocolLibrary.getProtocolManager().removePacketListeners(this)
+        // save data
+        // xv.saveVehicles(xv.config.pathSave)
         logger.info("wtf i hate xeth now")
     }
 }

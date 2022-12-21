@@ -19,6 +19,8 @@ import phonon.xv.XV
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.component.*
+import phonon.xv.core.loadVehicles
+import phonon.xv.core.saveVehicles
 import phonon.xv.system.CreateVehicleRequest
 import phonon.xv.system.CreateVehicleReason
 import phonon.xv.util.Message
@@ -32,7 +34,8 @@ private val SUBCOMMANDS = listOf(
     "spawn",
     "start",
     "stop",
-    "create"
+    "create",
+    "savereload"
 )
 
 /**
@@ -61,6 +64,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
             "start" -> start(sender)
             "stop" -> stop(sender)
             "create" -> create(sender, args)
+            "savereload" -> saveReload(sender)
 
             else -> {
                 Message.error(sender, "Invalid /xc subcommand, use /xc help")
@@ -142,6 +146,24 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
             Message.print(sender, "[xv] Reloading...")
             xv.reload()
             Message.print(sender, "[xv] Reloaded")
+        }
+        else {
+            Message.error(sender, "[xv] Only operators can reload")
+        }
+    }
+
+    private fun saveReload(sender: CommandSender?) {
+        val player = if ( sender is Player ) sender else null
+        if ( player === null || player.isOp() ) {
+            Message.print(sender, "[xv] Saving...")
+            xv.saveVehicles(xv.config.pathSave)
+            Message.print(sender, "[xv] Data saved to ${xv.config.pathSave}")
+            Message.print(sender, "[xv] Reload...")
+            xv.reload()
+            Message.print(sender, "[xv] Reloaded")
+            Message.print(sender, "[xv] Loading data from ${xv.config.pathSave}...")
+            xv.loadVehicles(xv.config.pathSave)
+            Message.print(sender, "[xv] Loaded")
         }
         else {
             Message.error(sender, "[xv] Only operators can reload")

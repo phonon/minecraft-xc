@@ -171,6 +171,7 @@ public fun XV.systemCreateVehicle(
                 prototype=prototype,
                 elements=elements,
             )
+            xv.logger.info("Created vehicle with uuid $vehicleUuid")
 
             // this should never happen, but check
             if ( vehicleId == INVALID_VEHICLE_ID ) {
