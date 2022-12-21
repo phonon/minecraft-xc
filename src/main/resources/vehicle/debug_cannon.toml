@@ -20,9 +20,12 @@ seat_to_mount = 0 # seat mounted when clicked
 [gun_barrel]
 barrel_offset = [0.0, -0.4, 0.0]
 barrel_pitch_min = -15.0
-barrel_pitch_max = 45.0
-model_id = 100002
+barrel_pitch_max = 15.0
+control_yaw_wasd = true
+control_pitch_wasd = true
+update_transform = true
 seat_to_mount = 0 # seat mounted when clicked
+model_id = 100002
 
 # seats, needed for controllable vehicle
 [seats]

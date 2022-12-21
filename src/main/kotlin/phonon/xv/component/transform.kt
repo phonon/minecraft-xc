@@ -57,6 +57,18 @@ public data class TransformComponent(
     var inWater: Boolean = false
 
     /**
+     * Helper to update yaw and its derived values.
+     */
+    fun updateYaw(yaw: Double) {
+        this.yaw = yaw
+        this.yawf = yaw.toFloat()
+        this.yawRad = Math.toRadians(yaw)
+        this.yawSin = Math.sin(yawRad)
+        this.yawCos = Math.cos(yawRad)
+        this.yawDirty = true
+    }
+
+    /**
      * Inject world position and rotation.
      */
     override fun injectSpawnProperties(

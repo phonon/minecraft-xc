@@ -258,6 +258,10 @@ public class XV (
         // player vehicle movement controls
         systemLandMovement(storage, userInputs)
 
+        // vehicle gun controls
+        systemSingleGunBarrelControls(storage, userInputs)
+        systemGunBarrelWithBaseControls(storage, userInputs)
+        
         // update vehicle models after transforms updated
         // MUST BE RUN AFTER ALL MOVEMENT CONTROLLERS
         systemUpdateModels(storage)
@@ -265,7 +269,7 @@ public class XV (
 
         // seat raycast mounting
         mountRequests = systemMountSeatRaycast(storage, mountRequests)
-
+        
         // create vehicle handlers
         systemCreateVehicle(storage, createRequests)
     }
