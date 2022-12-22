@@ -11,14 +11,10 @@ import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import phonon.xv.XV
-import phonon.xv.core.VehicleComponent
-import phonon.xv.core.VehicleComponentType
-import phonon.xv.core.VehicleId
-import phonon.xv.core.VehicleElementId
-import phonon.xv.core.EntityVehicleData
+import phonon.xv.core.*
+import phonon.xv.util.entity.setVehicleUuid
 import phonon.xv.util.mapToObject
 import phonon.xv.util.toml.*
-import phonon.xv.util.entity.setVehicleUuid
 import phonon.xv.util.item.createCustomModelItem
 
 /**
@@ -51,8 +47,6 @@ public data class ModelComponent(
     // @skipall
     // armor stand entity
     var armorstand: ArmorStand? = null,
-    // uuid of this model, for reassociating armor stand <-> model
-    val uuid: UUID = UUID.randomUUID(),
 ): VehicleComponent<ModelComponent> {
     override val type = VehicleComponentType.MODEL
 
@@ -75,10 +69,7 @@ public data class ModelComponent(
         armorstand.setVisible(armorstandVisible)
         armorstand.setRotation(locSpawn.yaw, 0f)
 
-        // add a stable entity reassociation key used to associate entity
-        // with element this should be stable even if the armor stand
-        // entity needs to be re-created
-        armorstand.setVehicleUuid(uuid)
+
         
         return this.copy(
             armorstand = armorstand,
@@ -90,22 +81,24 @@ public data class ModelComponent(
      * and add model to armorstand.
      */
     override fun afterVehicleCreated(
-        vehicleId: VehicleId,
-        elementId: VehicleElementId,
-        elementLayout: EnumSet<VehicleComponentType>,
-        entityVehicleData: HashMap<UUID, EntityVehicleData>
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
     ) {
-        // println("afterVehicleCreated")
-        // println("model_id: ${this.modelId}")
         val armorstand = this.armorstand
         if ( armorstand !== null ) {
             // entity -> vehicle mapping
             entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
-                vehicleId,
-                elementId,
-                elementLayout,
+                vehicle.id,
+                element.id,
+                element.layout,
                 VehicleComponentType.MODEL
             )
+
+            // add a stable entity reassociation key used to associate entity
+            // with element this should be stable even if the armor stand
+            // entity needs to be re-created
+            armorstand.setVehicleUuid(element.uuid)
 
             // add model to armorstand
             if ( modelId > 0 ) {

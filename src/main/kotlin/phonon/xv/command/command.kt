@@ -16,14 +16,12 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.InventoryHolder
 import phonon.xv.XV
-import phonon.xv.core.VehicleComponentType
-import phonon.xv.core.EntityVehicleData
 import phonon.xv.component.*
-import phonon.xv.core.loadVehicles
-import phonon.xv.core.saveVehicles
+import phonon.xv.core.*
 import phonon.xv.system.CreateVehicleRequest
 import phonon.xv.system.CreateVehicleReason
 import phonon.xv.util.Message
+import phonon.xv.util.entity.reassociateEntities
 
 
 private val SUBCOMMANDS = listOf(
@@ -164,6 +162,13 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
             Message.print(sender, "[xv] Loading data from ${xv.config.pathSave}...")
             xv.loadVehicles(xv.config.pathSave)
             Message.print(sender, "[xv] Loaded")
+            // run create on requests
+            xv.flushCreateQueue()
+            // reassociate armorstands w/ newly loaded
+            // components
+            Bukkit.getWorlds().forEach { w ->
+                reassociateEntities(xv, w.entities)
+            }
         }
         else {
             Message.error(sender, "[xv] Only operators can reload")

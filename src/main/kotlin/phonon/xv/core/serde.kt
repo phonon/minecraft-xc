@@ -80,6 +80,7 @@ import phonon.xv.XV
 import phonon.xv.component.*
 import phonon.xv.system.CreateVehicleReason
 import phonon.xv.system.CreateVehicleRequest
+import phonon.xv.system.systemCreateVehicle
 import java.io.FileReader
 import java.io.FileWriter
 import java.nio.file.Path
@@ -215,8 +216,8 @@ fun XV.loadVehicles(readFrom: Path, logger: Logger? = null) {
                 xv.createRequests.add(
                         CreateVehicleRequest(
                                 prototype,
-                                CreateVehicleReason.NEW,
-                                json = json
+                                CreateVehicleReason.LOAD,
+                                json = vehicleJson
                         )
                 )
             } else {
@@ -226,4 +227,12 @@ fun XV.loadVehicles(readFrom: Path, logger: Logger? = null) {
     } catch ( e: Exception ) {
         logger?.severe("Encountered an issue loading vehicle data from file: $readFrom")
     }
+}
+
+/**
+ * Just a simple util function to execute all create requests
+ * in queue, used to spawn in vehicles loaded in from IO
+ */
+fun XV.flushCreateQueue() {
+    systemCreateVehicle(storage, createRequests)
 }

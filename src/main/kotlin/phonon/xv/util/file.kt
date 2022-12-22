@@ -7,6 +7,7 @@ package phonon.xv.util.file
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.Path
+import kotlin.streams.toList
 
 /**
  * Return list of files in a directory.

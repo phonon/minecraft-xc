@@ -9,11 +9,16 @@ import org.bukkit.command.TabCompleter
 import org.bukkit.event.HandlerList
 import kotlin.system.measureTimeMillis
 import com.comphenix.protocol.ProtocolLibrary
+import org.bukkit.Bukkit
+import org.bukkit.entity.ArmorStand
 import phonon.xv.XV
 import phonon.xv.command.*
+import phonon.xv.core.flushCreateQueue
 import phonon.xv.core.loadVehicles
 import phonon.xv.core.saveVehicles
 import phonon.xv.listener.*
+import phonon.xv.system.systemCreateVehicle
+import phonon.xv.util.entity.reassociateEntities
 import java.util.logging.Level
 
 public class XVPlugin : JavaPlugin() {
@@ -48,7 +53,14 @@ public class XVPlugin : JavaPlugin() {
         // load configs, etc.
         xv.reload()
         // load data
-        // xv.loadVehicles(xv.config.pathSave)
+        xv.loadVehicles(xv.config.pathSave)
+        // create all loaded vehicles
+        xv.flushCreateQueue()
+        // reassociate armorstands w/ newly loaded
+        // components
+        Bukkit.getWorlds().forEach { w ->
+            reassociateEntities(xv, w.entities)
+        }
         // start engine
         xv.start()
 
@@ -66,7 +78,7 @@ public class XVPlugin : JavaPlugin() {
         HandlerList.unregisterAll(this)
         ProtocolLibrary.getProtocolManager().removePacketListeners(this)
         // save data
-        // xv.saveVehicles(xv.config.pathSave)
+        xv.saveVehicles(xv.config.pathSave)
         logger.info("wtf i hate xeth now")
     }
 }

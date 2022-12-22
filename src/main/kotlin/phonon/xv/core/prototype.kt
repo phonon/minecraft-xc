@@ -373,77 +373,65 @@ public data class VehicleElementPrototype(
      * setting up entity to vehicle mappings for armor stands.
      */
     fun afterVehicleCreated(
-        vehicleId: VehicleId,
-        elementId: VehicleElementId,
-        elementLayout: EnumSet<VehicleComponentType>,
+        vehicle: Vehicle,
+        element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
     ) {
         for ( c in layout ) {
             when ( c ) {
                 VehicleComponentType.AMMO -> ammo?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.FUEL -> fuel?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.GUN_BARREL -> gunBarrel?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.GUN_TURRET -> gunTurret?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.HEALTH -> health?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.MODEL -> model?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.SEATS -> seats?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.SPAWN -> spawn?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.TRANSFORM -> transform?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 null -> {}

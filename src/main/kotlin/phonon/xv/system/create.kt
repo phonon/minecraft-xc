@@ -138,13 +138,15 @@ public fun XV.systemCreateVehicle(
 
             // create vehicle elements
             val elements = elementIds.mapIndexed { idx, id ->
-                VehicleElement(
+                val elt = VehicleElement(
                     name="${prototype.name}.${elementPrototypes[idx].name}.${id}",
                     id=id!!,
                     layout=elementPrototypes[idx].layout,
                     elementPrototypes[idx],
                     elementPrototypes[idx].uuid
                 )
+                xv.uuidToElement[elt.uuid] = elt
+                elt
             }
             
             // set parent/children hierarchy
@@ -171,7 +173,8 @@ public fun XV.systemCreateVehicle(
                 prototype=prototype,
                 elements=elements,
             )
-            xv.logger.info("Created vehicle with uuid $vehicleUuid")
+            xv.uuidToVehicle[vehicleUuid] = xv.vehicleStorage.get(vehicleId)!!
+            // xv.logger.info("Created vehicle with uuid $vehicleUuid")
 
             // this should never happen, but check
             if ( vehicleId == INVALID_VEHICLE_ID ) {
@@ -186,9 +189,8 @@ public fun XV.systemCreateVehicle(
             // for elements with armorstands models, this does entity -> element mapping
             for ( (idx, elemProto) in elementPrototypes.withIndex() ) {
                 elemProto.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elements[idx].id,
-                    elementLayout=elemProto.layout,
+                    vehicle=xv.vehicleStorage.get(vehicleId)!!,
+                    element=elements[idx],
                     entityVehicleData=entityVehicleData,
                 )
             }

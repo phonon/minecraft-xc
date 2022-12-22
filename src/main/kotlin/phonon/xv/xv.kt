@@ -72,6 +72,20 @@ public class XV (
     // ========================================================================
     internal var engineTask: BukkitTask? = null
 
+    internal fun clearState() {
+        // clear storage and lookup
+        storage.clear()
+        vehicleStorage.clear()
+        userInputs.clear()
+        entityVehicleData.clear()
+        uuidToVehicle.clear()
+        uuidToElement.clear()
+        // clear system state
+        mountRequests.clear()
+        dismountRequests.clear()
+        createRequests.clear()
+    }
+
     /**
      * Re-initialize storages and re-load config.
      * TODO: async
@@ -92,8 +106,7 @@ public class XV (
 
         this.config = config
 
-        // clear current component/archetype storage
-        storage.clear()
+        clearState()
 
         // load vehicle skin files (do before vehicles because vehicles
         // may reference skins)

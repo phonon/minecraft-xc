@@ -341,18 +341,16 @@ public data class VehicleElementPrototype(
      * setting up entity to vehicle mappings for armor stands.
      */
     fun afterVehicleCreated(
-        vehicleId: VehicleId,
-        elementId: VehicleElementId,
-        elementLayout: EnumSet<VehicleComponentType>,
+        vehicle: Vehicle,
+        element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
     ) {
         for ( c in layout ) {
             when ( c ) {
                 {%- for c in components %}
                 VehicleComponentType.{{ c.enum }} -> {{ c.storage }}?.afterVehicleCreated(
-                    vehicleId=vehicleId,
-                    elementId=elementId,
-                    elementLayout=elementLayout,
+                    vehicle=vehicle,
+                    element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 {%- endfor %}

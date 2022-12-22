@@ -102,7 +102,8 @@ public fun XV.systemMountVehicle(
                 else -> -1
             }
 
-            if ( seatToMount >= 0 ) {
+            // check valid seat and player isnt remounting something they're already on
+            if ( seatToMount >= 0 && seatsComponent.passengers[seatToMount] != player ) {
                 val world = player.world
                 val locSeat = seatsComponent.getSeatLocation(seatToMount, transformComponent)
                 val seatEntity = CustomArmorStand.create(world, locSeat)

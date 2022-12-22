@@ -20,12 +20,30 @@ public class VehicleStorage(
     // count of vehicles in storage
     public var size: Int = 0
         private set
-    
+    // element id => owning vehicle id
+    private val elementToVehicle: HashMap<VehicleElementId, VehicleId> = HashMap()
+
     init {
         // initialize free ids stack
         for ( i in maxVehicles - 1 downTo 0 ) {
             freeIds.push(i)
         }
+    }
+
+    /**
+     * Clear the vehicle storage back to initial state
+     */
+    internal fun clear() {
+        // clear vehicles lookup
+        for ( i in lookup.indices ) {
+            lookup[i] = null
+        }
+        // initialize free ids stack
+        for ( i in maxVehicles - 1 downTo 0 ) {
+            freeIds.push(i)
+        }
+        elementToVehicle.clear()
+        size = 0
     }
 
     /**
@@ -39,7 +57,7 @@ public class VehicleStorage(
      * Get new id from stack of free ids, increments size of storage.
      * Returns INVALID_VEHICLE_ID if no free ids are available.
      */
-    internal fun newId(): VehicleId {
+    private fun newId(): VehicleId {
         // no freeIds between index 0 and size
         return if ( freeIds.isEmpty() ) {
             INVALID_VEHICLE_ID
@@ -52,13 +70,15 @@ public class VehicleStorage(
     /**
      * Mark id as free for use and remove ref from array if it exists.
      */
-    internal fun freeId(id: VehicleId) {
+    internal fun free(id: VehicleId) {
         if ( lookup[id] !== null ) {
             lookup[id] = null
             freeIds.push(id)
             size -= 1
         }
     }
+
+    internal fun getOwningVehicle(id: VehicleElementId): VehicleId? = elementToVehicle[id]
 
     /**
      * Inserts a vehicle into this storage from its prototype
@@ -73,13 +93,18 @@ public class VehicleStorage(
         if ( id == INVALID_VEHICLE_ID ) {
             return INVALID_VEHICLE_ID
         }
-        this.lookup[id] = Vehicle(
+        val vehicle = Vehicle(
             "${prototype.name}.${id}",
             id,
             prototype,
             elements,
             uuid
         )
+        this.lookup[id] = vehicle
+        // TODO these keys will need to be freed upon deletion
+        elements.forEach {
+            elementToVehicle[it.id] = vehicle.id
+        }
 
         return id
     }

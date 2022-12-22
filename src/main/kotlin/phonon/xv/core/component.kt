@@ -84,9 +84,8 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
      * setting up entity to vehicle mappings for armor stands.
      */
     fun afterVehicleCreated(
-        vehicleId: VehicleId,
-        elementId: VehicleElementId,
-        elementLayout: EnumSet<VehicleComponentType>,
+        vehicle: Vehicle,
+        element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
     ) {}
 }
