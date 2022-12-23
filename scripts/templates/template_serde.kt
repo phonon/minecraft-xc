@@ -127,10 +127,56 @@ fun Vehicle.toJson(xv: XV): JsonObject {
     json.addProperty("prototype", this.prototype.name)
     val elementsJson = JsonObject()
     for ( elt in this.elements ) {
-        elementsJson.add(elt.prototype.name, elt.toJson(xv))
+        try {
+            elementsJson.add(elt.prototype.name, elt.toJson(xv))
+        } catch ( e: Exception ) {
+            throw Exception("Encountered an exception while serializing VehicleElement " +
+                    "with UUID ${elt.uuid} and prototype ${elt.prototype.name}.\n$e")
+        }
     }
     json.add("elements", elementsJson)
     return json
+}
+
+fun XV.serializeVehicles(logger: Logger? = null): JsonObject {
+    val xv = this
+    // set up json stuff
+    val json = JsonObject()
+    val vehiclesArrayJson = JsonArray()
+    for (vehicle in xv.vehicleStorage) {
+        try {
+            vehiclesArrayJson.add(vehicle.toJson(xv))
+        } catch ( e: Exception ) {
+            logger?.severe("Encountered an exception while serializing vehicle with UUID " +
+                    "${vehicle.uuid} and prototype ${vehicle.prototype.name}.\n$e")
+        }
+    }
+    json.add("vehicles", vehiclesArrayJson)
+    return json
+}
+
+fun XV.deserializeVehicles(json: JsonObject, logger: Logger? = null) {
+    val xv = this
+    val vehiclesArrayJson = json["vehicles"].asJsonArray
+    for ( vehicleJson in vehiclesArrayJson ) {
+        try {
+            if ( vehicleJson is JsonObject ) {
+                val prototype = xv.vehiclePrototypes[ vehicleJson["prototype"]!!.asString ]!!
+
+                xv.createRequests.add(
+                        CreateVehicleRequest(
+                                prototype,
+                                CreateVehicleReason.LOAD,
+                                json = vehicleJson
+                        )
+                )
+            } else {
+                throw Exception("Encountered malformed JSON structure while loading save data from JSON: ${vehicleJson}")
+            }
+        } catch ( e: Exception ) {
+            logger?.severe("Encountered unexpected exception while loading Vehicle JSON: $e")
+        }
+    }
 }
 
 /**
@@ -141,35 +187,12 @@ fun Vehicle.toJson(xv: XV): JsonObject {
 fun XV.saveVehicles(saveTo: Path, logger: Logger? = null) {
     try {
         val xv = this
-        // set up json stuff
-        val json = JsonObject()
-        val vehiclesArrayJson = JsonArray()
-        // iterate and parse vehicles
-        for (vehicle in xv.vehicleStorage) {
-            vehiclesArrayJson.add(vehicle.toJson(xv))
-        }
-        json.add("vehicles", vehiclesArrayJson)
-
-        // json object built, now we gotta do the IO
-        val saveFile = saveTo.toFile()
-
-        // create new file if not exists
-        if (!saveFile.exists())
-            saveFile.createNewFile()
-
-        // gson lib instance, handles parsing
-        val gson = if (xv.config.savePrettyPrintingJson) {
-            GsonBuilder()
-                    .setPrettyPrinting()
-                    .create()
-        } else {
-            Gson()
-        }
-
-        // write data
-        FileWriter(saveFile).use {
-            gson.toJson(json, it)
-        }
+        val savedVehicles = xv.serializeVehicles(xv.logger)
+        writeJson(
+                savedVehicles,
+                xv.config.pathSave,
+                xv.config.savePrettyPrintingJson
+        )
     } catch ( e: Exception ) {
         logger?.severe("Encountered an issue saving vehicle data from file: $saveTo")
     }
@@ -184,30 +207,9 @@ fun XV.loadVehicles(readFrom: Path, logger: Logger? = null) {
     try {
         val xv = this
         // IO
-        val file = readFrom.toFile()
-        if ( !file.exists() )
-            return
-
-        val json = FileReader(file).use {
-            JsonParser.parseReader(it)
-        }.asJsonObject
-
-        val vehiclesArrayJson = json["vehicles"].asJsonArray
-        for ( vehicleJson in vehiclesArrayJson ) {
-            if ( vehicleJson is JsonObject ) {
-                val prototype = xv.vehiclePrototypes[ vehicleJson["prototype"]!!.asString ]!!
-
-                xv.createRequests.add(
-                        CreateVehicleRequest(
-                                prototype,
-                                CreateVehicleReason.LOAD,
-                                json = vehicleJson
-                        )
-                )
-            } else {
-                logger?.warning("Encountered malformed JSON structure while loading save data from file: ${file}")
-            }
-        }
+        val loadedVehicles = readJson(xv.config.pathSave)
+        if ( loadedVehicles !== null )
+            xv.deserializeVehicles(loadedVehicles, xv.logger)
     } catch ( e: Exception ) {
         logger?.severe("Encountered an issue loading vehicle data from file: $readFrom")
     }

@@ -15,8 +15,12 @@ import phonon.xv.core.*
 import phonon.xv.system.*
 import phonon.xv.common.UserInput
 import phonon.xv.util.file.listDirFiles
+import phonon.xv.util.file.newBackupPath
+import phonon.xv.util.file.writeJson
 import java.util.LinkedList
 import java.util.Queue
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 public const val MAX_VEHICLES = 5000
 
@@ -71,6 +75,7 @@ public class XV (
     // RUNNING TASKS
     // ========================================================================
     internal var engineTask: BukkitTask? = null
+    internal var workerPool: ExecutorService? = null
 
     internal fun clearState() {
         // clear storage and lookup
@@ -165,13 +170,17 @@ public class XV (
     internal fun start() {
         if ( this.engineTask == null ) {
             val xv = this // alias for lambda
-            
+
+            this.workerPool = Executors.newSingleThreadExecutor()
             this.engineTask = Bukkit.getScheduler().runTaskTimer(this.plugin, object: Runnable {
                 // number of successive errors caught on each update
                 var errorAccumulator = 0
 
                 // max errors before resetting engine to clean slate
                 val maxErrorsBeforeCleanup = 100
+                // thread pool for async backups
+                val pool = workerPool!!
+                var backupTimer = xv.config.saveBackupPeriod
 
                 override fun run() {
                     // wrap update in try catch...
@@ -182,11 +191,26 @@ public class XV (
                     // threshold hit, reset engine to a clean state
                     try {
                         xv.update()
+                        // do backup if ticker is past time
+                        if ( backupTimer-- <= 0 ) {
+                            logger.info("Backup period has passed. Initiating backup...")
+                            // do serialization sync
+                            val json = xv.serializeVehicles(xv.logger)
+                            // file io async
+                            pool.execute {
+                                writeJson(
+                                    json = json,
+                                    dir = newBackupPath(xv.config.pathFilesBackup),
+                                    prettyPrinting = xv.config.savePrettyPrintingJson
+                                )
+                            }
+                            logger.info("Backup complete.")
+                        }
                         errorAccumulator = 0
                     } catch ( e: Exception ) {
                         logger.severe("Engine update failed:")
                         e.printStackTrace()
-                        
+
                         // accumulate errors. if we reach past threshold,
                         // reset engine to clean slate
                         errorAccumulator += 1
@@ -215,9 +239,18 @@ public class XV (
         if ( task != null ) {
             task.cancel()
             this.engineTask = null
-            this.logger.info("Stopping engine")
+            this.logger.info("Stopping engine.")
         } else {
-            this.logger.warning("Engine not running")
+            this.logger.warning("Engine not running.")
+        }
+        // worker thread pool
+        val pool = workerPool
+        if ( pool !== null ) {
+            pool.shutdown()
+            this.workerPool = null
+            this.logger.info("Shutting down file thread workers.")
+        } else {
+            logger.info("File worker pool not running.")
         }
     }
 

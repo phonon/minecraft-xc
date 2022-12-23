@@ -62,13 +62,22 @@ public fun reassociateEntities(xv: XV, entities: Collection<Entity>) {
             val elementUUID = entity.getVehicleUuid()
             if ( elementUUID !== null ) {
                 val vehicleElement = xv.uuidToElement[elementUUID]
-                if ( vehicleElement != null ) {
+                val invalid = if ( vehicleElement != null ) {
                     // use archetype storage to set model component field
                     // to point to this armorstand
                     val archetype = xv.storage.lookup[vehicleElement.layout]!!
                     val modelComponent = archetype.getComponent<ModelComponent>(vehicleElement.id)
-                    modelComponent?.armorstand = entity as ArmorStand
+                    val invalid = if ( modelComponent === null ) {
+                        true
+                    } else {
+                        modelComponent.armorstand = entity as ArmorStand
+                        false
+                    }
+                    invalid
                 } else {
+                    true
+                }
+                if ( invalid ) {
                     if ( xv.config.deleteInvalidArmorStands ) {
                         // vehicle element no longer exists, just delete the stand
                         // (only do if config set, by default avoid because any

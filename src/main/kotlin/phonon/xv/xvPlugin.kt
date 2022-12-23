@@ -13,12 +13,12 @@ import org.bukkit.Bukkit
 import org.bukkit.entity.ArmorStand
 import phonon.xv.XV
 import phonon.xv.command.*
-import phonon.xv.core.flushCreateQueue
-import phonon.xv.core.loadVehicles
-import phonon.xv.core.saveVehicles
+import phonon.xv.core.*
 import phonon.xv.listener.*
 import phonon.xv.system.systemCreateVehicle
 import phonon.xv.util.entity.reassociateEntities
+import phonon.xv.util.file.readJson
+import phonon.xv.util.file.writeJson
 import java.util.logging.Level
 
 public class XVPlugin : JavaPlugin() {
@@ -53,7 +53,9 @@ public class XVPlugin : JavaPlugin() {
         // load configs, etc.
         xv.reload()
         // load data
-        xv.loadVehicles(xv.config.pathSave)
+        val loadedVehicles = readJson(xv.config.pathSave)
+        if ( loadedVehicles !== null )
+            xv.deserializeVehicles(loadedVehicles, xv.logger)
         // create all loaded vehicles
         xv.flushCreateQueue()
         // reassociate armorstands w/ newly loaded
@@ -78,7 +80,12 @@ public class XVPlugin : JavaPlugin() {
         HandlerList.unregisterAll(this)
         ProtocolLibrary.getProtocolManager().removePacketListeners(this)
         // save data
-        xv.saveVehicles(xv.config.pathSave)
+        val savedVehicles = xv.serializeVehicles(xv.logger)
+        writeJson(
+            savedVehicles,
+            xv.config.pathSave,
+            xv.config.savePrettyPrintingJson
+        )
         logger.info("wtf i hate xeth now")
     }
 }
