@@ -9,23 +9,21 @@ name = "debug_cannon"
 # contains position, rotation, etc.
 [transform]
 
-# base model
-[model]
-barrel_offset = [0.0, -0.25, 0.0]
-model_id = 100001
-seat_to_mount = 0 # seat mounted when clicked
-
 # rotating gun barrel model
 # moves up/down with WASD controls
-[gun_barrel]
-barrel_offset = [0.0, -0.4, 0.0]
+[gun_turret]
+turret_offset = [0.0, 0.0, 0.0]
+barrel_offset = [0.0, -0.35, 0.0]
 barrel_pitch_min = -15.0
 barrel_pitch_max = 15.0
-control_yaw_wasd = true
-control_pitch_wasd = true
-update_transform = true
+turret_control_yaw = "wasd"
+barrel_control_yaw = "wasd"
+barrel_control_pitch = "wasd"
+turret_model_id = 100001
+barrel_model_id = 100002
 seat_to_mount = 0 # seat mounted when clicked
-model_id = 100002
+seat_controller = 0 # seat for controlling vehicle
+update_transform = true
 
 # seats, needed for controllable vehicle
 [seats]

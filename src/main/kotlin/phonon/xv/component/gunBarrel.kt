@@ -13,12 +13,17 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
-import phonon.xv.XV
-import phonon.xv.core.*
-import phonon.xv.util.mapToObject
-import phonon.xv.util.toml.*
+import org.bukkit.util.EulerAngle
+import phonon.xv.core.EntityVehicleData
+import phonon.xv.core.Vehicle
+import phonon.xv.core.VehicleComponent
+import phonon.xv.core.VehicleComponentType
+import phonon.xv.core.VehicleElement
+import phonon.xv.common.ControlStyle
 import phonon.xv.util.entity.setVehicleUuid
 import phonon.xv.util.item.createCustomModelItem
+import phonon.xv.util.mapToObject
+import phonon.xv.util.toml.*
 
 /**
  * WASD-controlled single barrel. Direction is the yaw of the vehicle.
@@ -38,20 +43,16 @@ public data class GunBarrelComponent(
     val barrelX: Double = 0.0, // @skip
     val barrelY: Double = 1.0, // @skip
     val barrelZ: Double = 0.0, // @skip
-    // min barrel pitch rotation in degs
-    val barrelPitchMin: Double = -15.0,
+    // min and max barrel pitch rotation in degs
+    val pitchMin: Double = -15.0,
     // max barrel pitch rotation in degs
-    val barrelPitchMax: Double = 15.0,
+    val pitchMax: Double = 15.0,
     // seat index that controls this component
     val seatController: Int = 0,
-    // use WASD controls for barrel yaw rotation (left/right)
-    val controlYawWasd: Boolean = false,
-    // use mouse controls for barrel yaw rotation
-    val controlYawMouse: Boolean = false,
-    // use WASD controls for barrel pitch rotation (up/down)
-    val controlPitchWasd: Boolean = false,
-    // use mouse controls for barrel pitch rotation
-    val controlPitchMouse: Boolean = false,
+    // control style for yaw (mouse, wasd, or none)
+    val controlYaw: ControlStyle = ControlStyle.NONE,
+    // control style for pitch (mouse, wasd, or none)
+    val controlPitch: ControlStyle = ControlStyle.NONE,
     // speed that barrel yaw rotates at
     val yawRotationSpeed: Double = 1.0,
     // speed that barrel pitch rotates at
@@ -123,6 +124,10 @@ public data class GunBarrelComponent(
     ): GunBarrelComponent {
         if ( location === null) return this.self()
 
+        // get yaw from location
+        val spawnYaw = location.yaw.toDouble()
+        val spawnYawRad = Math.toRadians(spawnYaw)
+
         val locSpawn = location.clone().add(barrelX, barrelY, barrelZ)
         locSpawn.yaw = 0f
         locSpawn.pitch = 0f
@@ -132,9 +137,16 @@ public data class GunBarrelComponent(
         armorstand.setInvulnerable(true)
         armorstand.setVisible(armorstandVisible)
         armorstand.setRotation(locSpawn.yaw, 0f)
-        
+        armorstand.setHeadPose(EulerAngle(
+            0.0,
+            spawnYawRad,
+            0.0,
+        ))
+
         return this.copy(
             armorstand = armorstand,
+            yaw = spawnYaw,
+            pitch = 0.0,
         )
     }
 
@@ -181,14 +193,12 @@ public data class GunBarrelComponent(
                 properties["barrelZ"] = arr.getNumberAs<Double>(2)
             }
 
-            toml.getNumberAs<Double>("barrel_pitch_min")?.let { properties["barrelPitchMin"] = it.toFloat() }
-            toml.getNumberAs<Double>("barrel_pitch_max")?.let { properties["barrelPitchMax"] = it.toFloat() }
+            toml.getNumberAs<Double>("pitch_min")?.let { properties["pitchMin"] = it.toFloat() }
+            toml.getNumberAs<Double>("pitch_max")?.let { properties["pitchMax"] = it.toFloat() }
             
             toml.getLong("seat_controller")?.let { properties["seatController"] = it.toInt() }
-            toml.getBoolean("control_yaw_wasd")?.let { properties["controlYawWasd"] = it }
-            toml.getBoolean("control_yaw_mouse")?.let { properties["controlYawMouse"] = it }
-            toml.getBoolean("control_pitch_wasd")?.let { properties["controlPitchWasd"] = it }
-            toml.getBoolean("control_pitch_mouse")?.let { properties["controlPitchMouse"] = it }
+            toml.getString("control_yaw")?.let { properties["controlYaw"] = ControlStyle.fromStringOrNone(it, logger) }
+            toml.getString("control_pitch")?.let { properties["controlPitch"] = ControlStyle.fromStringOrNone(it, logger) }
             toml.getNumberAs<Double>("yaw_rotation_speed")?.let { properties["yawRotationSpeed"] = it }
             toml.getNumberAs<Double>("pitch_rotation_speed")?.let { properties["pitchRotationSpeed"] = it }
             
@@ -198,7 +208,7 @@ public data class GunBarrelComponent(
 
             toml.getString("material")?.let { s ->
                 Material.getMaterial(s)?.let { properties["material"] = it } ?: run {
-                    logger?.warning("[ModelComponent] Invalid material: ${s}")
+                    logger?.warning("[GunBarrelComponent] Invalid material: ${s}")
                 }
             }
 

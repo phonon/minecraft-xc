@@ -18,8 +18,10 @@ import org.bukkit.util.EulerAngle
 import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.iter.*
+import phonon.xv.common.ControlStyle
 import phonon.xv.common.UserInput
 import phonon.xv.component.GunBarrelComponent
+import phonon.xv.component.GunTurretComponent
 import phonon.xv.component.ModelComponent
 import phonon.xv.component.SeatsComponent
 import phonon.xv.component.TransformComponent
@@ -30,7 +32,7 @@ import phonon.xv.component.TransformComponent
  * a single armorstand for a "gun barrel" component, without any 
  * additional base part. E.g. a mortar weapon.
  */
-public fun systemSingleGunBarrelControls(
+public fun systemGunBarrelControls(
     storage: ComponentsStorage,
     userInputs: Map<UUID, UserInput>,
 ) {
@@ -55,47 +57,56 @@ public fun systemSingleGunBarrelControls(
             val controls = userInputs[player.getUniqueId()] ?: UserInput()
             
             // yaw controls:
-            newYaw = if ( gunBarrel.controlYawWasd ) {
-                // WASD: rotate barrel yaw with A/D keys (left/right keys)
-                if ( controls.right ) {
+            newYaw = when ( gunBarrel.controlYaw ) {
+                ControlStyle.WASD -> {
+                    // WASD: rotate barrel yaw with A/D keys (left/right keys)
+                    if ( controls.right ) {
+                        dirtyYaw = true
+                        gunBarrel.yaw + gunBarrel.yawRotationSpeed
+                    } else if ( controls.left ) {
+                        dirtyYaw = true
+                        gunBarrel.yaw - gunBarrel.yawRotationSpeed
+                    } else {
+                        gunBarrel.yaw
+                    }
+                }
+
+                ControlStyle.MOUSE -> {
+                    // Mouse: rotate barrel yaw to match player's yaw
                     dirtyYaw = true
-                    gunBarrel.yaw + gunBarrel.yawRotationSpeed
-                } else if ( controls.left ) {
-                    dirtyYaw = true
-                    gunBarrel.yaw - gunBarrel.yawRotationSpeed
-                } else {
+                    player.location.yaw.toDouble()
+                }
+                
+                ControlStyle.NONE -> {
                     gunBarrel.yaw
                 }
-            } else if ( gunBarrel.controlYawMouse ) {
-                // Mouse: rotate barrel yaw to match player's yaw
-                dirtyYaw = true
-                player.location.yaw.toDouble()
-            } else {
-                // TODO: arc clamping + rotation speed
-                gunBarrel.yaw
             }
 
             // pitch controls (NOTE: in mineman, negative is towards sky):
-            newPitch = if ( gunBarrel.controlPitchWasd ) {
-                // WASD: rotate barrel pitch with W/S keys (up/down keys)
-                if ( controls.forward ) {
+            newPitch = when ( gunBarrel.controlPitch ) {
+                ControlStyle.WASD -> {
+                    // WASD: rotate barrel pitch with W/S keys (up/down keys)
+                    if ( controls.forward ) {
+                        dirtyPitch = true
+                        max(-gunBarrel.pitchMax, gunBarrel.pitch - gunBarrel.pitchRotationSpeed)
+                    } else if ( controls.backward ) {
+                        dirtyPitch = true
+                        min(-gunBarrel.pitchMin, gunBarrel.pitch + gunBarrel.pitchRotationSpeed)
+                    } else {
+                        gunBarrel.pitch
+                    }
+                }
+
+                ControlStyle.MOUSE -> {
+                    // Mouse: rotate barrel pitch to match player's pitch
                     dirtyPitch = true
-                    max(-gunBarrel.barrelPitchMax, gunBarrel.pitch - gunBarrel.pitchRotationSpeed)
-                } else if ( controls.backward ) {
-                    dirtyPitch = true
-                    min(-gunBarrel.barrelPitchMin, gunBarrel.pitch + gunBarrel.pitchRotationSpeed)
-                } else {
+                    player.location.pitch.toDouble().coerceIn(-gunBarrel.pitchMax, -gunBarrel.pitchMin)
+                }
+                
+                ControlStyle.NONE -> {
                     gunBarrel.pitch
                 }
-            } else if ( gunBarrel.controlPitchMouse ) {
-                // Mouse: rotate barrel pitch to match player's pitch
-                dirtyPitch = true
-                // TODO: clamping + rotation speed
-                player.location.pitch.toDouble()
-            } else {
-                gunBarrel.pitch
             }
-
         }
 
         // update local position and rotation if updated here or if transform is dirty
@@ -126,12 +137,7 @@ public fun systemSingleGunBarrelControls(
             val armorstand = gunBarrel.armorstand
             if ( armorstand != null && armorstand.isValid() ) {
                 val modelPos = armorstand.location
-                if (
-                    dirtyYawOrPitch ||
-                    transform.x != modelPos.x ||
-                    transform.y != modelPos.y ||
-                    transform.z != modelPos.z
-                ) {
+                if ( dirtyYawOrPitch || transform.positionDirty ) {
                     // world position = transformPosition + Rotation * localPosition
                     // but yaw, pitch are ONLY LOCAL yaw, pitch, NOT COMPOSED with transform
                     modelPos.x = transform.x + transform.yawCos * gunBarrel.barrelX - transform.yawSin * gunBarrel.barrelZ
@@ -151,20 +157,179 @@ public fun systemSingleGunBarrelControls(
 
 
 /**
- * System for controlling a gun barrel component that also has an 
- * additional model base "body". The barrel is treated as a movable turret
- * on this "body" model. E.g. a medieval cannon or a tank turret.
+ * System for controlling a gun turret component. This consists of a 
+ * in-plane rotating turret base (yaw only) and a full rotating gun
+ * barrel (yaw + pitch).
+ * E.g. used for a medieval cannon, maxim machine gun, or a tank turret.
  */
-public fun systemGunBarrelWithBaseControls(
+public fun systemGunTurretControls(
     storage: ComponentsStorage,
     userInputs: Map<UUID, UserInput>,
 ) {
-    for ( (_, transform, seats, body, gunBarrel) in ComponentTuple4.query<
+    for ( (_, transform, seats, gun) in ComponentTuple3.query<
         TransformComponent,
         SeatsComponent,
-        ModelComponent,
-        GunBarrelComponent,
+        GunTurretComponent,
     >(storage) ) {
         
+        // local dirty flags
+        var dirtyTurretYaw = false
+        var dirtyBarrelYaw = false
+        var dirtyBarrelPitch = false
+
+        // yaw, pitch to be updated
+        var newTurretYaw = gun.turretYaw
+        var newBarrelYaw = gun.barrelYaw
+        var newBarrelPitch = gun.barrelPitch
+
+        // update barrel yaw/pitch from player input
+        val player = seats.passengers[gun.seatController]
+        if ( player !== null ) {
+            // get user input
+            val controls = userInputs[player.getUniqueId()] ?: UserInput()
+            
+            // turret yaw controls:
+            newTurretYaw = when ( gun.turretControlYaw ) {
+                ControlStyle.WASD -> {
+                    // WASD: rotate barrel yaw with A/D keys (left/right keys)
+                    if ( controls.right ) {
+                        dirtyTurretYaw = true
+                        gun.turretYaw + gun.turretYawRotationSpeed
+                    } else if ( controls.left ) {
+                        dirtyTurretYaw = true
+                        gun.turretYaw - gun.turretYawRotationSpeed
+                    } else {
+                        gun.turretYaw
+                    }
+                }
+
+                ControlStyle.MOUSE -> {
+                    // Mouse: rotate barrel yaw to match player's yaw
+                    // TODO: half arc constraint
+                    dirtyTurretYaw = true
+                    player.location.yaw.toDouble()
+                }
+                
+                ControlStyle.NONE -> {
+                    gun.turretYaw
+                }
+            }
+
+            // barrel yaw controls:
+            newBarrelYaw = when ( gun.barrelControlYaw ) {
+                ControlStyle.WASD -> {
+                    // WASD: rotate barrel yaw with A/D keys (left/right keys)
+                    if ( controls.right ) {
+                        dirtyBarrelYaw = true
+                        gun.barrelYaw + gun.barrelYawRotationSpeed
+                    } else if ( controls.left ) {
+                        dirtyBarrelYaw = true
+                        gun.barrelYaw - gun.barrelYawRotationSpeed
+                    } else {
+                        gun.barrelYaw
+                    }
+                }
+
+                ControlStyle.MOUSE -> {
+                    // Mouse: rotate barrel yaw to match player's yaw
+                    // TODO: half arc constraint
+                    dirtyBarrelYaw = true
+                    player.location.yaw.toDouble()
+                }
+                
+                ControlStyle.NONE -> {
+                    gun.barrelYaw
+                }
+            }
+
+            // barrel pitch controls (NOTE: in mineman, negative is towards sky):
+            newBarrelPitch = when ( gun.barrelControlPitch ) {
+                ControlStyle.WASD -> {
+                    // WASD: rotate barrel pitch with W/S keys (up/down keys)
+                    if ( controls.forward ) {
+                        dirtyBarrelPitch = true
+                        max(-gun.barrelPitchMax, gun.barrelPitch - gun.barrelPitchRotationSpeed)
+                    } else if ( controls.backward ) {
+                        dirtyBarrelPitch = true
+                        min(-gun.barrelPitchMin, gun.barrelPitch + gun.barrelPitchRotationSpeed)
+                    } else {
+                        gun.barrelPitch
+                    }
+                }
+
+                ControlStyle.MOUSE -> {
+                    // Mouse: rotate barrel pitch to match player's pitch
+                    dirtyBarrelPitch = true
+                    player.location.pitch.toDouble().coerceIn(-gun.barrelPitchMax, -gun.barrelPitchMin)
+                }
+                
+                ControlStyle.NONE -> {
+                    gun.barrelPitch
+                }
+            }
+        }
+
+        // update local position and rotation if updated here or if transform is dirty
+        val dirtyBarrelYawOrPitch = dirtyBarrelYaw || dirtyBarrelPitch
+        val needsUpdate = dirtyTurretYaw || dirtyBarrelYawOrPitch || transform.positionDirty
+
+        if ( needsUpdate ) {
+            // update local transform
+            if ( dirtyTurretYaw ) {
+                gun.updateTurretYaw(newTurretYaw)
+                
+                // optionally update base transform
+                if ( gun.updateTransform ) {
+                    transform.updateYaw(newTurretYaw)
+                }
+            }
+            if ( dirtyBarrelYawOrPitch ) {
+                gun.updateBarrelYaw(newBarrelYaw)
+                gun.updateBarrelPitch(newBarrelPitch)
+            }
+
+            // update turret and barrel armorstand models
+            // (these are updated together because barrel is local child
+            // to the turret)
+            val armorstandTurret = gun.armorstandTurret
+            if ( armorstandTurret != null && armorstandTurret.isValid() ) {
+                val modelPosTurret = armorstandTurret.location
+                if ( dirtyTurretYaw || transform.positionDirty ) {
+                    // world position = transformPosition + Rotation * localPosition
+                    // but yaw, pitch are ONLY LOCAL yaw, pitch, NOT COMPOSED with transform
+                    modelPosTurret.x = transform.x + gun.turretYawCos * gun.turretX - gun.turretYawSin * gun.turretZ
+                    modelPosTurret.y = transform.y + gun.turretY
+                    modelPosTurret.z = transform.z + gun.turretYawSin * gun.turretX + gun.turretYawCos * gun.turretZ
+                    armorstandTurret.setHeadPose(EulerAngle(
+                        gun.turretPitchRad,
+                        gun.turretYawRad,
+                        0.0
+                    ))
+                    armorstandTurret.teleport(modelPosTurret)
+                }
+
+                // update barrel armorstand model
+                // LOCATION RELATIVE TO TURRET
+                val armorstandBarrel = gun.armorstandBarrel
+                if ( armorstandBarrel != null && armorstandBarrel.isValid() ) {
+                    val modelPosBarrel = armorstandBarrel.location
+                    if ( dirtyBarrelYawOrPitch || transform.positionDirty ) {
+                        // world position = transformPosition + Rotation * localPosition
+                        // but yaw, pitch are ONLY LOCAL yaw, pitch, NOT COMPOSED with transform
+                        modelPosBarrel.x = modelPosTurret.x + gun.barrelYawCos * gun.barrelX - gun.barrelYawSin * gun.barrelZ
+                        modelPosBarrel.y = modelPosTurret.y + gun.barrelY
+                        modelPosBarrel.z = modelPosTurret.z + gun.barrelYawSin * gun.barrelX + gun.barrelYawCos * gun.barrelZ
+                        armorstandBarrel.setHeadPose(EulerAngle(
+                            gun.barrelPitchRad,
+                            gun.barrelYawRad,
+                            0.0
+                        ))
+                        armorstandBarrel.teleport(modelPosBarrel)
+                    }
+                }
+            }
+
+        }
+
     }
 }

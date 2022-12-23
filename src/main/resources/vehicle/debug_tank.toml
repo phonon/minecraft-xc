@@ -14,11 +14,25 @@ name = "debug_tank"
 model_id = 104001
 seat_to_mount = 0 # seat mounted when clicked
 
+# rotating gun turret, controlled by mouse
+[gun_turret]
+turret_offset = [0.0, 0.5, 0.0]
+barrel_offset = [0.0, 0.5, 2.0]
+barrel_pitch_min = -15.0
+barrel_pitch_max = 15.0
+turret_control_yaw = "mouse"
+barrel_control_yaw = "mouse"
+barrel_control_pitch = "mouse"
+turret_model_id = 104002
+barrel_model_id = 104003
+seat_to_mount = 0 # seat mounted when clicked
+seat_controller = 0 # seat for controlling vehicle
+
 # seats, needed for controllable vehicle
 [seats]
 count = 1
 offsets = [
-    -0.7, 0.25, 0.0,
+    0.0, 0.25, 0.0,
 ]
 
 # seat raycasting for mounting

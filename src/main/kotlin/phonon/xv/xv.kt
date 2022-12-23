@@ -121,6 +121,8 @@ public class XV (
         listOf(
             "vehicle/debug_cannon.toml",
             "vehicle/debug_car.toml",
+            "vehicle/debug_humvee.toml",
+            "vehicle/debug_mg34.toml",
             "vehicle/debug_mortar.toml",
             "vehicle/debug_multi_turret.toml",
             "vehicle/debug_tank.toml",
@@ -272,8 +274,8 @@ public class XV (
         systemLandMovement(storage, userInputs)
 
         // vehicle gun controls
-        systemSingleGunBarrelControls(storage, userInputs)
-        systemGunBarrelWithBaseControls(storage, userInputs)
+        systemGunBarrelControls(storage, userInputs)
+        systemGunTurretControls(storage, userInputs)
         
         // update vehicle models after transforms updated
         // MUST BE RUN AFTER ALL MOVEMENT CONTROLLERS

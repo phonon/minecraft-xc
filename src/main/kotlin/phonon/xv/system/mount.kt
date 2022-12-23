@@ -93,12 +93,13 @@ public fun XV.systemMountVehicle(
             }
 
             // TODO: create archetype component tuple lookup
-            val transformComponent = archetype.transform!![elementId]!!
-            val seatsComponent = archetype.seats!![elementId]!!
+            val transformComponent = archetype.transform!![elementId]
+            val seatsComponent = archetype.seats!![elementId]
 
             val seatToMount = when ( componentType ) {
-                VehicleComponentType.MODEL -> archetype.model!![elementId]!!.seatToMount
-                VehicleComponentType.GUN_BARREL -> archetype.gunBarrel!![elementId]!!.seatToMount
+                VehicleComponentType.MODEL -> archetype.model!![elementId].seatToMount
+                VehicleComponentType.GUN_BARREL -> archetype.gunBarrel!![elementId].seatToMount
+                VehicleComponentType.GUN_TURRET -> archetype.gunTurret!![elementId].seatToMount
                 else -> -1
             }
 

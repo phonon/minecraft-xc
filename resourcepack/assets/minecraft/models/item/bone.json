@@ -92,6 +92,13 @@
         "custom_model_data": 105000
       },
       "model": "item/vehicle/biplane_xeth_test"
+    },
+
+    {
+      "predicate": {
+        "custom_model_data": 106000
+      },
+      "model": "item/vehicle/mg34_tomate"
     }
   ]
 }

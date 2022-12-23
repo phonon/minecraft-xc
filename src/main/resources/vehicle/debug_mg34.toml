@@ -4,7 +4,8 @@
 # Parser will do a scan and recognize this only needs a
 # single anonymous element.
 
-name = "debug_mortar"
+# maschinengewehr 34 ("machine gun 34")
+name = "debug_mg34"
 
 # contains position, rotation, etc.
 [transform]
@@ -12,16 +13,16 @@ name = "debug_mortar"
 # armor stand gun barrel
 [gun_barrel]
 barrel_offset = [0.0, -0.75, 0.0]
-pitch_min = -20.0
-pitch_max = 20.0
+pitch_min = -30.0
+pitch_max = 30.0
 pitch_rotation_speed = 0.2
 control_yaw = "mouse"
-control_pitch = "wasd"
+control_pitch = "mouse"
 update_transform = true
 seat_to_mount = 0 # seat mounted when clicked
-model_id = 101000
+model_id = 106000
 
 # seats, needed for controllable vehicle
 [seats]
 count = 1
-offsets = [0.0, -1.6, -0.75]
+offsets = [0.0, -1.75, -1.0]

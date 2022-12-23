@@ -4,31 +4,47 @@
 # Parser will do a scan and recognize this only needs a
 # single anonymous element.
 
-name = "debug_car"
+name = "debug_humvee"
 
 # contains position, rotation, etc.
 [transform]
 
 # armor stand model
 [model]
-model_id = 102000
+model_id = 103001
+
+# rotating gun turret, controlled by mouse
+[gun_turret]
+turret_offset = [0.0, 1.75, 0.75]
+barrel_offset = [0.0, 0.1, 0.0]
+barrel_pitch_min = -15.0
+barrel_pitch_max = 15.0
+turret_control_yaw = "mouse"
+barrel_control_yaw = "mouse"
+barrel_control_pitch = "mouse"
+turret_model_id = 103002
+barrel_model_id = 103003
+seat_controller = 4 # seat for controlling gun turret
 
 # seats, needed for controllable vehicle
 [seats]
-count = 4
+count = 5
 offsets = [
     0.9, -0.5, 0.0,   # front left
     -0.9, -0.5, 0.0,  # front right
     0.9, -0.5, -1.0,  # back left
     -0.9, -0.5, -1.0, # back right
+    0.0, 1.1, 0.0,    # gunner
 ]
 
-# use seat raycasting for mounting
+# seat raycasting for mounting
+# TODO: should be removed, only here for testing because
+# only 1 archetype layout supported
 [seats_raycast]
 
 # handles player's input controls for land movement
 [land_movement_controls]
 seat_controller = 0
-acceleration = 0.05
-speed_max_forward = 0.4
-speed_max_reverse = 0.3
+acceleration = 0.03
+speed_max_forward = 0.3
+speed_max_reverse = 0.2
