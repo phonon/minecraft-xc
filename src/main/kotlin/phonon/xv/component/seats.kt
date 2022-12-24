@@ -6,10 +6,11 @@ import org.tomlj.TomlTable
 import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
-import phonon.xv.core.VehicleComponent
-import phonon.xv.core.VehicleComponentType
+import phonon.xv.core.*
 import phonon.xv.util.mapToObject
 import phonon.xv.util.toml.*
+import java.util.*
+import kotlin.collections.HashMap
 
 /**
  * This adds a list of player seats to the vehicle element.
@@ -72,6 +73,20 @@ public data class SeatsComponent(
             transform.yawf,
             0f,
         )
+    }
+
+    override fun delete(
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>
+    ) {
+        // in case there are any active stands
+        for ( stand in armorstands ) {
+            if ( stand !== null ) {
+                entityVehicleData.remove(stand.uniqueId)
+                stand.remove()
+            }
+        }
     }
 
 

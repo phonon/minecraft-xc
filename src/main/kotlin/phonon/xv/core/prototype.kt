@@ -439,6 +439,29 @@ public data class VehicleElementPrototype(
         }
     }
 
+    fun delete(
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>
+    ) {
+        for ( c in layout ) {
+            when ( c ) {
+                VehicleComponentType.AMMO -> ammo?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.FUEL -> fuel?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.GUN_BARREL -> gunBarrel?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.GUN_TURRET -> gunTurret?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.HEALTH -> health?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.MODEL -> model?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.SEATS -> seats?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.SPAWN -> spawn?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.TRANSFORM -> transform?.delete(vehicle, element, entityVehicleData)
+                null -> {}
+            }
+        }
+    }
+
     companion object {
         public fun fromToml(toml: TomlTable, logger: Logger? = null, vehicleName: String): VehicleElementPrototype {
             // element built-in properties

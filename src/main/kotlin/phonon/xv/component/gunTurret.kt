@@ -222,12 +222,6 @@ public data class GunTurretComponent(
             spawnYawRad,
             0.0,
         ))
-
-        // add a stable entity reassociation key used to associate entity
-        // with element this should be stable even if the armor stand
-        // entity needs to be re-created
-        armorstandBarrel.setVehicleUuid(uuidBarrel)
-        armorstandTurret.setVehicleUuid(uuidTurret)
         
         return this.copy(
             armorstandBarrel = armorstandBarrel,
@@ -249,6 +243,10 @@ public data class GunTurretComponent(
     ) {
         val armorstandTurret = this.armorstandTurret
         if ( armorstandTurret !== null ) {
+            // add a stable entity reassociation key used to associate entity
+            // with element this should be stable even if the armor stand
+            // entity needs to be re-created
+            armorstandTurret.setVehicleUuid(element.uuid)
             // entity -> vehicle mapping
             entityVehicleData[armorstandTurret.uniqueId] = EntityVehicleData(
                 vehicle.id,
@@ -265,6 +263,7 @@ public data class GunTurretComponent(
 
         val armorstandBarrel = this.armorstandBarrel
         if ( armorstandBarrel !== null ) {
+            armorstandBarrel.setVehicleUuid(element.uuid)
             // entity -> vehicle mapping
             entityVehicleData[armorstandBarrel.uniqueId] = EntityVehicleData(
                 vehicle.id,
@@ -277,6 +276,23 @@ public data class GunTurretComponent(
             if ( barrelModelId > 0 ) {
                 armorstandBarrel.getEquipment().setHelmet(createCustomModelItem(material, barrelModelId))
             }
+        }
+    }
+
+    override fun delete(
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>
+    ) {
+        val standTurret = this.armorstandTurret
+        if ( standTurret !== null ) {
+            entityVehicleData.remove(standTurret.uniqueId)
+            standTurret.remove()
+        }
+        val standBarrel = this.armorstandBarrel
+        if ( standBarrel !== null ) {
+            entityVehicleData.remove(standBarrel.uniqueId)
+            standBarrel.remove()
         }
     }
 

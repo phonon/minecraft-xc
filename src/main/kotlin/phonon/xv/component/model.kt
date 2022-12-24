@@ -107,6 +107,18 @@ public data class ModelComponent(
         }
     }
 
+    override fun delete(
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>
+    ) {
+        val stand = this.armorstand
+        if ( stand !== null ) {
+            entityVehicleData.remove(stand.uniqueId)
+            stand.remove()
+        }
+    }
+
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, logger: Logger? = null): ModelComponent {

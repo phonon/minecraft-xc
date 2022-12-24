@@ -81,12 +81,12 @@ import phonon.xv.component.*
 import phonon.xv.system.CreateVehicleReason
 import phonon.xv.system.CreateVehicleRequest
 import phonon.xv.system.systemCreateVehicle
-import phonon.xv.util.file.readJson
-import phonon.xv.util.file.writeJson
 import java.io.FileReader
 import java.io.FileWriter
 import java.nio.file.Path
 import java.util.logging.Logger
+import phonon.xv.util.file.readJson
+import phonon.xv.util.file.writeJson
 
 /**
  * Extension function to serialize VehicleElement to

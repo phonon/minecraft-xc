@@ -65,11 +65,13 @@ public class XV (
     // vehicle uuid -> element
     internal val uuidToVehicle: HashMap<UUID, Vehicle> = HashMap()
 
+    // System request stuff
     // player mount and dismount requests
     internal var mountRequests: ArrayList<MountVehicleRequest> = ArrayList()
     internal var dismountRequests: ArrayList<DismountVehicleRequest> = ArrayList()
-    // vehicle creation requests
+    // vehicle creation/deletion requests
     internal var createRequests: Queue<CreateVehicleRequest> = LinkedList()
+    internal var deleteVehicleRequest: Queue<DeleteVehicleRequest> = LinkedList()
 
     // ========================================================================
     // RUNNING TASKS
@@ -320,5 +322,6 @@ public class XV (
         
         // create vehicle handlers
         systemCreateVehicle(storage, createRequests)
+        systemDeleteVehicle(vehicleStorage, storage, deleteVehicleRequest)
     }
 }

@@ -359,6 +359,21 @@ public data class VehicleElementPrototype(
         }
     }
 
+    fun delete(
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>
+    ) {
+        for ( c in layout ) {
+            when ( c ) {
+                {%- for c in components %}
+                VehicleComponentType.{{ c.enum }} -> {{ c.storage }}?.delete(vehicle, element, entityVehicleData)
+                {%- endfor %}
+                null -> {}
+            }
+        }
+    }
+
     companion object {
         public fun fromToml(toml: TomlTable, logger: Logger? = null, vehicleName: String): VehicleElementPrototype {
             // element built-in properties
