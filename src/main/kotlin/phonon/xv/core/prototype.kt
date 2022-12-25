@@ -40,12 +40,27 @@ import org.tomlj.Toml
 import org.tomlj.TomlTable
 import org.bukkit.Location
 import org.bukkit.entity.Player
+import org.bukkit.NamespacedKey
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataAdapterContext
 import org.bukkit.persistence.PersistentDataContainer
+import org.bukkit.persistence.PersistentDataType
 import phonon.xv.XV
 import phonon.xv.component.*
 
+// namespaced keys, for use in toItem()
+val ammoKey = NamespacedKey("xv", "ammo")
+val fuelKey = NamespacedKey("xv", "fuel")
+val gunBarrelKey = NamespacedKey("xv", "gunBarrel")
+val gunTurretKey = NamespacedKey("xv", "gunTurret")
+val healthKey = NamespacedKey("xv", "health")
+val landMovementControlsKey = NamespacedKey("xv", "landMovementControls")
+val modelKey = NamespacedKey("xv", "model")
+val seatsKey = NamespacedKey("xv", "seats")
+val seatsRaycastKey = NamespacedKey("xv", "seatsRaycast")
+val spawnKey = NamespacedKey("xv", "spawn")
+val transformKey = NamespacedKey("xv", "transform")
 
 /**
  * VehiclePrototype defines elements in a vehicle. Used as a base
@@ -317,23 +332,66 @@ public data class VehicleElementPrototype(
      * effects to each individual component.
      */
     fun injectItemProperties(
-        item: ItemStack,
-        itemMeta: ItemMeta,
-        itemData: PersistentDataContainer,
+        itemData: PersistentDataContainer
     ): VehicleElementPrototype {
         return copy(
-            ammo = ammo?.injectItemProperties(item, itemMeta, itemData),
-            fuel = fuel?.injectItemProperties(item, itemMeta, itemData),
-            gunBarrel = gunBarrel?.injectItemProperties(item, itemMeta, itemData),
-            gunTurret = gunTurret?.injectItemProperties(item, itemMeta, itemData),
-            health = health?.injectItemProperties(item, itemMeta, itemData),
-            landMovementControls = landMovementControls?.injectItemProperties(item, itemMeta, itemData),
-            model = model?.injectItemProperties(item, itemMeta, itemData),
-            seats = seats?.injectItemProperties(item, itemMeta, itemData),
-            seatsRaycast = seatsRaycast?.injectItemProperties(item, itemMeta, itemData),
-            spawn = spawn?.injectItemProperties(item, itemMeta, itemData),
-            transform = transform?.injectItemProperties(item, itemMeta, itemData),
+            ammo = ammo?.injectItemProperties(itemData.get(ammoKey, PersistentDataType.TAG_CONTAINER)),
+            fuel = fuel?.injectItemProperties(itemData.get(fuelKey, PersistentDataType.TAG_CONTAINER)),
+            gunBarrel = gunBarrel?.injectItemProperties(itemData.get(gunBarrelKey, PersistentDataType.TAG_CONTAINER)),
+            gunTurret = gunTurret?.injectItemProperties(itemData.get(gunTurretKey, PersistentDataType.TAG_CONTAINER)),
+            health = health?.injectItemProperties(itemData.get(healthKey, PersistentDataType.TAG_CONTAINER)),
+            landMovementControls = landMovementControls?.injectItemProperties(itemData.get(landMovementControlsKey, PersistentDataType.TAG_CONTAINER)),
+            model = model?.injectItemProperties(itemData.get(modelKey, PersistentDataType.TAG_CONTAINER)),
+            seats = seats?.injectItemProperties(itemData.get(seatsKey, PersistentDataType.TAG_CONTAINER)),
+            seatsRaycast = seatsRaycast?.injectItemProperties(itemData.get(seatsRaycastKey, PersistentDataType.TAG_CONTAINER)),
+            spawn = spawn?.injectItemProperties(itemData.get(spawnKey, PersistentDataType.TAG_CONTAINER)),
+            transform = transform?.injectItemProperties(itemData.get(transformKey, PersistentDataType.TAG_CONTAINER)),
         )
+    }
+
+    /**
+     * During deletion, create a persistent data container that
+     * stores the state of all components in this prototype. Delegates
+     * data container construction to each individual component
+     */
+    fun toItemData(
+        context: PersistentDataAdapterContext
+    ): PersistentDataContainer {
+        val container = context.newPersistentDataContainer()
+        val ammoContainer = ammo?.toItemData(container.adapterContext)
+        val fuelContainer = fuel?.toItemData(container.adapterContext)
+        val gunBarrelContainer = gunBarrel?.toItemData(container.adapterContext)
+        val gunTurretContainer = gunTurret?.toItemData(container.adapterContext)
+        val healthContainer = health?.toItemData(container.adapterContext)
+        val landMovementControlsContainer = landMovementControls?.toItemData(container.adapterContext)
+        val modelContainer = model?.toItemData(container.adapterContext)
+        val seatsContainer = seats?.toItemData(container.adapterContext)
+        val seatsRaycastContainer = seatsRaycast?.toItemData(container.adapterContext)
+        val spawnContainer = spawn?.toItemData(container.adapterContext)
+        val transformContainer = transform?.toItemData(container.adapterContext)
+        if ( ammoContainer !== null )
+            container.set(ammoKey, PersistentDataType.TAG_CONTAINER, ammoContainer)
+        if ( fuelContainer !== null )
+            container.set(fuelKey, PersistentDataType.TAG_CONTAINER, fuelContainer)
+        if ( gunBarrelContainer !== null )
+            container.set(gunBarrelKey, PersistentDataType.TAG_CONTAINER, gunBarrelContainer)
+        if ( gunTurretContainer !== null )
+            container.set(gunTurretKey, PersistentDataType.TAG_CONTAINER, gunTurretContainer)
+        if ( healthContainer !== null )
+            container.set(healthKey, PersistentDataType.TAG_CONTAINER, healthContainer)
+        if ( landMovementControlsContainer !== null )
+            container.set(landMovementControlsKey, PersistentDataType.TAG_CONTAINER, landMovementControlsContainer)
+        if ( modelContainer !== null )
+            container.set(modelKey, PersistentDataType.TAG_CONTAINER, modelContainer)
+        if ( seatsContainer !== null )
+            container.set(seatsKey, PersistentDataType.TAG_CONTAINER, seatsContainer)
+        if ( seatsRaycastContainer !== null )
+            container.set(seatsRaycastKey, PersistentDataType.TAG_CONTAINER, seatsRaycastContainer)
+        if ( spawnContainer !== null )
+            container.set(spawnKey, PersistentDataType.TAG_CONTAINER, spawnContainer)
+        if ( transformContainer !== null )
+            container.set(transformKey, PersistentDataType.TAG_CONTAINER, transformContainer)
+        return container
     }
     
     /**

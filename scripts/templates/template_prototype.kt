@@ -40,12 +40,19 @@ import org.tomlj.Toml
 import org.tomlj.TomlTable
 import org.bukkit.Location
 import org.bukkit.entity.Player
+import org.bukkit.NamespacedKey
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataAdapterContext
 import org.bukkit.persistence.PersistentDataContainer
+import org.bukkit.persistence.PersistentDataType
 import phonon.xv.XV
 import phonon.xv.component.*
 
+// namespaced keys, for use in toItem()
+{%- for c in components %}
+val {{ c.storage }}Key = NamespacedKey("xv", "{{ c.storage }}")
+{%- endfor %}
 
 /**
  * VehiclePrototype defines elements in a vehicle. Used as a base
@@ -301,15 +308,32 @@ public data class VehicleElementPrototype(
      * effects to each individual component.
      */
     fun injectItemProperties(
-        item: ItemStack,
-        itemMeta: ItemMeta,
-        itemData: PersistentDataContainer,
+        itemData: PersistentDataContainer
     ): VehicleElementPrototype {
         return copy(
             {%- for c in components %}
-            {{ c.storage }} = {{ c.storage }}?.injectItemProperties(item, itemMeta, itemData),
+            {{ c.storage }} = {{ c.storage }}?.injectItemProperties(itemData.get({{ c.storage }}Key, PersistentDataType.TAG_CONTAINER)),
             {%- endfor %}
         )
+    }
+
+    /**
+     * During deletion, create a persistent data container that
+     * stores the state of all components in this prototype. Delegates
+     * data container construction to each individual component
+     */
+    fun toItemData(
+        context: PersistentDataAdapterContext
+    ): PersistentDataContainer {
+        val container = context.newPersistentDataContainer()
+        {%- for c in components %}
+        val {{ c.storage }}Container = {{ c.storage }}?.toItemData(container.adapterContext)
+        {%- endfor %}
+        {%- for c in components %}
+        if ( {{ c.storage }}Container !== null )
+            container.set({{ c.storage }}Key, PersistentDataType.TAG_CONTAINER, {{ c.storage }}Container)
+        {%- endfor %}
+        return container
     }
     
     /**

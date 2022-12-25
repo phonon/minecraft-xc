@@ -4,11 +4,13 @@ import java.util.Queue
 import java.util.Stack
 import com.google.gson.JsonObject
 import org.bukkit.Location
+import org.bukkit.NamespacedKey
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
+import org.bukkit.persistence.PersistentDataType
 import phonon.xv.XV
 import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.INVALID_VEHICLE_ID
@@ -85,8 +87,15 @@ public fun XV.systemCreateVehicle(
                         // inject creation time properties, keep in this order:
 
                         // item properties stored in item meta
-                        proto = if ( item !== null ) {
-                            proto.injectItemProperties(item, itemMeta!!, itemData!!)
+                        proto = if ( itemData !== null ) {
+                            // TODO refactor this namespaced key to somewhere that makes more sense
+                            val container = itemData
+                                    .get(elementsKey, PersistentDataType.TAG_CONTAINER)!!
+                                    .get(
+                                        NamespacedKey("xv", proto.name),
+                                        PersistentDataType.TAG_CONTAINER
+                                    )!!
+                            proto.injectItemProperties(container)
                         } else {
                             proto
                         }

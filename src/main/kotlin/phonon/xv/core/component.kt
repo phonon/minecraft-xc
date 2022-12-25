@@ -9,8 +9,7 @@ import java.util.UUID
 import com.google.gson.JsonObject
 import org.bukkit.Location
 import org.bukkit.entity.Player
-import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataAdapterContext
 import org.bukkit.persistence.PersistentDataContainer
 
 /**
@@ -52,11 +51,19 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
      * the item, such as vehicle skin, health remaining, etc.
      */
     fun injectItemProperties(
-        item: ItemStack,
-        itemMeta: ItemMeta,
-        itemData: PersistentDataContainer,
+        itemData: PersistentDataContainer?,
     ): T {
         return this.self()
+    }
+
+    /**
+     * During deletion, create a persistent data container that
+     * stores the state of this component.
+     */
+    fun toItemData(
+        context: PersistentDataAdapterContext
+    ): PersistentDataContainer? {
+        return null
     }
 
     /**
