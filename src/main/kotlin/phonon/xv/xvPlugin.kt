@@ -53,9 +53,7 @@ public class XVPlugin : JavaPlugin() {
         // load configs, etc.
         xv.reload()
         // load data
-        val loadedVehicles = readJson(xv.config.pathSave)
-        if ( loadedVehicles !== null )
-            xv.deserializeVehicles(loadedVehicles, xv.logger)
+        xv.loadVehicles(xv.config.pathSave, xv.logger)
         // create all loaded vehicles
         xv.flushCreateQueue()
         // reassociate armorstands w/ newly loaded
@@ -80,12 +78,7 @@ public class XVPlugin : JavaPlugin() {
         HandlerList.unregisterAll(this)
         ProtocolLibrary.getProtocolManager().removePacketListeners(this)
         // save data
-        val savedVehicles = xv.serializeVehicles(xv.logger)
-        writeJson(
-            savedVehicles,
-            xv.config.pathSave,
-            xv.config.savePrettyPrintingJson
-        )
+        xv.saveVehicles(xv.config.pathSave, xv.logger)
         logger.info("wtf i hate xeth now")
     }
 }

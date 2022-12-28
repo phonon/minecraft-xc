@@ -71,7 +71,9 @@ public class XV (
     internal var dismountRequests: ArrayList<DismountVehicleRequest> = ArrayList()
     // vehicle creation/deletion requests
     internal var createRequests: Queue<CreateVehicleRequest> = LinkedList()
-    internal var deleteVehicleRequest: Queue<DeleteVehicleRequest> = LinkedList()
+    internal var deleteRequests: Queue<DeleteVehicleRequest> = LinkedList()
+    // loading bar requests
+    internal var progessBarRequests: ArrayList<ProgessBarRequest> = ArrayList()
 
     // ========================================================================
     // RUNNING TASKS
@@ -322,6 +324,9 @@ public class XV (
         
         // create vehicle handlers
         systemCreateVehicle(storage, createRequests)
-        systemDeleteVehicle(vehicleStorage, storage, deleteVehicleRequest)
+        systemDeleteVehicle(vehicleStorage, storage, deleteRequests)
+
+        // progress bar ticking system
+        progessBarRequests = systemProgressBar(progessBarRequests)
     }
 }

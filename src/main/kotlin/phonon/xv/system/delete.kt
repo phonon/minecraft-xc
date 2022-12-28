@@ -76,7 +76,7 @@ public fun XV.systemDeleteVehicle(
             val archetype = componentStorage.lookup[it.layout]!!
             archetype.free(it.id)
         }
-
+        // drop item
         if ( dropItem && item !== null ) {
             location?.world?.dropItem(location, item)
         }

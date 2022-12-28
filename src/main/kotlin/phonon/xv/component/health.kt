@@ -2,15 +2,20 @@ package phonon.xv.component
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import org.bukkit.NamespacedKey
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataAdapterContext
 import org.bukkit.persistence.PersistentDataContainer
+import org.bukkit.persistence.PersistentDataType
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
 import phonon.xv.util.toml.*
+
+val currentHealth = NamespacedKey("xv", "current")
 
 public data class HealthComponent(
     var current: Double,
@@ -29,12 +34,19 @@ public data class HealthComponent(
      * a new instance of this component.
      */
     override fun injectItemProperties(
-        item: ItemStack,
-        itemMeta: ItemMeta,
-        itemData: PersistentDataContainer,
+            itemData: PersistentDataContainer?,
     ): HealthComponent {
-        // TODO: get current health parameter from item data
-        return this
+        if ( itemData === null )
+            return this.self()
+        return this.copy(
+                current = itemData.get(currentHealth, PersistentDataType.DOUBLE)!!
+        )
+    }
+
+    override fun toItemData(context: PersistentDataAdapterContext): PersistentDataContainer? {
+        val container = context.newPersistentDataContainer()
+        container.set(currentHealth, PersistentDataType.DOUBLE, this.current)
+        return container
     }
 
     override fun toJson(): JsonObject {
