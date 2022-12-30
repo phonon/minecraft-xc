@@ -64,6 +64,7 @@ public enum class VehicleComponentType {
     GUN_TURRET,
     HEALTH,
     LAND_MOVEMENT_CONTROLS,
+    SHIP_MOVEMENT_CONTROLS,
     MODEL,
     SEATS,
     SEATS_RAYCAST,
@@ -83,6 +84,7 @@ public enum class VehicleComponentType {
                 GunTurretComponent::class -> VehicleComponentType.GUN_TURRET
                 HealthComponent::class -> VehicleComponentType.HEALTH
                 LandMovementControlsComponent::class -> VehicleComponentType.LAND_MOVEMENT_CONTROLS
+                ShipMovementControlsComponent::class -> VehicleComponentType.SHIP_MOVEMENT_CONTROLS
                 ModelComponent::class -> VehicleComponentType.MODEL
                 SeatsComponent::class -> VehicleComponentType.SEATS
                 SeatsRaycastComponent::class -> VehicleComponentType.SEATS_RAYCAST
@@ -128,6 +130,7 @@ public class ArchetypeStorage(
     internal val gunTurret: ArrayList<GunTurretComponent>? = if ( layout.contains(VehicleComponentType.GUN_TURRET) ) ArrayList() else null
     internal val health: ArrayList<HealthComponent>? = if ( layout.contains(VehicleComponentType.HEALTH) ) ArrayList() else null
     internal val landMovementControls: ArrayList<LandMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.LAND_MOVEMENT_CONTROLS) ) ArrayList() else null
+    internal val shipMovementControls: ArrayList<ShipMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.SHIP_MOVEMENT_CONTROLS) ) ArrayList() else null
     internal val model: ArrayList<ModelComponent>? = if ( layout.contains(VehicleComponentType.MODEL) ) ArrayList() else null
     internal val seats: ArrayList<SeatsComponent>? = if ( layout.contains(VehicleComponentType.SEATS) ) ArrayList() else null
     internal val seatsRaycast: ArrayList<SeatsRaycastComponent>? = if ( layout.contains(VehicleComponentType.SEATS_RAYCAST) ) ArrayList() else null
@@ -147,6 +150,8 @@ public class ArchetypeStorage(
         get() = this.health
     public val landMovementControlsView: List<LandMovementControlsComponent>?
         get() = this.landMovementControls
+    public val shipMovementControlsView: List<ShipMovementControlsComponent>?
+        get() = this.shipMovementControls
     public val modelView: List<ModelComponent>?
         get() = this.model
     public val seatsView: List<SeatsComponent>?
@@ -174,6 +179,7 @@ public class ArchetypeStorage(
             GunTurretComponent::class -> this.gunTurretView?.get(denseIndex) as T
             HealthComponent::class -> this.healthView?.get(denseIndex) as T
             LandMovementControlsComponent::class -> this.landMovementControlsView?.get(denseIndex) as T
+            ShipMovementControlsComponent::class -> this.shipMovementControlsView?.get(denseIndex) as T
             ModelComponent::class -> this.modelView?.get(denseIndex) as T
             SeatsComponent::class -> this.seatsView?.get(denseIndex) as T
             SeatsRaycastComponent::class -> this.seatsRaycastView?.get(denseIndex) as T
@@ -245,6 +251,10 @@ public class ArchetypeStorage(
                     this.landMovementControls?.pushAtDenseIndex(denseIndex, prototype.landMovementControls!!)
                 }
                 
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> {
+                    this.shipMovementControls?.pushAtDenseIndex(denseIndex, prototype.shipMovementControls!!)
+                }
+                
                 VehicleComponentType.MODEL -> {
                     this.model?.pushAtDenseIndex(denseIndex, prototype.model!!)
                 }
@@ -310,6 +320,7 @@ public class ArchetypeStorage(
                 VehicleComponentType.GUN_TURRET -> gunTurret?.swapRemove(denseIndex)
                 VehicleComponentType.HEALTH -> health?.swapRemove(denseIndex)
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.swapRemove(denseIndex)
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.swapRemove(denseIndex)
                 VehicleComponentType.MODEL -> model?.swapRemove(denseIndex)
                 VehicleComponentType.SEATS -> seats?.swapRemove(denseIndex)
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.swapRemove(denseIndex)
@@ -341,6 +352,7 @@ public class ArchetypeStorage(
         gunTurret?.clear()
         health?.clear()
         landMovementControls?.clear()
+        shipMovementControls?.clear()
         model?.clear()
         seats?.clear()
         seatsRaycast?.clear()
@@ -371,6 +383,7 @@ public class ArchetypeStorage(
                 GunTurretComponent::class -> { archetype -> archetype.gunTurretView as List<T> }
                 HealthComponent::class -> { archetype -> archetype.healthView as List<T> }
                 LandMovementControlsComponent::class -> { archetype -> archetype.landMovementControlsView as List<T> }
+                ShipMovementControlsComponent::class -> { archetype -> archetype.shipMovementControlsView as List<T> }
                 ModelComponent::class -> { archetype -> archetype.modelView as List<T> }
                 SeatsComponent::class -> { archetype -> archetype.seatsView as List<T> }
                 SeatsRaycastComponent::class -> { archetype -> archetype.seatsRaycastView as List<T> }

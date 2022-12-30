@@ -59,12 +59,18 @@ public data class TransformComponent(
     /**
      * Helper to update yaw and its derived values.
      */
-    fun updateYaw(yaw: Double) {
+    fun updateYaw(
+        yaw: Double,
+        yawf: Float = yaw.toFloat(),
+        yawRad: Double = Math.toRadians(yaw),
+        yawSin: Double = Math.sin(yawRad),
+        yawCos: Double = Math.cos(yawRad)
+    ) {
         this.yaw = yaw
-        this.yawf = yaw.toFloat()
-        this.yawRad = Math.toRadians(yaw)
-        this.yawSin = Math.sin(yawRad)
-        this.yawCos = Math.cos(yawRad)
+        this.yawf = yawf
+        this.yawRad = yawRad
+        this.yawSin = yawSin
+        this.yawCos = yawCos
         this.yawDirty = true
     }
 

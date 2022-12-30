@@ -13,6 +13,7 @@ components = {
     "GUN_TURRET": "GunTurretComponent",
     "HEALTH": "HealthComponent",
     "LAND_MOVEMENT_CONTROLS": "LandMovementControlsComponent",
+    "SHIP_MOVEMENT_CONTROLS": "ShipMovementControlsComponent",
     "MODEL": "ModelComponent",
     "SEATS": "SeatsComponent",
     "SEATS_RAYCAST": "SeatsRaycastComponent",

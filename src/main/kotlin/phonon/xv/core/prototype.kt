@@ -56,6 +56,7 @@ val gunBarrelKey = NamespacedKey("xv", "gunBarrel")
 val gunTurretKey = NamespacedKey("xv", "gunTurret")
 val healthKey = NamespacedKey("xv", "health")
 val landMovementControlsKey = NamespacedKey("xv", "landMovementControls")
+val shipMovementControlsKey = NamespacedKey("xv", "shipMovementControls")
 val modelKey = NamespacedKey("xv", "model")
 val seatsKey = NamespacedKey("xv", "seats")
 val seatsRaycastKey = NamespacedKey("xv", "seatsRaycast")
@@ -291,6 +292,7 @@ public data class VehicleElementPrototype(
     val gunTurret: GunTurretComponent? = null,
     val health: HealthComponent? = null,
     val landMovementControls: LandMovementControlsComponent? = null,
+    val shipMovementControls: ShipMovementControlsComponent? = null,
     val model: ModelComponent? = null,
     val seats: SeatsComponent? = null,
     val seatsRaycast: SeatsRaycastComponent? = null,
@@ -318,6 +320,7 @@ public data class VehicleElementPrototype(
             gunTurret = gunTurret?.injectSpawnProperties(location, player),
             health = health?.injectSpawnProperties(location, player),
             landMovementControls = landMovementControls?.injectSpawnProperties(location, player),
+            shipMovementControls = shipMovementControls?.injectSpawnProperties(location, player),
             model = model?.injectSpawnProperties(location, player),
             seats = seats?.injectSpawnProperties(location, player),
             seatsRaycast = seatsRaycast?.injectSpawnProperties(location, player),
@@ -341,6 +344,7 @@ public data class VehicleElementPrototype(
             gunTurret = gunTurret?.injectItemProperties(itemData.get(gunTurretKey, PersistentDataType.TAG_CONTAINER)),
             health = health?.injectItemProperties(itemData.get(healthKey, PersistentDataType.TAG_CONTAINER)),
             landMovementControls = landMovementControls?.injectItemProperties(itemData.get(landMovementControlsKey, PersistentDataType.TAG_CONTAINER)),
+            shipMovementControls = shipMovementControls?.injectItemProperties(itemData.get(shipMovementControlsKey, PersistentDataType.TAG_CONTAINER)),
             model = model?.injectItemProperties(itemData.get(modelKey, PersistentDataType.TAG_CONTAINER)),
             seats = seats?.injectItemProperties(itemData.get(seatsKey, PersistentDataType.TAG_CONTAINER)),
             seatsRaycast = seatsRaycast?.injectItemProperties(itemData.get(seatsRaycastKey, PersistentDataType.TAG_CONTAINER)),
@@ -364,6 +368,7 @@ public data class VehicleElementPrototype(
         val gunTurretContainer = gunTurret?.toItemData(container.adapterContext)
         val healthContainer = health?.toItemData(container.adapterContext)
         val landMovementControlsContainer = landMovementControls?.toItemData(container.adapterContext)
+        val shipMovementControlsContainer = shipMovementControls?.toItemData(container.adapterContext)
         val modelContainer = model?.toItemData(container.adapterContext)
         val seatsContainer = seats?.toItemData(container.adapterContext)
         val seatsRaycastContainer = seatsRaycast?.toItemData(container.adapterContext)
@@ -381,6 +386,8 @@ public data class VehicleElementPrototype(
             container.set(healthKey, PersistentDataType.TAG_CONTAINER, healthContainer)
         if ( landMovementControlsContainer !== null )
             container.set(landMovementControlsKey, PersistentDataType.TAG_CONTAINER, landMovementControlsContainer)
+        if ( shipMovementControlsContainer !== null )
+            container.set(shipMovementControlsKey, PersistentDataType.TAG_CONTAINER, shipMovementControlsContainer)
         if ( modelContainer !== null )
             container.set(modelKey, PersistentDataType.TAG_CONTAINER, modelContainer)
         if ( seatsContainer !== null )
@@ -417,6 +424,7 @@ public data class VehicleElementPrototype(
             gunTurret = gunTurret?.injectJsonProperties( componentsJson["gunTurret"]?.asJsonObject ),
             health = health?.injectJsonProperties( componentsJson["health"]?.asJsonObject ),
             landMovementControls = landMovementControls?.injectJsonProperties( componentsJson["landMovementControls"]?.asJsonObject ),
+            shipMovementControls = shipMovementControls?.injectJsonProperties( componentsJson["shipMovementControls"]?.asJsonObject ),
             model = model?.injectJsonProperties( componentsJson["model"]?.asJsonObject ),
             seats = seats?.injectJsonProperties( componentsJson["seats"]?.asJsonObject ),
             seatsRaycast = seatsRaycast?.injectJsonProperties( componentsJson["seatsRaycast"]?.asJsonObject ),
@@ -467,6 +475,11 @@ public data class VehicleElementPrototype(
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
                 VehicleComponentType.MODEL -> model?.afterVehicleCreated(
                     vehicle=vehicle,
                     element=element,
@@ -510,6 +523,7 @@ public data class VehicleElementPrototype(
                 VehicleComponentType.GUN_TURRET -> gunTurret?.delete(vehicle, element, entityVehicleData)
                 VehicleComponentType.HEALTH -> health?.delete(vehicle, element, entityVehicleData)
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.delete(vehicle, element, entityVehicleData)
                 VehicleComponentType.MODEL -> model?.delete(vehicle, element, entityVehicleData)
                 VehicleComponentType.SEATS -> seats?.delete(vehicle, element, entityVehicleData)
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.delete(vehicle, element, entityVehicleData)
@@ -533,6 +547,7 @@ public data class VehicleElementPrototype(
             var gunTurret: GunTurretComponent? = null
             var health: HealthComponent? = null
             var landMovementControls: LandMovementControlsComponent? = null
+            var shipMovementControls: ShipMovementControlsComponent? = null
             var model: ModelComponent? = null
             var seats: SeatsComponent? = null
             var seatsRaycast: SeatsRaycastComponent? = null
@@ -569,6 +584,10 @@ public data class VehicleElementPrototype(
                         layout.add(VehicleComponentType.LAND_MOVEMENT_CONTROLS)
                         landMovementControls = LandMovementControlsComponent.fromToml(toml.getTable(k)!!, logger)
                     }
+                    "ship_movement_controls" -> {
+                        layout.add(VehicleComponentType.SHIP_MOVEMENT_CONTROLS)
+                        shipMovementControls = ShipMovementControlsComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
                     "model" -> {
                         layout.add(VehicleComponentType.MODEL)
                         model = ModelComponent.fromToml(toml.getTable(k)!!, logger)
@@ -604,6 +623,7 @@ public data class VehicleElementPrototype(
                 gunTurret,
                 health,
                 landMovementControls,
+                shipMovementControls,
                 model,
                 seats,
                 seatsRaycast,

@@ -107,6 +107,7 @@ fun VehicleElement.toJson(xv: XV): JsonObject {
             VehicleComponentType.GUN_TURRET -> archetype.getComponent<GunTurretComponent>(this.id)!!.toJson()
             VehicleComponentType.HEALTH -> archetype.getComponent<HealthComponent>(this.id)!!.toJson()
             VehicleComponentType.LAND_MOVEMENT_CONTROLS -> archetype.getComponent<LandMovementControlsComponent>(this.id)!!.toJson()
+            VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> archetype.getComponent<ShipMovementControlsComponent>(this.id)!!.toJson()
             VehicleComponentType.MODEL -> archetype.getComponent<ModelComponent>(this.id)!!.toJson()
             VehicleComponentType.SEATS -> archetype.getComponent<SeatsComponent>(this.id)!!.toJson()
             VehicleComponentType.SEATS_RAYCAST -> archetype.getComponent<SeatsRaycastComponent>(this.id)!!.toJson()
@@ -124,6 +125,7 @@ fun VehicleElement.toJson(xv: XV): JsonObject {
                 VehicleComponentType.GUN_TURRET -> "gunTurret"
                 VehicleComponentType.HEALTH -> "health"
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> "landMovementControls"
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> "shipMovementControls"
                 VehicleComponentType.MODEL -> "model"
                 VehicleComponentType.SEATS -> "seats"
                 VehicleComponentType.SEATS_RAYCAST -> "seatsRaycast"
