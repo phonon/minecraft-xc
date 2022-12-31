@@ -16,6 +16,7 @@
 package phonon.xc.nms.gun.crawl
 
 import kotlin.math.ceil
+import kotlin.math.floor
 import net.minecraft.core.Direction
 import net.minecraft.network.protocol.game.ClientboundAddMobPacket
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket
@@ -77,14 +78,27 @@ public class BoxEntity(
      *        |     |
      *        |_____| ceil(player.y + 1.5)
      *           | 
-     *        ------- peek
+     *        ======= peek
      *                            } Remaining distance must be
      *                            } ~ 1.0 to force player into crawl
      *        ------- player
+     * 
+     * Use strategy similar to:
+     * https://github.com/Gecolay/GSit/blob/main/v1_18_R2/src/main/java/dev/geco/gsit/mcv/v1_18_R2/objects/GCrawl.java#L151
      */
     internal fun moveAboveLocation(loc: Location) {
-        // place y ~ 1.25 above player, then round to nearest 0.5 increment
-        val yHeightShulker = 0.5 * ceil((loc.y + 1.25) * 2.0)
+        // get height in block
+        val heightInBlock = loc.y - floor(loc.y)
+
+        val yHeightShulker: Double
+        val yPeekAmount: Double
+        if ( heightInBlock >= 0.4 ) { // on top of half slab, round to 1.5 above, then use peek
+            yHeightShulker = loc.y + 1.5
+            yPeekAmount = 1.0 - heightInBlock
+        } else { // close enough to ground, can place shulker directly above and not use peek
+            yHeightShulker = loc.y + 0.5
+            yPeekAmount = 0.0
+        }
 
         this.moveTo(
             loc.x,
@@ -93,10 +107,6 @@ public class BoxEntity(
             0f,
             0f,
         )
-        
-        // target height is 1.25 above player, adjust peek to match
-        val yHeightTarget = loc.y + 1.25
-        val yPeekAmount = yHeightShulker - yHeightTarget
         this.setPeekAmount(yPeekAmount) // internally will be clamped to [0, 1]
 
         // println("yHeightShulker: $yHeightShulker, yPeekAmount: $yPeekAmount")
