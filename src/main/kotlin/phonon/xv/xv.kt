@@ -135,6 +135,7 @@ public class XV (
             "vehicle/debug_mortar.toml",
             "vehicle/debug_multi_turret.toml",
             "vehicle/debug_tank.toml",
+            "vehicle/debug_ship.toml",
         ).forEach { p -> this.plugin.saveResource(p, false) }
 
         val elementPrototypes = mutableMapOf<String, VehicleElementPrototype>()
@@ -202,6 +203,7 @@ public class XV (
                             val json = xv.serializeVehicles(xv.logger)
                             // file io async
                             pool.execute {
+                                xv.config.pathFilesBackup.toFile().mkdirs()
                                 writeJson(
                                     json = json,
                                     dir = newBackupPath(xv.config.pathFilesBackup),
@@ -309,6 +311,7 @@ public class XV (
 
         // player vehicle movement controls
         systemLandMovement(storage, userInputs)
+        systemShipMovement(storage, userInputs)
 
         // vehicle gun controls
         systemGunBarrelControls(storage, userInputs)

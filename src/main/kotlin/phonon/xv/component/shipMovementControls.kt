@@ -83,8 +83,10 @@ public data class ShipMovementControlsComponent(
     // turn at the full turn accel
     val yawRotationEffectiveSpeed: Double = 0.1,
     // collision settings
-    val collisionCooldownTicks: Int = 60, // i-frame after collision, -1 to disable
-    val minCollisionSpeed: Double = 0.2, // min speed needed to register a collision, -1 to disable
+    // i-frame after collision, -1 to disable
+    val collisionCooldownTicks: Int = 60,
+    // min speed needed to register a collision, -1 to disable
+    val minCollisionSpeed: Double = 0.2,
     // contact points for gravity
     val groundContactPoints: DoubleArray = doubleArrayOf(
         1.2, 0.0, 2.0,

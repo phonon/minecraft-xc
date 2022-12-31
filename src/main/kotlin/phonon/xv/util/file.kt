@@ -52,8 +52,9 @@ public fun writeJson(json: JsonObject, dir: Path, prettyPrinting: Boolean) {
     val saveFile = dir.toFile()
 
     // create new file if not exists
-    if (!saveFile.exists())
+    if (!saveFile.exists()) {
         saveFile.createNewFile()
+    }
 
     // gson lib instance, handles parsing
     val gson = if ( prettyPrinting ) {
@@ -70,7 +71,7 @@ public fun writeJson(json: JsonObject, dir: Path, prettyPrinting: Boolean) {
     }
 }
 
-private val dateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy-HH:mm:ss")
+private val dateFormatter = DateTimeFormatter.ofPattern("MM-dd-yyyy-HH-mm-ss")
 
 public fun newBackupPath(parentDir: Path): Path {
     val baseFileName = dateFormatter.format(LocalDateTime.now())

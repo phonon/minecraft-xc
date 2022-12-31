@@ -1,0 +1,71 @@
+# Simple vehicles do not have any duplicate components so
+# these only need a single element. In this case, we can
+# just write components directly in the config.
+# Parser will do a scan and recognize this only needs a
+# single anonymous element.
+
+name = "debug_ship"
+
+# contains position, rotation, etc.
+[transform]
+
+# armor stand model
+[model]
+model_id = 2003203
+
+# seats, needed for controllable vehicle
+[seats]
+count = 1
+offsets = [
+    0.0, -0.5, 0.0,   # front left
+]
+
+# use seat raycasting for mounting
+[seats_raycast]
+
+# handles player's input controls for ship movement
+[ship_movement_controls]
+# seat index that controls vehicle
+seat_controller = 0
+
+# translational speed parameters (all positive)
+acceleration = 0.02
+deceleration_multiplier = 0.8
+speed_max_forward = 0.4
+speed_max_reverse = 0.3
+
+# yaw turning rate parameters
+yaw_rotation_acceleration = 0.1
+yaw_rotation_deceleration_multiplier = 0.5
+yaw_rotation_speed_max = 2.0
+
+# the speed at which boats can
+# turn at the full turn accel
+yaw_rotation_effective_speed = 0.1
+
+# collision settings
+# i-frame after collision, -1 to disable
+collision_cooldown_ticks = 60
+
+# min speed needed to register a collision, -1 to disable
+min_collision_speed = 0.2
+
+# contact points for gravity
+ground_contact_points = [
+    1.2, 0.0, 2.0,
+    -1.2, 0.0, 2.0,
+    1.2, 0.0, -2.0,
+    -1.2, 0.0, -2.0,
+]
+front_contact_points = [
+    1.2, 0.0, 2.0,
+    -1.2, 0.0, 2.0,
+    1.2, 3.0, 2.0,
+    -1.2, 3.0, 2.0,
+    0.0, 1.5, 2.0,
+]
+backward_contacts_displace = [
+    0.0,
+    0.0,
+    -4.0
+]

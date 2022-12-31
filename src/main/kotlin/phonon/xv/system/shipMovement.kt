@@ -3,6 +3,7 @@ package phonon.xv.system
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.Material
+import org.bukkit.Particle
 import org.bukkit.World
 import org.bukkit.block.Block
 import phonon.xv.XV
@@ -63,36 +64,73 @@ public fun XV.systemShipMovement(
         val blyBelow = bly - 1
         // get y value of each contact point
         val yCenter = if ( world.getBlockAt(blx, blyBelow, blz).isPassable() ) blyBelow else bly
-        val blCenter = world.getBlockAt(blx, yCenter, blz)
-        val blFront0 = getHighestContactPointBlock(world, bly, xCurr, zCurr, transform.yawSin, transform.yawCos, 2, shipMovement.groundContactPoints, 0)
-        val blFront1 = getHighestContactPointBlock(world, bly, xCurr, zCurr, transform.yawSin, transform.yawCos, 2, shipMovement.groundContactPoints, 3)
-        val blRear0 = getHighestContactPointBlock(world, bly, xCurr, zCurr, transform.yawSin, transform.yawCos, 2, shipMovement.groundContactPoints, 6)
-        val blRear1 = getHighestContactPointBlock(world, bly, xCurr, zCurr, transform.yawSin, transform.yawCos, 2, shipMovement.groundContactPoints, 9)
+        val yFront0 = getHighestContactPointBlock(world, bly, xCurr, zCurr, transform.yawSin, transform.yawCos, 2, shipMovement.groundContactPoints, 0).y
+        val yFront1 = getHighestContactPointBlock(world, bly, xCurr, zCurr, transform.yawSin, transform.yawCos, 2, shipMovement.groundContactPoints, 3).y
+        val yRear0 = getHighestContactPointBlock(world, bly, xCurr, zCurr, transform.yawSin, transform.yawCos, 2, shipMovement.groundContactPoints, 6).y
+        val yRear1 = getHighestContactPointBlock(world, bly, xCurr, zCurr, transform.yawSin, transform.yawCos, 2, shipMovement.groundContactPoints, 9).y
+        // FOR TESTING
+        // visualize front and ground contacts
+        visualizePoints(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints)
+        visualizePoints(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, shipMovement.frontContactPoints)
 
-        if ( yCenter < bly && blFront0.y < bly && blFront1.y < bly && blRear0.y < bly && blRear1.y < bly ) {
+        if ( yCenter < bly && yFront0 < bly && yFront1 < bly && yRear0 < bly && yRear1 < bly ) {
             yNew = blyBelow.toDouble() // does at most -1 block/tick
             positionChanged = true
         }
+
+        // we also want to allow boats to climb up
+        // 1 block height changes in water
+        val blCenter = getContactPointBlock(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints, 0)
+        val blFront0 = getContactPointBlock(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints, 0)
+        val blFront1 = getContactPointBlock(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints, 3)
+        val blRear0 = getContactPointBlock(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints, 6)
+        val blRear1 = getContactPointBlock(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints, 9)
+
+        // we want our ground contact points to hover right above
+        // the water that the boat is sitting on.
+        // if any of the contact points is submerged, then we can move
+        // up 1 y level
+        if (
+            blCenter.isShipTraversable()
+            || blFront0.isShipTraversable()
+            || blFront1.isShipTraversable()
+            || blRear0.isShipTraversable()
+            || blRear1.isShipTraversable()
+        ) {
+            yNew = (bly + 1).toDouble()
+            positionChanged = true
+        }
+
+        // our ground contact points hover just above the surface that our
+        // ship is moving across.
+        val blBelowCenter = getContactPointBlock(world, xCurr, yCurr - 1, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints, 0)
+        val blBelowFront0 = getContactPointBlock(world, xCurr, yCurr - 1, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints, 0)
+        val blBelowFront1 = getContactPointBlock(world, xCurr, yCurr - 1, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints, 3)
+        val blBelowRear0 = getContactPointBlock(world, xCurr, yCurr - 1, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints, 6)
+        val blBelowRear1 = getContactPointBlock(world, xCurr, yCurr - 1, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints, 9)
 
         // check for our 2 conditions to see if ship can move
         // 1. NONE of the ship's ground contact points are touching a grounded block
         // 2. AT LEAST ONE of the ship's ground contact points is touching a
         //    ship-traversable block
-        val canMove = (
-             !blCenter.isGrounded()
-             && !blFront0.isGrounded()
-             && !blFront1.isGrounded()
-             && !blRear0.isGrounded()
-             && !blRear1.isGrounded()
-        ) && (
-            blCenter.isShipTraversable()
-            && blFront0.isShipTraversable()
-            && blFront1.isShipTraversable()
-            && blRear0.isShipTraversable()
-            && blRear1.isShipTraversable()
+        val notGrounded = (
+             !blBelowCenter.isGrounded()
+             && !blBelowFront0.isGrounded()
+             && !blBelowFront1.isGrounded()
+             && !blBelowRear0.isGrounded()
+             && !blBelowRear1.isGrounded()
         )
+        val isTraversable = (
+            blBelowCenter.isShipTraversable()
+            || blBelowFront0.isShipTraversable()
+            || blBelowFront1.isShipTraversable()
+            || blBelowRear0.isShipTraversable()
+            || blBelowRear1.isShipTraversable()
+        )
+        val player = seats.passengers[shipMovement.seatController]
+        player?.sendMessage("notGrounded: ${notGrounded}\n isTraversable: ${isTraversable}")
 
-        if ( canMove ) {
+        if ( notGrounded && isTraversable ) {
             val player = seats.passengers[shipMovement.seatController]
             if (player !== null) {
                 val controls = userInputs[player.uniqueId] ?: UserInput()
@@ -302,6 +340,8 @@ public fun XV.systemShipMovement(
                 if ( collision ) {
                     // TODO check our collision settings to qualify this as collision
                     //  play explosion, send request to health system to reduce health
+                    shipMovement.speed = 0.0
+                    shipMovement.yawRotationSpeed = 0.0
                     Bukkit.broadcast(Component.text("OMG!!! You crashed!"))
                 } else {
                     // no collision so we can move forward
@@ -309,6 +349,13 @@ public fun XV.systemShipMovement(
                     yNew = yNext
                     zNew = zNext
                     positionChanged = true
+                    // update yaw
+                    transform.updateYaw(
+                        yaw = newYaw,
+                        yawRad = yawRad,
+                        yawSin = yawSin,
+                        yawCos = yawCos
+                    )
                 }
             }
 
@@ -435,11 +482,32 @@ private fun getContactPointBlock(
     indexOffset: Int,
     positionOffset: DoubleArray = ZERO_OFFSET
 ): Block {
-    val cx = contactPoints[indexOffset] + positionOffset[0]
-    val cy = contactPoints[indexOffset + 1] + positionOffset[1]
-    val cz = contactPoints[indexOffset + 2] + positionOffset[2]
+    val cx = contactPoints[indexOffset]
+    val cy = contactPoints[indexOffset + 1]
+    val cz = contactPoints[indexOffset + 2]
     val blx = floor(currX + yawCos * cx - yawSin * cz).toInt()
     val bly = floor(currY + cy).toInt()
     val blz = floor(currZ + yawSin * cx + yawCos * cz).toInt()
     return world.getBlockAt(blx, bly, blz)
+}
+
+fun visualizePoints(
+    world: World,
+    currX: Double,
+    currY: Double,
+    currZ: Double,
+    yawSin: Double, // pre-computed cos(yaw)
+    yawCos: Double, // pre-computed sin(yaw)
+    contactPoints: DoubleArray,
+) {
+    val numPoints = contactPoints.size / 3
+    for (i in 0 until numPoints) {
+        val cx = contactPoints[i * 3]
+        val cy = contactPoints[i * 3 + 1]
+        val cz = contactPoints[i * 3 + 2]
+        val x = currX + yawCos * cx - yawSin * cz
+        val y = currY + cy
+        val z = currZ + yawSin * cx + yawCos * cz
+        world.spawnParticle(Particle.VILLAGER_HAPPY, x, y, z, 1)
+    }
 }
