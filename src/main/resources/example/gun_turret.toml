@@ -20,69 +20,14 @@
 # turret local offset relative to transform
 turret_offset = [0.0, 1.0, 0.0]
 
+# max turret half arc in degrees.
+turret_yaw_max = 90
+
 # barrel local offset relative to transform (NOT turret)
 barrel_offset = [0.0, 1.0, 0.0]
 
-# min turret pitch rotation (in degs)
-turret_pitch_min = -15.0
+# min barrel pitch rotation in degs
+barrel_pitch_min = -15
 
-# max turret pitch rotation (in degs)
-turret_pitch_max = 15.0
-
-# min barrel pitch rotation (in degs)
-barrel_pitch_min = -15.0
-
-# max barrel pitch rotation (in degs)
-barrel_pitch_max = 15.0
-
-# max turret yaw rotation half-arc relative to transform, only used if >0 (in degs)
-turret_yaw_half_arc = 0.0
-
-# max barrel yaw rotation half-arc relative to turret, only used if >0 (in degs)
-barrel_yaw_half_arc = 0.0
-
-# control style for turret yaw (mouse, wasd, or none)
-turret_control_yaw = ControlStyle.NONE
-
-# control style for barrel yaw (mouse, wasd, or none)
-barrel_control_yaw = ControlStyle.NONE
-
-# control style for barrel pitch (mouse, wasd, or none)
-barrel_control_pitch = ControlStyle.NONE
-
-# speed that turret yaw rotates at
-turret_yaw_rotation_speed = 1.0
-
-# speed that barrel yaw rotates at
-barrel_yaw_rotation_speed = 1.0
-
-# speed that barrel pitch rotates at
-barrel_pitch_rotation_speed = 0.5
-
-# seat index that controls this component
-seat_controller = 0
-
-# seat to mount when armorstand clicked
-seat_to_mount = -1
-//
--1
-for
-none
-
-# if true, turret yaw will also update base transform yaw
-update_transform = false
-
-# material for model
-material = "BONE"
-
-# custom model data for the armorstands
-turret_model_id = 0
-barrel_model_id = 0
-
-# name of skins variant set to use instead of single model id (optional)
-skin_turret = null
-skin_turret_default_variant = null
-skin_barrel = null
-skin_barrel_default_variant = null
-
-# whether to show the armor stand (for debugging)
+# max barrel pitch rotation in degs
+barrel_pitch_max = 45
