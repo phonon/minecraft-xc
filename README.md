@@ -1,8 +1,9 @@
-# XC: Minecraft combat
+# XC: minecraft gun combat system
 
 # Build
 Requirements:
-- Java JDK 16 (current plugin target java version)
+- Java JDK 17 (1.18.2 plugin target java version)
+- Java JDK 16 (1.16.5 plugin target java version)
 
 Only supports minecraft 1.16.5 and 1.18.2. Building compiles a `.jar`
 specific to that minecraft version. Server also requires paper as 

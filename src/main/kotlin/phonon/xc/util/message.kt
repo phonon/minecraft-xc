@@ -19,7 +19,7 @@ public object Message {
     public val COL_ERROR = ChatColor.RED
 
     /**
-     * Print generic plugin message to command sneder's chat (either console
+     * Print generic plugin message to command sender's chat (either console
      * or player).
      */
     public fun print(sender: CommandSender?, s: String) {
