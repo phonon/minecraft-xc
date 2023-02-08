@@ -28,7 +28,7 @@ public data class Config(
     // world settings
     val seaLevel: Double = 63.0,
 
-    // material types for custom items
+    // material types for vehicle spawn items
     val materialVehicle: Material = Material.IRON_HORSE_ARMOR,
 
     // culling system parameters
@@ -64,6 +64,9 @@ public data class Config(
     // (default avoid, any error in load where vehicles not all loaded
     // can cause all armor stands to be deleted)
     val deleteInvalidArmorStands: Boolean = false,
+
+    // max vehicle instances allowed in world
+    val maxVehicles: Int = 10000,
 ) {
     
     companion object {
@@ -133,6 +136,7 @@ public data class Config(
 
             toml.getTable("misc")?.let { misc -> 
                 misc.getBoolean("delete_invalid_armor_stands")?.let { configOptions["deleteInvalidArmorStands"] = it }
+                misc.getLong("max_vehicles")?.let { configOptions["maxVehicles"] = it.toInt() }
             }
 
             return mapToObject(configOptions, Config::class)

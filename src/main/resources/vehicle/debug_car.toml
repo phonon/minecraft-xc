@@ -6,6 +6,11 @@
 
 name = "debug_car"
 
+item_name = "Debug Car"
+item_lore = [
+    "This is a debug car.",
+]
+
 # contains position, rotation, etc.
 [transform]
 

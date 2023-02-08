@@ -6,6 +6,11 @@
 
 name = "debug_tank"
 
+item_name = "Debug Tank"
+item_lore = [
+    "Tanks when",
+]
+
 # contains position, rotation, etc.
 [transform]
 
@@ -46,3 +51,6 @@ seat_controller = 0
 acceleration = 0.03
 speed_max_forward = 0.3
 speed_max_reverse = 0.2
+
+[health]
+max_health = 40.0

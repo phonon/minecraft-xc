@@ -9,8 +9,10 @@ import java.nio.file.Files
 import java.util.UUID
 import java.util.logging.Logger
 import org.bukkit.Bukkit
+import org.bukkit.NamespacedKey
 import org.bukkit.plugin.Plugin
 import org.bukkit.scheduler.BukkitTask
+import org.bukkit.inventory.ItemStack
 import phonon.xv.core.*
 import phonon.xv.system.*
 import phonon.xv.common.UserInput
@@ -22,7 +24,10 @@ import java.util.Queue
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-public const val MAX_VEHICLES = 5000
+
+// namespaced keys for storing vehicle item data
+internal val ITEM_KEY_PROTOTYPE = NamespacedKey("xv", "prototype")
+internal val ITEM_KEY_ELEMENTS = NamespacedKey("xv", "elements")
 
 /**
  * XV engine global state.
@@ -38,22 +43,26 @@ public class XV (
     // ========================================================================
     internal var config: Config = Config()
     
-    // vehicle base prototypes
+    //// VEHICLE BASE PROTOTYPE CONFIGS
     internal var vehiclePrototypes: Map<String, VehiclePrototype> = mapOf()
     internal var vehiclePrototypeNames: List<String> = listOf() // for tab completion
+    // vehicle prototype default spawn item stacks
+    internal var vehiclePrototypeSpawnItem: Map<String, ItemStack> = mapOf()
+    internal var vehiclePrototypeSpawnItemList: List<ItemStack> = listOf() // flattened list of `vehiclePrototypeSpawnItem`
     // vehicle element prototypes
     // the keys in this map are <vehicle.name>.<element.name>, not just the element name
     internal var vehicleElementPrototypes: Map<String, VehicleElementPrototype> = mapOf()
     // list of <vehicle.name>.<element.name>
     internal var vehicleElementPrototypeNames: List<String> = listOf()
 
-    // components
+    //// VEHICLE ELEMENT COMPONENT INSTANCE STORAGE
     internal val storage: ComponentsStorage = ComponentsStorage()
-    internal val vehicleStorage: VehicleStorage = VehicleStorage(MAX_VEHICLES)
+    internal val vehicleStorage: VehicleStorage = VehicleStorage(config.maxVehicles)
 
-    // vehicle skins/decals definitions
+    //// VEHICLE SKINS/DECALS STORAGE
     internal var skins: SkinStorage = SkinStorage.empty()
 
+    //// ENGINE STATE
     // user input controls when mounted on entities
     internal val userInputs: HashMap<UUID, UserInput> = HashMap()
 
@@ -156,11 +165,26 @@ public class XV (
             }
             .toMap()
 
+        // create default vehicle prototype spawn items (for admins to browse and view)
+        val newVehiclePrototypeSpawnItem = HashMap<String, ItemStack>()
+        for ( (name, proto) in vehiclePrototypes ) {
+            try {
+                newVehiclePrototypeSpawnItem[name] = proto.toItemStack(this.config.materialVehicle)
+            } catch (err: Exception) {
+                this.logger.warning("Failed to create spawn item for vehicle prototype '${name}': ${err.message}")
+                err.printStackTrace()
+                continue
+            }
+        }
+
+        // save loaded state
         this.vehicleElementPrototypes = elementPrototypes
         this.vehicleElementPrototypeNames = this.vehicleElementPrototypes.keys.toList()
         this.vehiclePrototypes = vehiclePrototypes
         this.vehiclePrototypeNames = vehiclePrototypes.keys.toList()
-        
+        this.vehiclePrototypeSpawnItem = newVehiclePrototypeSpawnItem
+        this.vehiclePrototypeSpawnItemList = newVehiclePrototypeSpawnItem.values.toList()
+
         // finish: print stats
         val timeEnd = System.currentTimeMillis()
         val timeLoad = timeEnd - timeStart

@@ -12,6 +12,7 @@ import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
 import phonon.xv.XV
+import phonon.xv.ITEM_KEY_ELEMENTS
 import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.INVALID_VEHICLE_ID
 import phonon.xv.core.EntityVehicleData
@@ -77,6 +78,7 @@ public fun XV.systemCreateVehicle(
             // creation item meta and persistent data container
             val itemMeta = item?.itemMeta
             val itemData = itemMeta?.persistentDataContainer
+            val itemElementsData = itemData?.get(ITEM_KEY_ELEMENTS, PersistentDataType.TAG_CONTAINER)
 
             // inject creation properties into all element prototypes
             val elementPrototypes: List<VehicleElementPrototype> = prototype.elements.map { elemPrototype ->
@@ -87,15 +89,14 @@ public fun XV.systemCreateVehicle(
                         // inject creation time properties, keep in this order:
 
                         // item properties stored in item meta
-                        proto = if ( itemData !== null ) {
+                        proto = if ( itemElementsData !== null ) {
                             // TODO refactor this namespaced key to somewhere that makes more sense
-                            val container = itemData
-                                    .get(elementsKey, PersistentDataType.TAG_CONTAINER)!!
-                                    .get(
-                                        NamespacedKey("xv", proto.name),
-                                        PersistentDataType.TAG_CONTAINER
-                                    )!!
-                            proto.injectItemProperties(container)
+                            val container = itemElementsData.get(elemPrototype.itemKey(), PersistentDataType.TAG_CONTAINER)
+                            if ( container !== null ) {
+                                proto.injectItemProperties(container)
+                            } else {
+                                proto
+                            }
                         } else {
                             proto
                         }

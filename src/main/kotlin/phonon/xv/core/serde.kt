@@ -70,21 +70,28 @@
 
 package phonon.xv.core
 
+import java.io.FileReader
+import java.io.FileWriter
+import java.nio.file.Path
+import java.util.logging.Logger
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
+import org.bukkit.Material
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataContainer
+import org.bukkit.persistence.PersistentDataType
 import phonon.xv.XV
+import phonon.xv.ITEM_KEY_PROTOTYPE
+import phonon.xv.ITEM_KEY_ELEMENTS
 import phonon.xv.component.*
 import phonon.xv.system.CreateVehicleReason
 import phonon.xv.system.CreateVehicleRequest
 import phonon.xv.system.systemCreateVehicle
-import java.io.FileReader
-import java.io.FileWriter
-import java.nio.file.Path
-import java.util.logging.Logger
 import phonon.xv.util.file.readJson
 import phonon.xv.util.file.writeJson
 
@@ -241,4 +248,34 @@ fun XV.loadVehicles(readFrom: Path, logger: Logger? = null) {
  */
 fun XV.flushCreateQueue() {
     systemCreateVehicle(storage, createRequests)
+}
+
+/**
+ * Convert this vehicle to an item stack with given material.
+ * Very similar logic to `VehiclePrototype.toItemStack`, except this
+ * requires access to the elements storage to gather elements instance data.
+ */
+fun Vehicle.toItemStack(material: Material): ItemStack {
+    val item = ItemStack(material, 1)
+    val itemMeta = item.getItemMeta()
+    val itemData = itemMeta.getPersistentDataContainer()
+
+    // attach prototype
+    itemData.set(ITEM_KEY_PROTOTYPE, PersistentDataType.STRING, this.prototype.name)
+
+    // item lore
+    val itemLore = ArrayList<String>()
+
+    // attach element data
+    val elementsData = itemData.adapterContext.newPersistentDataContainer()
+    for ( elem in this.elements ) {
+        val elemData = elementsData.adapterContext.newPersistentDataContainer()
+        elem.prototype.toItemData(itemMeta, itemLore, elemData)
+        elementsData.set(elem.prototype.itemKey(), PersistentDataType.TAG_CONTAINER, elemData)
+    }
+    itemData.set(ITEM_KEY_ELEMENTS, PersistentDataType.TAG_CONTAINER, elementsData)
+
+    item.setLore(itemLore)
+    item.setItemMeta(itemMeta)
+    return item
 }

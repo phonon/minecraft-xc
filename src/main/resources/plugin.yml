@@ -17,3 +17,7 @@ commands:
     aliases: [vskin]
     permission: xv.vehicleskin
     usage: /vehicleskin [name]
+permissions:
+  xv.admin:
+    description: Allow xv admin commands
+    default: op

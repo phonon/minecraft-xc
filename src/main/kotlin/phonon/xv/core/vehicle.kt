@@ -28,7 +28,8 @@ public data class Vehicle(
     val name: String,
     // integer id, may vary across restarts
     val id: VehicleId,
-    // prototype contains hiearchy of elements
+    // prototype contains common shared base properties and
+    // elements tree hierarchy
     val prototype: VehiclePrototype,
     // elements in this vehicle
     val elements: List<VehicleElement>,
@@ -55,9 +56,10 @@ public data class VehicleElement(
     // Adding this set here simplifies deleting vehicle element.
     // This is similar to a "bitset" ECS data layout.
     val layout: EnumSet<VehicleComponentType>,
+    // Reference to prototype, contains base element properties.
     val prototype: VehicleElementPrototype,
     // for persistence, static across restarts
-    val uuid: UUID
+    val uuid: UUID,
 ) {
     // parent and children hierarchy set lazily after creation
     var parent: VehicleElement? = null

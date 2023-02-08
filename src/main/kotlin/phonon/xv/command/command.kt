@@ -2,6 +2,7 @@
 package phonon.xv.command
 
 import java.util.EnumSet
+import kotlin.math.max
 import org.bukkit.Bukkit
 import org.bukkit.ChunkSnapshot
 import org.bukkit.ChatColor
@@ -15,6 +16,8 @@ import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Player
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.InventoryHolder
+import org.bukkit.inventory.ItemStack
+import net.kyori.adventure.text.Component
 import phonon.xv.XV
 import phonon.xv.component.*
 import phonon.xv.core.*
@@ -25,6 +28,7 @@ import phonon.xv.util.entity.reassociateEntities
 
 
 private val SUBCOMMANDS = listOf(
+    "browse",
     "clear",
     "help",
     "prototype",
@@ -33,7 +37,7 @@ private val SUBCOMMANDS = listOf(
     "start",
     "stop",
     "create",
-    "savereload"
+    "savereload",
 )
 
 /**
@@ -54,6 +58,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         // parse subcommand (keep in alphabetical order)
         val arg = args[0].lowercase()
         when ( arg ) {
+            "browse" -> browseVehiclesGui(sender, args)
             "clear" -> clear(sender)
             "help" -> printHelp(sender)
             "prototype" -> prototype(sender, args)
@@ -132,13 +137,13 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         sender.sendMessage("Queued create request at your location ${sender.location}")
     }
 
-    private fun printHelp(sender: CommandSender?) {
+    private fun printHelp(sender: CommandSender) {
         Message.print(sender, "[xv] mineman vehicles!!!")
         Message.print(sender, "/xv help: help")
         Message.print(sender, "/xv reload: reload plugin config and item configs")
     }
 
-    private fun reload(sender: CommandSender?) {
+    private fun reload(sender: CommandSender) {
         val player = if ( sender is Player ) sender else null
         if ( player === null || player.isOp() ) {
             Message.print(sender, "[xv] Reloading...")
@@ -150,7 +155,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         }
     }
 
-    private fun saveReload(sender: CommandSender?) {
+    private fun saveReload(sender: CommandSender) {
         val player = if ( sender is Player ) sender else null
         if ( player === null || player.isOp() ) {
             Message.print(sender, "[xv] Saving...")
@@ -175,7 +180,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         }
     }
 
-    private fun start(sender: CommandSender?) {
+    private fun start(sender: CommandSender) {
         val player = if ( sender is Player ) sender else null
         if ( player === null || player.isOp() ) {
             Message.print(sender, "[xv] Starting engine...")
@@ -186,7 +191,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         }
     }
 
-    private fun stop(sender: CommandSender?) {
+    private fun stop(sender: CommandSender) {
         val player = if ( sender is Player ) sender else null
         if ( player === null || player.isOp() ) {
             Message.print(sender, "[xv] Stopping engine...")
@@ -197,7 +202,69 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         }
     }
 
-    private fun clear(sender: CommandSender?) {
+    /**
+     * Open an inventory GUI filled with all default vehicle prototype items.
+     */
+    private fun browseVehiclesGui(sender: CommandSender, args: Array<String>) {
+        class VehicleItemGui(
+            val itemsList: List<ItemStack>,
+            val page: Int = 0,
+        ): InventoryHolder {
+            val maxPages = 1 + (itemsList.size / 54)
+            val inv: Inventory = Bukkit.createInventory(this, 54, Component.text("Vehicles (Page ${page+1}/${maxPages})"))
+            val baseIndex = max(0, page * 54) // floor to zero
+            
+            override public fun getInventory(): Inventory {
+                var n = 0 // index in storage container
+                
+                for ( i in baseIndex until itemsList.size ) {
+                    this.inv.setItem(n, itemsList[i].clone())
+
+                    // inventory size cutoff
+                    n += 1
+                    if ( n >= 54 ) {
+                        break
+                    }
+                }
+
+                return this.inv
+            }
+        }
+
+        val player = sender as? Player
+        if ( player === null ) {
+            Message.error(sender, "Must be a player ingame to use /xv browse")
+            return
+        }
+
+        if ( !player.hasPermission("xv.admin") ) {
+            Message.error(sender, "You do not have permission 'xv.admin' to use /xv browse")
+            return
+        }
+
+        // get page from args
+        val page = if ( args.size >= 2 ) {
+            try {
+                args[1].toInt()
+            }
+            catch ( err: Exception ) {
+                Message.error(sender, "Invalid page number: ${args[1]}")
+                return
+            }
+        }
+        else {
+            0
+        }
+
+        val itemGui = VehicleItemGui(
+            itemsList = xv.vehiclePrototypeSpawnItemList,
+            page = page,
+        )
+        
+        player.openInventory(itemGui.getInventory())
+    }
+
+    private fun clear(sender: CommandSender) {
         val player = if ( sender is Player ) sender else null
         if ( player === null || player.isOp() ) {
             Message.print(sender, "[xv] Clearing archetypes...")
@@ -215,7 +282,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
      * /xv prototype: print out list of all prototype names
      * /xv prototype [name]: print out a prototype name, print all its vehicle elements
      */
-    private fun prototype(sender: CommandSender?, args: Array<String>) {
+    private fun prototype(sender: CommandSender, args: Array<String>) {
         // Only let op use this command ingame
         // TODO: give permissions node to view this data
         val player = if ( sender is Player ) sender else null
@@ -261,7 +328,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
     /**
      * Spawn vehicle for testing
      */
-    private fun spawn(sender: CommandSender?, args: Array<String>) {
+    private fun spawn(sender: CommandSender, args: Array<String>) {
         // Only let op use this command ingame
         // TODO: give permissions node to view this data
         val player = if ( sender is Player ) sender else null

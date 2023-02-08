@@ -39,19 +39,22 @@ import kotlin.math.max
 import org.tomlj.Toml
 import org.tomlj.TomlTable
 import org.bukkit.Location
-import org.bukkit.entity.Player
+import org.bukkit.Material
 import org.bukkit.NamespacedKey
+import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataAdapterContext
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
 import phonon.xv.XV
+import phonon.xv.ITEM_KEY_PROTOTYPE
+import phonon.xv.ITEM_KEY_ELEMENTS
 import phonon.xv.component.*
 
 // namespaced keys, for use in toItem()
 {%- for c in components %}
-val {{ c.storage }}Key = NamespacedKey("xv", "{{ c.storage }}")
+val {{ c.enum }}_KEY = NamespacedKey("xv", "{{ c.config_name }}")
 {%- endfor %}
 
 /**
@@ -61,6 +64,10 @@ val {{ c.storage }}Key = NamespacedKey("xv", "{{ c.storage }}")
  */
 public data class VehiclePrototype(
     val name: String,
+    // item name
+    val itemName: String,
+    // item base lore description
+    val itemLore: List<String>,
     // tree depth-sorted elements
     val elements: List<VehicleElementPrototype>,
     // index of parent element in elements list
@@ -70,6 +77,8 @@ public data class VehiclePrototype(
     // vehicle element tree max depth
     val maxDepth: Int,
 ) {
+    val uuid: UUID = UUID.randomUUID()
+
     // root elements have no parent
     val rootElements: List<VehicleElementPrototype> = elements.filter { e -> e.parent == null }.toList()
 
@@ -87,7 +96,36 @@ public data class VehiclePrototype(
         childrenIndices = Array(children.size, { children[it].toIntArray() })
     }
 
-    val uuid: UUID = UUID.randomUUID()
+    /**
+     * Convert this prototype to an item stack with given material.
+     */
+    public fun toItemStack(material: Material): ItemStack {
+        val item = ItemStack(material, 1)
+        val itemMeta = item.getItemMeta()
+        val itemData = itemMeta.getPersistentDataContainer()
+
+        // attach prototype name
+        itemData.set(ITEM_KEY_PROTOTYPE, PersistentDataType.STRING, this.name)
+
+        // item name
+        itemMeta.setDisplayName(this.itemName)
+
+        // item lore (initialized with base prototype lore)
+        val itemLore = ArrayList<String>(this.itemLore)
+        
+        // attach element data
+        val elementsData = itemData.adapterContext.newPersistentDataContainer()
+        for ( elem in this.elements ) {
+            val elemData = elementsData.adapterContext.newPersistentDataContainer()
+            elem.toItemData(itemMeta, itemLore, elemData)
+            elementsData.set(elem.itemKey(), PersistentDataType.TAG_CONTAINER, elemData)
+        }
+        itemData.set(ITEM_KEY_ELEMENTS, PersistentDataType.TAG_CONTAINER, elementsData)
+
+        itemMeta.setLore(itemLore)
+        item.setItemMeta(itemMeta)
+        return item
+    }
 
     companion object {
         /**
@@ -100,6 +138,8 @@ public data class VehiclePrototype(
          */
         public fun fromUnsortedElements(
             name: String,
+            itemName: String,
+            itemLore: List<String>,
             unsortedElements: List<VehicleElementPrototype>,
             logger: Logger? = null,
         ): VehiclePrototype? {
@@ -229,6 +269,8 @@ public data class VehiclePrototype(
             
             return VehiclePrototype(
                 name,
+                itemName,
+                itemLore,
                 depthSortedElements,
                 depthSortedParents,
                 depthSortedDepths,
@@ -245,8 +287,14 @@ public data class VehiclePrototype(
             try {
                 val toml = Toml.parse(source)
 
-                // main vehicle name
+                // vehicle prototype name
                 val name = toml.getString("name") ?: ""
+
+                // item properties
+                val itemName = toml.getString("item_name") ?: name
+                val itemLore = toml.getArrayOrEmpty("item_lore").toList().map { it.toString() }
+
+                // vehicle elements
                 val unsortedElements = ArrayList<VehicleElementPrototype>()
 
                 // if this contains an elements table, parse each element
@@ -257,7 +305,12 @@ public data class VehiclePrototype(
                     }
                 } ?: unsortedElements.add(VehicleElementPrototype.fromToml(toml, vehicleName = name))
 
-                return VehiclePrototype.fromUnsortedElements(name, unsortedElements)
+                return VehiclePrototype.fromUnsortedElements(
+                    name,
+                    itemName,
+                    itemLore,
+                    unsortedElements,
+                )
             } catch (e: Exception) {
                 logger?.warning("Failed to parse landmine file: ${source.toString()}, ${e}")
                 e.printStackTrace()
@@ -277,14 +330,17 @@ public data class VehicleElementPrototype(
     val parent: String?,
     val vehicleName: String,
     val layout: EnumSet<VehicleComponentType>,
+    val uuid: UUID = UUID.randomUUID(), // uuid as input, when loading vehicles this is overwritten by saved uuid
     {%- for c in components %}
     val {{ c.storage }}: {{ c.classname }}? = null,
     {%- endfor %}
-    val uuid: UUID = UUID.randomUUID()
 ) {
-    // uuid to be passed into constructor of
-    // vehicle element
-
+    /**
+     * Return an item namespace key.
+     */
+    fun itemKey(): NamespacedKey {
+        return NamespacedKey("xv", this.name)
+    }
 
     /**
      * During creation, inject player specific properties and generate
@@ -312,28 +368,37 @@ public data class VehicleElementPrototype(
     ): VehicleElementPrototype {
         return copy(
             {%- for c in components %}
-            {{ c.storage }} = {{ c.storage }}?.injectItemProperties(itemData.get({{ c.storage }}Key, PersistentDataType.TAG_CONTAINER)),
+            {{ c.storage }} = {{ c.storage }}?.injectItemProperties(itemData.get({{ c.enum }}_KEY, PersistentDataType.TAG_CONTAINER)),
             {%- endfor %}
         )
     }
 
     /**
-     * During deletion, create a persistent data container that
-     * stores the state of all components in this prototype. Delegates
-     * data container construction to each individual component
+     * Serialize element component data into a Minecraft ItemStack item.
+     * Delegates to each individual component, which can set properties
+     * in item's meta, lore and persistent data container tree.
+     * 
+     * This mutates and modifies the input itemMeta, itemLore, and itemData
+     * with new properties. So, user must be careful when elements overwrite
+     * each other's properties.
      */
     fun toItemData(
-        context: PersistentDataAdapterContext
-    ): PersistentDataContainer {
-        val container = context.newPersistentDataContainer()
-        {%- for c in components %}
-        val {{ c.storage }}Container = {{ c.storage }}?.toItemData(container.adapterContext)
-        {%- endfor %}
-        {%- for c in components %}
-        if ( {{ c.storage }}Container !== null )
-            container.set({{ c.storage }}Key, PersistentDataType.TAG_CONTAINER, {{ c.storage }}Container)
-        {%- endfor %}
-        return container
+        itemMeta: ItemMeta,
+        itemLore: ArrayList<String>,
+        itemData: PersistentDataContainer,
+    ) {
+        for ( c in layout ) { // only create data containers for components which exist in layout
+            when ( c ) {
+                {%- for c in components %}
+                VehicleComponentType.{{ c.enum }} -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    {{ c.storage }}?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set({{ c.enum }}_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                {%- endfor %}
+                null -> {}
+            }
+        }
     }
     
     /**
@@ -430,6 +495,7 @@ public data class VehicleElementPrototype(
                 parent,
                 vehicleName,
                 layout,
+                UUID.randomUUID(),
                 {%- for c in components %}
                 {{ c.storage }},
                 {%- endfor %}

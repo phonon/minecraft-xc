@@ -18,34 +18,19 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.Event
 import org.bukkit.event.block.Action
-import org.bukkit.event.block.BlockRedstoneEvent
-import org.bukkit.event.entity.EntityDeathEvent
-import org.bukkit.event.entity.EntityToggleSwimEvent
-import org.bukkit.event.entity.EntityPickupItemEvent
-import org.bukkit.event.entity.EntityDamageByEntityEvent
-import org.bukkit.event.entity.EntityDamageEvent
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause
-import org.bukkit.event.entity.PlayerDeathEvent
-import org.bukkit.event.entity.ProjectileLaunchEvent
-import org.bukkit.event.inventory.InventoryClickEvent
-import org.bukkit.event.inventory.InventoryType
-import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
-import org.bukkit.event.player.PlayerChangedMainHandEvent
-import org.bukkit.event.player.PlayerItemHeldEvent
-import org.bukkit.event.player.PlayerSwapHandItemsEvent
-import org.bukkit.event.player.PlayerDropItemEvent
-import org.bukkit.event.player.PlayerToggleSneakEvent
-import org.bukkit.event.player.PlayerToggleSprintEvent
 import org.bukkit.event.player.PlayerInteractAtEntityEvent
 import org.bukkit.event.player.PlayerInteractEvent
-import org.bukkit.event.player.PlayerAnimationEvent
-import org.bukkit.potion.PotionEffectType
+import org.bukkit.persistence.PersistentDataType
 import org.spigotmc.event.entity.EntityDismountEvent
 import phonon.xv.XV
+import phonon.xv.ITEM_KEY_PROTOTYPE
+import phonon.xv.system.CreateVehicleRequest
+import phonon.xv.system.CreateVehicleReason
 import phonon.xv.system.MountVehicleRequest
 import phonon.xv.system.DismountVehicleRequest
+
 
 public class EventListener(val xv: XV): Listener {
     @EventHandler(priority = EventPriority.NORMAL)
@@ -80,15 +65,47 @@ public class EventListener(val xv: XV): Listener {
 
         // println("ON PLAYER INTERACT EVENT: ${action} (hand=${e.getHand()}) (use=${e.useInteractedBlock()})")
 
-        // ignores main hand event
+        // ignores off hand event
         if ( e.getHand() != EquipmentSlot.HAND ) {
             return
         }
 
-        if ( action == Action.LEFT_CLICK_AIR ||
-            action == Action.LEFT_CLICK_BLOCK ||
+        if ( 
             action == Action.RIGHT_CLICK_AIR ||
             action == Action.RIGHT_CLICK_BLOCK
+        ) {
+            // if player item is spawn vehicle item, handle spawning vehicle
+            val itemInHand = player.getInventory().getItemInMainHand()
+            if ( itemInHand.type == xv.config.materialVehicle ) { // TODO: replace getItemMeta check with raw nms for performance
+                val itemData = itemInHand.getItemMeta().getPersistentDataContainer()
+                val prototypeName = itemData.get(ITEM_KEY_PROTOTYPE, PersistentDataType.STRING)
+                if ( prototypeName !== null ) {
+                    val vehiclePrototype = xv.vehiclePrototypes[prototypeName]
+                    if ( vehiclePrototype !== null ) {
+                        println("SPAWN VEHICLE REQUEST: ${vehiclePrototype.name}")
+                        // TODO: add SPAWN vehicle request not CREATE
+                        xv.createRequests.add(
+                            CreateVehicleRequest(
+                                vehiclePrototype,
+                                CreateVehicleReason.NEW,
+                                location = player.location,
+                                player = player,
+                            )
+                        )
+                    }
+                }
+            }
+            else {
+                // else, try mount vehicle request
+                xv.mountRequests.add(MountVehicleRequest(
+                    player = player,
+                    doRaycast = true,
+                ))
+            }
+        }
+        else if (
+            action == Action.LEFT_CLICK_AIR ||
+            action == Action.LEFT_CLICK_BLOCK
         ) {
             xv.mountRequests.add(MountVehicleRequest(
                 player = player,

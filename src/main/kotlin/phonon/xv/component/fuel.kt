@@ -15,11 +15,12 @@ import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
 import phonon.xv.util.toml.*
 
-val currentFuel = NamespacedKey("xv", "current")
+// namespace keys for saving item persistent data
+private val FUEL_KEY_CURRENT = NamespacedKey("xv", "current")
 
 public data class FuelComponent(
-    var current: Double,
-    val max: Double,
+    var current: Double = 0.0,
+    val max: Double = 100.0,
 ): VehicleComponent<FuelComponent> {
     override val type = VehicleComponentType.FUEL
 
@@ -39,14 +40,17 @@ public data class FuelComponent(
         if ( itemData === null )
             return this.self()
         return this.copy(
-            current = itemData.get(currentFuel, PersistentDataType.DOUBLE)!!
+            current = itemData.get(FUEL_KEY_CURRENT, PersistentDataType.DOUBLE)!!
         )
     }
 
-    override fun toItemData(context: PersistentDataAdapterContext): PersistentDataContainer? {
-        val container = context.newPersistentDataContainer()
-        container.set(currentFuel, PersistentDataType.DOUBLE, this.current)
-        return container
+    override fun toItemData(
+        itemMeta: ItemMeta,
+        itemLore: ArrayList<String>,
+        itemData: PersistentDataContainer,
+    ) {
+        itemData.set(FUEL_KEY_CURRENT, PersistentDataType.DOUBLE, this.current)
+        itemLore.add("Fuel: ${this.current}/${this.max}")
     }
 
     override fun toJson(): JsonObject {

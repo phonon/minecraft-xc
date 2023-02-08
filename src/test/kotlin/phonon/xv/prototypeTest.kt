@@ -66,6 +66,8 @@ public class PrototypeTest() {
 
         val vehiclePrototype = VehiclePrototype.fromUnsortedElements(
             "debug",
+            "Debug",
+            listOf(),
             unsortedElementPrototypes,
             logger=logger,
         )
@@ -119,6 +121,8 @@ public class PrototypeTest() {
 
         val vehiclePrototype = VehiclePrototype.fromUnsortedElements(
             "debug",
+            "Debug",
+            listOf(),
             unsortedElementPrototypes,
         )
 

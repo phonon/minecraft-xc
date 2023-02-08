@@ -15,18 +15,19 @@ import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
 import phonon.xv.util.toml.*
 
-val currentAmmo = NamespacedKey("xv", "current")
+// namespace keys for saving item persistent data
+private val AMMO_KEY_CURRENT = NamespacedKey("xv", "current")
 
 public data class AmmoComponent(
-    var current: Double,
-    val max: Double,
+    var current: Int = 0,
+    val max: Int = 40,
 ): VehicleComponent<AmmoComponent> {
     override val type = VehicleComponentType.AMMO
 
     override fun self() = this
     
     init {
-        current = current.coerceIn(0.0, max)
+        current = current.coerceIn(0, max)
     }
 
     /**
@@ -39,14 +40,17 @@ public data class AmmoComponent(
         if ( itemData === null )
             return this.self()
         return this.copy(
-                current = itemData.get(currentAmmo, PersistentDataType.DOUBLE)!!
+            current = itemData.get(AMMO_KEY_CURRENT, PersistentDataType.INTEGER)!!
         )
     }
 
-    override fun toItemData(context: PersistentDataAdapterContext): PersistentDataContainer? {
-        val container = context.newPersistentDataContainer()
-        container.set(currentAmmo, PersistentDataType.DOUBLE, this.current)
-        return container
+    override fun toItemData(
+        itemMeta: ItemMeta,
+        itemLore: ArrayList<String>,
+        itemData: PersistentDataContainer,
+    ) {
+        itemData.set(AMMO_KEY_CURRENT, PersistentDataType.INTEGER, this.current)
+        itemLore.add("Ammo: ${this.current}/${this.max}")
     }
 
     override fun toJson(): JsonObject {
@@ -58,7 +62,7 @@ public data class AmmoComponent(
     override fun injectJsonProperties(json: JsonObject?): AmmoComponent {
         if ( json === null ) return this.self()
         return this.copy(
-            current = json["current"].asDouble.coerceIn(0.0, this.max)
+            current = json["current"].asInt.coerceIn(0, this.max)
         )
     }
 
@@ -68,8 +72,8 @@ public data class AmmoComponent(
             // map with keys as constructor property names
             val properties = HashMap<String, Any>()
 
-            toml.getNumberAs<Double>("current")?.let { properties["current"] = it }
-            toml.getNumberAs<Double>("max")?.let { properties["max"] = it }
+            toml.getNumberAs<Int>("current")?.let { properties["current"] = it }
+            toml.getNumberAs<Int>("max")?.let { properties["max"] = it }
 
             return mapToObject(properties, AmmoComponent::class)
         }

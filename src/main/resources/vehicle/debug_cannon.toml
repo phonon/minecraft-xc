@@ -6,6 +6,11 @@
 
 name = "debug_cannon"
 
+item_name = "Debug Cannon"
+item_lore = [
+    "This is a debug cannon.",
+]
+
 # contains position, rotation, etc.
 [transform]
 

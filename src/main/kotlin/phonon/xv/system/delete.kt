@@ -8,11 +8,9 @@ import phonon.xv.XV
 import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.VehicleId
 import phonon.xv.core.VehicleStorage
+import phonon.xv.core.toItemStack
 import java.util.*
 
-// TODO these will likely need to be refactored.
-val vehiclePrototypeKey = NamespacedKey("xv", "vehicle_prototype")
-val elementsKey = NamespacedKey("xv", "elements")
 
 public data class DeleteVehicleRequest(
     val id: VehicleId,
@@ -36,31 +34,7 @@ public fun XV.systemDeleteVehicle(
 
         // construct item
         val item = if ( dropItem ) {
-            location!!
-            val item = ItemStack(xv.config.materialVehicle)
-            val meta = item.itemMeta
-            val container = meta.persistentDataContainer
-            // save vehicle prototype
-            container.set(vehiclePrototypeKey, PersistentDataType.STRING, vehicle.prototype.name)
-            // save each element
-            val elementsContainer = container.adapterContext.newPersistentDataContainer()
-            vehicle.elements.forEach { elt ->
-                // elt prototype still points to inserted components
-                val eltContainer = elt.prototype.toItemData(elementsContainer.adapterContext)
-                // save with prototype name as key
-                elementsContainer.set(
-                    NamespacedKey("xv", elt.prototype.name),
-                    PersistentDataType.TAG_CONTAINER,
-                    eltContainer
-                )
-            }
-            container.set(
-                elementsKey,
-                PersistentDataType.TAG_CONTAINER,
-                elementsContainer
-            )
-            item.setItemMeta(meta)
-            item
+            vehicle.toItemStack(xv.config.materialVehicle)
         } else {
             null
         }

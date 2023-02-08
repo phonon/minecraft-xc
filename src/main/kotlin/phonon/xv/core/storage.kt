@@ -6,8 +6,8 @@ import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
-public const val MAX_VEHICLE_ELEMENTS: Int = 10000
 
+public const val MAX_VEHICLE_ELEMENTS: Int = 10000
 
 
 public class VehicleStorage(
@@ -147,7 +147,8 @@ public class ComponentsStorage {
     // layout enum set => storage for lookup
     public val lookup: HashMap<EnumSet<VehicleComponentType>, ArchetypeStorage> = HashMap()
     
-    // just an array of archetypes, indices have no meaning, for iteration
+    // flattened array of archetypes (same objects as in lookup),
+    // indices have no meaning, for fast linear iteration across all archetypes
     public val archetypes: ArrayList<ArchetypeStorage> = ArrayList()
 
     // Cache for mapping components enum set => all archetypes that

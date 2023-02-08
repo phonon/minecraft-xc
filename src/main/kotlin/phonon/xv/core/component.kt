@@ -9,7 +9,7 @@ import java.util.UUID
 import com.google.gson.JsonObject
 import org.bukkit.Location
 import org.bukkit.entity.Player
-import org.bukkit.persistence.PersistentDataAdapterContext
+import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 
 /**
@@ -61,9 +61,11 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
      * stores the state of this component.
      */
     fun toItemData(
-        context: PersistentDataAdapterContext
-    ): PersistentDataContainer? {
-        return null
+        itemMeta: ItemMeta,
+        itemLore: ArrayList<String>,
+        itemData: PersistentDataContainer,
+    ) {
+        return
     }
 
     /**

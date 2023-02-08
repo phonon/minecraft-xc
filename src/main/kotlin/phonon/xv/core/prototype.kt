@@ -39,29 +39,32 @@ import kotlin.math.max
 import org.tomlj.Toml
 import org.tomlj.TomlTable
 import org.bukkit.Location
-import org.bukkit.entity.Player
+import org.bukkit.Material
 import org.bukkit.NamespacedKey
+import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataAdapterContext
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
 import phonon.xv.XV
+import phonon.xv.ITEM_KEY_PROTOTYPE
+import phonon.xv.ITEM_KEY_ELEMENTS
 import phonon.xv.component.*
 
 // namespaced keys, for use in toItem()
-val ammoKey = NamespacedKey("xv", "ammo")
-val fuelKey = NamespacedKey("xv", "fuel")
-val gunBarrelKey = NamespacedKey("xv", "gunBarrel")
-val gunTurretKey = NamespacedKey("xv", "gunTurret")
-val healthKey = NamespacedKey("xv", "health")
-val landMovementControlsKey = NamespacedKey("xv", "landMovementControls")
-val shipMovementControlsKey = NamespacedKey("xv", "shipMovementControls")
-val modelKey = NamespacedKey("xv", "model")
-val seatsKey = NamespacedKey("xv", "seats")
-val seatsRaycastKey = NamespacedKey("xv", "seatsRaycast")
-val spawnKey = NamespacedKey("xv", "spawn")
-val transformKey = NamespacedKey("xv", "transform")
+val AMMO_KEY = NamespacedKey("xv", "ammo")
+val FUEL_KEY = NamespacedKey("xv", "fuel")
+val GUN_BARREL_KEY = NamespacedKey("xv", "gun_barrel")
+val GUN_TURRET_KEY = NamespacedKey("xv", "gun_turret")
+val HEALTH_KEY = NamespacedKey("xv", "health")
+val LAND_MOVEMENT_CONTROLS_KEY = NamespacedKey("xv", "land_movement_controls")
+val SHIP_MOVEMENT_CONTROLS_KEY = NamespacedKey("xv", "ship_movement_controls")
+val MODEL_KEY = NamespacedKey("xv", "model")
+val SEATS_KEY = NamespacedKey("xv", "seats")
+val SEATS_RAYCAST_KEY = NamespacedKey("xv", "seats_raycast")
+val SPAWN_KEY = NamespacedKey("xv", "spawn")
+val TRANSFORM_KEY = NamespacedKey("xv", "transform")
 
 /**
  * VehiclePrototype defines elements in a vehicle. Used as a base
@@ -70,6 +73,10 @@ val transformKey = NamespacedKey("xv", "transform")
  */
 public data class VehiclePrototype(
     val name: String,
+    // item name
+    val itemName: String,
+    // item base lore description
+    val itemLore: List<String>,
     // tree depth-sorted elements
     val elements: List<VehicleElementPrototype>,
     // index of parent element in elements list
@@ -79,6 +86,8 @@ public data class VehiclePrototype(
     // vehicle element tree max depth
     val maxDepth: Int,
 ) {
+    val uuid: UUID = UUID.randomUUID()
+
     // root elements have no parent
     val rootElements: List<VehicleElementPrototype> = elements.filter { e -> e.parent == null }.toList()
 
@@ -96,7 +105,36 @@ public data class VehiclePrototype(
         childrenIndices = Array(children.size, { children[it].toIntArray() })
     }
 
-    val uuid: UUID = UUID.randomUUID()
+    /**
+     * Convert this prototype to an item stack with given material.
+     */
+    public fun toItemStack(material: Material): ItemStack {
+        val item = ItemStack(material, 1)
+        val itemMeta = item.getItemMeta()
+        val itemData = itemMeta.getPersistentDataContainer()
+
+        // attach prototype name
+        itemData.set(ITEM_KEY_PROTOTYPE, PersistentDataType.STRING, this.name)
+
+        // item name
+        itemMeta.setDisplayName(this.itemName)
+
+        // item lore (initialized with base prototype lore)
+        val itemLore = ArrayList<String>(this.itemLore)
+        
+        // attach element data
+        val elementsData = itemData.adapterContext.newPersistentDataContainer()
+        for ( elem in this.elements ) {
+            val elemData = elementsData.adapterContext.newPersistentDataContainer()
+            elem.toItemData(itemMeta, itemLore, elemData)
+            elementsData.set(elem.itemKey(), PersistentDataType.TAG_CONTAINER, elemData)
+        }
+        itemData.set(ITEM_KEY_ELEMENTS, PersistentDataType.TAG_CONTAINER, elementsData)
+
+        itemMeta.setLore(itemLore)
+        item.setItemMeta(itemMeta)
+        return item
+    }
 
     companion object {
         /**
@@ -109,6 +147,8 @@ public data class VehiclePrototype(
          */
         public fun fromUnsortedElements(
             name: String,
+            itemName: String,
+            itemLore: List<String>,
             unsortedElements: List<VehicleElementPrototype>,
             logger: Logger? = null,
         ): VehiclePrototype? {
@@ -238,6 +278,8 @@ public data class VehiclePrototype(
             
             return VehiclePrototype(
                 name,
+                itemName,
+                itemLore,
                 depthSortedElements,
                 depthSortedParents,
                 depthSortedDepths,
@@ -254,8 +296,14 @@ public data class VehiclePrototype(
             try {
                 val toml = Toml.parse(source)
 
-                // main vehicle name
+                // vehicle prototype name
                 val name = toml.getString("name") ?: ""
+
+                // item properties
+                val itemName = toml.getString("item_name") ?: name
+                val itemLore = toml.getArrayOrEmpty("item_lore").toList().map { it.toString() }
+
+                // vehicle elements
                 val unsortedElements = ArrayList<VehicleElementPrototype>()
 
                 // if this contains an elements table, parse each element
@@ -266,7 +314,12 @@ public data class VehiclePrototype(
                     }
                 } ?: unsortedElements.add(VehicleElementPrototype.fromToml(toml, vehicleName = name))
 
-                return VehiclePrototype.fromUnsortedElements(name, unsortedElements)
+                return VehiclePrototype.fromUnsortedElements(
+                    name,
+                    itemName,
+                    itemLore,
+                    unsortedElements,
+                )
             } catch (e: Exception) {
                 logger?.warning("Failed to parse landmine file: ${source.toString()}, ${e}")
                 e.printStackTrace()
@@ -286,6 +339,7 @@ public data class VehicleElementPrototype(
     val parent: String?,
     val vehicleName: String,
     val layout: EnumSet<VehicleComponentType>,
+    val uuid: UUID = UUID.randomUUID(), // uuid as input, when loading vehicles this is overwritten by saved uuid
     val ammo: AmmoComponent? = null,
     val fuel: FuelComponent? = null,
     val gunBarrel: GunBarrelComponent? = null,
@@ -298,11 +352,13 @@ public data class VehicleElementPrototype(
     val seatsRaycast: SeatsRaycastComponent? = null,
     val spawn: SpawnComponent? = null,
     val transform: TransformComponent? = null,
-    val uuid: UUID = UUID.randomUUID()
 ) {
-    // uuid to be passed into constructor of
-    // vehicle element
-
+    /**
+     * Return an item namespace key.
+     */
+    fun itemKey(): NamespacedKey {
+        return NamespacedKey("xv", this.name)
+    }
 
     /**
      * During creation, inject player specific properties and generate
@@ -338,67 +394,100 @@ public data class VehicleElementPrototype(
         itemData: PersistentDataContainer
     ): VehicleElementPrototype {
         return copy(
-            ammo = ammo?.injectItemProperties(itemData.get(ammoKey, PersistentDataType.TAG_CONTAINER)),
-            fuel = fuel?.injectItemProperties(itemData.get(fuelKey, PersistentDataType.TAG_CONTAINER)),
-            gunBarrel = gunBarrel?.injectItemProperties(itemData.get(gunBarrelKey, PersistentDataType.TAG_CONTAINER)),
-            gunTurret = gunTurret?.injectItemProperties(itemData.get(gunTurretKey, PersistentDataType.TAG_CONTAINER)),
-            health = health?.injectItemProperties(itemData.get(healthKey, PersistentDataType.TAG_CONTAINER)),
-            landMovementControls = landMovementControls?.injectItemProperties(itemData.get(landMovementControlsKey, PersistentDataType.TAG_CONTAINER)),
-            shipMovementControls = shipMovementControls?.injectItemProperties(itemData.get(shipMovementControlsKey, PersistentDataType.TAG_CONTAINER)),
-            model = model?.injectItemProperties(itemData.get(modelKey, PersistentDataType.TAG_CONTAINER)),
-            seats = seats?.injectItemProperties(itemData.get(seatsKey, PersistentDataType.TAG_CONTAINER)),
-            seatsRaycast = seatsRaycast?.injectItemProperties(itemData.get(seatsRaycastKey, PersistentDataType.TAG_CONTAINER)),
-            spawn = spawn?.injectItemProperties(itemData.get(spawnKey, PersistentDataType.TAG_CONTAINER)),
-            transform = transform?.injectItemProperties(itemData.get(transformKey, PersistentDataType.TAG_CONTAINER)),
+            ammo = ammo?.injectItemProperties(itemData.get(AMMO_KEY, PersistentDataType.TAG_CONTAINER)),
+            fuel = fuel?.injectItemProperties(itemData.get(FUEL_KEY, PersistentDataType.TAG_CONTAINER)),
+            gunBarrel = gunBarrel?.injectItemProperties(itemData.get(GUN_BARREL_KEY, PersistentDataType.TAG_CONTAINER)),
+            gunTurret = gunTurret?.injectItemProperties(itemData.get(GUN_TURRET_KEY, PersistentDataType.TAG_CONTAINER)),
+            health = health?.injectItemProperties(itemData.get(HEALTH_KEY, PersistentDataType.TAG_CONTAINER)),
+            landMovementControls = landMovementControls?.injectItemProperties(itemData.get(LAND_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER)),
+            shipMovementControls = shipMovementControls?.injectItemProperties(itemData.get(SHIP_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER)),
+            model = model?.injectItemProperties(itemData.get(MODEL_KEY, PersistentDataType.TAG_CONTAINER)),
+            seats = seats?.injectItemProperties(itemData.get(SEATS_KEY, PersistentDataType.TAG_CONTAINER)),
+            seatsRaycast = seatsRaycast?.injectItemProperties(itemData.get(SEATS_RAYCAST_KEY, PersistentDataType.TAG_CONTAINER)),
+            spawn = spawn?.injectItemProperties(itemData.get(SPAWN_KEY, PersistentDataType.TAG_CONTAINER)),
+            transform = transform?.injectItemProperties(itemData.get(TRANSFORM_KEY, PersistentDataType.TAG_CONTAINER)),
         )
     }
 
     /**
-     * During deletion, create a persistent data container that
-     * stores the state of all components in this prototype. Delegates
-     * data container construction to each individual component
+     * Serialize element component data into a Minecraft ItemStack item.
+     * Delegates to each individual component, which can set properties
+     * in item's meta, lore and persistent data container tree.
+     * 
+     * This mutates and modifies the input itemMeta, itemLore, and itemData
+     * with new properties. So, user must be careful when elements overwrite
+     * each other's properties.
      */
     fun toItemData(
-        context: PersistentDataAdapterContext
-    ): PersistentDataContainer {
-        val container = context.newPersistentDataContainer()
-        val ammoContainer = ammo?.toItemData(container.adapterContext)
-        val fuelContainer = fuel?.toItemData(container.adapterContext)
-        val gunBarrelContainer = gunBarrel?.toItemData(container.adapterContext)
-        val gunTurretContainer = gunTurret?.toItemData(container.adapterContext)
-        val healthContainer = health?.toItemData(container.adapterContext)
-        val landMovementControlsContainer = landMovementControls?.toItemData(container.adapterContext)
-        val shipMovementControlsContainer = shipMovementControls?.toItemData(container.adapterContext)
-        val modelContainer = model?.toItemData(container.adapterContext)
-        val seatsContainer = seats?.toItemData(container.adapterContext)
-        val seatsRaycastContainer = seatsRaycast?.toItemData(container.adapterContext)
-        val spawnContainer = spawn?.toItemData(container.adapterContext)
-        val transformContainer = transform?.toItemData(container.adapterContext)
-        if ( ammoContainer !== null )
-            container.set(ammoKey, PersistentDataType.TAG_CONTAINER, ammoContainer)
-        if ( fuelContainer !== null )
-            container.set(fuelKey, PersistentDataType.TAG_CONTAINER, fuelContainer)
-        if ( gunBarrelContainer !== null )
-            container.set(gunBarrelKey, PersistentDataType.TAG_CONTAINER, gunBarrelContainer)
-        if ( gunTurretContainer !== null )
-            container.set(gunTurretKey, PersistentDataType.TAG_CONTAINER, gunTurretContainer)
-        if ( healthContainer !== null )
-            container.set(healthKey, PersistentDataType.TAG_CONTAINER, healthContainer)
-        if ( landMovementControlsContainer !== null )
-            container.set(landMovementControlsKey, PersistentDataType.TAG_CONTAINER, landMovementControlsContainer)
-        if ( shipMovementControlsContainer !== null )
-            container.set(shipMovementControlsKey, PersistentDataType.TAG_CONTAINER, shipMovementControlsContainer)
-        if ( modelContainer !== null )
-            container.set(modelKey, PersistentDataType.TAG_CONTAINER, modelContainer)
-        if ( seatsContainer !== null )
-            container.set(seatsKey, PersistentDataType.TAG_CONTAINER, seatsContainer)
-        if ( seatsRaycastContainer !== null )
-            container.set(seatsRaycastKey, PersistentDataType.TAG_CONTAINER, seatsRaycastContainer)
-        if ( spawnContainer !== null )
-            container.set(spawnKey, PersistentDataType.TAG_CONTAINER, spawnContainer)
-        if ( transformContainer !== null )
-            container.set(transformKey, PersistentDataType.TAG_CONTAINER, transformContainer)
-        return container
+        itemMeta: ItemMeta,
+        itemLore: ArrayList<String>,
+        itemData: PersistentDataContainer,
+    ) {
+        for ( c in layout ) { // only create data containers for components which exist in layout
+            when ( c ) {
+                VehicleComponentType.AMMO -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    ammo?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(AMMO_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.FUEL -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    fuel?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(FUEL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.GUN_BARREL -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    gunBarrel?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(GUN_BARREL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.GUN_TURRET -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    gunTurret?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(GUN_TURRET_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.HEALTH -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    health?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(HEALTH_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    landMovementControls?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(LAND_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    shipMovementControls?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(SHIP_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.MODEL -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    model?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(MODEL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.SEATS -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    seats?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(SEATS_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.SEATS_RAYCAST -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    seatsRaycast?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(SEATS_RAYCAST_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.SPAWN -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    spawn?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(SPAWN_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.TRANSFORM -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    transform?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(TRANSFORM_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                null -> {}
+            }
+        }
     }
     
     /**
@@ -617,6 +706,7 @@ public data class VehicleElementPrototype(
                 parent,
                 vehicleName,
                 layout,
+                UUID.randomUUID(),
                 ammo,
                 fuel,
                 gunBarrel,

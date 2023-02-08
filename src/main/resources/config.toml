@@ -43,10 +43,12 @@ pipeline_length = 2 # how many ticks to split vehicle save into
 backup_period = 18000 # how often in ticks to save a long-term backup, default = 15 min
 json_pretty_printing = true # are vehicles saved in human-readable json, or all on one line
 
-# misc random settings
+# misc random engine settings
 [misc]
 # Setting this true will delete invaid armor stands when 
 # entities loaded. Default AVOID THIS because any error in load
 # function can cause all player vehicles to be accidentally deleted
 # (because no armor stand mappings were properly loaded)
 delete_invalid_armor_stands = false
+# max vehicle instances allowed in world
+max_vehicles = 10000

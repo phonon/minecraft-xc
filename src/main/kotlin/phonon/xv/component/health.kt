@@ -3,6 +3,7 @@ package phonon.xv.component
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import org.bukkit.NamespacedKey
+import kotlin.math.min
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.inventory.ItemStack
@@ -15,18 +16,23 @@ import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
 import phonon.xv.util.toml.*
 
-val currentHealth = NamespacedKey("xv", "current")
+// namespace keys for saving item persistent data
+val HEALTH_KEY_CURRENT = NamespacedKey("xv", "current")
 
 public data class HealthComponent(
-    var current: Double,
-    val max: Double,
+    var current: Double = -1.0,
+    val max: Double = 20.0,
 ): VehicleComponent<HealthComponent> {
     override val type = VehicleComponentType.HEALTH
 
     override fun self() = this
 
     init {
-        current = current.coerceIn(0.0, max)
+        current = if ( current <= 0.0 ) {
+            max
+        } else {
+            min(current, max)
+        }
     }
 
     /**
@@ -34,19 +40,21 @@ public data class HealthComponent(
      * a new instance of this component.
      */
     override fun injectItemProperties(
-            itemData: PersistentDataContainer?,
+        itemData: PersistentDataContainer?,
     ): HealthComponent {
-        if ( itemData === null )
-            return this.self()
+        if ( itemData === null ) return this.self()
         return this.copy(
-                current = itemData.get(currentHealth, PersistentDataType.DOUBLE)!!
+            current = itemData.get(HEALTH_KEY_CURRENT, PersistentDataType.DOUBLE)!!
         )
     }
 
-    override fun toItemData(context: PersistentDataAdapterContext): PersistentDataContainer? {
-        val container = context.newPersistentDataContainer()
-        container.set(currentHealth, PersistentDataType.DOUBLE, this.current)
-        return container
+    override fun toItemData(
+        itemMeta: ItemMeta,
+        itemLore: ArrayList<String>,
+        itemData: PersistentDataContainer,
+    ) {
+        itemData.set(HEALTH_KEY_CURRENT, PersistentDataType.DOUBLE, this.current)
+        itemLore.add("Health: ${this.current}/${this.max}")
     }
 
     override fun toJson(): JsonObject {
