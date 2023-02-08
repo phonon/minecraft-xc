@@ -37,30 +37,35 @@ public class PrototypeTest() {
                 parent=null,
                 vehicleName="debug",
                 layout=EnumSet.noneOf(VehicleComponentType::class.java),
+                components=VehicleComponents.empty(),
             ),
             VehicleElementPrototype(
                 name="child1",
                 parent="base",
                 vehicleName="debug",
                 layout=EnumSet.noneOf(VehicleComponentType::class.java),
+                components=VehicleComponents.empty(),
             ),
             VehicleElementPrototype(
                 name="child2",
                 parent="child1",
                 vehicleName="debug",
                 layout=EnumSet.noneOf(VehicleComponentType::class.java),
+                components=VehicleComponents.empty(),
             ),
             VehicleElementPrototype(
                 name="child3",
                 parent="base",
                 vehicleName="debug",
                 layout=EnumSet.noneOf(VehicleComponentType::class.java),
+                components=VehicleComponents.empty(),
             ),
             VehicleElementPrototype(
                 name="child4",
                 parent="base",
                 vehicleName="debug",
                 layout=EnumSet.noneOf(VehicleComponentType::class.java),
+                components=VehicleComponents.empty(),
             ),
         )
 
@@ -98,24 +103,28 @@ public class PrototypeTest() {
                 parent=null,
                 vehicleName="debug",
                 layout=EnumSet.noneOf(VehicleComponentType::class.java),
+                components=VehicleComponents.empty(),
             ),
             VehicleElementPrototype(
                 name="child1",
                 parent="base",
                 vehicleName="debug",
                 layout=EnumSet.noneOf(VehicleComponentType::class.java),
+                components=VehicleComponents.empty(),
             ),
             VehicleElementPrototype(
                 name="child2",
                 parent="child3",
                 vehicleName="debug",
                 layout=EnumSet.noneOf(VehicleComponentType::class.java),
+                components=VehicleComponents.empty(),
             ),
             VehicleElementPrototype(
                 name="child3",
                 parent="child2",
                 vehicleName="debug",
                 layout=EnumSet.noneOf(VehicleComponentType::class.java),
+                components=VehicleComponents.empty(),
             ),
         )
 

@@ -27,14 +27,9 @@ components = get_components()
 # archetype, prototype, component inject enum hard-codings
 # ==================================================
 template_archetype = env.get_template("template_archetype.kt")
-template_prototype = env.get_template("template_prototype.kt")
 template_serde = env.get_template("template_serde.kt")
 
 archetype_kt = template_archetype.render(
-    components=components,
-)
-
-prototype_kt = template_prototype.render(
     components=components,
 )
 
@@ -79,11 +74,6 @@ path_iterator_kt = os.path.join(DIR_OUTPUT, "core", "iterator.kt")
 with open(path_iterator_kt, "w+") as f:
     print(f"{path_iterator_kt}")
     f.write(iterator_kt)
-
-path_prototype_kt = os.path.join(DIR_OUTPUT, "core", "prototype.kt")
-with open(path_prototype_kt, "w+") as f:
-    print(f"{path_prototype_kt}")
-    f.write(prototype_kt)
 
 path_archetype_kt = os.path.join(DIR_OUTPUT, "core", "archetype.kt")
 with open(path_archetype_kt, "w+") as f:

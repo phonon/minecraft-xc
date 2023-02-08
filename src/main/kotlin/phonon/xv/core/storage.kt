@@ -1,5 +1,3 @@
-
-
 package phonon.xv.core
 
 import java.util.*
@@ -95,10 +93,10 @@ public class VehicleStorage(
         }
         val vehicle = Vehicle(
             "${prototype.name}.${id}",
+            uuid,
             id,
             prototype,
             elements,
-            uuid
         )
         this.lookup[id] = vehicle
         // TODO these keys will need to be freed upon deletion

@@ -18,6 +18,7 @@ import phonon.xv.core.INVALID_VEHICLE_ID
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.core.Vehicle
 import phonon.xv.core.VehicleComponentType
+import phonon.xv.core.VehicleComponents
 import phonon.xv.core.VehicleElement
 import phonon.xv.core.VehicleElementId
 import phonon.xv.core.VehicleElementPrototype
@@ -78,55 +79,52 @@ public fun XV.systemCreateVehicle(
             // creation item meta and persistent data container
             val itemMeta = item?.itemMeta
             val itemData = itemMeta?.persistentDataContainer
-            val itemElementsData = itemData?.get(ITEM_KEY_ELEMENTS, PersistentDataType.TAG_CONTAINER)
+            val itemElementsDataContainer = itemData?.get(ITEM_KEY_ELEMENTS, PersistentDataType.TAG_CONTAINER)
+
+            // json elements
+            val jsonElements = json?.get("elements")?.asJsonObject
 
             // inject creation properties into all element prototypes
-            val elementPrototypes: List<VehicleElementPrototype> = prototype.elements.map { elemPrototype ->
-                var proto = elemPrototype
+            val elementComponents: List<VehicleComponents> = prototype.elements.map { elemPrototype ->
+                var components = elemPrototype.components.clone()
+                val itemElementsData = itemElementsDataContainer?.get(elemPrototype.itemKey(), PersistentDataType.TAG_CONTAINER)
+
                 when ( reason ) {
                     // spawning a new vehicle ingame from item or command
                     CreateVehicleReason.NEW -> {
                         // inject creation time properties, keep in this order:
 
-                        // item properties stored in item meta
-                        proto = if ( itemElementsData !== null ) {
-                            // TODO refactor this namespaced key to somewhere that makes more sense
-                            val container = itemElementsData.get(elemPrototype.itemKey(), PersistentDataType.TAG_CONTAINER)
-                            if ( container !== null ) {
-                                proto.injectItemProperties(container)
-                            } else {
-                                proto
-                            }
+                        // item properties stored in item meta persistent data container
+                        components = if ( itemElementsData !== null ) {
+                            components.injectItemProperties(itemElementsData)
                         } else {
-                            proto
+                            components
                         }
 
                         // main spawn player, location, etc. properties
                         // player properties (this creates armor stands internally)
-                        proto = proto.injectSpawnProperties(location, player)
+                        components = components.injectSpawnProperties(location, player)
 
-                        proto
+                        components
                     }
                     
                     // loading from serialized json: only inject json properties
                     CreateVehicleReason.LOAD -> {
-                        json!!
                         // current json object is the whole vehicle json, we
                         // want just the json object with our element
-                        val elemJson = json["elements"]!!
-                                .asJsonObject[proto.name]!!
-                                .asJsonObject
+                        val elemJson = jsonElements?.get(elemPrototype.name)?.asJsonObject?.get("components")?.asJsonObject
+                        if ( elemJson !== null ) {
+                            components = components.injectJsonProperties(elemJson)
+                        }
 
-                        proto = elemPrototype.injectJsonProperties(elemJson)
-
-                        proto
+                        components
                     }
                 }
             }
 
             // try to insert each prototype into its archetype
-            val elementIds: List<VehicleElementId?> = elementPrototypes.map { elemPrototype ->
-                componentStorage.lookup[elemPrototype.layout]!!.insert(elemPrototype)
+            val elementIds: List<VehicleElementId?> = elementComponents.map { components ->
+                componentStorage.lookup[components.layout]!!.insert(components)
             }
             
             // if any are null, creation failed. remove non-null created elements
@@ -136,9 +134,9 @@ public fun XV.systemCreateVehicle(
 
                 elementIds.forEachIndexed { index, id ->
                     if ( id !== null ) {
-                        componentStorage.lookup[elementPrototypes[index].layout]?.free(id)
+                        componentStorage.lookup[elementComponents[index].layout]?.free(id)
                     } else {
-                        xv.logger.severe("Failed to create element ${elementPrototypes[index].name}")
+                        xv.logger.severe("Failed to create element ${prototype.elements[index].name}")
                     }
                 }
 
@@ -148,15 +146,19 @@ public fun XV.systemCreateVehicle(
 
             // create vehicle elements
             val elements = elementIds.mapIndexed { idx, id ->
-                val elt = VehicleElement(
-                    name="${prototype.name}.${elementPrototypes[idx].name}.${id}",
+                val elemUuid = jsonElements?.get(prototype.elements[idx].name)?.asJsonObject?.get("uuid")?.asString?.let { UUID.fromString(it) }
+                    ?: UUID.randomUUID()
+                
+                val elem = VehicleElement(
+                    name="${prototype.name}.${prototype.elements[idx].name}.${id}",
+                    uuid=elemUuid,
                     id=id!!,
-                    layout=elementPrototypes[idx].layout,
-                    elementPrototypes[idx],
-                    elementPrototypes[idx].uuid
+                    prototype=prototype.elements[idx],
+                    layout=elementComponents[idx].layout,
+                    components=elementComponents[idx],
                 )
-                xv.uuidToElement[elt.uuid] = elt
-                elt
+                xv.uuidToElement[elem.uuid] = elem
+                elem
             }
             
             // set parent/children hierarchy
@@ -197,8 +199,8 @@ public fun XV.systemCreateVehicle(
             // do element post-processing (note: can use prototype because
             // it still holds references to components)
             // for elements with armorstands models, this does entity -> element mapping
-            for ( (idx, elemProto) in elementPrototypes.withIndex() ) {
-                elemProto.afterVehicleCreated(
+            for ( (idx, components) in elementComponents.withIndex() ) {
+                components.afterVehicleCreated(
                     vehicle=xv.vehicleStorage.get(vehicleId)!!,
                     element=elements[idx],
                     entityVehicleData=entityVehicleData,

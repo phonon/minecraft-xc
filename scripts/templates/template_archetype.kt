@@ -16,9 +16,19 @@
 
 package phonon.xv.core
 
+import java.util.UUID
 import java.util.logging.Logger
 import java.util.EnumSet
 import com.google.gson.JsonObject
+import org.tomlj.Toml
+import org.tomlj.TomlTable
+import org.bukkit.Location
+import org.bukkit.NamespacedKey
+import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataContainer
+import org.bukkit.persistence.PersistentDataType
 import phonon.xv.component.*
 import java.util.Stack
 
@@ -78,10 +88,202 @@ public enum class VehicleComponentType {
     }
 }
 
+// namespaced keys, for use in toItem()
+{%- for c in components %}
+val {{ c.enum }}_KEY = NamespacedKey("xv", "{{ c.config_name }}")
+{%- endfor %}
+
 /**
- * Archetype, contains set of possible component storages.
- * Components stored in packed struct-of-arrays format.
- * Element Id used to lookup packed index.
+ * VehicleComponents contains set of all possible components for a vehicle
+ * element and a layout EnumSet that indicates the non-null components.
+ */
+public data class VehicleComponents(
+    val layout: EnumSet<VehicleComponentType>,
+    {%- for c in components %}
+    val {{ c.storage }}: {{ c.classname }}? = null,
+    {%- endfor %}
+) {
+    /**
+     * Deep-clones all components in this components set.
+     */
+    fun clone(): VehicleComponents {
+        return VehicleComponents(
+            layout,
+            {%- for c in components %}
+            {{ c.storage }} = {{ c.storage }}?.copy(),
+            {%- endfor %}
+        )
+    }
+
+    /**
+     * During creation, inject player specific properties and generate
+     * a new instance of components. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectSpawnProperties(
+        location: Location?,
+        player: Player?,
+    ): VehicleComponents {
+        return copy(
+            {%- for c in components %}
+            {{ c.storage }} = {{ c.storage }}?.injectSpawnProperties(location, player),
+            {%- endfor %}
+        )
+    }
+
+    /**
+     * During creation, inject item specific properties and generate
+     * a new instance of this component. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectItemProperties(
+        itemData: PersistentDataContainer
+    ): VehicleComponents {
+        return copy(
+            {%- for c in components %}
+            {{ c.storage }} = {{ c.storage }}?.injectItemProperties(itemData.get({{ c.enum }}_KEY, PersistentDataType.TAG_CONTAINER)),
+            {%- endfor %}
+        )
+    }
+
+    /**
+     * Serialize element component data into a Minecraft ItemStack item.
+     * Delegates to each individual component, which can set properties
+     * in item's meta, lore and persistent data container tree.
+     * 
+     * This mutates and modifies the input itemMeta, itemLore, and itemData
+     * with new properties. So, user must be careful when elements overwrite
+     * each other's properties.
+     */
+    fun toItemData(
+        itemMeta: ItemMeta,
+        itemLore: ArrayList<String>,
+        itemData: PersistentDataContainer,
+    ) {
+        for ( c in layout ) { // only create data containers for components which exist in layout
+            when ( c ) {
+                {%- for c in components %}
+                VehicleComponentType.{{ c.enum }} -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    {{ c.storage }}?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set({{ c.enum }}_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                {%- endfor %}
+                null -> {}
+            }
+        }
+    }
+    
+    /**
+     * During creation, inject json specific properties and generate
+     * a new instance of this component. Used to load serialized vehicle
+     * state from stored json objects. Delegates injecting property
+     * effects to each individual component.
+     *
+     * The json object passed into this function should be the one
+     * storing the data for the singular element, NOT the object
+     * storing the entire vehicle. See the serde file for more details
+     * on schema.
+     */
+    fun injectJsonProperties(
+        json: JsonObject,
+    ): VehicleComponents {
+        return copy(
+            {%- for c in components %}
+            {{ c.storage }} = {{ c.storage }}?.injectJsonProperties( json["{{ c.storage }}"]?.asJsonObject ),
+            {%- endfor %}
+        )
+    }
+    
+    /**
+     * During creation, for each component, send post creation properties,
+     * for post-processing after the vehicle has been created. Such as
+     * setting up entity to vehicle mappings for armor stands.
+     */
+    fun afterVehicleCreated(
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+    ) {
+        for ( c in layout ) {
+            when ( c ) {
+                {%- for c in components %}
+                VehicleComponentType.{{ c.enum }} -> {{ c.storage }}?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                {%- endfor %}
+                null -> {}
+            }
+        }
+    }
+
+    fun delete(
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>
+    ) {
+        for ( c in layout ) {
+            when ( c ) {
+                {%- for c in components %}
+                VehicleComponentType.{{ c.enum }} -> {{ c.storage }}?.delete(vehicle, element, entityVehicleData)
+                {%- endfor %}
+                null -> {}
+            }
+        }
+    }
+
+    companion object {
+        /**
+         * Returns an empty vehicle components object.
+         */
+        public fun empty(): VehicleComponents {
+            return VehicleComponents(
+                layout = EnumSet.noneOf(VehicleComponentType::class.java),
+            )
+        }
+
+        /**
+         * Parses a vehicle components object from a toml table.
+         */
+        public fun fromToml(toml: TomlTable, logger: Logger? = null): VehicleComponents {
+            // all possible components to be parsed
+            {%- for c in components %}
+            var {{ c.storage }}: {{ c.classname }}? = null
+            {%- endfor %}
+
+            // parse components from matching keys in toml
+            val layout = EnumSet.noneOf(VehicleComponentType::class.java)
+            val keys = toml.keySet()
+            for ( k in keys ) {
+                when ( k ) {
+                    "name", "parent" -> continue
+                    {%- for c in components %}
+                    "{{ c.config_name }}" -> {
+                        layout.add(VehicleComponentType.{{ c.enum }})
+                        {{ c.storage }} = {{ c.classname }}.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    {%- endfor %}
+                    else -> logger?.warning("Unknown key in vehicle element: $k")
+                }
+            }
+            
+            return VehicleComponents(
+                layout,
+                {%- for c in components %}
+                {{ c.storage }},
+                {%- endfor %}
+            )
+        }
+    }
+}
+
+/**
+ * Archetype, contains set of possible component storages which store
+ * actual vehicle component instances. Components storages are sparse sets.
+ * Archetype implements a packed struct-of-arrays format for fast iteration.
+ * Element Id used to lookup an instance's packed array index.
  */
 public class ArchetypeStorage(
     val layout: EnumSet<VehicleComponentType>,
@@ -141,14 +343,14 @@ public class ArchetypeStorage(
     }
 
     /**
-     * Insert a prototype into the archetype. Returns a new element id
+     * Insert components into the archetype. Returns a new element id
      * corresponding to its lookup index in the archetype.
      * Returns null if layout does not match or if the archetype is full.
      */
     public fun insert(
-        prototype: VehicleElementPrototype,
+        components: VehicleComponents,
     ): VehicleElementId? {
-        if ( this.layout != prototype.layout ) {
+        if ( this.layout != components.layout ) {
             return null
         }
 
@@ -168,12 +370,12 @@ public class ArchetypeStorage(
         lookup[id] = denseIndex
         elements[denseIndex] = id
 
-        // push prototype components into storages
-        for ( c in prototype.layout ) {
+        // push components into storages
+        for ( c in components.layout ) {
             when ( c ) {
                 {%- for c in components %}
                 VehicleComponentType.{{ c.enum }} -> {
-                    this.{{ c.storage }}?.pushAtDenseIndex(denseIndex, prototype.{{ c.storage }}!!)
+                    this.{{ c.storage }}?.pushAtDenseIndex(denseIndex, components.{{ c.storage }}!!)
                 }
                 {% endfor %}
                 null -> {}

@@ -249,33 +249,3 @@ fun XV.loadVehicles(readFrom: Path, logger: Logger? = null) {
 fun XV.flushCreateQueue() {
     systemCreateVehicle(storage, createRequests)
 }
-
-/**
- * Convert this vehicle to an item stack with given material.
- * Very similar logic to `VehiclePrototype.toItemStack`, except this
- * requires access to the elements storage to gather elements instance data.
- */
-fun Vehicle.toItemStack(material: Material): ItemStack {
-    val item = ItemStack(material, 1)
-    val itemMeta = item.getItemMeta()
-    val itemData = itemMeta.getPersistentDataContainer()
-
-    // attach prototype
-    itemData.set(ITEM_KEY_PROTOTYPE, PersistentDataType.STRING, this.prototype.name)
-
-    // item lore
-    val itemLore = ArrayList<String>()
-
-    // attach element data
-    val elementsData = itemData.adapterContext.newPersistentDataContainer()
-    for ( elem in this.elements ) {
-        val elemData = elementsData.adapterContext.newPersistentDataContainer()
-        elem.prototype.toItemData(itemMeta, itemLore, elemData)
-        elementsData.set(elem.prototype.itemKey(), PersistentDataType.TAG_CONTAINER, elemData)
-    }
-    itemData.set(ITEM_KEY_ELEMENTS, PersistentDataType.TAG_CONTAINER, elementsData)
-
-    item.setLore(itemLore)
-    item.setItemMeta(itemMeta)
-    return item
-}

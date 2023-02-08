@@ -26,6 +26,8 @@ typealias VehicleElementId = Int
  */
 public data class Vehicle(
     val name: String,
+    // for persistence, static across restarts
+    val uuid: UUID,
     // integer id, may vary across restarts
     val id: VehicleId,
     // prototype contains common shared base properties and
@@ -33,8 +35,6 @@ public data class Vehicle(
     val prototype: VehiclePrototype,
     // elements in this vehicle
     val elements: List<VehicleElement>,
-    // for persistence, static across restarts
-    val uuid: UUID
 ) {
     public val rootElements: List<VehicleElement>
     
@@ -50,16 +50,18 @@ public data class Vehicle(
  */
 public data class VehicleElement(
     val name: String,
+    // for persistence, static across restarts
+    val uuid: UUID,
     // integer id, may vary across restarts
     val id: VehicleElementId,
+    // Reference to prototype, contains base element properties.
+    val prototype: VehicleElementPrototype,
     // EnumSet enforces only at most 1 of any component type.
     // Adding this set here simplifies deleting vehicle element.
     // This is similar to a "bitset" ECS data layout.
     val layout: EnumSet<VehicleComponentType>,
-    // Reference to prototype, contains base element properties.
-    val prototype: VehicleElementPrototype,
-    // for persistence, static across restarts
-    val uuid: UUID,
+    // components in this element
+    val components: VehicleComponents,
 ) {
     // parent and children hierarchy set lazily after creation
     var parent: VehicleElement? = null

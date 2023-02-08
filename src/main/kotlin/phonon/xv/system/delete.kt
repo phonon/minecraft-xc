@@ -8,7 +8,6 @@ import phonon.xv.XV
 import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.VehicleId
 import phonon.xv.core.VehicleStorage
-import phonon.xv.core.toItemStack
 import java.util.*
 
 
@@ -34,7 +33,10 @@ public fun XV.systemDeleteVehicle(
 
         // construct item
         val item = if ( dropItem ) {
-            vehicle.toItemStack(xv.config.materialVehicle)
+            vehicle.prototype.toItemStack(
+                xv.config.materialVehicle,
+                vehicle.elements,
+            )
         } else {
             null
         }
@@ -43,12 +45,12 @@ public fun XV.systemDeleteVehicle(
         // free vehicle
         vehicleStorage.free(id)
         // free vehicle elements
-        vehicle.elements.forEach {
+        vehicle.elements.forEach { element ->
             // prototype still points to inserted components
-            it.prototype.delete(vehicle, it, xv.entityVehicleData)
+            element.components.delete(vehicle, element, xv.entityVehicleData)
             // free from archetype
-            val archetype = componentStorage.lookup[it.layout]!!
-            archetype.free(it.id)
+            val archetype = componentStorage.lookup[element.layout]!!
+            archetype.free(element.id)
         }
         // drop item
         if ( dropItem && item !== null ) {

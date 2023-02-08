@@ -30,10 +30,7 @@ public class ArchetypeTest() {
         )
 
         for ( i in 0..3 ) {
-            val fuel = VehicleElementPrototype(
-                name = "fuel",
-                parent = null,
-                vehicleName = "test",
+            val fuel = VehicleComponents(
                 layout = EnumSet.of(
                     VehicleComponentType.FUEL,
                 ),
@@ -72,10 +69,7 @@ public class ArchetypeTest() {
         )
 
         for ( i in 0..200 ) {
-            val fuel = VehicleElementPrototype(
-                name = "fuel",
-                parent = null,
-                vehicleName = "test",
+            val fuel = VehicleComponents(
                 layout = EnumSet.of(
                     VehicleComponentType.FUEL,
                 ),

@@ -16,9 +16,19 @@
 
 package phonon.xv.core
 
+import java.util.UUID
 import java.util.logging.Logger
 import java.util.EnumSet
 import com.google.gson.JsonObject
+import org.tomlj.Toml
+import org.tomlj.TomlTable
+import org.bukkit.Location
+import org.bukkit.NamespacedKey
+import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataContainer
+import org.bukkit.persistence.PersistentDataType
 import phonon.xv.component.*
 import java.util.Stack
 
@@ -96,10 +106,431 @@ public enum class VehicleComponentType {
     }
 }
 
+// namespaced keys, for use in toItem()
+val AMMO_KEY = NamespacedKey("xv", "ammo")
+val FUEL_KEY = NamespacedKey("xv", "fuel")
+val GUN_BARREL_KEY = NamespacedKey("xv", "gun_barrel")
+val GUN_TURRET_KEY = NamespacedKey("xv", "gun_turret")
+val HEALTH_KEY = NamespacedKey("xv", "health")
+val LAND_MOVEMENT_CONTROLS_KEY = NamespacedKey("xv", "land_movement_controls")
+val SHIP_MOVEMENT_CONTROLS_KEY = NamespacedKey("xv", "ship_movement_controls")
+val MODEL_KEY = NamespacedKey("xv", "model")
+val SEATS_KEY = NamespacedKey("xv", "seats")
+val SEATS_RAYCAST_KEY = NamespacedKey("xv", "seats_raycast")
+val SPAWN_KEY = NamespacedKey("xv", "spawn")
+val TRANSFORM_KEY = NamespacedKey("xv", "transform")
+
 /**
- * Archetype, contains set of possible component storages.
- * Components stored in packed struct-of-arrays format.
- * Element Id used to lookup packed index.
+ * VehicleComponents contains set of all possible components for a vehicle
+ * element and a layout EnumSet that indicates the non-null components.
+ */
+public data class VehicleComponents(
+    val layout: EnumSet<VehicleComponentType>,
+    val ammo: AmmoComponent? = null,
+    val fuel: FuelComponent? = null,
+    val gunBarrel: GunBarrelComponent? = null,
+    val gunTurret: GunTurretComponent? = null,
+    val health: HealthComponent? = null,
+    val landMovementControls: LandMovementControlsComponent? = null,
+    val shipMovementControls: ShipMovementControlsComponent? = null,
+    val model: ModelComponent? = null,
+    val seats: SeatsComponent? = null,
+    val seatsRaycast: SeatsRaycastComponent? = null,
+    val spawn: SpawnComponent? = null,
+    val transform: TransformComponent? = null,
+) {
+    /**
+     * Deep-clones all components in this components set.
+     */
+    fun clone(): VehicleComponents {
+        return VehicleComponents(
+            layout,
+            ammo = ammo?.copy(),
+            fuel = fuel?.copy(),
+            gunBarrel = gunBarrel?.copy(),
+            gunTurret = gunTurret?.copy(),
+            health = health?.copy(),
+            landMovementControls = landMovementControls?.copy(),
+            shipMovementControls = shipMovementControls?.copy(),
+            model = model?.copy(),
+            seats = seats?.copy(),
+            seatsRaycast = seatsRaycast?.copy(),
+            spawn = spawn?.copy(),
+            transform = transform?.copy(),
+        )
+    }
+
+    /**
+     * During creation, inject player specific properties and generate
+     * a new instance of components. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectSpawnProperties(
+        location: Location?,
+        player: Player?,
+    ): VehicleComponents {
+        return copy(
+            ammo = ammo?.injectSpawnProperties(location, player),
+            fuel = fuel?.injectSpawnProperties(location, player),
+            gunBarrel = gunBarrel?.injectSpawnProperties(location, player),
+            gunTurret = gunTurret?.injectSpawnProperties(location, player),
+            health = health?.injectSpawnProperties(location, player),
+            landMovementControls = landMovementControls?.injectSpawnProperties(location, player),
+            shipMovementControls = shipMovementControls?.injectSpawnProperties(location, player),
+            model = model?.injectSpawnProperties(location, player),
+            seats = seats?.injectSpawnProperties(location, player),
+            seatsRaycast = seatsRaycast?.injectSpawnProperties(location, player),
+            spawn = spawn?.injectSpawnProperties(location, player),
+            transform = transform?.injectSpawnProperties(location, player),
+        )
+    }
+
+    /**
+     * During creation, inject item specific properties and generate
+     * a new instance of this component. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectItemProperties(
+        itemData: PersistentDataContainer
+    ): VehicleComponents {
+        return copy(
+            ammo = ammo?.injectItemProperties(itemData.get(AMMO_KEY, PersistentDataType.TAG_CONTAINER)),
+            fuel = fuel?.injectItemProperties(itemData.get(FUEL_KEY, PersistentDataType.TAG_CONTAINER)),
+            gunBarrel = gunBarrel?.injectItemProperties(itemData.get(GUN_BARREL_KEY, PersistentDataType.TAG_CONTAINER)),
+            gunTurret = gunTurret?.injectItemProperties(itemData.get(GUN_TURRET_KEY, PersistentDataType.TAG_CONTAINER)),
+            health = health?.injectItemProperties(itemData.get(HEALTH_KEY, PersistentDataType.TAG_CONTAINER)),
+            landMovementControls = landMovementControls?.injectItemProperties(itemData.get(LAND_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER)),
+            shipMovementControls = shipMovementControls?.injectItemProperties(itemData.get(SHIP_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER)),
+            model = model?.injectItemProperties(itemData.get(MODEL_KEY, PersistentDataType.TAG_CONTAINER)),
+            seats = seats?.injectItemProperties(itemData.get(SEATS_KEY, PersistentDataType.TAG_CONTAINER)),
+            seatsRaycast = seatsRaycast?.injectItemProperties(itemData.get(SEATS_RAYCAST_KEY, PersistentDataType.TAG_CONTAINER)),
+            spawn = spawn?.injectItemProperties(itemData.get(SPAWN_KEY, PersistentDataType.TAG_CONTAINER)),
+            transform = transform?.injectItemProperties(itemData.get(TRANSFORM_KEY, PersistentDataType.TAG_CONTAINER)),
+        )
+    }
+
+    /**
+     * Serialize element component data into a Minecraft ItemStack item.
+     * Delegates to each individual component, which can set properties
+     * in item's meta, lore and persistent data container tree.
+     * 
+     * This mutates and modifies the input itemMeta, itemLore, and itemData
+     * with new properties. So, user must be careful when elements overwrite
+     * each other's properties.
+     */
+    fun toItemData(
+        itemMeta: ItemMeta,
+        itemLore: ArrayList<String>,
+        itemData: PersistentDataContainer,
+    ) {
+        for ( c in layout ) { // only create data containers for components which exist in layout
+            when ( c ) {
+                VehicleComponentType.AMMO -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    ammo?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(AMMO_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.FUEL -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    fuel?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(FUEL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.GUN_BARREL -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    gunBarrel?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(GUN_BARREL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.GUN_TURRET -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    gunTurret?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(GUN_TURRET_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.HEALTH -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    health?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(HEALTH_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    landMovementControls?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(LAND_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    shipMovementControls?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(SHIP_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.MODEL -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    model?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(MODEL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.SEATS -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    seats?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(SEATS_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.SEATS_RAYCAST -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    seatsRaycast?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(SEATS_RAYCAST_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.SPAWN -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    spawn?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(SPAWN_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.TRANSFORM -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    transform?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(TRANSFORM_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                null -> {}
+            }
+        }
+    }
+    
+    /**
+     * During creation, inject json specific properties and generate
+     * a new instance of this component. Used to load serialized vehicle
+     * state from stored json objects. Delegates injecting property
+     * effects to each individual component.
+     *
+     * The json object passed into this function should be the one
+     * storing the data for the singular element, NOT the object
+     * storing the entire vehicle. See the serde file for more details
+     * on schema.
+     */
+    fun injectJsonProperties(
+        json: JsonObject,
+    ): VehicleComponents {
+        return copy(
+            ammo = ammo?.injectJsonProperties( json["ammo"]?.asJsonObject ),
+            fuel = fuel?.injectJsonProperties( json["fuel"]?.asJsonObject ),
+            gunBarrel = gunBarrel?.injectJsonProperties( json["gunBarrel"]?.asJsonObject ),
+            gunTurret = gunTurret?.injectJsonProperties( json["gunTurret"]?.asJsonObject ),
+            health = health?.injectJsonProperties( json["health"]?.asJsonObject ),
+            landMovementControls = landMovementControls?.injectJsonProperties( json["landMovementControls"]?.asJsonObject ),
+            shipMovementControls = shipMovementControls?.injectJsonProperties( json["shipMovementControls"]?.asJsonObject ),
+            model = model?.injectJsonProperties( json["model"]?.asJsonObject ),
+            seats = seats?.injectJsonProperties( json["seats"]?.asJsonObject ),
+            seatsRaycast = seatsRaycast?.injectJsonProperties( json["seatsRaycast"]?.asJsonObject ),
+            spawn = spawn?.injectJsonProperties( json["spawn"]?.asJsonObject ),
+            transform = transform?.injectJsonProperties( json["transform"]?.asJsonObject ),
+        )
+    }
+    
+    /**
+     * During creation, for each component, send post creation properties,
+     * for post-processing after the vehicle has been created. Such as
+     * setting up entity to vehicle mappings for armor stands.
+     */
+    fun afterVehicleCreated(
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+    ) {
+        for ( c in layout ) {
+            when ( c ) {
+                VehicleComponentType.AMMO -> ammo?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.FUEL -> fuel?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.GUN_BARREL -> gunBarrel?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.GUN_TURRET -> gunTurret?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.HEALTH -> health?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.MODEL -> model?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.SEATS -> seats?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.SPAWN -> spawn?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.TRANSFORM -> transform?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                null -> {}
+            }
+        }
+    }
+
+    fun delete(
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>
+    ) {
+        for ( c in layout ) {
+            when ( c ) {
+                VehicleComponentType.AMMO -> ammo?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.FUEL -> fuel?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.GUN_BARREL -> gunBarrel?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.GUN_TURRET -> gunTurret?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.HEALTH -> health?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.MODEL -> model?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.SEATS -> seats?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.SPAWN -> spawn?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.TRANSFORM -> transform?.delete(vehicle, element, entityVehicleData)
+                null -> {}
+            }
+        }
+    }
+
+    companion object {
+        /**
+         * Returns an empty vehicle components object.
+         */
+        public fun empty(): VehicleComponents {
+            return VehicleComponents(
+                layout = EnumSet.noneOf(VehicleComponentType::class.java),
+            )
+        }
+
+        /**
+         * Parses a vehicle components object from a toml table.
+         */
+        public fun fromToml(toml: TomlTable, logger: Logger? = null): VehicleComponents {
+            // all possible components to be parsed
+            var ammo: AmmoComponent? = null
+            var fuel: FuelComponent? = null
+            var gunBarrel: GunBarrelComponent? = null
+            var gunTurret: GunTurretComponent? = null
+            var health: HealthComponent? = null
+            var landMovementControls: LandMovementControlsComponent? = null
+            var shipMovementControls: ShipMovementControlsComponent? = null
+            var model: ModelComponent? = null
+            var seats: SeatsComponent? = null
+            var seatsRaycast: SeatsRaycastComponent? = null
+            var spawn: SpawnComponent? = null
+            var transform: TransformComponent? = null
+
+            // parse components from matching keys in toml
+            val layout = EnumSet.noneOf(VehicleComponentType::class.java)
+            val keys = toml.keySet()
+            for ( k in keys ) {
+                when ( k ) {
+                    "name", "parent" -> continue
+                    "ammo" -> {
+                        layout.add(VehicleComponentType.AMMO)
+                        ammo = AmmoComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "fuel" -> {
+                        layout.add(VehicleComponentType.FUEL)
+                        fuel = FuelComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "gun_barrel" -> {
+                        layout.add(VehicleComponentType.GUN_BARREL)
+                        gunBarrel = GunBarrelComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "gun_turret" -> {
+                        layout.add(VehicleComponentType.GUN_TURRET)
+                        gunTurret = GunTurretComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "health" -> {
+                        layout.add(VehicleComponentType.HEALTH)
+                        health = HealthComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "land_movement_controls" -> {
+                        layout.add(VehicleComponentType.LAND_MOVEMENT_CONTROLS)
+                        landMovementControls = LandMovementControlsComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "ship_movement_controls" -> {
+                        layout.add(VehicleComponentType.SHIP_MOVEMENT_CONTROLS)
+                        shipMovementControls = ShipMovementControlsComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "model" -> {
+                        layout.add(VehicleComponentType.MODEL)
+                        model = ModelComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "seats" -> {
+                        layout.add(VehicleComponentType.SEATS)
+                        seats = SeatsComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "seats_raycast" -> {
+                        layout.add(VehicleComponentType.SEATS_RAYCAST)
+                        seatsRaycast = SeatsRaycastComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "spawn" -> {
+                        layout.add(VehicleComponentType.SPAWN)
+                        spawn = SpawnComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "transform" -> {
+                        layout.add(VehicleComponentType.TRANSFORM)
+                        transform = TransformComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    else -> logger?.warning("Unknown key in vehicle element: $k")
+                }
+            }
+            
+            return VehicleComponents(
+                layout,
+                ammo,
+                fuel,
+                gunBarrel,
+                gunTurret,
+                health,
+                landMovementControls,
+                shipMovementControls,
+                model,
+                seats,
+                seatsRaycast,
+                spawn,
+                transform,
+            )
+        }
+    }
+}
+
+/**
+ * Archetype, contains set of possible component storages which store
+ * actual vehicle component instances. Components storages are sparse sets.
+ * Archetype implements a packed struct-of-arrays format for fast iteration.
+ * Element Id used to lookup an instance's packed array index.
  */
 public class ArchetypeStorage(
     val layout: EnumSet<VehicleComponentType>,
@@ -197,14 +628,14 @@ public class ArchetypeStorage(
     }
 
     /**
-     * Insert a prototype into the archetype. Returns a new element id
+     * Insert components into the archetype. Returns a new element id
      * corresponding to its lookup index in the archetype.
      * Returns null if layout does not match or if the archetype is full.
      */
     public fun insert(
-        prototype: VehicleElementPrototype,
+        components: VehicleComponents,
     ): VehicleElementId? {
-        if ( this.layout != prototype.layout ) {
+        if ( this.layout != components.layout ) {
             return null
         }
 
@@ -224,55 +655,55 @@ public class ArchetypeStorage(
         lookup[id] = denseIndex
         elements[denseIndex] = id
 
-        // push prototype components into storages
-        for ( c in prototype.layout ) {
+        // push components into storages
+        for ( c in components.layout ) {
             when ( c ) {
                 VehicleComponentType.AMMO -> {
-                    this.ammo?.pushAtDenseIndex(denseIndex, prototype.ammo!!)
+                    this.ammo?.pushAtDenseIndex(denseIndex, components.ammo!!)
                 }
                 
                 VehicleComponentType.FUEL -> {
-                    this.fuel?.pushAtDenseIndex(denseIndex, prototype.fuel!!)
+                    this.fuel?.pushAtDenseIndex(denseIndex, components.fuel!!)
                 }
                 
                 VehicleComponentType.GUN_BARREL -> {
-                    this.gunBarrel?.pushAtDenseIndex(denseIndex, prototype.gunBarrel!!)
+                    this.gunBarrel?.pushAtDenseIndex(denseIndex, components.gunBarrel!!)
                 }
                 
                 VehicleComponentType.GUN_TURRET -> {
-                    this.gunTurret?.pushAtDenseIndex(denseIndex, prototype.gunTurret!!)
+                    this.gunTurret?.pushAtDenseIndex(denseIndex, components.gunTurret!!)
                 }
                 
                 VehicleComponentType.HEALTH -> {
-                    this.health?.pushAtDenseIndex(denseIndex, prototype.health!!)
+                    this.health?.pushAtDenseIndex(denseIndex, components.health!!)
                 }
                 
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> {
-                    this.landMovementControls?.pushAtDenseIndex(denseIndex, prototype.landMovementControls!!)
+                    this.landMovementControls?.pushAtDenseIndex(denseIndex, components.landMovementControls!!)
                 }
                 
                 VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> {
-                    this.shipMovementControls?.pushAtDenseIndex(denseIndex, prototype.shipMovementControls!!)
+                    this.shipMovementControls?.pushAtDenseIndex(denseIndex, components.shipMovementControls!!)
                 }
                 
                 VehicleComponentType.MODEL -> {
-                    this.model?.pushAtDenseIndex(denseIndex, prototype.model!!)
+                    this.model?.pushAtDenseIndex(denseIndex, components.model!!)
                 }
                 
                 VehicleComponentType.SEATS -> {
-                    this.seats?.pushAtDenseIndex(denseIndex, prototype.seats!!)
+                    this.seats?.pushAtDenseIndex(denseIndex, components.seats!!)
                 }
                 
                 VehicleComponentType.SEATS_RAYCAST -> {
-                    this.seatsRaycast?.pushAtDenseIndex(denseIndex, prototype.seatsRaycast!!)
+                    this.seatsRaycast?.pushAtDenseIndex(denseIndex, components.seatsRaycast!!)
                 }
                 
                 VehicleComponentType.SPAWN -> {
-                    this.spawn?.pushAtDenseIndex(denseIndex, prototype.spawn!!)
+                    this.spawn?.pushAtDenseIndex(denseIndex, components.spawn!!)
                 }
                 
                 VehicleComponentType.TRANSFORM -> {
-                    this.transform?.pushAtDenseIndex(denseIndex, prototype.transform!!)
+                    this.transform?.pushAtDenseIndex(denseIndex, components.transform!!)
                 }
                 
                 null -> {}
