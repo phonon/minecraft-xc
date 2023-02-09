@@ -6,6 +6,7 @@ import org.bukkit.NamespacedKey
 import kotlin.math.min
 import java.util.logging.Logger
 import org.tomlj.TomlTable
+import org.bukkit.ChatColor
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataAdapterContext
@@ -54,7 +55,7 @@ public data class HealthComponent(
         itemData: PersistentDataContainer,
     ) {
         itemData.set(HEALTH_KEY_CURRENT, PersistentDataType.DOUBLE, this.current)
-        itemLore.add("Health: ${this.current}/${this.max}")
+        itemLore.add("${ChatColor.GRAY}Health: ${this.current.toInt()}/${this.max.toInt()}")
     }
 
     override fun toJson(): JsonObject {
