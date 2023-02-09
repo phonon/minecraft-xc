@@ -8,7 +8,15 @@ package phonon.xv.core
 
 import java.util.EnumSet
 import java.util.UUID
+import org.bukkit.NamespacedKey
 import com.google.gson.JsonObject
+
+// namespaced keys for storing vehicle data in mineman ItemStack
+internal val ITEM_KEY_PROTOTYPE = NamespacedKey("xv", "prototype")
+internal val ITEM_KEY_ELEMENTS = NamespacedKey("xv", "elements")
+
+// namespaced keys for storing vehicle data in mineman Entity
+internal val ENTITY_KEY_COMPONENT = NamespacedKey("xv", "component")
 
 // Vehicle id is just wrapper for Int
 typealias VehicleId = Int
@@ -108,11 +116,9 @@ public data class VehicleElement(
  */
 public data class EntityVehicleData(
     // vehicle id
-    val vehicleId: VehicleId,
+    val vehicle: Vehicle,
     // vehicle element id in vehicle
-    val elementId: VehicleElementId,
-    // vehicle element component layout
-    val layout: EnumSet<VehicleComponentType>,
+    val element: VehicleElement,
     // specific component this entity is linked to
     val componentType: VehicleComponentType,
 )

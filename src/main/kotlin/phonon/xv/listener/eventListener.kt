@@ -25,7 +25,7 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.persistence.PersistentDataType
 import org.spigotmc.event.entity.EntityDismountEvent
 import phonon.xv.XV
-import phonon.xv.ITEM_KEY_PROTOTYPE
+import phonon.xv.core.ITEM_KEY_PROTOTYPE
 import phonon.xv.system.CreateVehicleRequest
 import phonon.xv.system.MountVehicleRequest
 import phonon.xv.system.DismountVehicleRequest
@@ -41,8 +41,8 @@ public class EventListener(val xv: XV): Listener {
         if ( vehicleData !== null ) {
             xv.mountRequests.add(MountVehicleRequest(
                 player = player,
-                elementId = vehicleData.elementId,
-                layout = vehicleData.layout,
+                elementId = vehicleData.element.id,
+                layout = vehicleData.element.layout,
                 componentType = vehicleData.componentType,
             ))
         }
@@ -125,7 +125,7 @@ public class EventListener(val xv: XV): Listener {
             if ( vehicleData !== null ) {
                 xv.dismountRequests.add(DismountVehicleRequest(
                     player = player,
-                    elementId = vehicleData.elementId,
+                    elementId = vehicleData.element.id,
                     componentType = vehicleData.componentType,
                 ))
             }

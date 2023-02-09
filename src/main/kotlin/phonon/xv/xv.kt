@@ -30,11 +30,6 @@ import java.util.Queue
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-
-// namespaced keys for storing vehicle item data
-internal val ITEM_KEY_PROTOTYPE = NamespacedKey("xv", "prototype")
-internal val ITEM_KEY_ELEMENTS = NamespacedKey("xv", "elements")
-
 /**
  * XV engine global state.
  * Stores all game state and provide XV engine api.

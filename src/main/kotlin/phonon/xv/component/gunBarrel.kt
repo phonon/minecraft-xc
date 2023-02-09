@@ -13,7 +13,9 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
+import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.EulerAngle
+import phonon.xv.core.ENTITY_KEY_COMPONENT
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.core.Vehicle
 import phonon.xv.core.VehicleComponent
@@ -133,6 +135,7 @@ public data class GunBarrelComponent(
         locSpawn.pitch = 0f
 
         val armorstand: ArmorStand = locSpawn.world.spawn(locSpawn, ArmorStand::class.java)
+        armorstand.persistentDataContainer.set(ENTITY_KEY_COMPONENT, PersistentDataType.STRING, VehicleComponentType.GUN_BARREL.toString())
         armorstand.setGravity(false)
         armorstand.setInvulnerable(true)
         armorstand.setVisible(armorstandVisible)
@@ -150,6 +153,21 @@ public data class GunBarrelComponent(
         )
     }
 
+    override fun toJson(): JsonObject {
+        val json = JsonObject()
+        json.addProperty("yaw", this.yaw)
+        json.addProperty("pitch", this.pitch)
+        return json
+    }
+
+    override fun injectJsonProperties(json: JsonObject?): GunBarrelComponent {
+        if ( json === null ) return this.self()
+        return this.copy(
+            yaw = json["yaw"]?.asDouble ?: 0.0,
+            pitch = json["pitch"]?.asDouble ?: 0.0,
+        )
+    }
+
     /**
      * After component created, add armorstand to vehicle mappings,
      * and add model to armorstand.
@@ -163,16 +181,15 @@ public data class GunBarrelComponent(
         if ( armorstand !== null ) {
             // entity -> vehicle mapping
             entityVehicleData[armorstand.uniqueId] = EntityVehicleData(
-                vehicle.id,
-                element.id,
-                element.layout,
+                vehicle,
+                element,
                 VehicleComponentType.GUN_BARREL
             )
 
             // add a stable entity reassociation key used to associate entity
             // with element this should be stable even if the armor stand
             // entity needs to be re-created
-            armorstand.setVehicleUuid(element.uuid)
+            armorstand.setVehicleUuid(vehicle.uuid, element.uuid)
 
             // add model to armorstand
             if ( modelId > 0 ) {
@@ -190,6 +207,26 @@ public data class GunBarrelComponent(
         if ( stand !== null ) {
             entityVehicleData.remove(stand.uniqueId)
             stand.remove()
+        }
+    }
+
+    /**
+     * Try to re-attach armorstand to this component, during reloading.
+     */
+    fun reassociateArmorstand(
+        entity: Entity,
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+    ) {
+        if ( entity is ArmorStand ) {
+            this.armorstand = entity
+            // entity -> vehicle mapping
+            entityVehicleData[entity.uniqueId] = EntityVehicleData(
+                vehicle,
+                element,
+                VehicleComponentType.GUN_BARREL,
+            )
         }
     }
 

@@ -1,9 +1,10 @@
 package phonon.xv.component
 
-import com.google.gson.JsonObject
 import java.util.UUID
 import java.util.EnumSet
 import java.util.logging.Logger
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import org.tomlj.TomlTable
 import org.bukkit.Location
 import org.bukkit.Material
@@ -13,7 +14,9 @@ import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
+import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.EulerAngle
+import phonon.xv.core.ENTITY_KEY_COMPONENT
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.core.Vehicle
 import phonon.xv.core.VehicleComponent
@@ -198,6 +201,7 @@ public data class GunTurretComponent(
         locSpawnTurret.pitch = 0f
 
         val armorstandTurret: ArmorStand = locSpawnTurret.world.spawn(locSpawnTurret, ArmorStand::class.java)
+        armorstandTurret.persistentDataContainer.set(ENTITY_KEY_COMPONENT, PersistentDataType.STRING, VehicleComponentType.GUN_TURRET.toString())
         armorstandTurret.setGravity(false)
         armorstandTurret.setInvulnerable(true)
         armorstandTurret.setVisible(armorstandVisible)
@@ -213,6 +217,7 @@ public data class GunTurretComponent(
         locSpawnBarrel.pitch = 0f
         
         val armorstandBarrel: ArmorStand = locSpawnBarrel.world.spawn(locSpawnBarrel, ArmorStand::class.java)
+        armorstandBarrel.persistentDataContainer.set(ENTITY_KEY_COMPONENT, PersistentDataType.STRING, VehicleComponentType.GUN_TURRET.toString())
         armorstandBarrel.setGravity(false)
         armorstandBarrel.setInvulnerable(true)
         armorstandBarrel.setVisible(armorstandVisible)
@@ -226,9 +231,34 @@ public data class GunTurretComponent(
         return this.copy(
             armorstandBarrel = armorstandBarrel,
             armorstandTurret = armorstandTurret,
+            uuidBarrel = armorstandBarrel.uniqueId,
+            uuidTurret = armorstandTurret.uniqueId,
             turretYaw = spawnYaw,
             barrelYaw = spawnYaw,
             barrelPitch = 0.0,
+        )
+    }
+
+    override fun toJson(): JsonObject {
+        val json = JsonObject()
+        json.add("uuidBarrel", JsonPrimitive(this.uuidBarrel.toString()))
+        json.add("uuidTurret", JsonPrimitive(this.uuidTurret.toString()))
+        json.add("turretYaw", JsonPrimitive(this.turretYaw))
+        json.add("turretPitch", JsonPrimitive(this.turretPitch))
+        json.add("barrelYaw", JsonPrimitive(this.barrelYaw))
+        json.add("barrelPitch", JsonPrimitive(this.barrelPitch))
+        return json
+    }
+
+    override fun injectJsonProperties(json: JsonObject?): GunTurretComponent {
+        if ( json === null ) return this.self()
+        return this.copy(
+            uuidBarrel = json["uuidBarrel"]?.let { UUID.fromString(it.asString) } ?: run { UUID.randomUUID() },
+            uuidTurret = json["uuidTurret"]?.let { UUID.fromString(it.asString) } ?: run { UUID.randomUUID() },
+            turretYaw = json["turretYaw"]?.asDouble ?: 0.0,
+            turretPitch = json["turretPitch"]?.asDouble ?: 0.0,
+            barrelYaw = json["barrelYaw"]?.asDouble ?: 0.0,
+            barrelPitch = json["barrelPitch"]?.asDouble ?: 0.0,
         )
     }
 
@@ -246,12 +276,11 @@ public data class GunTurretComponent(
             // add a stable entity reassociation key used to associate entity
             // with element this should be stable even if the armor stand
             // entity needs to be re-created
-            armorstandTurret.setVehicleUuid(element.uuid)
+            armorstandTurret.setVehicleUuid(vehicle.uuid, element.uuid)
             // entity -> vehicle mapping
             entityVehicleData[armorstandTurret.uniqueId] = EntityVehicleData(
-                vehicle.id,
-                element.id,
-                element.layout,
+                vehicle,
+                element,
                 VehicleComponentType.GUN_TURRET,
             )
 
@@ -263,12 +292,11 @@ public data class GunTurretComponent(
 
         val armorstandBarrel = this.armorstandBarrel
         if ( armorstandBarrel !== null ) {
-            armorstandBarrel.setVehicleUuid(element.uuid)
+            armorstandBarrel.setVehicleUuid(vehicle.uuid, element.uuid)
             // entity -> vehicle mapping
             entityVehicleData[armorstandBarrel.uniqueId] = EntityVehicleData(
-                vehicle.id,
-                element.id,
-                element.layout,
+                vehicle,
+                element,
                 VehicleComponentType.GUN_TURRET,
             )
 
@@ -293,6 +321,38 @@ public data class GunTurretComponent(
         if ( standBarrel !== null ) {
             entityVehicleData.remove(standBarrel.uniqueId)
             standBarrel.remove()
+        }
+    }
+
+    /**
+     * Try to re-attach armorstand to this component, during reloading.
+     */
+    fun reassociateArmorstand(
+        entity: Entity,
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+    ) {
+        // println("armorstand: ${entity.getUniqueId()}}, uuidBarrel: ${this.uuidBarrel}, uuidTurret: ${this.uuidTurret}") // debug
+        if ( entity is ArmorStand ) {
+            val uuid = entity.getUniqueId()
+            if ( uuid == this.uuidBarrel ) {
+                this.armorstandBarrel = entity
+                // entity -> vehicle mapping
+                entityVehicleData[entity.uniqueId] = EntityVehicleData(
+                    vehicle,
+                    element,
+                    VehicleComponentType.GUN_TURRET,
+                )
+            } else if ( uuid == this.uuidTurret ) {
+                this.armorstandTurret = entity
+                // entity -> vehicle mapping
+                entityVehicleData[entity.uniqueId] = EntityVehicleData(
+                    vehicle,
+                    element,
+                    VehicleComponentType.GUN_TURRET,
+                )
+            }
         }
     }
 

@@ -23,7 +23,7 @@ import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
 import phonon.xv.XV
-import phonon.xv.ITEM_KEY_ELEMENTS
+import phonon.xv.core.ITEM_KEY_ELEMENTS
 import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.INVALID_VEHICLE_ID
 import phonon.xv.core.EntityVehicleData
