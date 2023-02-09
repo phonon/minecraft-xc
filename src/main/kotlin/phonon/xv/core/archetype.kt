@@ -227,67 +227,117 @@ public data class VehicleComponents(
             when ( c ) {
                 VehicleComponentType.AMMO -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    ammo?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    ammo!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(AMMO_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.FUEL -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    fuel?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    fuel!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(FUEL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.GUN_BARREL -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    gunBarrel?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    gunBarrel!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(GUN_BARREL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.GUN_TURRET -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    gunTurret?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    gunTurret!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(GUN_TURRET_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.HEALTH -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    health?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    health!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(HEALTH_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    landMovementControls?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    landMovementControls!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(LAND_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    shipMovementControls?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    shipMovementControls!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(SHIP_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.MODEL -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    model?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    model!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(MODEL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.SEATS -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    seats?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    seats!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(SEATS_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.SEATS_RAYCAST -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    seatsRaycast?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    seatsRaycast!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(SEATS_RAYCAST_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.SPAWN -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    spawn?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    spawn!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(SPAWN_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.TRANSFORM -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    transform?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    transform!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(TRANSFORM_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 null -> {}
             }
         }
+    }
+
+    /**
+     * Serialize components set into a json object.
+     */
+    fun toJson(): JsonObject {
+        val json = JsonObject()
+        for ( c in this.layout ) {
+            // serialize component state in json
+            when ( c ) {
+                VehicleComponentType.AMMO -> {
+                    json.add("ammo", ammo!!.toJson())
+                }
+                VehicleComponentType.FUEL -> {
+                    json.add("fuel", fuel!!.toJson())
+                }
+                VehicleComponentType.GUN_BARREL -> {
+                    json.add("gunBarrel", gunBarrel!!.toJson())
+                }
+                VehicleComponentType.GUN_TURRET -> {
+                    json.add("gunTurret", gunTurret!!.toJson())
+                }
+                VehicleComponentType.HEALTH -> {
+                    json.add("health", health!!.toJson())
+                }
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> {
+                    json.add("landMovementControls", landMovementControls!!.toJson())
+                }
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> {
+                    json.add("shipMovementControls", shipMovementControls!!.toJson())
+                }
+                VehicleComponentType.MODEL -> {
+                    json.add("model", model!!.toJson())
+                }
+                VehicleComponentType.SEATS -> {
+                    json.add("seats", seats!!.toJson())
+                }
+                VehicleComponentType.SEATS_RAYCAST -> {
+                    json.add("seatsRaycast", seatsRaycast!!.toJson())
+                }
+                VehicleComponentType.SPAWN -> {
+                    json.add("spawn", spawn!!.toJson())
+                }
+                VehicleComponentType.TRANSFORM -> {
+                    json.add("transform", transform!!.toJson())
+                }
+                null -> {}
+            }
+        }
+        return json
     }
     
     /**

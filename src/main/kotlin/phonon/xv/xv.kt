@@ -4,10 +4,14 @@
 
 package phonon.xv
 
+import java.nio.ByteBuffer
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
 import java.util.UUID
 import java.util.logging.Logger
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
 import org.bukkit.plugin.Plugin
@@ -16,8 +20,10 @@ import org.bukkit.inventory.ItemStack
 import phonon.xv.core.*
 import phonon.xv.system.*
 import phonon.xv.common.UserInput
+import phonon.xv.util.entity.reassociateEntities
 import phonon.xv.util.file.listDirFiles
 import phonon.xv.util.file.newBackupPath
+import phonon.xv.util.file.readJson
 import phonon.xv.util.file.writeJson
 import java.util.LinkedList
 import java.util.Queue
@@ -63,6 +69,9 @@ public class XV (
     internal var skins: SkinStorage = SkinStorage.empty()
 
     //// ENGINE STATE
+    // if vehicles state has been loaded at least once
+    internal var isLoaded: Boolean = false
+
     // user input controls when mounted on entities
     internal val userInputs: HashMap<UUID, UserInput> = HashMap()
 
@@ -80,7 +89,7 @@ public class XV (
     internal var dismountRequests: ArrayList<DismountVehicleRequest> = ArrayList()
     // vehicle creation/deletion requests
     internal var createRequests: Queue<CreateVehicleRequest> = LinkedList()
-    internal var deleteRequests: Queue<DeleteVehicleRequest> = LinkedList()
+    internal var deleteRequests: Queue<DestroyVehicleRequest> = LinkedList()
     // loading bar requests
     internal var progessBarRequests: ArrayList<ProgessBarRequest> = ArrayList()
 
@@ -111,6 +120,13 @@ public class XV (
     internal fun reload() {
         val timeStart = System.currentTimeMillis()
 
+        // save existing vehicles state
+        if ( this.isLoaded ) {
+            this.saveVehiclesJson()
+        }
+
+        clearState()
+
         // load main plugin config
         val pluginDataFolder = Paths.get(this.plugin.getDataFolder().getPath())
         val pathConfigToml = pluginDataFolder.resolve("config.toml")
@@ -123,8 +139,6 @@ public class XV (
         }
 
         this.config = config
-
-        clearState()
 
         // load vehicle skin files (do before vehicles because vehicles
         // may reference skins)
@@ -185,6 +199,14 @@ public class XV (
         this.vehiclePrototypeSpawnItem = newVehiclePrototypeSpawnItem
         this.vehiclePrototypeSpawnItemList = newVehiclePrototypeSpawnItem.values.toList()
 
+        // load vehicles from json
+        this.loadVehiclesJson(this.config.pathSave)
+
+        // reassociate armorstands with newly loaded components
+        Bukkit.getWorlds().forEach { w ->
+            reassociateEntities(this, w.entities)
+        }
+
         // finish: print stats
         val timeEnd = System.currentTimeMillis()
         val timeLoad = timeEnd - timeStart
@@ -220,22 +242,23 @@ public class XV (
                     // threshold hit, reset engine to a clean state
                     try {
                         xv.update()
-                        // do backup if ticker is past time
-                        if ( backupTimer-- <= 0 ) {
-                            logger.info("Backup period has passed. Initiating backup...")
-                            // do serialization sync
-                            val json = xv.serializeVehicles(xv.logger)
-                            // file io async
-                            pool.execute {
-                                xv.config.pathFilesBackup.toFile().mkdirs()
-                                writeJson(
-                                    json = json,
-                                    dir = newBackupPath(xv.config.pathFilesBackup),
-                                    prettyPrinting = xv.config.savePrettyPrintingJson
-                                )
-                            }
-                            logger.info("Backup complete.")
-                        }
+                        // // do backup if ticker is past time
+                        // TODO: remove this here into a separate async task
+                        // if ( backupTimer-- <= 0 ) {
+                        //     logger.info("Backup period has passed. Initiating backup...")
+                        //     // do serialization sync
+                        //     val json = xv.serializeVehicles(xv.logger)
+                        //     // file io async
+                        //     pool.execute {
+                        //         xv.config.pathFilesBackup.toFile().mkdirs()
+                        //         writeJson(
+                        //             json = json,
+                        //             path = newBackupPath(xv.config.pathFilesBackup),
+                        //             prettyPrinting = xv.config.savePrettyPrintingJson
+                        //         )
+                        //     }
+                        //     logger.info("Backup complete.")
+                        // }
                         errorAccumulator = 0
                     } catch ( e: Exception ) {
                         logger.severe("Engine update failed:")
@@ -281,6 +304,248 @@ public class XV (
             this.logger.info("Shutting down file thread workers.")
         } else {
             logger.info("File worker pool not running.")
+        }
+    }
+
+    /**
+     * Create a new vehicle and insert into archetype storages.
+     */
+    public fun createVehicle(
+        vehicleBuilder: VehicleBuilder,
+    ) {
+        val prototype = vehicleBuilder.prototype
+        val elementBuilders = vehicleBuilder.elements
+
+        // try to insert each prototype into its archetype
+        val elementIds: List<VehicleElementId?> = elementBuilders.map { elem ->
+            storage.lookup[elem.components.layout]!!.insert(elem.components)
+        }
+        
+        // if any are null, creation failed. remove non-null created elements
+        // from their archetypes
+        if ( elementIds.any { it === null } ) {
+            logger.severe("Failed to create vehicle ${prototype.name}")
+
+            elementIds.forEachIndexed { index, id ->
+                if ( id !== null ) {
+                    storage.lookup[elementBuilders[index].components.layout]?.free(id)
+                } else {
+                    logger.severe("Failed to create element ${elementBuilders[index].prototype.name}")
+                }
+            }
+
+            // failed, early exit
+            return
+        }
+
+        // create vehicle elements from ids
+        val elements = elementBuilders.mapIndexed { idx, elem ->
+            val id = elementIds[idx]!!
+            val elem = VehicleElement(
+                name="${prototype.name}.${elem.prototype.name}.${id}",
+                uuid=elem.uuid,
+                id=id,
+                prototype=elem.prototype,
+                layout=elem.components.layout,
+                components=elem.components,
+            )
+            this.uuidToElement[elem.uuid] = elem
+            elem
+        }
+        
+        // set parent/children hierarchy
+        for ( (idx, elem) in elements.withIndex() ) {
+            val parentIdx = prototype.parentIndex[idx]
+            if ( parentIdx != -1 ) {
+                elem.parent = elements[parentIdx]
+            }
+            
+            val childrenIdx = prototype.childrenIndices[idx]
+            if ( childrenIdx.isNotEmpty() ) {
+                elem.children = childrenIdx.map { elements[it] }
+            }
+        }
+
+        // insert new vehicle
+        val vehicle = this.vehicleStorage.insert(
+            vehicleBuilder.uuid,
+            prototype=prototype,
+            elements=elements,
+        )
+        // this should never happen, but check
+        if ( vehicle === null ) {
+            logger.severe("Failed to create vehicle ${prototype.name}: vehicle storage full")
+            // free elements
+            elements.forEach { elem -> this.storage.lookup[elem.layout]?.free(elem.id) }
+            return
+        }
+
+        this.uuidToVehicle[vehicle.uuid] = vehicle
+        // xv.logger.info("Created vehicle with uuid $vehicleUuid")
+
+        // do element post-processing (note: can use prototype because
+        // it still holds references to components)
+        // for elements with armorstands models, this does entity -> element mapping
+        for ( elem in elements ) {
+            elem.components.afterVehicleCreated(
+                vehicle=vehicle,
+                element=elem,
+                entityVehicleData=this.entityVehicleData,
+            )
+        }
+    }
+
+    /**
+     * Destroy a vehicle and remove from archetype storages.
+     */
+    public fun destroyVehicle(
+        vehicle: Vehicle,
+    ) {
+        // free vehicle
+        vehicleStorage.free(vehicle.id)
+        // free vehicle elements
+        vehicle.elements.forEach { element ->
+            // prototype still points to inserted components
+            element.components.delete(vehicle, element, this.entityVehicleData)
+            // free from archetype
+            val archetype = this.storage.lookup[element.layout]!!
+            archetype.free(element.id)
+        }
+    }
+
+    /**
+     * Serialize input list of vehicles json into a full output file.
+     * If input `vehiclesJson` is null, this will serialize all vehicles
+     * in the storage.
+     * 
+     * Internally a wrapper around a save function runnable task
+     * `TaskSaveJson` to allow running save either on main thread or
+     * async thread.
+     */
+    internal fun saveVehiclesJson(
+        vehiclesJson: List<JsonObject>? = null,
+        async: Boolean = false,
+    ) {
+        // convert to minimal save state object
+        val vehiclesJson = vehiclesJson ?: this.vehicleStorage.map { v -> v.toJson() }
+
+        //// DEBUGGING
+        // println("Saving vehicles ${vehiclesJson}")
+
+        val task = TaskSaveJson(
+            this.config.pathSave,
+            vehiclesJson,
+            prettyPrint = this.config.savePrettyPrintingJson,
+        )
+
+        if ( async ) {
+            Bukkit.getScheduler().runTaskAsynchronously(this.plugin, task)
+        } else {
+            task.run()
+        }
+    }
+
+    /**
+     * Internal task to finish serializing all vehicles to json and save
+     * json to disk.
+     */
+    internal class TaskSaveJson(
+        val path: Path,
+        val vehiclesJson: List<JsonObject>,
+        val prettyPrint: Boolean = false,
+    ): Runnable {
+        override fun run() {
+            val json = JsonObject()
+            val vehiclesJsonArray = JsonArray()
+            vehiclesJson.forEach { vehiclesJsonArray.add(it) }
+            json.add("vehicles", vehiclesJsonArray)
+
+            try {
+                writeJson(json, path)
+            }
+            catch ( err: Exception ) {
+                err.printStackTrace()
+            }
+        }
+    }
+
+    /**
+     * Load vehicles from save json file.
+     */
+    internal fun loadVehiclesJson(
+        pathJson: Path,
+    ) {
+        val vehicleBuilders = ArrayList<VehicleBuilder>()
+
+        try {
+            val json = readJson(pathJson)
+            
+            if ( json === null ) {
+                logger.warning("No vehicle save file found at $pathJson, skipping load")
+                return
+            }
+
+            for ( jsonElem in json.get("vehicles").asJsonArray ) {
+                try {
+                    val vehicleJson = jsonElem.asJsonObject
+                    val vehicleUuid = UUID.fromString(vehicleJson["uuid"].asString)
+                    val vehiclePrototypeName = vehicleJson["prototype"].asString
+                    val vehiclePrototype = this.vehiclePrototypes[vehiclePrototypeName]
+                    if ( vehiclePrototype === null ) {
+                        logger.severe("Failed to load vehicle in json ${jsonElem} with invalid prototype ${vehiclePrototypeName}")
+                        continue
+                    }
+                    
+                    val vehicleElementsJson = vehicleJson["elements"].asJsonObject
+                    
+                    // inject json properties into all element prototypes
+                    val elementBuilders: List<VehicleElementBuilder> = vehiclePrototype.elements.map { elemPrototype ->
+                        var components = elemPrototype.components.clone()
+                        
+                        val elemJson = vehicleElementsJson?.get(elemPrototype.name)?.asJsonObject
+                        if ( elemJson !== null ) {
+                            val componentsJson = elemJson["components"].asJsonObject
+                            VehicleElementBuilder(
+                                prototype = elemPrototype,
+                                uuid = UUID.fromString(elemJson["uuid"].asString),
+                                components = components.injectJsonProperties(componentsJson),
+                            )
+                        } else { // no json for this element, can occur if a vehicle config was modified with new component
+                            VehicleElementBuilder(
+                                prototype = elemPrototype,
+                                uuid = UUID.randomUUID(),
+                                components = components,
+                            )
+                        }
+                    }
+
+                    vehicleBuilders.add(
+                        VehicleBuilder(
+                            prototype = vehiclePrototype,
+                            uuid = vehicleUuid,
+                            elements = elementBuilders,
+                        )
+                    )
+
+                } catch ( err: Exception ) {
+                    logger.severe("Failed to load vehicle in json: $jsonElem")
+                    err.printStackTrace()
+                }
+            }
+
+        } catch ( err: Exception ) {
+            logger.severe("Failed to load vehicles from $pathJson")
+            err.printStackTrace()
+        }
+
+        // try to create vehicles
+        for ( vehicleBuilder in vehicleBuilders ) {
+            try {
+                this.createVehicle(vehicleBuilder)
+            } catch ( err: Exception ) {
+                logger.severe("Failed to load vehicle from json: ${vehicleBuilder}")
+                err.printStackTrace()
+            }
         }
     }
 
@@ -351,7 +616,7 @@ public class XV (
         
         // create vehicle handlers
         systemCreateVehicle(storage, createRequests)
-        systemDeleteVehicle(vehicleStorage, storage, deleteRequests)
+        systemDestroyVehicle(vehicleStorage, storage, deleteRequests)
 
         // progress bar ticking system
         progessBarRequests = systemProgressBar(progessBarRequests)

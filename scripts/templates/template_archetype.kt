@@ -165,13 +165,32 @@ public data class VehicleComponents(
                 {%- for c in components %}
                 VehicleComponentType.{{ c.enum }} -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    {{ c.storage }}?.toItemData(itemMeta, itemLore, componentDataContainer)
+                    {{ c.storage }}!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set({{ c.enum }}_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 {%- endfor %}
                 null -> {}
             }
         }
+    }
+
+    /**
+     * Serialize components set into a json object.
+     */
+    fun toJson(): JsonObject {
+        val json = JsonObject()
+        for ( c in this.layout ) {
+            // serialize component state in json
+            when ( c ) {
+                {%- for c in components %}
+                VehicleComponentType.{{ c.enum }} -> {
+                    json.add("{{ c.storage }}", {{ c.storage }}!!.toJson())
+                }
+                {%- endfor %}
+                null -> {}
+            }
+        }
+        return json
     }
     
     /**

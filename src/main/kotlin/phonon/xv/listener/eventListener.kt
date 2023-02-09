@@ -27,7 +27,6 @@ import org.spigotmc.event.entity.EntityDismountEvent
 import phonon.xv.XV
 import phonon.xv.ITEM_KEY_PROTOTYPE
 import phonon.xv.system.CreateVehicleRequest
-import phonon.xv.system.CreateVehicleReason
 import phonon.xv.system.MountVehicleRequest
 import phonon.xv.system.DismountVehicleRequest
 
@@ -87,7 +86,6 @@ public class EventListener(val xv: XV): Listener {
                         xv.createRequests.add(
                             CreateVehicleRequest(
                                 vehiclePrototype,
-                                CreateVehicleReason.NEW,
                                 location = player.location,
                                 player = player,
                             )

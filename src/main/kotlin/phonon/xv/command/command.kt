@@ -22,7 +22,6 @@ import phonon.xv.XV
 import phonon.xv.component.*
 import phonon.xv.core.*
 import phonon.xv.system.CreateVehicleRequest
-import phonon.xv.system.CreateVehicleReason
 import phonon.xv.util.Message
 import phonon.xv.util.entity.reassociateEntities
 
@@ -128,7 +127,6 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         xv.createRequests.add(
             CreateVehicleRequest(
                 prototype,
-                CreateVehicleReason.NEW,
                 location = sender.location,
                 player = sender,
             )
@@ -145,7 +143,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
 
     private fun reload(sender: CommandSender) {
         val player = if ( sender is Player ) sender else null
-        if ( player === null || player.isOp() ) {
+        if ( player === null || player.hasPermission("xv.admin") ) {
             Message.print(sender, "[xv] Reloading...")
             xv.reload()
             Message.print(sender, "[xv] Reloaded")
@@ -157,18 +155,16 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
 
     private fun saveReload(sender: CommandSender) {
         val player = if ( sender is Player ) sender else null
-        if ( player === null || player.isOp() ) {
+        if ( player === null || player.hasPermission("xv.admin") ) {
             Message.print(sender, "[xv] Saving...")
-            xv.saveVehicles(xv.config.pathSave)
+            xv.saveVehiclesJson()
             Message.print(sender, "[xv] Data saved to ${xv.config.pathSave}")
             Message.print(sender, "[xv] Reload...")
             xv.reload()
             Message.print(sender, "[xv] Reloaded")
             Message.print(sender, "[xv] Loading data from ${xv.config.pathSave}...")
-            xv.loadVehicles(xv.config.pathSave)
+            xv.loadVehiclesJson(xv.config.pathSave)
             Message.print(sender, "[xv] Loaded")
-            // run create on requests
-            xv.flushCreateQueue()
             // reassociate armorstands w/ newly loaded
             // components
             Bukkit.getWorlds().forEach { w ->
@@ -182,7 +178,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
 
     private fun start(sender: CommandSender) {
         val player = if ( sender is Player ) sender else null
-        if ( player === null || player.isOp() ) {
+        if ( player === null || player.hasPermission("xv.admin") ) {
             Message.print(sender, "[xv] Starting engine...")
             xv.start()
         }
@@ -193,7 +189,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
 
     private fun stop(sender: CommandSender) {
         val player = if ( sender is Player ) sender else null
-        if ( player === null || player.isOp() ) {
+        if ( player === null || player.hasPermission("xv.admin") ) {
             Message.print(sender, "[xv] Stopping engine...")
             xv.stop()
         }
@@ -266,7 +262,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
 
     private fun clear(sender: CommandSender) {
         val player = if ( sender is Player ) sender else null
-        if ( player === null || player.isOp() ) {
+        if ( player === null || player.hasPermission("xv.admin") ) {
             Message.print(sender, "[xv] Clearing archetypes...")
             for ( archetype in xv.storage.archetypes ) {
                 archetype.clear()
@@ -286,7 +282,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         // Only let op use this command ingame
         // TODO: give permissions node to view this data
         val player = if ( sender is Player ) sender else null
-        if ( player !== null && !player.isOp() ) {
+        if ( player !== null && !player.hasPermission("xv.admin") ) {
             Message.error(sender, "[xv] Only operators can use this command")
             return
         }

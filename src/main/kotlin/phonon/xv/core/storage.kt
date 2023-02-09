@@ -86,10 +86,10 @@ public class VehicleStorage(
         uuid: UUID,
         prototype: VehiclePrototype,
         elements: List<VehicleElement>,
-    ): VehicleId {
+    ): Vehicle? {
         val id = this.newId()
         if ( id == INVALID_VEHICLE_ID ) {
-            return INVALID_VEHICLE_ID
+            return null
         }
         val vehicle = Vehicle(
             "${prototype.name}.${id}",
@@ -104,7 +104,7 @@ public class VehicleStorage(
             elementToVehicle[it.id] = vehicle.id
         }
 
-        return id
+        return vehicle
     }
 
     /**
@@ -117,7 +117,7 @@ public class VehicleStorage(
     }
 
     inner class VehicleStorageIterator(
-            val storage: VehicleStorage
+        val storage: VehicleStorage
     ): Iterator<Vehicle> {
         var nextIdx = 0
         init {

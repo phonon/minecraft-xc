@@ -13,10 +13,7 @@ import org.bukkit.Bukkit
 import org.bukkit.entity.ArmorStand
 import phonon.xv.XV
 import phonon.xv.command.*
-import phonon.xv.core.*
 import phonon.xv.listener.*
-import phonon.xv.system.systemCreateVehicle
-import phonon.xv.util.entity.reassociateEntities
 import phonon.xv.util.file.readJson
 import phonon.xv.util.file.writeJson
 import java.util.logging.Level
@@ -50,17 +47,9 @@ public class XVPlugin : JavaPlugin() {
         // override command aliases tab complete if they exist
         this.getCommand("xv")?.setTabCompleter(this.getCommand("xv")?.getExecutor() as TabCompleter)
         
-        // load configs, etc.
+        // load configs, vehicles, etc.
         xv.reload()
-        // load data
-        xv.loadVehicles(xv.config.pathSave, xv.logger)
-        // create all loaded vehicles
-        xv.flushCreateQueue()
-        // reassociate armorstands w/ newly loaded
-        // components
-        Bukkit.getWorlds().forEach { w ->
-            reassociateEntities(xv, w.entities)
-        }
+
         // start engine
         xv.start()
 
@@ -75,10 +64,9 @@ public class XVPlugin : JavaPlugin() {
 
     override fun onDisable() {
         xv.stop()
+        xv.saveVehiclesJson()
         HandlerList.unregisterAll(this)
         ProtocolLibrary.getProtocolManager().removePacketListeners(this)
-        // save data
-        xv.saveVehicles(xv.config.pathSave, xv.logger)
         logger.info("wtf i hate xeth now")
     }
 }

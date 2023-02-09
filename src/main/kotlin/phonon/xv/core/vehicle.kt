@@ -8,6 +8,7 @@ package phonon.xv.core
 
 import java.util.EnumSet
 import java.util.UUID
+import com.google.gson.JsonObject
 
 // Vehicle id is just wrapper for Int
 typealias VehicleId = Int
@@ -42,6 +43,27 @@ public data class Vehicle(
         // find root elements from elements without parents
         rootElements = elements.filter { it.parent == null }
     }
+
+    /**
+     * Serialize vehicle into json.
+     */
+    fun toJson(): JsonObject {
+        val json = JsonObject()
+        json.addProperty("uuid", this.uuid.toString())
+        json.addProperty("prototype", this.prototype.name)
+
+        val elementsJson = JsonObject()
+        for ( elem in this.elements ) {
+            try {
+                elementsJson.add(elem.prototype.name, elem.toJson())
+            } catch ( err: Exception ) {
+                err.printStackTrace()
+            }
+        }
+        json.add("elements", elementsJson)
+        
+        return json
+    }
 }
 
 /**
@@ -69,6 +91,16 @@ public data class VehicleElement(
     
     var children: List<VehicleElement> = listOf()
         internal set
+
+    /**
+     * Serialize vehicle into json.
+     */
+    fun toJson(): JsonObject {
+        val json = JsonObject()
+        json.addProperty("uuid", this.uuid.toString())
+        json.add("components", components.toJson())
+        return json
+    }
 }
 
 /**
@@ -83,4 +115,35 @@ public data class EntityVehicleData(
     val layout: EnumSet<VehicleComponentType>,
     // specific component this entity is linked to
     val componentType: VehicleComponentType,
+)
+
+/**
+ * Intermediate class during vehicle creation. Common interface for creating
+ * vehicles from different systems (e.g. in-game spawning, json deserialization
+ * etc.). Contains final customized components from creation process and
+ * creation process dependent properties (e.g. UUIDs).
+ */
+public data class VehicleBuilder(
+    // prototype contains common shared base properties and
+    // elements tree hierarchy
+    val prototype: VehiclePrototype,
+    // for persistence, static across restarts
+    val uuid: UUID,
+    // elements in this vehicle
+    val elements: List<VehicleElementBuilder>,
+)
+
+/**
+ * Intermediate class during vehicle creation. Common interface for creating
+ * vehicle elements from different systems (e.g. in-game spawning, json
+ * deserialization, etc.). Contains final customized components from creation
+ * process and creation process dependent properties (e.g. UUIDs).
+ */
+public data class VehicleElementBuilder(
+    // Reference to prototype, contains base element properties.
+    val prototype: VehicleElementPrototype,
+    // for persistence, static across restarts
+    val uuid: UUID,
+    // final customized components for this element
+    val components: VehicleComponents,
 )
