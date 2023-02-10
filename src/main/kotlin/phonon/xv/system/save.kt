@@ -53,7 +53,7 @@ fun XV.systemPipelinedSave() {
             val vehicle = vehiclesToSave[n]
             if ( vehicle !== null ) {
                 try {
-                        vehiclesJsonBuffer.add(vehicle.toJson())
+                    vehiclesJsonBuffer.add(vehicle.toJson())
                 } catch ( err: Exception ) {
                     xv.logger.severe("Failed to save vehicle ${vehicle} to json: ${err.message}")
                     err.printStackTrace()

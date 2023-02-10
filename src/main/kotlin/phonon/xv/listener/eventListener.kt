@@ -26,7 +26,7 @@ import org.bukkit.persistence.PersistentDataType
 import org.spigotmc.event.entity.EntityDismountEvent
 import phonon.xv.XV
 import phonon.xv.core.ITEM_KEY_PROTOTYPE
-import phonon.xv.system.CreateVehicleRequest
+import phonon.xv.system.SpawnVehicleRequest
 import phonon.xv.system.MountVehicleRequest
 import phonon.xv.system.DismountVehicleRequest
 
@@ -82,12 +82,12 @@ public class EventListener(val xv: XV): Listener {
                     val vehiclePrototype = xv.vehiclePrototypes[prototypeName]
                     if ( vehiclePrototype !== null ) {
                         println("SPAWN VEHICLE REQUEST: ${vehiclePrototype.name}")
-                        // TODO: add SPAWN vehicle request not CREATE
-                        xv.createRequests.add(
-                            CreateVehicleRequest(
+                        xv.spawnRequests.add(
+                            SpawnVehicleRequest(
                                 vehiclePrototype,
                                 location = player.location,
                                 player = player,
+                                item = itemInHand,
                             )
                         )
                     }

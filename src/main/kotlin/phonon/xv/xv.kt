@@ -8,6 +8,8 @@ import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
+import java.util.ArrayDeque
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.UUID
 import java.util.logging.Logger
 import com.google.gson.JsonArray
@@ -77,7 +79,7 @@ public class XV (
     internal val uuidToElement: HashMap<UUID, VehicleElement> = HashMap()
     // vehicle uuid -> element
     internal val uuidToVehicle: HashMap<UUID, Vehicle> = HashMap()
-
+    
     // save system (includes save pipeline state)
     internal var savingVehicles: Boolean = false
     internal var saveVehiclesQueue: Array<Vehicle?> = arrayOf()
@@ -94,8 +96,12 @@ public class XV (
     // vehicle creation/deletion requests
     internal var createRequests: Queue<CreateVehicleRequest> = LinkedList()
     internal var deleteRequests: Queue<DestroyVehicleRequest> = LinkedList()
-    // loading bar requests
-    internal var progessBarRequests: ArrayList<ProgessBarRequest> = ArrayList()
+    // vehicle spawn/despawn system queues
+    // finish queues are pushed from async threads so must be thread safe
+    internal var spawnRequests: Queue<SpawnVehicleRequest> = ArrayDeque()
+    internal var spawnFinishQueue: ConcurrentLinkedQueue<SpawnVehicleFinish> = ConcurrentLinkedQueue()
+    internal var despawnRequests: Queue<DespawnVehicleRequest> = ArrayDeque()
+    internal var despawnFinishQueue: ConcurrentLinkedQueue<DespawnVehicleFinish> = ConcurrentLinkedQueue()
 
     // ========================================================================
     // RUNNING TASKS
@@ -596,6 +602,11 @@ public class XV (
         // handling vehicle saving timer
         systemPipelinedSave()
 
+        // spawn and create vehicle handlers
+        systemSpawnVehicle(spawnRequests, spawnFinishQueue)
+        systemFinishSpawnVehicle(spawnFinishQueue, createRequests)
+        systemCreateVehicle(storage, createRequests)
+
         // mount and dismount request handlers
         mountRequests = systemMountVehicle(storage, mountRequests) // filters direct interaction mounting
         dismountRequests = systemDismountVehicle(storage, dismountRequests)
@@ -616,11 +627,8 @@ public class XV (
         // seat raycast mounting
         mountRequests = systemMountSeatRaycast(storage, mountRequests)
         
-        // create vehicle handlers
-        systemCreateVehicle(storage, createRequests)
+        systemDespawnVehicle(despawnRequests, despawnFinishQueue)
+        systemFinishDespawnVehicle(despawnFinishQueue, deleteRequests)
         systemDestroyVehicle(vehicleStorage, storage, deleteRequests)
-
-        // progress bar ticking system
-        progessBarRequests = systemProgressBar(progessBarRequests)
     }
 }

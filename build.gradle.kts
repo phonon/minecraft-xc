@@ -89,11 +89,13 @@ dependencies {
         target = "1.12"
     } else if ( project.hasProperty("1.16") === true ) {
         java.toolchain.languageVersion.set(JavaLanguageVersion.of(16)) // need java==16 for 1.16.5
+        sourceSets["main"].java.srcDir("src/nms/v1_16_R3")
         paperDevBundle("1.16.5-R0.1-SNAPSHOT")
         compileOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
         target = "1.16"
     } else if ( project.hasProperty("1.18") === true ) {
         java.toolchain.languageVersion.set(JavaLanguageVersion.of(17)) // need java==17 for 1.18.2
+        sourceSets["main"].java.srcDir("src/nms/v1_18_R2")
         paperDevBundle("1.18.2-R0.1-SNAPSHOT")
         compileOnly("io.papermc.paper:paper-api:1.18.2-R0.1-SNAPSHOT")
         target = "1.18"
