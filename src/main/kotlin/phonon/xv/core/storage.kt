@@ -108,6 +108,14 @@ public class VehicleStorage(
     }
 
     /**
+     * Return array of all vehicles in storage, by returning a copy of
+     * the valid occupied range of the vehicles storage array.
+     */
+    fun getAllVehicles(): Array<Vehicle?> {
+        return lookup.copyOfRange(0, size)
+    }
+
+    /**
      * Iterator for non-null values of lookup array.
      * Used for iterating over vehicle elements when
      * saving all vehicles.

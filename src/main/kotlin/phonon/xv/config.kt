@@ -50,14 +50,15 @@ public data class Config(
     val pathFilesVehicles: Path = Paths.get("plugins", "xv", "vehicle"),
     // paths to vehicle save state and backups
     val pathFilesBackup: Path = Paths.get("plugins", "xv", "backup"),
-    val pathSave: Path = Paths.get("plugins", "xv", "save.json"),
+    val pathSave: Path = Paths.get("plugins", "xv", "vehiclesave.json"),
     // path to vehicle skin/decals configs
     val pathFilesSkins: Path = Paths.get("plugins", "xv", "skin"),
 
     // save settings
-    val savePeriod: Int = 200,
-    val savePipelineLength: Int = 2,
-    val saveBackupPeriod: Int = 18000,
+    val savePeriod: Int = 1200, // default save every 1 min
+    val saveMinVehiclesPerTick: Int = 10, // min vehicles to save per pipeline tick
+    val savePipelineTicks: Int = 4, // max number of pipeline ticks to save vehicles, larger => more desync in vehicle state
+    val saveBackupPeriod: Int = 12000, // default backup every 10 min
     val savePrettyPrintingJson: Boolean = true,
 
     // delete invalid armor stands on load
@@ -129,7 +130,8 @@ public data class Config(
             // save
             toml.getTable("save")?.let { save -> 
                 save.getLong("period")?.let { configOptions["savePeriod"] = it.toInt() }
-                save.getLong("pipeline_length")?.let { configOptions["savePipelineLength"] = it.toInt() }
+                save.getLong("min_vehicles_per_tick")?.let { configOptions["saveMinVehiclesPerTick"] = it.toInt() }
+                save.getLong("pipeline_ticks")?.let { configOptions["savePipelineTicks"] = it.toInt() }
                 save.getLong("backup_period")?.let { configOptions["saveBackupPeriod"] = it.toInt() }
                 save.getBoolean("json_pretty_printing")?.let { configOptions["savePrettyPrintingJson"] = it }
             }

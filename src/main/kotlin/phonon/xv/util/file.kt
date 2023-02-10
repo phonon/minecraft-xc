@@ -14,7 +14,6 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeFormatterBuilder
 import kotlin.io.path.exists
 import kotlin.streams.toList
 
@@ -75,16 +74,13 @@ public fun writeJson(
     )
 }
 
-private val dateFormatter = DateTimeFormatter.ofPattern("MM-dd-yyyy-HH-mm-ss")
+// backup format
+private val BACKUP_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy.MM.dd.HH.mm.ss")
 
+/**
+ * Generate a timestamped backup path using current local time.
+ */
 public fun newBackupPath(parentDir: Path): Path {
-    val baseFileName = dateFormatter.format(LocalDateTime.now())
-    var identifier = 1
-    var path: Path?
-    do {
-        path = Paths.get(parentDir.toString(), "$baseFileName-$identifier.json")
-        identifier++
-    } while ( path!!.exists() )
-
-    return path
+    val dateTimestamp = BACKUP_DATE_FORMATTER.format(LocalDateTime.now())
+    return parentDir.resolve("vehiclesave.${dateTimestamp}.json")
 }

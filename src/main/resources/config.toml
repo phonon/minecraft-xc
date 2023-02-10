@@ -33,15 +33,16 @@ debug = false
 # folders within `plugins/xv` containing item configs
 [paths]
 vehicle = "vehicle" # vehicle configs
-save = "save.json"  # save state
-backup = "backup"   # backup save states
+save = "vehiclesave.json"  # save state
+backup = "backup"   # backup save states folder
 
 # save settings
 [save]
-period = 200 # how often in ticks to run save
-pipeline_length = 2 # how many ticks to split vehicle save into
+period = 1200 # how often in ticks to run save
+min_vehicles_per_tick = 10 # min vehicles to save per pipeline tick
+pipeline_ticks = 4 # max number of pipeline ticks to save vehicles, larger => more desync in vehicle state
 backup_period = 18000 # how often in ticks to save a long-term backup, default = 15 min
-json_pretty_printing = true # are vehicles saved in human-readable json, or all on one line
+json_pretty_printing = false # are vehicles saved in human-readable json, or all on one line
 
 # misc random engine settings
 [misc]

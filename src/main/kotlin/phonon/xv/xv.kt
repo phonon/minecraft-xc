@@ -78,6 +78,15 @@ public class XV (
     // vehicle uuid -> element
     internal val uuidToVehicle: HashMap<UUID, Vehicle> = HashMap()
 
+    // save system (includes save pipeline state)
+    internal var savingVehicles: Boolean = false
+    internal var saveVehiclesQueue: Array<Vehicle?> = arrayOf()
+    internal var saveVehiclesJsonBuffer: ArrayList<JsonObject> = arrayListOf()
+    internal var saveVehiclesQueueIndex: Int = 0
+    internal var saveVehiclesPerTick: Int = config.saveMinVehiclesPerTick
+    internal var saveTimer: Int = config.savePeriod
+    internal var saveBackupTimer: Int = config.saveBackupPeriod
+
     // System request stuff
     // player mount and dismount requests
     internal var mountRequests: ArrayList<MountVehicleRequest> = ArrayList()
@@ -92,7 +101,6 @@ public class XV (
     // RUNNING TASKS
     // ========================================================================
     internal var engineTask: BukkitTask? = null
-    internal var workerPool: ExecutorService? = null
 
     internal fun clearState() {
         // clear storage and lookup
@@ -134,6 +142,10 @@ public class XV (
         }
 
         this.config = config
+
+        // reset vehicle save timers
+        this.saveTimer = config.savePeriod
+        this.saveBackupTimer = config.saveBackupPeriod
 
         // load vehicle skin files (do before vehicles because vehicles
         // may reference skins)
@@ -217,16 +229,12 @@ public class XV (
         if ( this.engineTask == null ) {
             val xv = this // alias for lambda
 
-            this.workerPool = Executors.newSingleThreadExecutor()
             this.engineTask = Bukkit.getScheduler().runTaskTimer(this.plugin, object: Runnable {
                 // number of successive errors caught on each update
                 var errorAccumulator = 0
 
                 // max errors before resetting engine to clean slate
                 val maxErrorsBeforeCleanup = 100
-                // thread pool for async backups
-                val pool = workerPool!!
-                var backupTimer = xv.config.saveBackupPeriod
 
                 override fun run() {
                     // wrap update in try catch...
@@ -237,23 +245,6 @@ public class XV (
                     // threshold hit, reset engine to a clean state
                     try {
                         xv.update()
-                        // // do backup if ticker is past time
-                        // TODO: remove this here into a separate async task
-                        // if ( backupTimer-- <= 0 ) {
-                        //     logger.info("Backup period has passed. Initiating backup...")
-                        //     // do serialization sync
-                        //     val json = xv.serializeVehicles(xv.logger)
-                        //     // file io async
-                        //     pool.execute {
-                        //         xv.config.pathFilesBackup.toFile().mkdirs()
-                        //         writeJson(
-                        //             json = json,
-                        //             path = newBackupPath(xv.config.pathFilesBackup),
-                        //             prettyPrinting = xv.config.savePrettyPrintingJson
-                        //         )
-                        //     }
-                        //     logger.info("Backup complete.")
-                        // }
                         errorAccumulator = 0
                     } catch ( e: Exception ) {
                         logger.severe("Engine update failed:")
@@ -290,15 +281,6 @@ public class XV (
             this.logger.info("Stopping engine.")
         } else {
             this.logger.warning("Engine not running.")
-        }
-        // worker thread pool
-        val pool = workerPool
-        if ( pool !== null ) {
-            pool.shutdown()
-            this.workerPool = null
-            this.logger.info("Shutting down file thread workers.")
-        } else {
-            logger.info("File worker pool not running.")
         }
     }
 
@@ -420,6 +402,7 @@ public class XV (
     internal fun saveVehiclesJson(
         vehiclesJson: List<JsonObject>? = null,
         async: Boolean = false,
+        backup: Boolean = false,
     ) {
         // convert to minimal save state object
         val vehiclesJson = vehiclesJson ?: this.vehicleStorage.map { v -> v.toJson() }
@@ -431,6 +414,8 @@ public class XV (
             this.config.pathSave,
             vehiclesJson,
             prettyPrint = this.config.savePrettyPrintingJson,
+            writeBackup = backup,
+            pathBackupFolder = this.config.pathFilesBackup,
         )
 
         if ( async ) {
@@ -448,6 +433,8 @@ public class XV (
         val path: Path,
         val vehiclesJson: List<JsonObject>,
         val prettyPrint: Boolean = false,
+        val writeBackup: Boolean = false,
+        val pathBackupFolder: Path? = null,
     ): Runnable {
         override fun run() {
             val json = JsonObject()
@@ -456,10 +443,27 @@ public class XV (
             json.add("vehicles", vehiclesJsonArray)
 
             try {
-                writeJson(json, path)
+                writeJson(json, path, prettyPrint)
             }
             catch ( err: Exception ) {
                 err.printStackTrace()
+            }
+
+            // write backup
+            if ( writeBackup && pathBackupFolder !== null ) {
+                val pathBackup = newBackupPath(pathBackupFolder)
+                
+                // create backup folder if does not exist
+                if ( !Files.exists(pathBackupFolder) ) {
+                    Files.createDirectories(pathBackupFolder)
+                }
+
+                try {
+                    writeJson(json, pathBackup, prettyPrint)
+                }
+                catch ( err: Exception ) {
+                    err.printStackTrace()
+                }
             }
         }
     }
@@ -589,6 +593,9 @@ public class XV (
      * system's metadata to turn off invalid systems.
      */
     internal fun update() {
+        // handling vehicle saving timer
+        systemPipelinedSave()
+
         // mount and dismount request handlers
         mountRequests = systemMountVehicle(storage, mountRequests) // filters direct interaction mounting
         dismountRequests = systemDismountVehicle(storage, dismountRequests)
