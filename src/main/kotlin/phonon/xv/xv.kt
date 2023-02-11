@@ -108,6 +108,8 @@ public class XV (
     internal var spawnFinishQueue: ConcurrentLinkedQueue<SpawnVehicleFinish> = ConcurrentLinkedQueue()
     internal var despawnRequests: Queue<DespawnVehicleRequest> = ArrayDeque()
     internal var despawnFinishQueue: ConcurrentLinkedQueue<DespawnVehicleFinish> = ConcurrentLinkedQueue()
+    // vehicle interaction queue
+    internal var interactRequests: Queue<VehicleInteract> = ArrayDeque()
 
     // ========================================================================
     // RUNNING TASKS
@@ -679,6 +681,9 @@ public class XV (
         systemFinishSpawnVehicle(spawnFinishQueue, createRequests)
         systemCreateVehicle(storage, createRequests)
 
+        // vehicle interact requests
+        systemInteract(interactRequests)
+        
         // mount and dismount request handlers
         mountRequests = systemMountVehicle(storage, mountRequests) // filters direct interaction mounting
         dismountRequests = systemDismountVehicle(storage, dismountRequests)

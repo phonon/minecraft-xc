@@ -160,3 +160,14 @@ internal fun Player.itemInMainHandEquivalentTo(
     val nmsItem = other.toNms()
     return nmsPlayer.itemInMainHandEquivalentTo(nmsItem, idTag)
 }
+
+/**
+ * Helper to check if the item in player's main hand is of the specified
+ * material required.
+ */
+internal fun Player.itemMaterialInMainHandEqualTo(
+    mat: Material,
+): Boolean {
+    val itemInHand = this.inventory.itemInMainHand
+    return itemInHand.type == mat
+}

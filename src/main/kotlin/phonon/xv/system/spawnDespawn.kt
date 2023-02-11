@@ -237,7 +237,7 @@ public fun XV.systemDespawnVehicle(
                         },
                         onCancel = { reason ->
                             when ( reason ) {
-                                TaskProgress.CancelReason.MOVED -> Message.announcement(player, "${ChatColor.RED}Moved too far, spawn cancelled!")
+                                TaskProgress.CancelReason.MOVED -> Message.announcement(player, "${ChatColor.RED}Moved too far, despawn cancelled!")
                                 else -> {}
                             }
                         },

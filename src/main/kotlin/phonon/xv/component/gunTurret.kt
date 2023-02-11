@@ -67,11 +67,14 @@ public data class GunTurretComponent(
     // max barrel yaw rotation half-arc relative to turret, only used if >0 (in degs)
     val barrelYawHalfArc: Double = 0.0,
     // control style for turret yaw (mouse, wasd, or none)
-    val turretControlYaw: ControlStyle = ControlStyle.NONE,
+    // @prop turret_control_yaw = "NONE"
+    val turretControlYaw: ControlStyle = ControlStyle.NONE, // @skip
     // control style for barrel yaw (mouse, wasd, or none)
-    val barrelControlYaw: ControlStyle = ControlStyle.NONE,
+    // @prop barrel_control_yaw = "NONE"
+    val barrelControlYaw: ControlStyle = ControlStyle.NONE, // @skip
     // control style for barrel pitch (mouse, wasd, or none)
-    val barrelControlPitch: ControlStyle = ControlStyle.NONE,
+    // @prop barrel_control_pitch = "NONE"
+    val barrelControlPitch: ControlStyle = ControlStyle.NONE, // @skip
     // speed that turret yaw rotates at
     val turretYawRotationSpeed: Double = 1.0,
     // speed that barrel yaw rotates at
@@ -80,8 +83,8 @@ public data class GunTurretComponent(
     val barrelPitchRotationSpeed: Double = 0.5,
     // seat index that controls this component
     val seatController: Int = 0,
-    // seat to mount when armorstand clicked
-    val seatToMount: Int = -1, // -1 for none
+    // seat to mount when armorstand clicked, -1 for none
+    val seatToMount: Int = -1,
     // if true, turret yaw will also update base transform yaw
     val updateTransform: Boolean = false,
     // material for model

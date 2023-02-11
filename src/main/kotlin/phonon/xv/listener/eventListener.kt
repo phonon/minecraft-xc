@@ -18,6 +18,7 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.Event
 import org.bukkit.event.block.Action
+import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerInteractAtEntityEvent
@@ -29,9 +30,16 @@ import phonon.xv.core.ITEM_KEY_PROTOTYPE
 import phonon.xv.system.SpawnVehicleRequest
 import phonon.xv.system.MountVehicleRequest
 import phonon.xv.system.DismountVehicleRequest
+import phonon.xv.system.VehicleInteract
+import phonon.xv.system.VehicleEntityInteraction
 
 
 public class EventListener(val xv: XV): Listener {
+
+    /**
+     * Handle player right click interacting with vehicle entities.
+     * Just routes interaction into the interact system.
+     */
     @EventHandler(priority = EventPriority.NORMAL)
     public fun onPlayerEntityInteract(event: PlayerInteractAtEntityEvent) {
         val player = event.getPlayer()
@@ -39,11 +47,39 @@ public class EventListener(val xv: XV): Listener {
         val uuid = entity.getUniqueId()
         val vehicleData = xv.entityVehicleData[uuid]
         if ( vehicleData !== null ) {
-            xv.mountRequests.add(MountVehicleRequest(
-                player = player,
-                elementId = vehicleData.element.id,
-                layout = vehicleData.element.layout,
+            xv.interactRequests.add(VehicleInteract(
+                vehicle = vehicleData.vehicle,
+                element = vehicleData.element,
                 componentType = vehicleData.componentType,
+                player = player,
+                entity = entity,
+                action = VehicleEntityInteraction.RIGHT_CLICK,
+            ))
+        }
+    }
+
+    /**
+     * Handle player left click (punching) interacting with vehicle entities.
+     * Just routes interaction into the interact system.
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public fun onPlayerEntityDamage(event: EntityDamageByEntityEvent) {
+        val player = event.damager
+        if ( player !is Player ) {
+            return
+        }
+
+        val entity = event.entity
+        val uuid = entity.getUniqueId()
+        val vehicleData = xv.entityVehicleData[uuid]
+        if ( vehicleData !== null ) {
+            xv.interactRequests.add(VehicleInteract(
+                vehicle = vehicleData.vehicle,
+                element = vehicleData.element,
+                componentType = vehicleData.componentType,
+                player = player,
+                entity = entity,
+                action = VehicleEntityInteraction.LEFT_CLICK,
             ))
         }
     }

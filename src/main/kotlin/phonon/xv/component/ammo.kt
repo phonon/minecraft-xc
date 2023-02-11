@@ -21,6 +21,7 @@ private val AMMO_KEY_CURRENT = NamespacedKey("xv", "current")
 public data class AmmoComponent(
     var current: Int = 0,
     val max: Int = 40,
+    // val type: Ammo? = null, // TODO: load from xc combat plugin
 ): VehicleComponent<AmmoComponent> {
     override val type = VehicleComponentType.AMMO
 

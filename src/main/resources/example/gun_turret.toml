@@ -42,13 +42,13 @@ turret_yaw_half_arc = 0.0
 barrel_yaw_half_arc = 0.0
 
 # control style for turret yaw (mouse, wasd, or none)
-turret_control_yaw = ControlStyle.NONE
+turret_control_yaw = "NONE"
 
 # control style for barrel yaw (mouse, wasd, or none)
-barrel_control_yaw = ControlStyle.NONE
+barrel_control_yaw = "NONE"
 
 # control style for barrel pitch (mouse, wasd, or none)
-barrel_control_pitch = ControlStyle.NONE
+barrel_control_pitch = "NONE"
 
 # speed that turret yaw rotates at
 turret_yaw_rotation_speed = 1.0
@@ -62,12 +62,8 @@ barrel_pitch_rotation_speed = 0.5
 # seat index that controls this component
 seat_controller = 0
 
-# seat to mount when armorstand clicked
+# seat to mount when armorstand clicked, -1 for none
 seat_to_mount = -1
-//
--1
-for
-none
 
 # if true, turret yaw will also update base transform yaw
 update_transform = false

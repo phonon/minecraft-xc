@@ -7,3 +7,5 @@
 
 current = 0
 max = 40
+
+# val type: Ammo? = null, # TODO: load from xc combat plugin

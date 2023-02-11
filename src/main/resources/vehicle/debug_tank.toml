@@ -40,11 +40,6 @@ offsets = [
     0.0, 0.25, 0.0,
 ]
 
-# seat raycasting for mounting
-# TODO: should be removed, only here for testing because
-# only 1 archetype layout supported
-[seats_raycast]
-
 # handles player's input controls for land movement
 [land_movement_controls]
 seat_controller = 0
@@ -54,3 +49,11 @@ speed_max_reverse = 0.2
 
 [health]
 max_health = 40.0
+
+
+[fuel]
+max = 100.0
+material = "DRAGON_BREATH"
+amount_per_item = 1
+time_per_fuel_when_idle = 10000
+time_per_fuel_when_moving = 3000

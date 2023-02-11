@@ -7,3 +7,15 @@
 
 current = 0.0
 max = 100.0
+
+# minecraft material used as fuel
+material = "DRAGON_BREATH"
+
+# amount of load fuel to give per item
+amount_per_item = 1
+
+# amount of time per fuel burn while not moving (in milliseconds)
+time_per_fuel_when_idle = 10000
+
+# amouint of time per fuel burn while moving (in milliseconds)
+time_per_fuel_when_moving = 3000
