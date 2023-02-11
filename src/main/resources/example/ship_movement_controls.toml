@@ -36,7 +36,7 @@
 # backward collisions.
 #
 # The format for frontal and backward contact points
-# is similar to that of the ground contacts in the order
+# is the same as that of the ground contacts in the order
 # [p1, p2, p3, p4, p5]
 #
 #       TOP OF ELEMENT

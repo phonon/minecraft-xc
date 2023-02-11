@@ -46,6 +46,7 @@ import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
 import phonon.xv.XV
 import phonon.xv.component.*
+import phonon.xv.util.toml.*
 
 
 /**
@@ -67,8 +68,16 @@ public data class VehiclePrototype(
     val elementsDepth: IntArray,
     // vehicle element tree max depth
     val maxDepth: Int,
+    // vehicle spawn time in seconds
+    val spawnTimeSeconds: Double = 0.0,
+    // vehicle despawn time in seconds
+    val despawnTimeSeconds: Double = 0.0,
 ) {
     val uuid: UUID = UUID.randomUUID()
+
+    // get spawn/despawn time in milliseconds
+    val spawnTimeMillis: Long = max(0, (spawnTimeSeconds * 1000).toLong())
+    val despawnTimeMillis: Long = max(0, (despawnTimeSeconds * 1000).toLong())
 
     // root elements have no parent
     val rootElements: List<VehicleElementPrototype> = elements.filter { e -> e.parent == null }.toList()
@@ -143,6 +152,8 @@ public data class VehiclePrototype(
             itemName: String,
             itemLore: List<String>,
             unsortedElements: List<VehicleElementPrototype>,
+            spawnTimeSeconds: Double,
+            despawnTimeSeconds: Double,
             logger: Logger? = null,
         ): VehiclePrototype? {
             
@@ -277,6 +288,8 @@ public data class VehiclePrototype(
                 depthSortedParents,
                 depthSortedDepths,
                 maxDepth,
+                spawnTimeSeconds,
+                despawnTimeSeconds,
             )
         }
         
@@ -295,6 +308,8 @@ public data class VehiclePrototype(
                 // item properties
                 val itemName = toml.getString("item_name") ?: name
                 val itemLore = toml.getArrayOrEmpty("item_lore").toList().map { it.toString() }
+                val spawnTimeSeconds = toml.getNumberAs<Double>("spawn_time") ?: 4.0
+                val despawnTimeSeconds = toml.getNumberAs<Double>("despawn_time") ?: 4.0
 
                 // vehicle elements
                 val unsortedElements = ArrayList<VehicleElementPrototype>()
@@ -312,6 +327,8 @@ public data class VehiclePrototype(
                     itemName,
                     itemLore,
                     unsortedElements,
+                    spawnTimeSeconds,
+                    despawnTimeSeconds,
                 )
             } catch (e: Exception) {
                 logger?.warning("Failed to parse landmine file: ${source.toString()}, ${e}")

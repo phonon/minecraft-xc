@@ -78,7 +78,6 @@ public enum class VehicleComponentType {
     MODEL,
     SEATS,
     SEATS_RAYCAST,
-    SPAWN,
     TRANSFORM,
     ;
 
@@ -98,7 +97,6 @@ public enum class VehicleComponentType {
                 ModelComponent::class -> VehicleComponentType.MODEL
                 SeatsComponent::class -> VehicleComponentType.SEATS
                 SeatsRaycastComponent::class -> VehicleComponentType.SEATS_RAYCAST
-                SpawnComponent::class -> VehicleComponentType.SPAWN
                 TransformComponent::class -> VehicleComponentType.TRANSFORM
                 else -> throw Exception("Unknown component type")
             }
@@ -117,7 +115,6 @@ val SHIP_MOVEMENT_CONTROLS_KEY = NamespacedKey("xv", "ship_movement_controls")
 val MODEL_KEY = NamespacedKey("xv", "model")
 val SEATS_KEY = NamespacedKey("xv", "seats")
 val SEATS_RAYCAST_KEY = NamespacedKey("xv", "seats_raycast")
-val SPAWN_KEY = NamespacedKey("xv", "spawn")
 val TRANSFORM_KEY = NamespacedKey("xv", "transform")
 
 /**
@@ -136,7 +133,6 @@ public data class VehicleComponents(
     val model: ModelComponent? = null,
     val seats: SeatsComponent? = null,
     val seatsRaycast: SeatsRaycastComponent? = null,
-    val spawn: SpawnComponent? = null,
     val transform: TransformComponent? = null,
 ) {
     /**
@@ -155,7 +151,6 @@ public data class VehicleComponents(
             model = model?.copy(),
             seats = seats?.copy(),
             seatsRaycast = seatsRaycast?.copy(),
-            spawn = spawn?.copy(),
             transform = transform?.copy(),
         )
     }
@@ -180,7 +175,6 @@ public data class VehicleComponents(
             model = model?.injectSpawnProperties(location, player),
             seats = seats?.injectSpawnProperties(location, player),
             seatsRaycast = seatsRaycast?.injectSpawnProperties(location, player),
-            spawn = spawn?.injectSpawnProperties(location, player),
             transform = transform?.injectSpawnProperties(location, player),
         )
     }
@@ -204,7 +198,6 @@ public data class VehicleComponents(
             model = model?.injectItemProperties(itemData.get(MODEL_KEY, PersistentDataType.TAG_CONTAINER)),
             seats = seats?.injectItemProperties(itemData.get(SEATS_KEY, PersistentDataType.TAG_CONTAINER)),
             seatsRaycast = seatsRaycast?.injectItemProperties(itemData.get(SEATS_RAYCAST_KEY, PersistentDataType.TAG_CONTAINER)),
-            spawn = spawn?.injectItemProperties(itemData.get(SPAWN_KEY, PersistentDataType.TAG_CONTAINER)),
             transform = transform?.injectItemProperties(itemData.get(TRANSFORM_KEY, PersistentDataType.TAG_CONTAINER)),
         )
     }
@@ -275,11 +268,6 @@ public data class VehicleComponents(
                     seatsRaycast!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(SEATS_RAYCAST_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
-                VehicleComponentType.SPAWN -> {
-                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
-                    spawn!!.toItemData(itemMeta, itemLore, componentDataContainer)
-                    itemData.set(SPAWN_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
-                }
                 VehicleComponentType.TRANSFORM -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
                     transform!!.toItemData(itemMeta, itemLore, componentDataContainer)
@@ -328,9 +316,6 @@ public data class VehicleComponents(
                 VehicleComponentType.SEATS_RAYCAST -> {
                     json.add("seatsRaycast", seatsRaycast!!.toJson())
                 }
-                VehicleComponentType.SPAWN -> {
-                    json.add("spawn", spawn!!.toJson())
-                }
                 VehicleComponentType.TRANSFORM -> {
                     json.add("transform", transform!!.toJson())
                 }
@@ -365,7 +350,6 @@ public data class VehicleComponents(
             model = model?.injectJsonProperties( json["model"]?.asJsonObject ),
             seats = seats?.injectJsonProperties( json["seats"]?.asJsonObject ),
             seatsRaycast = seatsRaycast?.injectJsonProperties( json["seatsRaycast"]?.asJsonObject ),
-            spawn = spawn?.injectJsonProperties( json["spawn"]?.asJsonObject ),
             transform = transform?.injectJsonProperties( json["transform"]?.asJsonObject ),
         )
     }
@@ -432,11 +416,6 @@ public data class VehicleComponents(
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
-                VehicleComponentType.SPAWN -> spawn?.afterVehicleCreated(
-                    vehicle=vehicle,
-                    element=element,
-                    entityVehicleData=entityVehicleData,
-                )
                 VehicleComponentType.TRANSFORM -> transform?.afterVehicleCreated(
                     vehicle=vehicle,
                     element=element,
@@ -464,7 +443,6 @@ public data class VehicleComponents(
                 VehicleComponentType.MODEL -> model?.delete(vehicle, element, entityVehicleData)
                 VehicleComponentType.SEATS -> seats?.delete(vehicle, element, entityVehicleData)
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.delete(vehicle, element, entityVehicleData)
-                VehicleComponentType.SPAWN -> spawn?.delete(vehicle, element, entityVehicleData)
                 VehicleComponentType.TRANSFORM -> transform?.delete(vehicle, element, entityVehicleData)
                 null -> {}
             }
@@ -496,7 +474,6 @@ public data class VehicleComponents(
             var model: ModelComponent? = null
             var seats: SeatsComponent? = null
             var seatsRaycast: SeatsRaycastComponent? = null
-            var spawn: SpawnComponent? = null
             var transform: TransformComponent? = null
 
             // parse components from matching keys in toml
@@ -545,10 +522,6 @@ public data class VehicleComponents(
                         layout.add(VehicleComponentType.SEATS_RAYCAST)
                         seatsRaycast = SeatsRaycastComponent.fromToml(toml.getTable(k)!!, logger)
                     }
-                    "spawn" -> {
-                        layout.add(VehicleComponentType.SPAWN)
-                        spawn = SpawnComponent.fromToml(toml.getTable(k)!!, logger)
-                    }
                     "transform" -> {
                         layout.add(VehicleComponentType.TRANSFORM)
                         transform = TransformComponent.fromToml(toml.getTable(k)!!, logger)
@@ -569,7 +542,6 @@ public data class VehicleComponents(
                 model,
                 seats,
                 seatsRaycast,
-                spawn,
                 transform,
             )
         }
@@ -615,7 +587,6 @@ public class ArchetypeStorage(
     internal val model: ArrayList<ModelComponent>? = if ( layout.contains(VehicleComponentType.MODEL) ) ArrayList() else null
     internal val seats: ArrayList<SeatsComponent>? = if ( layout.contains(VehicleComponentType.SEATS) ) ArrayList() else null
     internal val seatsRaycast: ArrayList<SeatsRaycastComponent>? = if ( layout.contains(VehicleComponentType.SEATS_RAYCAST) ) ArrayList() else null
-    internal val spawn: ArrayList<SpawnComponent>? = if ( layout.contains(VehicleComponentType.SPAWN) ) ArrayList() else null
     internal val transform: ArrayList<TransformComponent>? = if ( layout.contains(VehicleComponentType.TRANSFORM) ) ArrayList() else null
 
     // public getter "view"s: only expose immutable List interface
@@ -639,8 +610,6 @@ public class ArchetypeStorage(
         get() = this.seats
     public val seatsRaycastView: List<SeatsRaycastComponent>?
         get() = this.seatsRaycast
-    public val spawnView: List<SpawnComponent>?
-        get() = this.spawn
     public val transformView: List<TransformComponent>?
         get() = this.transform
 
@@ -664,7 +633,6 @@ public class ArchetypeStorage(
             ModelComponent::class -> this.modelView?.get(denseIndex) as T
             SeatsComponent::class -> this.seatsView?.get(denseIndex) as T
             SeatsRaycastComponent::class -> this.seatsRaycastView?.get(denseIndex) as T
-            SpawnComponent::class -> this.spawnView?.get(denseIndex) as T
             TransformComponent::class -> this.transformView?.get(denseIndex) as T
             else -> throw Exception("Unknown component type.")
         }
@@ -748,10 +716,6 @@ public class ArchetypeStorage(
                     this.seatsRaycast?.pushAtDenseIndex(denseIndex, components.seatsRaycast!!)
                 }
                 
-                VehicleComponentType.SPAWN -> {
-                    this.spawn?.pushAtDenseIndex(denseIndex, components.spawn!!)
-                }
-                
                 VehicleComponentType.TRANSFORM -> {
                     this.transform?.pushAtDenseIndex(denseIndex, components.transform!!)
                 }
@@ -805,7 +769,6 @@ public class ArchetypeStorage(
                 VehicleComponentType.MODEL -> model?.swapRemove(denseIndex)
                 VehicleComponentType.SEATS -> seats?.swapRemove(denseIndex)
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.swapRemove(denseIndex)
-                VehicleComponentType.SPAWN -> spawn?.swapRemove(denseIndex)
                 VehicleComponentType.TRANSFORM -> transform?.swapRemove(denseIndex)
                 null -> {}
             }
@@ -837,7 +800,6 @@ public class ArchetypeStorage(
         model?.clear()
         seats?.clear()
         seatsRaycast?.clear()
-        spawn?.clear()
         transform?.clear()
     }
 
@@ -868,7 +830,6 @@ public class ArchetypeStorage(
                 ModelComponent::class -> { archetype -> archetype.modelView as List<T> }
                 SeatsComponent::class -> { archetype -> archetype.seatsView as List<T> }
                 SeatsRaycastComponent::class -> { archetype -> archetype.seatsRaycastView as List<T> }
-                SpawnComponent::class -> { archetype -> archetype.spawnView as List<T> }
                 TransformComponent::class -> { archetype -> archetype.transformView as List<T> }
                 else -> throw Exception("Unknown component type")
             }

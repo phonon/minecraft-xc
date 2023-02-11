@@ -74,7 +74,9 @@ public class PrototypeTest() {
             "Debug",
             listOf(),
             unsortedElementPrototypes,
-            logger=logger,
+            logger = logger,
+            spawnTimeSeconds = 0.0,
+            despawnTimeSeconds = 0.0,
         )
 
         assertNotNull(vehiclePrototype, "Vehicle prototype should not be null")
@@ -133,6 +135,8 @@ public class PrototypeTest() {
             "Debug",
             listOf(),
             unsortedElementPrototypes,
+            0.0,
+            0.0,
         )
 
         assertNull(vehiclePrototype, "Vehicle prototype should be null because of cycle")

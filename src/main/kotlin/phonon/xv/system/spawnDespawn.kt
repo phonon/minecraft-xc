@@ -120,34 +120,44 @@ public fun XV.systemSpawnVehicle(
                 // attach id tag to item, so we can check if item changed during spawn
                 val itemIdTag = item?.addIntId()
 
-                val taskSpawn = TaskProgress(
-                    timeTaskMillis = 4000,
-                    player = player,
-                    initialItemInHand = item,
-                    itemIdTag = itemIdTag,
-                    maxMoveDistance = 2.0,
-                    onProgress = { progress ->
-                        Message.announcement(player, progressBar10(progress))
-                    },
-                    onCancel = { reason ->
-                        when ( reason ) {
-                            TaskProgress.CancelReason.ITEM_CHANGED -> Message.announcement(player, "${ChatColor.RED}Item changed, spawn cancelled!")
-                            TaskProgress.CancelReason.MOVED -> Message.announcement(player, "${ChatColor.RED}Moved too far, spawn cancelled!")
-                            else -> {}
-                        }
-                    },
-                    onFinish = {
-                        finishQueue.add(SpawnVehicleFinish(
-                            prototype,
-                            location,
-                            player,
-                            item,
-                            itemIdTag,
-                        ))
-                    },
-                )
+                if ( prototype.spawnTimeMillis > 0.0 ) {
+                    val taskSpawn = TaskProgress(
+                        timeTaskMillis = prototype.spawnTimeMillis,
+                        player = player,
+                        initialItemInHand = item,
+                        itemIdTag = itemIdTag,
+                        maxMoveDistance = 1.0, // TODO: make configurable
+                        onProgress = { progress ->
+                            Message.announcement(player, progressBar10(progress))
+                        },
+                        onCancel = { reason ->
+                            when ( reason ) {
+                                TaskProgress.CancelReason.ITEM_CHANGED -> Message.announcement(player, "${ChatColor.RED}Item changed, spawn cancelled!")
+                                TaskProgress.CancelReason.MOVED -> Message.announcement(player, "${ChatColor.RED}Moved too far, spawn cancelled!")
+                                else -> {}
+                            }
+                        },
+                        onFinish = {
+                            finishQueue.add(SpawnVehicleFinish(
+                                prototype,
+                                location,
+                                player,
+                                item,
+                                itemIdTag,
+                            ))
+                        },
+                    )
 
-                xv.startTaskForPlayer(player, taskSpawn)
+                    xv.startTaskForPlayer(player, taskSpawn)
+                } else { // no spawn, go directly to finish
+                    finishQueue.add(SpawnVehicleFinish(
+                        prototype,
+                        location,
+                        player,
+                        item,
+                        itemIdTag,
+                    ))
+                }
             }
         } catch ( err: Exception ) {
             err.printStackTrace()
@@ -213,29 +223,43 @@ public fun XV.systemDespawnVehicle(
         
         try {
             if ( player !== null ) {
-                val taskDespawn = TaskProgress(
-                    timeTaskMillis = 4000,
-                    player = player,
-                    maxMoveDistance = 2.0,
-                    onProgress = { progress ->
-                        Message.announcement(player, progressBar10(progress))
-                    },
-                    onCancel = { reason ->
-                        when ( reason ) {
-                            TaskProgress.CancelReason.MOVED -> Message.announcement(player, "${ChatColor.RED}Moved too far, spawn cancelled!")
-                            else -> {}
-                        }
-                    },
-                    onFinish = {
-                        finishQueue.add(DespawnVehicleFinish(
-                            vehicle,
-                            player,
-                            dropItem,
-                            force,
-                        ))
-                    },
-                )
-                taskDespawn.runTaskTimerAsynchronously(xv.plugin, 2, 2)
+                if ( xv.isPlayerRunningTask(player) ) {
+                    break // player already running task, skip
+                }
+
+                if ( vehicle.prototype.despawnTimeMillis > 0.0 ) {
+                    val taskDespawn = TaskProgress(
+                        timeTaskMillis = vehicle.prototype.despawnTimeMillis,
+                        player = player,
+                        maxMoveDistance = 1.0,
+                        onProgress = { progress ->
+                            Message.announcement(player, progressBar10(progress))
+                        },
+                        onCancel = { reason ->
+                            when ( reason ) {
+                                TaskProgress.CancelReason.MOVED -> Message.announcement(player, "${ChatColor.RED}Moved too far, spawn cancelled!")
+                                else -> {}
+                            }
+                        },
+                        onFinish = {
+                            finishQueue.add(DespawnVehicleFinish(
+                                vehicle,
+                                player,
+                                dropItem,
+                                force,
+                            ))
+                        },
+                    )
+                    
+                    xv.startTaskForPlayer(player, taskDespawn)
+                } else { // no spawn, go directly to finish
+                    finishQueue.add(DespawnVehicleFinish(
+                        vehicle,
+                        player,
+                        dropItem,
+                        force,
+                    ))
+                }
             }
         } catch ( err: Exception ) {
             err.printStackTrace()

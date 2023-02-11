@@ -5,6 +5,8 @@
 # single anonymous element.
 
 name = "debug_mortar"
+spawn_time = 2.0
+despawn_time = 2.0
 
 # contains position, rotation, etc.
 [transform]

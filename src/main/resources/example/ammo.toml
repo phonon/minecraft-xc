@@ -3,7 +3,7 @@
 
 
 
-[fuel]
+[ammo]
 
-current = 0.0
-max = 100.0
+current = 0
+max = 40

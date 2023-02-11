@@ -5,3 +5,5 @@
 
 [health]
 
+current = -1.0
+max = 20.0
