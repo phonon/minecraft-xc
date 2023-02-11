@@ -52,8 +52,8 @@ public class TaskProgress(
     private val timeTaskAsDouble = timeTaskMillis.toDouble()
 
     // time counter
-    private val t0 = System.currentTimeMillis()
-    private val tFinish = t0 + timeTaskMillis
+    public val tStart = System.currentTimeMillis()
+    public val tFinish = tStart + timeTaskMillis
 
     /**
      * Reasons this action can be cancelled.
@@ -108,7 +108,7 @@ public class TaskProgress(
             this.finish()
         } else {
             if ( onProgress !== null ) {
-                val progress = (t - t0).toDouble() / timeTaskAsDouble
+                val progress = (t - tStart).toDouble() / timeTaskAsDouble
                 onProgress.invoke(progress)
             }
         }

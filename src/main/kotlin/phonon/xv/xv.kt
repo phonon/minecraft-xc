@@ -8,14 +8,19 @@ import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
+import java.util.Queue
 import java.util.ArrayDeque
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.UUID
 import java.util.logging.Logger
+import java.util.LinkedList
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
+import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 import org.bukkit.scheduler.BukkitTask
 import org.bukkit.inventory.ItemStack
@@ -27,10 +32,8 @@ import phonon.xv.util.file.listDirFiles
 import phonon.xv.util.file.newBackupPath
 import phonon.xv.util.file.readJson
 import phonon.xv.util.file.writeJson
-import java.util.LinkedList
-import java.util.Queue
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import phonon.xv.util.TaskProgress
+
 
 /**
  * XV engine global state.
@@ -80,6 +83,9 @@ public class XV (
     // vehicle uuid -> element
     internal val uuidToVehicle: HashMap<UUID, Vehicle> = HashMap()
     
+    // player uuid -> task
+    internal val playerTasks: HashMap<UUID, TaskProgress> = HashMap()
+
     // save system (includes save pipeline state)
     internal var savingVehicles: Boolean = false
     internal var saveVehiclesQueue: Array<Vehicle?> = arrayOf()
@@ -551,6 +557,72 @@ public class XV (
                 logger.severe("Failed to load vehicle from json: ${vehicleBuilder}")
                 err.printStackTrace()
             }
+        }
+    }
+
+    /**
+     * Start task and track task for player.
+     */
+    public fun startTaskForPlayer(
+        player: Player,
+        task: TaskProgress,
+        period: Long = 2,
+        delay: Long = 2,
+    ) {
+        val playerUuid = player.getUniqueId()
+        // cancel current task if it exists
+        val currTask = this.playerTasks[playerUuid]
+        if ( currTask !== null ) {
+            if ( !currTask.isCancelled() ) {
+                currTask.cancel() // make sure cancelled
+            }
+        }
+        task.runTaskTimerAsynchronously(this.plugin, delay, period)
+        this.playerTasks[playerUuid] = task
+    }
+
+    /**
+     * Remove current task for player if it exists.
+     */
+    public fun removeTaskForPlayer(
+        player: Player,
+    ) {
+        val currTask = this.playerTasks[player.getUniqueId()]
+        if ( currTask !== null ) {
+            if ( !currTask.isCancelled() ) {
+                currTask.cancel() // make sure cancelled
+            }
+            this.playerTasks.remove(player.getUniqueId())
+        } 
+    }
+
+    /**
+     * Check if player is currently running a `TaskProgress`.
+     * Do two checks:
+     * 1. Check if player has a task in `playerTasks`
+     * 2. Check if task seems stale but uncollected, e.g. current time is
+     *    much greater than `tFinish` for the task.
+     */
+    public fun isPlayerRunningTask(
+        player: Player,
+    ): Boolean {
+        val currTask = this.playerTasks[player.getUniqueId()]
+        if ( currTask !== null ) {
+            if ( currTask.isCancelled() ) {
+                this.playerTasks.remove(player.getUniqueId())
+                return false
+            }
+            
+            val t = System.currentTimeMillis()
+            if ( t > currTask.tFinish + 1000 ) { // >1s after task supposed to be finished, must be stale
+                currTask.cancel() // make sure cancelled
+                this.playerTasks.remove(player.getUniqueId())
+                return false
+            } else {
+                return true
+            }
+        } else {
+            return false
         }
     }
 

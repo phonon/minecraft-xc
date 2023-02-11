@@ -113,6 +113,10 @@ public fun XV.systemSpawnVehicle(
 
         try {
             if ( player !== null ) {
+                if ( xv.isPlayerRunningTask(player) ) {
+                    break // player already running task, skip
+                }
+
                 // attach id tag to item, so we can check if item changed during spawn
                 val itemIdTag = item?.addIntId()
 
@@ -142,7 +146,8 @@ public fun XV.systemSpawnVehicle(
                         ))
                     },
                 )
-                taskSpawn.runTaskTimerAsynchronously(xv.plugin, 2, 2)
+
+                xv.startTaskForPlayer(player, taskSpawn)
             }
         } catch ( err: Exception ) {
             err.printStackTrace()
