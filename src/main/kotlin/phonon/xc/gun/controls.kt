@@ -189,6 +189,7 @@ internal data class ItemGunCleanupRequest(
 internal data class PlayerReloadTask(
     val player: Player,
     val gun: Gun,
+    val ammoCurrent: Int,
     val item: ItemStack,
     val reloadId: Int,
     val inventorySlot: Int,
@@ -1451,6 +1452,7 @@ internal fun XC.gunPlayerReloadSystem(
                 player = player,
                 item = item,
                 gun = gun,
+                ammoCurrent = ammoCurrent,
                 reloadId = reloadId,
                 inventorySlot = inventorySlot,
                 reloadTimeMillis = reloadTimeMillis.toDouble(),
@@ -1483,6 +1485,7 @@ internal class GunReloadingTask(
     private val player: Player,
     private val item: ItemStack,
     private val gun: Gun,
+    private val ammoCurrent: Int,
     private val reloadId: Int,
     private val inventorySlot: Int,
     private val reloadTimeMillis: Double, // how long gun takes to reload in millis
@@ -1521,7 +1524,7 @@ internal class GunReloadingTask(
         val timeElapsedMillis = (System.currentTimeMillis() - startTimeMillis).toDouble()
         if ( timeElapsedMillis > reloadTimeMillis ) {
             // reload done: add reload finish task to queue
-            reloadFinishTaskQueue.add(PlayerReloadTask(player, gun, item, reloadId, inventorySlot))
+            reloadFinishTaskQueue.add(PlayerReloadTask(player, gun, ammoCurrent, item, reloadId, inventorySlot))
             this.cancel()
         } else {
             val progress = timeElapsedMillis / reloadTimeMillis
@@ -1537,7 +1540,7 @@ internal class GunReloadingTask(
 internal fun XC.doGunReload(tasks: List<PlayerReloadTask>) {
     for ( task in tasks ) {
         try {
-            val (player, gun, item, reloadId, inventorySlot) = task
+            val (player, gun, ammoCurrent, item, reloadId, inventorySlot) = task
 
             // remove ammo item from player inventory
             if ( !inventoryRemoveItem(player.getInventory(), this.config.materialAmmo, gun.ammoId, 1) ) {
@@ -1557,7 +1560,11 @@ internal fun XC.doGunReload(tasks: List<PlayerReloadTask>) {
 
             // new ammo amount
             // TODO: adjustable reloading, either load to max or add # of projectiles
-            val newAmmo = gun.ammoMax
+            val newAmmo = if ( gun.ammoPerReload > 0 ) {
+                min(gun.ammoMax, ammoCurrent + gun.ammoPerReload)
+            } else {
+                gun.ammoMax
+            }
 
             // use ads flag
             val aimDownSights = useAimDownSights(player)

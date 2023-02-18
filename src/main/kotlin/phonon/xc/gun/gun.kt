@@ -169,6 +169,7 @@ public data class Gun(
 
     // ammo
     public val ammoId: Int = -1,
+    public val ammoDesc: String? = null,
     public val ammoMax: Int = 10,
     public val ammoPerReload: Int = -1,       // if -1, reload to max. otherwise: ammo + ammoPerReload
     public val ammoIgnore: Boolean = false,   // if true, ignores out of ammo
@@ -316,8 +317,16 @@ public data class Gun(
     init {
         // generate all possible item descriptions with different ammo values
         val itemDescriptionForAmmoBuf = ArrayList<List<String>>(this.ammoMax + 1)
+        val itemAmmoDescString = "${ChatColor.GRAY}${this.ammoDesc}"
         for (i in 0..this.ammoMax) {
-            val itemDescription: ArrayList<String> = arrayListOf("${ChatColor.GRAY}Ammo: ${i}/${this.ammoMax}")
+            val itemDescription: ArrayList<String> = ArrayList(2)
+
+            if ( this.ammoDesc !== null ) {
+                itemDescription.add(itemAmmoDescString)
+            }
+
+            itemDescription.add("${ChatColor.GRAY}Ammo: ${i}/${this.ammoMax}")
+
             // append lore
             itemDescription.addAll(this.itemLore)
             
@@ -460,6 +469,7 @@ public data class Gun(
                 // ammo
                 toml.getTable("ammo")?.let { ammo ->
                     ammo.getLong("id")?.let { properties["ammoId"] = it.toInt() }
+                    ammo.getString("desc")?.let { properties["ammoDesc"] = it }
                     ammo.getLong("max")?.let { properties["ammoMax"] = min(GUN_MAX_AMMO_ALLOWED, it.toInt()) }
                     ammo.getLong("per_reload")?.let { properties["ammoPerReload"] = it.toInt() }
                     ammo.getBoolean("ignore")?.let { properties["ammoIgnore"] = it }

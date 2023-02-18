@@ -310,7 +310,7 @@ public data class Config(
 
             // random advanced options
             toml.getBoolean("experimental.async_packets")?.let { configOptions["asyncPackets"] = it }
-            toml.getBoolean("experimental.num_projectile_threads")?.let { configOptions["numProjectileThreads"] = it }
+            toml.getLong("experimental.num_projectile_threads")?.let { configOptions["numProjectileThreads"] = it.toInt() }
 
 
             return mapToObject(configOptions, Config::class)
