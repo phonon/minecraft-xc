@@ -2,7 +2,7 @@ main: phonon.xv.XVPlugin
 name: xv
 version: 0.0
 api-version: 1.16
-depend: [kotlin, ProtocolLib]
+depend: [kotlin, packetevents]
 softdepend: [xc]
 commands:
   xv:

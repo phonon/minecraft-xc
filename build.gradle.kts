@@ -32,8 +32,11 @@ repositories {
     maven { // paper
         url = uri("https://papermc.io/repo/repository/maven-public/")
     }
-    maven { // protocol lib
-        url = uri("https://repo.dmulloy2.net/nexus/repository/public/")
+    // maven { // protocol lib
+    //     url = uri("https://repo.dmulloy2.net/nexus/repository/public/")
+    // }
+    maven { // packet events v2.0
+        url = uri("https://repo.codemc.io/repository/maven-snapshots/")
     }
 }
 
@@ -68,9 +71,12 @@ dependencies {
     // TODO: remove toml shadowing after adding xc dependency for side-loading
     configurations["resolvableImplementation"]("org.tomlj:tomlj:1.0.0")
 
-    // protocol lib (for packets)
-    compileOnly("com.comphenix.protocol:ProtocolLib:4.7.0")
+    // OLD: protocol lib (for packets)
+    // compileOnly("com.comphenix.protocol:ProtocolLib:4.7.0")
     // compileOnly(files("./lib/ProtocolLib.jar")) // local
+    
+    // NEW: trying to use packetevents
+    compileOnly("com.github.retrooper.packetevents:spigot:2.0.0-SNAPSHOT")
     
     // xc (combat core)
     // compileOnly(files("../xc/build/libs/xc-1.16-SNAPSHOT-0.0.0.jar"))

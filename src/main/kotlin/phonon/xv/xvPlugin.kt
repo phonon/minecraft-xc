@@ -8,7 +8,9 @@ import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.command.TabCompleter
 import org.bukkit.event.HandlerList
 import kotlin.system.measureTimeMillis
-import com.comphenix.protocol.ProtocolLibrary
+import com.github.retrooper.packetevents.PacketEvents
+import com.github.retrooper.packetevents.event.PacketListenerPriority
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder
 import org.bukkit.Bukkit
 import org.bukkit.entity.ArmorStand
 import phonon.xv.XV
@@ -25,6 +27,18 @@ public class XVPlugin : JavaPlugin() {
         this,
         this.getLogger(),
     )
+    
+    /**
+     * Setup packet events api, see:
+     * https://github.com/retrooper/packetevents-example/blob/2.0/thread-safe-listener/src/main/java/main/Main.java
+     */
+    override fun onLoad() {
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this))
+        // Are all listeners read only?
+        PacketEvents.getAPI().getSettings().readOnlyListeners(true)
+            .checkForUpdates(true)
+        PacketEvents.getAPI().load()
+    }
 
     override fun onEnable() {
         
@@ -37,7 +51,8 @@ public class XVPlugin : JavaPlugin() {
         // register listeners
         pluginManager.registerEvents(EventListener(xv), this)
         pluginManager.registerEvents(ArmorstandListener(xv), this)
-        ProtocolLibrary.getProtocolManager().addPacketListener(ControlsListener(xv))
+        PacketEvents.getAPI().getEventManager().registerListener(ControlsListener(xv), PacketListenerPriority.MONITOR)
+        PacketEvents.getAPI().init()
 
         // register commands
         this.getCommand("xv")?.setExecutor(Command(xv))
@@ -66,7 +81,7 @@ public class XVPlugin : JavaPlugin() {
         xv.stop()
         xv.saveVehiclesJson()
         HandlerList.unregisterAll(this)
-        ProtocolLibrary.getProtocolManager().removePacketListeners(this)
+        PacketEvents.getAPI().terminate()
         logger.info("wtf i hate xeth now")
     }
 }
