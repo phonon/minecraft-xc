@@ -9,46 +9,58 @@ import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
-import net.md_5.bungee.api.ChatMessageType
-import net.md_5.bungee.api.chat.TextComponent
+import net.kyori.adventure.audience.Audience
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.Style
+import net.kyori.adventure.text.format.NamedTextColor
+
 
 public object Message {
 
     public val PREFIX = "[xv]"
-    public val COL_MSG = ChatColor.AQUA
-    public val COL_ERROR = ChatColor.RED
+    public val STYLE_MSG = Style.style(NamedTextColor.AQUA)
+    public val STYLE_ERROR = Style.style(NamedTextColor.RED)
 
-    // print generic message to chat
+    /**
+     * Print generic plugin message to command sender's chat (either console
+     * or player).
+     */
     public fun print(sender: CommandSender?, s: String) {
 		if ( sender === null ) {
             System.out.println("${PREFIX} Message called with null sender: ${s}")
             return
 		}
 
-        val msg = "${COL_MSG}${s}"
+        val msg = Component.text(s, STYLE_MSG)
         sender.sendMessage(msg)
     }
 
-    // print error message to chat
+    /**
+     * Print error message to a command sender's chat (either console or player).
+     */
     public fun error(sender: CommandSender?, s: String) {
 		if ( sender === null ) {
             System.out.println("${PREFIX} Message called with null sender: ${s}")
             return
 		}
 
-        val msg = "${COL_ERROR}${s}"
+        val msg = Component.text(s, STYLE_ERROR)
         sender.sendMessage(msg)
     }
 
-    // wrapper around Bukkit.broadcast to send
-    // messages to all players
+    /**
+     * Wrapper around Bukkit.broadcast to send plugin formatted messages
+     * to all players.
+     */
     public fun broadcast(s: String) {
-        val msg = "${COL_MSG}${s}"
-        Bukkit.broadcastMessage(msg)
+        val msg = Component.text(s, STYLE_MSG)
+        Bukkit.broadcast(msg)
     }
 
-    // print text to the player action bar
+    /**
+     * Wrapper around paper sendActionBar to send plugin formatted messages.
+     */
     public fun announcement(player: Player, s: String) {
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent(s));
+        player.sendActionBar(Component.text(s))
     }
 }
