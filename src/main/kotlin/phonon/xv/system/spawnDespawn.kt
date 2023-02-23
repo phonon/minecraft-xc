@@ -13,6 +13,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
 import org.bukkit.ChatColor
 import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Player
@@ -325,7 +326,7 @@ public fun XV.systemFinishDespawnVehicle(
                         // drop fuel item at vehicle location
                         if ( element.layout.contains(VehicleComponentType.FUEL) ) {
                             val fuel = element.components.fuel!!
-                            if ( fuel.dropItem ) {
+                            if ( fuel.dropItem && fuel.material != Material.AIR && fuel.current > 0 ) {
                                 val item = ItemStack(fuel.material, fuel.current / fuel.amountPerItem)
                                 location.world.dropItem(location, item)
                             }

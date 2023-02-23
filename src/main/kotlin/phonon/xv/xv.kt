@@ -19,7 +19,9 @@ import java.util.concurrent.Executors
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.bukkit.Bukkit
+import org.bukkit.Location
 import org.bukkit.NamespacedKey
+import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 import org.bukkit.scheduler.BukkitTask
@@ -119,18 +121,40 @@ public class XV (
     // ========================================================================
     internal var engineTask: BukkitTask? = null
 
+    /**
+     * Clears all runtime engine state.
+     */
     internal fun clearState() {
-        // clear storage and lookup
+        // clear main vehicle and element storages
         storage.clear()
         vehicleStorage.clear()
+        // clear other engine state
         userInputs.clear()
         entityVehicleData.clear()
         uuidToVehicle.clear()
         uuidToElement.clear()
-        // clear system state
+        // clear ecs systems state
         mountRequests.clear()
         dismountRequests.clear()
         createRequests.clear()
+    }
+
+    /**
+     * Reassociate armorstands with components, and optionally force delete
+     * invalid armorstands.
+     */
+    public fun cleanupEntities(
+        forceDelete: Boolean = false,
+    ): Int {
+        var cleaned = 0 // entities removed
+
+        // reassociate armorstands with newly loaded components
+        Bukkit.getWorlds().forEach { w ->
+            val invalid = reassociateEntities(this, w.entities, forceDelete)
+            cleaned += invalid
+        }
+
+        return cleaned
     }
 
     /**
@@ -635,6 +659,42 @@ public class XV (
         } else {
             return false
         }
+    }
+
+    /**
+     * Get vehicle from entity player is looking at.
+     */
+    public fun getVehiclePlayerIsLookingAt(
+        player: Player,
+        maxDistance: Double = 8.0,
+    ): Vehicle? {
+        val start = player.getEyeLocation()
+        val direction = start.direction
+        val raySize: Double = 0.0
+        val filter = { e: Entity -> entityVehicleData.contains(e.getUniqueId()) }
+
+        val raytraceResult = player.world.rayTraceEntities(start, direction, maxDistance, raySize, filter)
+        val entityHit = raytraceResult?.getHitEntity()
+
+        if ( entityHit !== null ) {
+            return this.entityVehicleData[entityHit.getUniqueId()]?.vehicle
+        } else {
+            return null
+        }
+    }
+
+    /**
+     * Get vehicle from entity player is looking at
+     */
+    public fun getVehiclesNearLocation(
+        location: Location,
+        radius: Double = 4.0,
+    ): List<Vehicle> {
+        val vehiclesNearLocation = ArrayList<Vehicle>()
+
+        
+
+        return vehiclesNearLocation
     }
 
     /**

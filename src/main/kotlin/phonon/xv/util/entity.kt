@@ -9,6 +9,7 @@ import org.bukkit.NamespacedKey
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
+import org.bukkit.entity.Player
 import org.bukkit.persistence.PersistentDataType
 import phonon.xv.XV
 import phonon.xv.component.ModelComponent
@@ -76,6 +77,26 @@ public fun Entity.getElementUuid(): UUID? {
 }
 
 /**
+ * Helper function to get a vehicle element identifying UUID key
+ * from its persistent data container.
+ */
+public fun Entity.removeVehicleUuid() {
+    if ( this.persistentDataContainer.has(ENTITY_KEY_VEHICLE, PersistentDataType.STRING) ) {
+        this.persistentDataContainer.remove(ENTITY_KEY_VEHICLE)
+    }
+}
+
+/**
+ * Helper function to get a vehicle element identifying UUID key
+ * from its persistent data container.
+ */
+public fun Entity.removeElementUuid() {
+    if ( this.persistentDataContainer.has(ENTITY_KEY_ELEMENT, PersistentDataType.STRING) ) {
+        this.persistentDataContainer.remove(ENTITY_KEY_ELEMENT)
+    }
+}
+
+/**
  * Helper function to check if an entity has a vehicle element UUID
  * identifier. Returns true if present.
  */
@@ -84,15 +105,22 @@ public fun Entity.hasVehicleUuid(): Boolean {
 }
 
 /**
- * Reassociate the following entity with the appropriate components
+ * Reassociate entities in input with their engine mapped vehicle elements.
+ * Returns number of invalid entities removed.
  */
-public fun reassociateEntities(xv: XV, entities: Collection<Entity>) {
+public fun reassociateEntities(
+    xv: XV,
+    entities: Collection<Entity>,
+    forceDelete: Boolean = false, // force delete invalid armorstand entities
+): Int {
+    var numRemoved = 0
+
     for ( entity in entities ) {
         try {
             val vehicleUuid = entity.getVehicleUuid()
             val elementUuid = entity.getElementUuid()
 
-            val invalid = if ( elementUuid !== null && vehicleUuid !== null ) {
+            val invalid = if ( elementUuid !== null || vehicleUuid !== null ) {
                 val vehicle = xv.uuidToVehicle[vehicleUuid]
                 val vehicleElement = xv.uuidToElement[elementUuid]
                 if ( vehicle !== null && vehicleElement != null ) {
@@ -115,20 +143,27 @@ public fun reassociateEntities(xv: XV, entities: Collection<Entity>) {
                         true
                     }
                 } else {
-                    true
+                    true // either vehicle or element is null, so this is invalid state
                 }
             } else {
-                true
+                false // not a vehicle entity
             }
 
             if ( invalid ) {
-                if ( xv.config.deleteInvalidArmorStands ) {
+                if ( xv.config.deleteInvalidArmorStands || forceDelete ) {
                     // vehicle element no longer exists, just delete the stand
                     // (only do if config set, by default avoid because any
                     // error in loading that causes armor stand to vehicle
                     // mappings to not be loaded will cause all vehicles to be
                     // marked as invalid and deleted)
-                    entity.remove()
+                    if ( entity !is Player ) {
+                        entity.remove()
+                        numRemoved += 1
+                    } else {
+                        xv.logger.warning("Player ${entity.name} is mapped to vehicle??? ${vehicleUuid}...removing player mapping")
+                        entity.removeVehicleUuid()
+                        entity.removeElementUuid()
+                    }
                 }
             }
         } catch ( err: Exception ) {
@@ -136,4 +171,6 @@ public fun reassociateEntities(xv: XV, entities: Collection<Entity>) {
             err.printStackTrace()
         }
     }
+
+    return numRemoved
 }
