@@ -128,6 +128,6 @@ public fun XV.systemDestroyVehicle(
 
     while ( requests.isNotEmpty() ) {
         val (vehicle,) = requests.remove()
-        xv.destroyVehicle(vehicle)
+        xv.deleteVehicle(vehicle)
     }
 }

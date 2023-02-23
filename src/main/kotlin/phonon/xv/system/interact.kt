@@ -94,15 +94,18 @@ public fun XV.systemInteract(
                 if ( layout.contains(VehicleComponentType.FUEL) ) {
                     val fuelComponent = element.components.fuel!!
                     if ( player.itemMaterialInMainHandEqualTo(fuelComponent.material) ) {
-                        println("TODO: Adding fuel to vehicle")
+                        xv.fuelRequests.add(FuelVehicleRequest(
+                            fuelComponent = fuelComponent,
+                            player = player,
+                        ))
                         break
                     }
                 }
 
                 if ( layout.contains(VehicleComponentType.AMMO) ) {
                     val ammoComponent = element.components.ammo!!
+                    println("TODO: check if item matches ammo")
                     // TODO: check if item matches ammo
-                    // break
                 }
 
                 // fueling or ammo load did not pass, try mounting

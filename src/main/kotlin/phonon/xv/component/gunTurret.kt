@@ -313,7 +313,8 @@ public data class GunTurretComponent(
     override fun delete(
         vehicle: Vehicle,
         element: VehicleElement,
-        entityVehicleData: HashMap<UUID, EntityVehicleData>
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+        despawn: Boolean,
     ) {
         val standTurret = this.armorstandTurret
         if ( standTurret !== null ) {

@@ -79,6 +79,10 @@ public data class LandMovementControlsComponent(
 
     override fun self() = this
 
+    // system specific state that should reset when vehicle recreated
+    var noFuel = false
+    var infoTick: Int = 0 // tick counter for info messages
+    
     override fun toJson(): JsonObject {
         val json = JsonObject()
         json.add("speed", JsonPrimitive(speed))

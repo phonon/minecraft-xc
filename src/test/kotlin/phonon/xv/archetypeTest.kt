@@ -34,7 +34,7 @@ public class ArchetypeTest() {
                 layout = EnumSet.of(
                     VehicleComponentType.FUEL,
                 ),
-                fuel = FuelComponent(420.0, i.toDouble()),
+                fuel = FuelComponent(420, i),
             )
             val id = archetype.insert(fuel)
             assertEquals(i, id)
@@ -44,11 +44,11 @@ public class ArchetypeTest() {
 
         // verify swap remove
         archetype.free(0)
-        assertEquals(3.0, archetype.fuelView!![0].max)
+        assertEquals(3, archetype.fuelView!![0].max)
         archetype.free(1)
-        assertEquals(2.0, archetype.fuelView!![1].max)
+        assertEquals(2, archetype.fuelView!![1].max)
         archetype.free(2)
-        assertEquals(3.0, archetype.fuelView!![0].max)
+        assertEquals(3, archetype.fuelView!![0].max)
         archetype.free(3)
 
         assertEquals(0, archetype.size)
@@ -73,7 +73,7 @@ public class ArchetypeTest() {
                 layout = EnumSet.of(
                     VehicleComponentType.FUEL,
                 ),
-                fuel = FuelComponent(420.0, i.toDouble()),
+                fuel = FuelComponent(420, i),
             )
             val id = archetype.insert(fuel)
             if ( i < capacity ) {
@@ -126,13 +126,13 @@ public class ArchetypeTest() {
 
         // manually insert fuel components, then test iter across archetypes
         // this needs to be changed when archetypes are properly implemented
-        components.archetypes[1].fuel!!.add(FuelComponent(1.0, 1.0))
-        components.archetypes[1].fuel!!.add(FuelComponent(2.0, 2.0))
+        components.archetypes[1].fuel!!.add(FuelComponent(1, 1))
+        components.archetypes[1].fuel!!.add(FuelComponent(2, 2))
         components.archetypes[1].size = 2
-        components.archetypes[2].fuel!!.add(FuelComponent(3.0, 3.0))
+        components.archetypes[2].fuel!!.add(FuelComponent(3, 3))
         components.archetypes[2].size = 1
 
-        val fuelExpected = listOf(1.0, 2.0, 3.0)
+        val fuelExpected = listOf(1, 2, 3)
         var count = 0
 
         for ( (i, v) in ComponentTuple1.query<FuelComponent>(components).withIndex() ) {

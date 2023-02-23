@@ -271,6 +271,8 @@ public fun XV.systemDespawnVehicle(
  * Handle despawning vehicle requests.
  * Actual deletion of vehicle and its elements is handled by the destroy
  * system.
+ * 
+ * TODO: this needs to be cleaned + broken up at some point
  */
 public fun XV.systemFinishDespawnVehicle(
     requests: ConcurrentLinkedQueue<DespawnVehicleFinish>,
@@ -314,6 +316,28 @@ public fun XV.systemFinishDespawnVehicle(
                     )
                     if ( item !== null ) {
                         location.world.dropItem(location, item)
+                    }
+                    
+                    // COMPONENT SPECIFIC DESPAWN SYSTEMS:
+                    // TODO: abstract out if possible
+
+                    for ( element in vehicle.elements ) {
+                        // drop fuel item at vehicle location
+                        if ( element.layout.contains(VehicleComponentType.FUEL) ) {
+                            val fuel = element.components.fuel!!
+                            if ( fuel.dropItem ) {
+                                val item = ItemStack(fuel.material, fuel.current / fuel.amountPerItem)
+                                location.world.dropItem(location, item)
+                            }
+                        }
+
+                        // drop ammo item at vehicle location
+                        if ( element.layout.contains(VehicleComponentType.AMMO) ) {
+                            val ammo = element.components.ammo!!
+                            if ( ammo.dropItem ) {
+                                println("TODO: drop ammo item")
+                            }
+                        }
                     }
                 }
             } else {

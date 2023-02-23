@@ -14,9 +14,43 @@ import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.iter.*
 import phonon.xv.common.UserInput
+import phonon.xv.component.FuelComponent
 import phonon.xv.component.LandMovementControlsComponent
 import phonon.xv.component.SeatsComponent
 import phonon.xv.component.TransformComponent
+
+/**
+ * System for doing land movement fuel checks. Should run before land
+ * movement system.
+ */
+public fun systemLandMovementFuel(
+    storage: ComponentsStorage,
+) {
+    for ( (_, transform, landMovement, fuel) in ComponentTuple3.query<
+        TransformComponent,
+        LandMovementControlsComponent,
+        FuelComponent,
+    >(storage) ) {
+        if ( fuel.current <= 0 ) { // indicate no fuel for land movement controller
+            landMovement.noFuel = true
+            continue
+        } else {
+            landMovement.noFuel = false
+        }
+
+        // for now do simple check: either use idle rate or moving rate
+        if ( transform.isMoving ) {
+            fuel.timeRemaining -= fuel.burnRateMoving
+        } else {
+            fuel.timeRemaining -= fuel.burnRateIdle
+        }
+
+        if ( fuel.timeRemaining <= 0.0 ) {
+            fuel.current = max(0, fuel.current - 1)
+            fuel.timeRemaining = fuel.timePerFuelWhenIdle.toDouble()
+        }
+    }
+}
 
 /**
  * System for land movement controls
@@ -36,7 +70,7 @@ public fun systemLandMovement(
 
         // update speed/turning from player input
         val player = seats.passengers[landMovement.seatController]
-        if ( player !== null ) {
+        if ( player !== null && landMovement.noFuel == false ) {
             // get user input
             val controls = userInputs[player.getUniqueId()] ?: UserInput()
 
@@ -110,6 +144,7 @@ public fun systemLandMovement(
                 landMovement.yawRotationSpeed = newYawSpeed
             }
 
+            transform.isMoving = controllingSpeed || controllingYaw
         } else {
             // no player controls -> decelerate
             landMovement.speed *= landMovement.decelerationMultiplier
@@ -120,6 +155,8 @@ public fun systemLandMovement(
             if ( landMovement.yawRotationSpeed < 0.1 && landMovement.yawRotationSpeed > -0.1) { // clamp to 0
                 landMovement.yawRotationSpeed = 0.0
             }
+
+            transform.isMoving = false
         }
 
         // APPLY TURNING/ROTATION MOTION

@@ -78,7 +78,8 @@ public data class SeatsComponent(
     override fun delete(
         vehicle: Vehicle,
         element: VehicleElement,
-        entityVehicleData: HashMap<UUID, EntityVehicleData>
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+        despawn: Boolean,
     ) {
         // in case there are any active stands
         for ( stand in armorstands ) {

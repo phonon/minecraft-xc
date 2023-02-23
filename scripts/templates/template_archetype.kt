@@ -241,12 +241,13 @@ public data class VehicleComponents(
     fun delete(
         vehicle: Vehicle,
         element: VehicleElement,
-        entityVehicleData: HashMap<UUID, EntityVehicleData>
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+        despawn: Boolean,
     ) {
         for ( c in layout ) {
             when ( c ) {
                 {%- for c in components %}
-                VehicleComponentType.{{ c.enum }} -> {{ c.storage }}?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.{{ c.enum }} -> {{ c.storage }}?.delete(vehicle, element, entityVehicleData, despawn)
                 {%- endfor %}
                 null -> {}
             }

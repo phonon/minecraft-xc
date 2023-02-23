@@ -56,6 +56,11 @@ public data class TransformComponent(
     // flag that vehicle in water
     var inWater: Boolean = false
 
+    // flag that vehicle is being moving actively
+    // used by some systems that need checks if vehicle is moving
+    // like fuel consumption
+    var isMoving: Boolean = false
+
     /**
      * Helper to update yaw and its derived values.
      */

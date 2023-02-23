@@ -22,6 +22,8 @@ public data class AmmoComponent(
     var current: Int = 0,
     val max: Int = 40,
     // val type: Ammo? = null, // TODO: load from xc combat plugin
+    // drop fuel item instead of storing into item during despawn
+    val dropItem: Boolean = true,
 ): VehicleComponent<AmmoComponent> {
     override val type = VehicleComponentType.AMMO
 
@@ -50,6 +52,9 @@ public data class AmmoComponent(
         itemLore: ArrayList<String>,
         itemData: PersistentDataContainer,
     ) {
+        if ( this.dropItem ) {
+            return // skip if dropping item instead of storing into item data
+        }
         itemData.set(AMMO_KEY_CURRENT, PersistentDataType.INTEGER, this.current)
         itemLore.add("Ammo: ${this.current}/${this.max}")
     }
@@ -75,6 +80,8 @@ public data class AmmoComponent(
 
             toml.getNumberAs<Int>("current")?.let { properties["current"] = it }
             toml.getNumberAs<Int>("max")?.let { properties["max"] = it }
+            
+            toml.getBoolean("drop_item")?.let { properties["dropItem"] = it }
 
             return mapToObject(properties, AmmoComponent::class)
         }

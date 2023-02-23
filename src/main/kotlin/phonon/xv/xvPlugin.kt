@@ -9,8 +9,10 @@ import org.bukkit.command.TabCompleter
 import org.bukkit.event.HandlerList
 import kotlin.system.measureTimeMillis
 import com.github.retrooper.packetevents.PacketEvents
+import com.github.retrooper.packetevents.event.PacketListenerCommon
 import com.github.retrooper.packetevents.event.PacketListenerPriority
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder
+import io.github.retrooper.packetevents.injector.SpigotChannelInjector
 import org.bukkit.Bukkit
 import org.bukkit.entity.ArmorStand
 import phonon.xv.XV
@@ -27,6 +29,9 @@ public class XVPlugin : JavaPlugin() {
         this,
         this.getLogger(),
     )
+
+    // listeners (store refs so we can register/unregister)
+    var controlsPacketListener: PacketListenerCommon? = null
     
     /**
      * Setup packet events api, see:
@@ -36,7 +41,6 @@ public class XVPlugin : JavaPlugin() {
         PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this))
         // Are all listeners read only?
         PacketEvents.getAPI().getSettings().readOnlyListeners(true)
-            .checkForUpdates(true)
         PacketEvents.getAPI().load()
     }
 
@@ -51,8 +55,25 @@ public class XVPlugin : JavaPlugin() {
         // register listeners
         pluginManager.registerEvents(EventListener(xv), this)
         pluginManager.registerEvents(ArmorstandListener(xv), this)
-        PacketEvents.getAPI().getEventManager().registerListener(ControlsListener(xv), PacketListenerPriority.MONITOR)
+        
+        // PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this))
+        // // Are all listeners read only?
+        // PacketEvents.getAPI().getSettings().readOnlyListeners(true)
+        //     .checkForUpdates(true)
+        // PacketEvents.getAPI().load()
+        println("packetevents loaded: ${PacketEvents.getAPI().isLoaded()} initialized: ${PacketEvents.getAPI().isInitialized()}")
+        this.controlsPacketListener = PacketEvents.getAPI().getEventManager().registerListener(ControlsListener(xv), PacketListenerPriority.MONITOR)
         PacketEvents.getAPI().init()
+
+        // update players
+        val packetInjector = PacketEvents.getAPI().getInjector() as SpigotChannelInjector
+        for ( user in PacketEvents.getAPI().getProtocolManager().getUsers() ) {
+            val player = Bukkit.getPlayer(user.getUUID())
+            println("user: ${user}, ${user.getUUID()}, ${user.getProfile()}, ${user.getProfile().getName()} player: ${player?.name}")
+            if ( player !== null ) {
+                packetInjector.updatePlayer(user, player)
+            }
+        }
 
         // register commands
         this.getCommand("xv")?.setExecutor(Command(xv))
@@ -81,7 +102,8 @@ public class XVPlugin : JavaPlugin() {
         xv.stop()
         xv.saveVehiclesJson()
         HandlerList.unregisterAll(this)
-        PacketEvents.getAPI().terminate()
+        // PacketEvents.getAPI().getEventManager().unregisterListener(this.controlsPacketListener)
+        // PacketEvents.getAPI().terminate()
         logger.info("wtf i hate xeth now")
     }
 }

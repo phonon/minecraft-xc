@@ -98,9 +98,13 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
     ) {}
 
+    /**
+     * Handler for 
+     */
     fun delete(
         vehicle: Vehicle,
         element: VehicleElement,
-        entityVehicleData: HashMap<UUID, EntityVehicleData>
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+        despawn: Boolean,
     ) {}
 }

@@ -1,6 +1,7 @@
 package phonon.xv.util
 
 import org.bukkit.ChatColor
+import org.bukkit.Material
 import org.bukkit.World
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -27,7 +28,8 @@ public class TaskProgress(
     val timeTaskMillis: Long, // how long task takes in millis
     val player: Player,
     val maxMoveDistance: Double, // if < 0, ignore check
-    val initialItemInHand: ItemStack? = null,
+    val itemMaterial: Material? = null, // if null, ignore item material check
+    val initialItemInHand: ItemStack? = null, // if null, ignore specific item check
     val itemIdTag: Int? = null, // ItemStack item integer id tag for identifying same item
     val onProgress: ((progress: Double) -> Unit)? = null,
     val onCancel: ((reason: TaskProgress.CancelReason) -> Unit)? = null,
@@ -101,6 +103,11 @@ public class TaskProgress(
                 this.cancel(CancelReason.ITEM_CHANGED)
                 return
             }
+        } else if ( itemMaterial !== null ) {
+            if ( player.inventory.itemInMainHand.type != itemMaterial ) {
+                this.cancel(CancelReason.ITEM_CHANGED)
+                return
+            }
         }
 
         val t = System.currentTimeMillis()
@@ -116,7 +123,7 @@ public class TaskProgress(
 }
 
 /**
- * Create progress bar string with 10 ticks.
+ * Create progress bar string with 10 ticks, colored white.
  * Input should be double in range [0.0, 1.0] marking progress.
  */
 internal fun progressBar10(progress: Double): String {
@@ -138,6 +145,60 @@ internal fun progressBar10(progress: Double): String {
         8 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592\u2592${ChatColor.WHITE}\u2503"
         9 ->  "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GRAY}\u2592${ChatColor.WHITE}\u2503"
         10 -> "\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2503"
+        else -> ""
+    }
+}
+
+/**
+ * Create progress bar string with 10 ticks, colored Green.
+ * Input should be double in range [0.0, 1.0] marking progress.
+ */
+internal fun progressBar10Green(progress: Double): String {
+    // available shades
+    // https://en.wikipedia.org/wiki/Box-drawing_character
+    // val SOLID = 2588     // full solid block
+    // val SHADE0 = 2592    // medium shade
+    // val SHADE1 = 2593    // dark shade
+
+    return when ( Math.round(progress * 10.0).toInt() ) {
+        0 ->  "${ChatColor.GREEN}\u2503${ChatColor.DARK_GREEN}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.GREEN}\u2503"
+        1 ->  "${ChatColor.GREEN}\u2503\u2588${ChatColor.DARK_GREEN}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.GREEN}\u2503"
+        2 ->  "${ChatColor.GREEN}\u2503\u2588\u2588${ChatColor.DARK_GREEN}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.GREEN}\u2503"
+        3 ->  "${ChatColor.GREEN}\u2503\u2588\u2588\u2588${ChatColor.DARK_GREEN}\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.GREEN}\u2503"
+        4 ->  "${ChatColor.GREEN}\u2503\u2588\u2588\u2588\u2588${ChatColor.DARK_GREEN}\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.GREEN}\u2503"
+        5 ->  "${ChatColor.GREEN}\u2503\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GREEN}\u2592\u2592\u2592\u2592\u2592${ChatColor.GREEN}\u2503"
+        6 ->  "${ChatColor.GREEN}\u2503\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GREEN}\u2592\u2592\u2592\u2592${ChatColor.GREEN}\u2503"
+        7 ->  "${ChatColor.GREEN}\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GREEN}\u2592\u2592\u2592${ChatColor.GREEN}\u2503"
+        8 ->  "${ChatColor.GREEN}\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GREEN}\u2592\u2592${ChatColor.GREEN}\u2503"
+        9 ->  "${ChatColor.GREEN}\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_GREEN}\u2592${ChatColor.GREEN}\u2503"
+        10 -> "${ChatColor.GREEN}\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2503"
+        else -> ""
+    }
+}
+
+/**
+ * Create progress bar string with 10 ticks, colored Red.
+ * Input should be double in range [0.0, 1.0] marking progress.
+ */
+internal fun progressBar10Red(progress: Double): String {
+    // available shades
+    // https://en.wikipedia.org/wiki/Box-drawing_character
+    // val SOLID = 2588     // full solid block
+    // val SHADE0 = 2592    // medium shade
+    // val SHADE1 = 2593    // dark shade
+
+    return when ( Math.round(progress * 10.0).toInt() ) {
+        0 ->  "${ChatColor.RED}\u2503${ChatColor.DARK_RED}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.RED}\u2503"
+        1 ->  "${ChatColor.RED}\u2503\u2588${ChatColor.DARK_RED}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.RED}\u2503"
+        2 ->  "${ChatColor.RED}\u2503\u2588\u2588${ChatColor.DARK_RED}\u2592\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.RED}\u2503"
+        3 ->  "${ChatColor.RED}\u2503\u2588\u2588\u2588${ChatColor.DARK_RED}\u2592\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.RED}\u2503"
+        4 ->  "${ChatColor.RED}\u2503\u2588\u2588\u2588\u2588${ChatColor.DARK_RED}\u2592\u2592\u2592\u2592\u2592\u2592${ChatColor.RED}\u2503"
+        5 ->  "${ChatColor.RED}\u2503\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_RED}\u2592\u2592\u2592\u2592\u2592${ChatColor.RED}\u2503"
+        6 ->  "${ChatColor.RED}\u2503\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_RED}\u2592\u2592\u2592\u2592${ChatColor.RED}\u2503"
+        7 ->  "${ChatColor.RED}\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_RED}\u2592\u2592\u2592${ChatColor.RED}\u2503"
+        8 ->  "${ChatColor.RED}\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_RED}\u2592\u2592${ChatColor.RED}\u2503"
+        9 ->  "${ChatColor.RED}\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588${ChatColor.DARK_RED}\u2592${ChatColor.RED}\u2503"
+        10 -> "${ChatColor.RED}\u2503\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2503"
         else -> ""
     }
 }

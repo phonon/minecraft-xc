@@ -95,7 +95,7 @@ public class XV (
     internal var saveTimer: Int = config.savePeriod
     internal var saveBackupTimer: Int = config.saveBackupPeriod
 
-    // System request stuff
+    // Systems state
     // player mount and dismount requests
     internal var mountRequests: ArrayList<MountVehicleRequest> = ArrayList()
     internal var dismountRequests: ArrayList<DismountVehicleRequest> = ArrayList()
@@ -110,6 +110,9 @@ public class XV (
     internal var despawnFinishQueue: ConcurrentLinkedQueue<DespawnVehicleFinish> = ConcurrentLinkedQueue()
     // vehicle interaction queue
     internal var interactRequests: Queue<VehicleInteract> = ArrayDeque()
+    // fuel system state
+    internal var fuelRequests: Queue<FuelVehicleRequest> = ArrayDeque()
+    internal var fuelFinishQueue: ConcurrentLinkedQueue<FuelVehicleFinish> = ConcurrentLinkedQueue()
 
     // ========================================================================
     // RUNNING TASKS
@@ -387,17 +390,23 @@ public class XV (
     }
 
     /**
-     * Destroy a vehicle and remove from archetype storages.
+     * Remove a vehicle and remove from archetype storages.
      */
-    public fun destroyVehicle(
+    public fun deleteVehicle(
         vehicle: Vehicle,
+        despawn: Boolean = false,
     ) {
         // free vehicle
         vehicleStorage.free(vehicle.id)
         // free vehicle elements
         vehicle.elements.forEach { element ->
-            // prototype still points to inserted components
-            element.components.delete(vehicle, element, this.entityVehicleData)
+            // handle component specific deletion handlers
+            element.components.delete(
+                vehicle,
+                element,
+                this.entityVehicleData,
+                despawn,
+            )
             // free from archetype
             val archetype = this.storage.lookup[element.layout]!!
             archetype.free(element.id)
@@ -688,7 +697,12 @@ public class XV (
         mountRequests = systemMountVehicle(storage, mountRequests) // filters direct interaction mounting
         dismountRequests = systemDismountVehicle(storage, dismountRequests)
 
+        // vehicle fuel loading systems
+        systemFuelVehicle(fuelRequests, fuelFinishQueue)
+        systemFinishFuelVehicle(fuelFinishQueue)
+
         // player vehicle movement controls
+        systemLandMovementFuel(storage)
         systemLandMovement(storage, userInputs)
         systemShipMovement(storage, userInputs)
 
@@ -704,6 +718,9 @@ public class XV (
         // seat raycast mounting
         mountRequests = systemMountSeatRaycast(storage, mountRequests)
         
+        // sends info text to players
+        systemLandVehicleInfoText(storage)
+
         systemDespawnVehicle(despawnRequests, despawnFinishQueue)
         systemFinishDespawnVehicle(despawnFinishQueue, deleteRequests)
         systemDestroyVehicle(vehicleStorage, storage, deleteRequests)

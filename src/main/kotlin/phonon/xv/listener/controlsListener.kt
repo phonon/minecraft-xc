@@ -36,7 +36,10 @@ public class ControlsListener(val xv: XV): PacketListener {
                 val forward = wrappedPacket.getForward()
                 val isJump = wrappedPacket.isJump()
                 val isUnmount = wrappedPacket.isUnmount()
-
+                
+                //// DEBUGGING
+                // println("sideways: $sideways, forward: $forward, isJump: $isJump, isUnmount: $isUnmount")
+                
                 val userInput = UserInput(
                     forward = forward > 0f,
                     backward = forward < 0f,

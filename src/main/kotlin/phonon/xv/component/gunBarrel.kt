@@ -201,7 +201,8 @@ public data class GunBarrelComponent(
     override fun delete(
         vehicle: Vehicle,
         element: VehicleElement,
-        entityVehicleData: HashMap<UUID, EntityVehicleData>
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+        despawn: Boolean,
     ) {
         val stand = this.armorstand
         if ( stand !== null ) {

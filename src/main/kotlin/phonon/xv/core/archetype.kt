@@ -429,21 +429,22 @@ public data class VehicleComponents(
     fun delete(
         vehicle: Vehicle,
         element: VehicleElement,
-        entityVehicleData: HashMap<UUID, EntityVehicleData>
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+        despawn: Boolean,
     ) {
         for ( c in layout ) {
             when ( c ) {
-                VehicleComponentType.AMMO -> ammo?.delete(vehicle, element, entityVehicleData)
-                VehicleComponentType.FUEL -> fuel?.delete(vehicle, element, entityVehicleData)
-                VehicleComponentType.GUN_BARREL -> gunBarrel?.delete(vehicle, element, entityVehicleData)
-                VehicleComponentType.GUN_TURRET -> gunTurret?.delete(vehicle, element, entityVehicleData)
-                VehicleComponentType.HEALTH -> health?.delete(vehicle, element, entityVehicleData)
-                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.delete(vehicle, element, entityVehicleData)
-                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.delete(vehicle, element, entityVehicleData)
-                VehicleComponentType.MODEL -> model?.delete(vehicle, element, entityVehicleData)
-                VehicleComponentType.SEATS -> seats?.delete(vehicle, element, entityVehicleData)
-                VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.delete(vehicle, element, entityVehicleData)
-                VehicleComponentType.TRANSFORM -> transform?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.AMMO -> ammo?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.FUEL -> fuel?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.GUN_BARREL -> gunBarrel?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.GUN_TURRET -> gunTurret?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.HEALTH -> health?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.MODEL -> model?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.SEATS -> seats?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.TRANSFORM -> transform?.delete(vehicle, element, entityVehicleData, despawn)
                 null -> {}
             }
         }

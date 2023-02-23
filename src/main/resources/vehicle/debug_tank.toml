@@ -52,8 +52,9 @@ max_health = 40.0
 
 
 [fuel]
-max = 100.0
+max = 64
 material = "DRAGON_BREATH"
 amount_per_item = 1
-time_per_fuel_when_idle = 10000
-time_per_fuel_when_moving = 3000
+max_amount_per_refuel = 32
+time_per_fuel_when_idle = 200
+time_per_fuel_when_moving = 60
