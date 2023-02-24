@@ -73,21 +73,28 @@ public class XV (
     //// ENGINE STATE
     // if vehicles state has been loaded at least once
     internal var isLoaded: Boolean = false
-
+        private set
+    
     // user input controls when mounted on entities
-    internal val userInputs: HashMap<UUID, UserInput> = HashMap()
-
+    internal var userInputs: HashMap<UUID, UserInput> = HashMap()
+        private set
+    
     // entity uuid => vehicle element data
-    internal val entityVehicleData: HashMap<UUID, EntityVehicleData> = HashMap()
-
+    internal var entityVehicleData: HashMap<UUID, EntityVehicleData> = HashMap()
+        private set
+    
     // element uuid -> element
-    internal val uuidToElement: HashMap<UUID, VehicleElement> = HashMap()
-    // vehicle uuid -> element
-    internal val uuidToVehicle: HashMap<UUID, Vehicle> = HashMap()
+    internal var uuidToElement: HashMap<UUID, VehicleElement> = HashMap()
+        private set
+    
+        // vehicle uuid -> element
+    internal var uuidToVehicle: HashMap<UUID, Vehicle> = HashMap()
+        private set
     
     // player uuid -> task
-    internal val playerTasks: HashMap<UUID, TaskProgress> = HashMap()
-
+    internal var playerTasks: HashMap<UUID, TaskProgress> = HashMap()
+        private set
+    
     // save system (includes save pipeline state)
     internal var savingVehicles: Boolean = false
     internal var saveVehiclesQueue: Array<Vehicle?> = arrayOf()
@@ -128,15 +135,50 @@ public class XV (
         // clear main vehicle and element storages
         storage.clear()
         vehicleStorage.clear()
+        
         // clear other engine state
-        userInputs.clear()
-        entityVehicleData.clear()
-        uuidToVehicle.clear()
-        uuidToElement.clear()
-        // clear ecs systems state
-        mountRequests.clear()
-        dismountRequests.clear()
-        createRequests.clear()
+        // user input controls when mounted on entities
+        userInputs = HashMap()
+        entityVehicleData = HashMap()
+        uuidToElement = HashMap()
+        uuidToVehicle = HashMap()
+        
+        // save system (includes save pipeline state)
+        savingVehicles = false
+        saveVehiclesQueue = arrayOf()
+        saveVehiclesJsonBuffer = arrayListOf()
+        saveVehiclesQueueIndex = 0
+        saveVehiclesPerTick = config.saveMinVehiclesPerTick
+        saveTimer = config.savePeriod
+        saveBackupTimer = config.saveBackupPeriod
+
+        // re-create systems state
+        // player mount and dismount requests
+        mountRequests = ArrayList()
+        dismountRequests = ArrayList()
+        // vehicle creation/deletion requests
+        createRequests = LinkedList()
+        deleteRequests = LinkedList()
+        // vehicle spawn/despawn system queues
+        spawnRequests = ArrayDeque()
+        spawnFinishQueue = ConcurrentLinkedQueue()
+        despawnRequests = ArrayDeque()
+        despawnFinishQueue = ConcurrentLinkedQueue()
+        // vehicle interaction queue
+        interactRequests = ArrayDeque()
+        // fuel system state
+        fuelRequests = ArrayDeque()
+        fuelFinishQueue = ConcurrentLinkedQueue()
+        
+        // kill player tasks
+        for ( (uuid, task) in playerTasks ) {
+            try {
+                task.kill()
+            } catch ( err: Exception ) {
+                logger.severe("Error killing player ${uuid} task: ${err}")
+            }
+        }
+        playerTasks = HashMap()
     }
 
     /**
@@ -168,7 +210,10 @@ public class XV (
         if ( this.isLoaded ) {
             this.saveVehiclesJson()
         }
-
+        
+        // clear is loaded flag
+        this.isLoaded = false
+        
         clearState()
 
         // load main plugin config
@@ -254,6 +299,9 @@ public class XV (
         Bukkit.getWorlds().forEach { w ->
             reassociateEntities(this, w.entities)
         }
+
+        // set is loaded flag
+        this.isLoaded = true
 
         // finish: print stats
         val timeEnd = System.currentTimeMillis()

@@ -67,6 +67,14 @@ public class TaskProgress(
         ;
     }
 
+    /**
+     * This kills task without running `onCancel` handler.
+     * Used as escape for engine to stop tasks (e.g. during restart).
+     */
+    fun kill() {
+        super.cancel()
+    }
+
     fun cancel(reason: CancelReason) {
         super.cancel()
         onCancel?.invoke(reason)
