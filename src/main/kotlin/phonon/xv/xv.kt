@@ -688,11 +688,29 @@ public class XV (
      */
     public fun getVehiclesNearLocation(
         location: Location,
-        radius: Double = 4.0,
+        radius: Double,
     ): List<Vehicle> {
         val vehiclesNearLocation = ArrayList<Vehicle>()
-
-        
+        for ( vehicle in this.vehicleStorage ) {
+            try {
+                for ( element in vehicle.elements ) {
+                    if ( element.layout.contains(VehicleComponentType.TRANSFORM) ) {
+                        val transform = element.components.transform!!
+                        val world = transform.world
+                        if ( world !== null && world.getUID() == location.world?.getUID() ) {
+                            val vehicleLocation = Location(world, transform.x, transform.y, transform.z)
+                            if ( vehicleLocation.distance(location) < radius ) {
+                                vehiclesNearLocation.add(vehicle)
+                                break
+                            }
+                        }
+                    }
+                }
+            } catch ( err: Exception ) {
+                logger.severe("Failed to get vehicle location")
+                err.printStackTrace()
+            }
+        }
 
         return vehiclesNearLocation
     }

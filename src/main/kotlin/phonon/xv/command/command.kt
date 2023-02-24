@@ -34,8 +34,12 @@ private val SUBCOMMANDS = listOf(
     "cleanupentities",
     "clear",
     "create",
-    "despawn",
     "delete",
+    "deleteid",
+    "deletearea",
+    "despawn",
+    "despawnid",
+    "despawnarea",
     "help",
     "prototype",
     "reload",
@@ -72,8 +76,12 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
             "clear" -> clear(sender, args)
             "cleanupentities" -> cleanupentities(sender, args)
             "create" -> create(sender, args)
-            "despawn" -> despawn(sender, args)
             "delete" -> delete(sender, args)
+            "deleteid" -> deleteId(sender, args)
+            "deletearea" -> deleteArea(sender, args)
+            "despawn" -> despawn(sender, args)
+            "despawnid" -> despawnId(sender, args)
+            "despawnarea" -> despawnArea(sender, args)
             "prototype" -> prototype(sender, args)
             "reload" -> reload(sender)
             "spawn" -> spawn(sender, args)
@@ -287,13 +295,105 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
     }
 
     /**
+     * /xv delete
+     * Force delete vehicle you are looking at.
+     */
+    private fun delete(sender: CommandSender, args: Array<String>) {
+        if ( sender !is Player ) {
+            Message.error(sender, "Must be a player ingame to use /xv delete")
+            return
+        }
+        
+        val vehicle = xv.getVehiclePlayerIsLookingAt(sender)
+        if ( vehicle === null ) {
+            Message.error(sender, "No vehicle found.")
+            return
+        }
+        
+        xv.deleteVehicle(vehicle)
+        Message.print(sender, "Deleted vehicle: prototype = ${vehicle.prototype.name}, id = ${vehicle.id}")
+    }
+
+    /**
+     * /xv deleteid [id]
+     * Force delete specific vehicle id.
+     */
+    private fun deleteId(sender: CommandSender, args: Array<String>) {
+        if ( args.size < 2 ) {
+            Message.error(sender, "Must specify vehicle id: /xv deleteid [id]")
+            return
+        }
+
+        val id = try {
+            args[1].toInt()
+        } catch ( err: Exception ) {
+            Message.error(sender, "Invalid vehicle id: ${args[1]}")
+            return
+        }
+
+        val vehicle = xv.vehicleStorage.get(id)
+        if ( vehicle !== null ) {
+            xv.deleteVehicle(vehicle)
+            Message.print(sender, "Deleted vehicle: prototype = ${vehicle.prototype.name}, id = ${vehicle.id}")
+        } else {
+            Message.error(sender, "No vehicle found with id ${id}")
+        }
+    }
+
+    /**
+     * /xv deletearea [radius]
+     * Force delete vehicles in radius specified.
+     */
+    private fun deleteArea(sender: CommandSender, args: Array<String>) {
+        if ( sender !is Player ) {
+            Message.error(sender, "Must be a player ingame to use /xv deletearea [radius]")
+            return
+        }
+        
+        if ( args.size < 2 ) {
+            Message.error(sender, "Must specify radius: /xv deletearea [radius]")
+            return
+        }
+
+        val radius = args[1]
+
+        val radiusDouble = try {
+            radius.toDouble()
+        } catch ( err: Exception ) {
+            Message.error(sender, "Invalid radius: ${radius}")
+            return
+        }
+
+        Message.print(sender, "Deleting vehicles in radius=${radiusDouble}")
+
+        val vehiclesInArea = xv.getVehiclesNearLocation(sender.location, radiusDouble)
+        for ( v in vehiclesInArea ) {
+            xv.deleteVehicle(v)
+            Message.print(sender, "Deleted vehicle: prototype = ${v.prototype.name}, id = ${v.id}")
+        }
+    }
+
+    /**
      * /xv despawn [force]
-     * Force despawn vehicle you are looking at.
+     * Force despawn vehicle you are looking at. Add "force" to despawn even if
+     * players are occupying vehicle.
      */
     private fun despawn(sender: CommandSender, args: Array<String>) {
         if ( sender !is Player ) {
             Message.error(sender, "Must be a player ingame to use /xv despawn")
             return
+        }
+
+        val force = if ( args.size >= 2 ) {
+            val forceArg = args[1]
+            if ( forceArg.lowercase() == "force" ) {
+                true
+            } else {
+                Message.error(sender, "[xv] Invalid /xv despawn [force] argument ${args[1]}, should be `force`")
+                return
+            }
+        } else {
+            false
         }
 
         val vehicle = xv.getVehiclePlayerIsLookingAt(sender)
@@ -308,29 +408,111 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
             vehicle = vehicle,
             player = sender,
             dropItem = true,
-            force = false,
+            force = force,
             skipTimer = false,
         ))
     }
 
     /**
-     * /xv delete
-     * Force delete vehicle you are looking at.
+     * /xv despawnid [id] [force]
+     * Force despawn specific vehicle id. Add "force" to despawn even if
+     * players are occupying vehicle.
      */
-    private fun delete(sender: CommandSender, args: Array<String>) {
+    private fun despawnId(sender: CommandSender, args: Array<String>) {
+        if ( args.size < 2 ) {
+            Message.error(sender, "Must specify vehicle id: /xv despawn [id] [force]")
+            return
+        }
+
+        val id = try {
+            args[1].toInt()
+        } catch ( err: Exception ) {
+            Message.error(sender, "Invalid vehicle id: ${args[1]}")
+            return
+        }
+        
+        val force = if ( args.size >= 3 ) {
+            val forceArg = args[2]
+            if ( forceArg.lowercase() == "force" ) {
+                true
+            } else {
+                Message.error(sender, "[xv] Invalid /xv despawnid [id] [force] force argument ${args[2]}, should be `force`")
+                return
+            }
+        } else {
+            false
+        }
+
+        val vehicle = xv.vehicleStorage.get(id)
+        if ( vehicle !== null ) {
+            val player = if ( sender is Player ) {
+                sender
+            } else {
+                null
+            }
+
+            Message.print(sender, "Despawning vehicle: prototype = ${vehicle.prototype.name}, id = ${vehicle.id}")
+            xv.despawnRequests.add(DespawnVehicleRequest(
+                vehicle = vehicle,
+                player = player,
+                dropItem = true,
+                force = force,
+                skipTimer = false,
+            ))
+        } else {
+            Message.error(sender, "No vehicle found with id ${id}")
+        }
+    }
+
+    /**
+     * /xv despawnarea [radius] [force]
+     * Force delete vehicles in radius specified.
+     */
+    private fun despawnArea(sender: CommandSender, args: Array<String>) {
         if ( sender !is Player ) {
-            Message.error(sender, "Must be a player ingame to use /xv despawn")
+            Message.error(sender, "Must be a player ingame to use /xv despawnarea [radius] [force]")
             return
         }
         
-        val vehicle = xv.getVehiclePlayerIsLookingAt(sender)
-        if ( vehicle === null ) {
-            Message.error(sender, "No vehicle found.")
+        if ( args.size < 2 ) {
+            Message.error(sender, "Must specify radius: /xv despawnarea [radius] [force]")
             return
         }
-        
-        xv.deleteVehicle(vehicle)
-        Message.print(sender, "Deleted vehicle: prototype = ${vehicle.prototype.name}, id = ${vehicle.id}")
+
+        val radius = args[1]
+
+        val radiusDouble = try {
+            radius.toDouble()
+        } catch ( err: Exception ) {
+            Message.error(sender, "Invalid radius: ${radius}")
+            return
+        }
+
+        val force = if ( args.size >= 3 ) {
+            val forceArg = args[2]
+            if ( forceArg.lowercase() == "force" ) {
+                true
+            } else {
+                Message.error(sender, "[xv] Invalid /xv despawnarea [id] [force] force argument ${args[2]}, should be `force`")
+                return
+            }
+        } else {
+            false
+        }
+
+        Message.print(sender, "Despawning vehicles in radius=${radiusDouble}, force=${force}")
+
+        val vehiclesInArea = xv.getVehiclesNearLocation(sender.location, radiusDouble)
+        for ( v in vehiclesInArea ) {
+            Message.print(sender, "Despawning vehicle: prototype = ${v.prototype.name}, id = ${v.id}")
+            xv.despawnRequests.add(DespawnVehicleRequest(
+                vehicle = v,
+                player = sender,
+                dropItem = true,
+                force = force,
+                skipTimer = false,
+            ))
+        }
     }
 
     /**
