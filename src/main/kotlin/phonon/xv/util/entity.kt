@@ -36,12 +36,12 @@ public val ENTITY_KEY_VEHICLE = NamespacedKey("xv", "vehicle_uuid")
  * an entity's persistent data container.
  */
 public fun Entity.setVehicleUuid(vehicleUuid: UUID, elementUuid: UUID) {
-    this.persistentDataContainer.set(
+    this.getPersistentDataContainer().set(
         ENTITY_KEY_VEHICLE,
         PersistentDataType.STRING,
         vehicleUuid.toString(),
     )
-    this.persistentDataContainer.set(
+    this.getPersistentDataContainer().set(
         ENTITY_KEY_ELEMENT,
         PersistentDataType.STRING,
         elementUuid.toString(),
@@ -53,9 +53,10 @@ public fun Entity.setVehicleUuid(vehicleUuid: UUID, elementUuid: UUID) {
  * from its persistent data container.
  */
 public fun Entity.getVehicleUuid(): UUID? {
-    if ( this.persistentDataContainer.has(ENTITY_KEY_VEHICLE, PersistentDataType.STRING) ) {
+    val dataContainer = this.getPersistentDataContainer()
+    if ( dataContainer.has(ENTITY_KEY_VEHICLE, PersistentDataType.STRING) ) {
         return UUID.fromString(
-            this.persistentDataContainer.get(ENTITY_KEY_VEHICLE, PersistentDataType.STRING)
+            dataContainer.get(ENTITY_KEY_VEHICLE, PersistentDataType.STRING)
         )
     } else {
         return null
@@ -67,9 +68,10 @@ public fun Entity.getVehicleUuid(): UUID? {
  * from its persistent data container.
  */
 public fun Entity.getElementUuid(): UUID? {
-    if ( this.persistentDataContainer.has(ENTITY_KEY_ELEMENT, PersistentDataType.STRING) ) {
+    val dataContainer = this.getPersistentDataContainer()
+    if ( dataContainer.has(ENTITY_KEY_ELEMENT, PersistentDataType.STRING) ) {
         return UUID.fromString(
-            this.persistentDataContainer.get(ENTITY_KEY_ELEMENT, PersistentDataType.STRING)
+            dataContainer.get(ENTITY_KEY_ELEMENT, PersistentDataType.STRING)
         )
     } else {
         return null
@@ -81,8 +83,9 @@ public fun Entity.getElementUuid(): UUID? {
  * from its persistent data container.
  */
 public fun Entity.removeVehicleUuid() {
-    if ( this.persistentDataContainer.has(ENTITY_KEY_VEHICLE, PersistentDataType.STRING) ) {
-        this.persistentDataContainer.remove(ENTITY_KEY_VEHICLE)
+    val dataContainer = this.getPersistentDataContainer()
+    if ( dataContainer.has(ENTITY_KEY_VEHICLE, PersistentDataType.STRING) ) {
+        dataContainer.remove(ENTITY_KEY_VEHICLE)
     }
 }
 
@@ -91,8 +94,9 @@ public fun Entity.removeVehicleUuid() {
  * from its persistent data container.
  */
 public fun Entity.removeElementUuid() {
-    if ( this.persistentDataContainer.has(ENTITY_KEY_ELEMENT, PersistentDataType.STRING) ) {
-        this.persistentDataContainer.remove(ENTITY_KEY_ELEMENT)
+    val dataContainer = this.getPersistentDataContainer()
+    if ( dataContainer.has(ENTITY_KEY_ELEMENT, PersistentDataType.STRING) ) {
+        dataContainer.remove(ENTITY_KEY_ELEMENT)
     }
 }
 
@@ -101,7 +105,7 @@ public fun Entity.removeElementUuid() {
  * identifier. Returns true if present.
  */
 public fun Entity.hasVehicleUuid(): Boolean {
-    return this.persistentDataContainer.has(ENTITY_KEY_VEHICLE, PersistentDataType.STRING)
+    return this.getPersistentDataContainer().has(ENTITY_KEY_VEHICLE, PersistentDataType.STRING)
 }
 
 /**
@@ -124,7 +128,7 @@ public fun reassociateEntities(
                 val vehicle = xv.uuidToVehicle[vehicleUuid]
                 val vehicleElement = xv.uuidToElement[elementUuid]
                 if ( vehicle !== null && vehicleElement != null ) {
-                    val componentName = entity.persistentDataContainer.get(ENTITY_KEY_COMPONENT, PersistentDataType.STRING)
+                    val componentName = entity.getPersistentDataContainer().get(ENTITY_KEY_COMPONENT, PersistentDataType.STRING)
                     if ( componentName !== null ) {
                         val componentType = try {
                             VehicleComponentType.valueOf(componentName)

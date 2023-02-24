@@ -290,8 +290,13 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         }
 
         val numInvalid = xv.cleanupEntities(forceDelete)
-
-        Message.print(sender, "[xv] Cleaned + remapped entities (deleted ${numInvalid} invalid engine entities)")
+        
+        if ( forceDelete == true ) {
+            Message.print(sender, "[xv] Cleaned + remapped entities (deleted ${numInvalid} invalid engine entities)")
+        } else {
+            Message.print(sender, "[xv] Cleaned + remapped entities")
+            Message.print(sender, "[xv] To force delete invalid entities, use `/xv cleanupentities delete`")
+        }
     }
 
     /**
