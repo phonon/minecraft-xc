@@ -32,8 +32,6 @@ import org.bukkit.persistence.PersistentDataType
 import phonon.xv.component.*
 import java.util.Stack
 
-// Const indicating invalid dense array index
-public const val INVALID_ELEMENT_ID: Int = -1
 
 /**
  * Helper function to push an element into a dense array.
@@ -312,19 +310,13 @@ public class ArchetypeStorage(
     public var size: Int = 0
         internal set
 
-    // sparse lookup from id => element
+    // sparse lookup from element id => element components dense index
     // (note vehicle element id is just a typealias for int)
-    // Internally lookup also stores a linked list of next free element,
-    // so initialize with each element pointing to the next element
-    // (e.g. next free element is the next element in the array)
-    private val lookup: IntArray = IntArray(maxElements, { i -> i + 1 })
+    private val lookup: IntArray = IntArray(maxElements, { _ -> INVALID_VEHICLE_ELEMENT_ID })
 
     // reverse lookup from dense array index => vehicle element id
     // only internal cuz iterator classes need it
-    internal val elements: IntArray = IntArray(maxElements) { _ -> INVALID_ELEMENT_ID }
-
-    // lookup implicit linked list head
-    internal var nextFree: Int = 0
+    internal val elements: IntArray = IntArray(maxElements) { _ -> INVALID_VEHICLE_ELEMENT_ID }
 
     // dense packed components storages
     // only components in layout will be non-null
@@ -343,7 +335,7 @@ public class ArchetypeStorage(
      */
     inline fun <reified T: VehicleComponent<T>> getComponent(id: VehicleElementId): T? {
         val denseIndex = this.getDenseIndex(id)
-        if ( denseIndex == INVALID_ELEMENT_ID ) {
+        if ( denseIndex == INVALID_VEHICLE_ELEMENT_ID ) {
             return null
         }
         
@@ -363,25 +355,27 @@ public class ArchetypeStorage(
     }
 
     /**
-     * Insert components into the archetype. Returns a new element id
-     * corresponding to its lookup index in the archetype.
-     * Returns null if layout does not match or if the archetype is full.
+     * Insert components into the archetype. Returns invalid element id
+     * if insertion failed.
      */
     public fun insert(
+        id: VehicleElementId,
         components: VehicleComponents,
-    ): VehicleElementId? {
+    ): VehicleElementId {
         if ( this.layout != components.layout ) {
-            return null
+            return INVALID_VEHICLE_ELEMENT_ID
         }
 
-        // try to allocate a new element id (lookup id)
-        if ( size >= maxElements ) {
-            return null
+        // if id > maxElements, then we can't insert
+        if ( id >= maxElements || size >= maxElements ) {
+            return INVALID_VEHICLE_ELEMENT_ID
         }
-        // new id is head of linked list
-        val id = nextFree
-        // set new head of implicit linked list
-        nextFree = lookup[nextFree]
+
+        // check if id is already in use
+        if ( lookup[id] != INVALID_VEHICLE_ELEMENT_ID ) {
+            return INVALID_VEHICLE_ELEMENT_ID
+        }
+
         // get dense index
         val denseIndex = size
         size += 1
@@ -412,27 +406,27 @@ public class ArchetypeStorage(
     public fun free(id: VehicleElementId, logger: Logger? = null) {
         // validate id is inside storage
         if ( id < 0 || id >= maxElements ) {
-            logger?.severe("Archetype.remove() invalid element id: $id")
+            logger?.severe("Archetype.remove() invalid element id out of range: $id")
             return
         }
 
         // validate id inside dense array == id
         val denseIndex = lookup[id]
-        if ( elements[denseIndex] != id ) {
+        if ( denseIndex == INVALID_VEHICLE_ELEMENT_ID || elements[denseIndex] != id ) {
             logger?.severe("Archetype.remove() element id not in array: $id")
             return
         }
 
-        // swap values in dense array w/ last elt
-        val swappedDenseIndex = size - 1
-        val swappedId = elements[swappedDenseIndex]
+        // swap values in dense array with last element and update lookup index
+        // Note: to handle case that denseIndex == lastIndex, the operation order
+        // below deliberately sets indices to INVALID_VEHICLE_ELEMENT_ID as
+        // the last operation 
+        val lastIndex = size - 1
+        val swappedId = elements[lastIndex]
         elements[denseIndex] = swappedId
-        elements[swappedDenseIndex] = INVALID_ELEMENT_ID
-
-        // update lookup and implicit list head
-        lookup[id] = nextFree
-        nextFree = id
+        elements[lastIndex] = INVALID_VEHICLE_ELEMENT_ID
         lookup[swappedId] = denseIndex
+        lookup[id] = INVALID_VEHICLE_ELEMENT_ID
 
         // swap remove elements in component arrays
         for ( c in layout ) {
@@ -454,12 +448,11 @@ public class ArchetypeStorage(
     public fun clear() {
         size = 0
 
-        // reset lookup implicit linked
+        // reset lookup
         for ( i in 0 until maxElements ) {
-            lookup[i] = i + 1
-            elements[i] = INVALID_ELEMENT_ID
+            lookup[i] = INVALID_VEHICLE_ELEMENT_ID
+            elements[i] = INVALID_VEHICLE_ELEMENT_ID
         }
-        nextFree = 0
 
         {%- for c in components %}
         {{ c.storage }}?.clear()

@@ -1,30 +1,31 @@
 package phonon.xv.core
 
-import java.util.*
+import java.util.UUID
+import java.util.EnumSet
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 
-public const val MAX_VEHICLE_ELEMENTS: Int = 10000
-
-
+/**
+ * Main vehicle storage.
+ */
 public class VehicleStorage(
     val maxVehicles: Int
 ): Iterable<Vehicle> {
     // fixed-size lookup map VehicleId => Vehicle
     private val lookup: Array<Vehicle?> = Array(maxVehicles) { _ -> null }
     // free ids stack
-    private val freeIds: ArrayDeque <Int> = ArrayDeque()
+    private val freeIds: ArrayDeque<Int> = ArrayDeque()
     // count of vehicles in storage
     public var size: Int = 0
         private set
-    // element id => owning vehicle id
-    private val elementToVehicle: HashMap<VehicleElementId, VehicleId> = HashMap()
+    // element uuid => owning vehicle id
+    private val elementToVehicle: HashMap<UUID, VehicleId> = HashMap()
 
     init {
         // initialize free ids stack
         for ( i in maxVehicles - 1 downTo 0 ) {
-            freeIds.push(i)
+            freeIds.addLast(i)
         }
     }
 
@@ -38,7 +39,7 @@ public class VehicleStorage(
         }
         // initialize free ids stack
         for ( i in maxVehicles - 1 downTo 0 ) {
-            freeIds.push(i)
+            freeIds.addLast(i)
         }
         elementToVehicle.clear()
         size = 0
@@ -52,6 +53,13 @@ public class VehicleStorage(
     }
 
     /**
+     * Returns true if there is space for a new vehicle.
+     */
+    fun hasSpace(): Boolean {
+        return size < maxVehicles
+    }
+
+    /**
      * Get new id from stack of free ids, increments size of storage.
      * Returns INVALID_VEHICLE_ID if no free ids are available.
      */
@@ -61,7 +69,7 @@ public class VehicleStorage(
             INVALID_VEHICLE_ID
         } else {
             size += 1
-            freeIds.pop()
+            freeIds.removeLast()
         }
     }
 
@@ -71,12 +79,22 @@ public class VehicleStorage(
     internal fun free(id: VehicleId) {
         if ( lookup[id] !== null ) {
             lookup[id] = null
-            freeIds.push(id)
+            freeIds.addLast(id)
             size -= 1
         }
     }
 
-    internal fun getOwningVehicle(id: VehicleElementId): VehicleId? = elementToVehicle[id]
+    /**
+     * Get owning vehicle of element if it exists.
+     */
+    internal fun getOwningVehicle(element: VehicleElement): Vehicle? {
+        val vehicleId = elementToVehicle[element.uuid]
+        return if ( vehicleId == null ) {
+            null
+        } else {
+            lookup[vehicleId]
+        }
+    }
 
     /**
      * Inserts a vehicle into this storage from its prototype
@@ -101,10 +119,20 @@ public class VehicleStorage(
         this.lookup[id] = vehicle
         // TODO these keys will need to be freed upon deletion
         elements.forEach {
-            elementToVehicle[it.id] = vehicle.id
+            elementToVehicle[it.uuid] = vehicle.id
         }
 
         return vehicle
+    }
+
+    /**
+     * Remove a vehicle from the storage.
+     */
+    fun remove(vehicle: Vehicle) {
+        vehicle.elements.forEach {
+            elementToVehicle.remove(it.uuid)
+        }
+        this.free(vehicle.id)
     }
 
     /**
@@ -149,7 +177,24 @@ public class VehicleStorage(
     }
 }
 
-public class ComponentsStorage {
+
+/**
+ * Vehicle elements and components storage.
+ */
+public class ComponentsStorage(
+    val maxElements: Int,
+) {
+    // global element ids
+    // fixed-size lookup map VehicleId => Vehicle
+    private val elementsLookup: Array<VehicleElement?> = Array(maxElements) { _ -> null }
+
+    // free ids stack
+    private val freeElementIds: ArrayDeque<VehicleElementId> = ArrayDeque()
+
+    // count of element ids in storage
+    public var size: Int = 0
+        private set
+    
     // layout enum set => storage for lookup
     public val lookup: HashMap<EnumSet<VehicleComponentType>, ArchetypeStorage> = HashMap()
     
@@ -161,13 +206,20 @@ public class ComponentsStorage {
     // contain the components set. Used for iterator queries.
     private val matchingArchetypesCache: HashMap<EnumSet<VehicleComponentType>, List<ArchetypeStorage>> = HashMap()
 
+    init {
+        // initialize free element ids stack
+        for ( i in maxElements - 1 downTo 0 ) {
+            freeElementIds.addLast(i)
+        }
+    }
+
     /**
      * Add a new archetype to the storage based on its components set,
      * if it does not exist.
      */
     public fun addLayout(layout: EnumSet<VehicleComponentType>) {
         if ( !this.lookup.containsKey(layout) ) {
-            val archetype = ArchetypeStorage(layout, MAX_VEHICLE_ELEMENTS)
+            val archetype = ArchetypeStorage(layout, maxElements)
             this.archetypes.add(archetype)
             this.lookup[layout] = archetype
         }
@@ -204,5 +256,69 @@ public class ComponentsStorage {
             // this result is stored in cache
             this.archetypes.filter { it.layout.containsAll(components) }
         }
+    }
+
+    /**
+     * Return true if there are at least `count` free ids available.
+     */
+    public fun hasSpaceFor(count: Int): Boolean {
+        return this.freeElementIds.size >= count
+    }
+
+    /**
+     * Get element by id.
+     */
+    public fun getElement(id: VehicleElementId): VehicleElement? {
+        if ( id < 0 || id >= maxElements || id == INVALID_VEHICLE_ELEMENT_ID ) {
+            return null
+        }
+        return elementsLookup[id]
+    }
+
+    /**
+     * Get new id from stack of free ids, increments size of storage.
+     * Returns INVALID_VEHICLE_ID if no free ids are available.
+     */
+    private fun newId(): VehicleElementId {
+        // no freeIds between index 0 and size
+        return if ( freeElementIds.isEmpty() ) {
+            INVALID_VEHICLE_ELEMENT_ID
+        } else {
+            size += 1
+            freeElementIds.removeLast()
+        }
+    }
+
+    /**
+     * Mark id as free for use and remove ref from array if it exists.
+     */
+    internal fun free(id: VehicleElementId) {
+        if ( elementsLookup[id] !== null ) {
+            elementsLookup[id] = null
+            freeElementIds.addLast(id)
+            size -= 1
+        }
+    }
+
+    /**
+     * Insert set of vehicle element components into storage.
+     * Return lookup VehicleElementId if successful, null otherwise.
+     */
+    public fun insert(
+        components: VehicleComponents,
+    ): VehicleElementId {
+        val id = this.newId()
+        if ( id == INVALID_VEHICLE_ELEMENT_ID ) {
+            return INVALID_VEHICLE_ELEMENT_ID
+        }
+
+        val resultId = this.lookup[components.layout]!!.insert(id, components)
+        if ( resultId == INVALID_VEHICLE_ELEMENT_ID ) {
+            // failed to insert, free id
+            this.free(id)
+            return INVALID_VEHICLE_ELEMENT_ID
+        }
+
+        return id
     }
 }

@@ -18,14 +18,19 @@ internal val ITEM_KEY_ELEMENTS = NamespacedKey("xv", "elements")
 // namespaced keys for storing vehicle data in mineman Entity
 internal val ENTITY_KEY_COMPONENT = NamespacedKey("xv", "component")
 
-// Vehicle id is just wrapper for Int
+/**
+ * Vehicle id is just wrapper for Int
+ */
 typealias VehicleId = Int
 
 public const val INVALID_VEHICLE_ID: VehicleId = -1
 
-// Vehicle element id is just wrapper for Int
-// this is unique in the ArchetypeStorage that it is stored in
+/**
+ * Vehicle element id is global element id across all vehicles.
+ */
 typealias VehicleElementId = Int
+
+public const val INVALID_VEHICLE_ELEMENT_ID: VehicleElementId = -1
 
 /**
  * Vehicle is just a set of vehicle elements. The elements hold
@@ -117,7 +122,7 @@ public data class VehicleElement(
 public data class EntityVehicleData(
     // vehicle id
     val vehicle: Vehicle,
-    // vehicle element id in vehicle
+    // vehicle element in vehicle
     val element: VehicleElement,
     // specific component this entity is linked to
     val componentType: VehicleComponentType,

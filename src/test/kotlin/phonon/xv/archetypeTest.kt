@@ -22,7 +22,7 @@ public class ArchetypeTest() {
      */
     @Test
     fun basicInsertRemove() {
-        val archetype =ArchetypeStorage(
+        val archetype = ArchetypeStorage(
             EnumSet.of(
                 VehicleComponentType.FUEL,
             ),
@@ -36,18 +36,20 @@ public class ArchetypeTest() {
                 ),
                 fuel = FuelComponent(420, i),
             )
-            val id = archetype.insert(fuel)
-            assertEquals(i, id)
+            archetype.insert(i, fuel)
         }
 
         assertEquals(4, archetype.size)
 
         // verify swap remove
         archetype.free(0)
+        assertEquals(3, archetype.size)
         assertEquals(3, archetype.fuelView!![0].max)
         archetype.free(1)
+        assertEquals(2, archetype.size)
         assertEquals(2, archetype.fuelView!![1].max)
         archetype.free(2)
+        assertEquals(1, archetype.size)
         assertEquals(3, archetype.fuelView!![0].max)
         archetype.free(3)
 
@@ -75,12 +77,7 @@ public class ArchetypeTest() {
                 ),
                 fuel = FuelComponent(420, i),
             )
-            val id = archetype.insert(fuel)
-            if ( i < capacity ) {
-                assertEquals(i, id)
-            } else {
-                assertNull(id)
-            }
+            archetype.insert(i, fuel)
         }
 
         assertEquals(100, archetype.size)
@@ -92,7 +89,7 @@ public class ArchetypeTest() {
     @Test
     fun iterator() {
         // manually insert archetypes
-        val components = ComponentsStorage()
+        val components = ComponentsStorage(1000)
         components.archetypes.add(ArchetypeStorage(
             EnumSet.of(
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS,

@@ -64,8 +64,10 @@ public class XV (
     internal var vehicleElementPrototypeNames: List<String> = listOf()
 
     //// VEHICLE ELEMENT COMPONENT INSTANCE STORAGE
-    internal val storage: ComponentsStorage = ComponentsStorage()
-    internal val vehicleStorage: VehicleStorage = VehicleStorage(config.maxVehicles)
+    internal var storage: ComponentsStorage = ComponentsStorage(config.maxVehicleElements)
+        private set
+    internal var vehicleStorage: VehicleStorage = VehicleStorage(config.maxVehicles)
+        private set
 
     //// VEHICLE SKINS/DECALS STORAGE
     internal var skins: SkinStorage = SkinStorage.empty()
@@ -213,7 +215,7 @@ public class XV (
         
         // clear is loaded flag
         this.isLoaded = false
-        
+
         clearState()
 
         // load main plugin config
@@ -228,6 +230,10 @@ public class XV (
         }
 
         this.config = config
+
+        // re-create new storages
+        this.storage = ComponentsStorage(config.maxVehicleElements)
+        this.vehicleStorage = VehicleStorage(config.maxVehicles)
 
         // reset vehicle save timers
         this.saveTimer = config.savePeriod
@@ -382,14 +388,25 @@ public class XV (
         val prototype = vehicleBuilder.prototype
         val elementBuilders = vehicleBuilder.elements
 
+        // check if enough space in vehicle and elements storages
+        if ( !vehicleStorage.hasSpace() || !storage.hasSpaceFor(elementBuilders.size) ) {
+            logger.severe("Failed to create vehicle ${prototype.name}: not enough space in storage")
+            return
+        }
+
         // try to insert each prototype into its archetype
-        val elementIds: List<VehicleElementId?> = elementBuilders.map { elem ->
-            storage.lookup[elem.components.layout]!!.insert(elem.components)
+        val elementIds = IntArray(elementBuilders.size, { _ -> INVALID_VEHICLE_ELEMENT_ID })
+        elementBuilders.forEachIndexed { idx, elem ->
+            try {
+                elementIds[idx] = storage.insert(elem.components)
+            } catch ( err: Exception ) {
+                logger.severe("Failed to insert element ${elem.prototype.name} into archetype")
+            }
         }
         
         // if any are null, creation failed. remove non-null created elements
         // from their archetypes
-        if ( elementIds.any { it === null } ) {
+        if ( elementIds.any { it == INVALID_VEHICLE_ELEMENT_ID } ) {
             logger.severe("Failed to create vehicle ${prototype.name}")
 
             elementIds.forEachIndexed { index, id ->
@@ -406,7 +423,7 @@ public class XV (
 
         // create vehicle elements from ids
         val elements = elementBuilders.mapIndexed { idx, elem ->
-            val id = elementIds[idx]!!
+            val id = elementIds[idx]
             val elem = VehicleElement(
                 name="${prototype.name}.${elem.prototype.name}.${id}",
                 uuid=elem.uuid,
@@ -469,7 +486,7 @@ public class XV (
         despawn: Boolean = false,
     ) {
         // free vehicle
-        vehicleStorage.free(vehicle.id)
+        vehicleStorage.remove(vehicle)
         // free vehicle elements
         vehicle.elements.forEach { element ->
             // handle component specific deletion handlers

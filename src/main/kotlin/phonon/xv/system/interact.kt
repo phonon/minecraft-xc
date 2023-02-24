@@ -109,12 +109,15 @@ public fun XV.systemInteract(
                 }
 
                 // fueling or ammo load did not pass, try mounting
-                xv.mountRequests.add(MountVehicleRequest(
-                    player = player,
-                    elementId = element.id,
-                    layout = element.layout,
-                    componentType = componentType,
-                ))
+                // may not want this since it might block raycasts? idk...
+                if ( layout.contains(VehicleComponentType.SEATS) ) {
+                    xv.mountRequests.add(MountVehicleRequest(
+                        player = player,
+                        vehicle = vehicle,
+                        element = element,
+                        componentType = componentType,
+                    ))
+                }
             } else {
                 // should never occur, left for future
             }

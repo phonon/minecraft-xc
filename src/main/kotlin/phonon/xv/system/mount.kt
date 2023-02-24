@@ -15,7 +15,9 @@ import org.bukkit.entity.Player
 import org.bukkit.Particle
 import phonon.xv.XV
 import phonon.xv.core.ComponentsStorage
-import phonon.xv.core.INVALID_ELEMENT_ID
+import phonon.xv.core.Vehicle
+import phonon.xv.core.VehicleElement
+import phonon.xv.core.EntityVehicleData
 import phonon.xv.core.VehicleElementId
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.iter.*
@@ -23,18 +25,20 @@ import phonon.xv.component.SeatsComponent
 import phonon.xv.component.SeatsRaycastComponent
 import phonon.xv.component.TransformComponent
 import phonon.xv.util.CustomArmorStand
+import phonon.xv.util.entity.setVehicleUuid
 
 public data class MountVehicleRequest(
     val player: Player,
-    val elementId: VehicleElementId = INVALID_ELEMENT_ID,
-    val layout: EnumSet<VehicleComponentType> = EnumSet.noneOf(VehicleComponentType::class.java),
+    val vehicle: Vehicle? = null,
+    val element: VehicleElement? = null,
     val componentType: VehicleComponentType = VehicleComponentType.MODEL,
     val doRaycast: Boolean = false,
 )
 
 public data class DismountVehicleRequest(
     val player: Player,
-    val elementId: VehicleElementId,
+    val vehicle: Vehicle,
+    val element: VehicleElement,
     val componentType: VehicleComponentType,
 )
 
@@ -55,8 +59,8 @@ public fun XV.systemMountVehicle(
         try {
             val (
                 player,
-                elementId,
-                layout,
+                vehicle,
+                element,
                 componentType,
                 doRaycast,
             ) = req
@@ -64,6 +68,12 @@ public fun XV.systemMountVehicle(
             // if raycast request, skip
             if ( doRaycast ) {
                 requestsNotHandled.add(req)
+                continue
+            }
+
+            // regular mounting from entity interaction
+            // if vehicle or element is null, skip
+            if ( vehicle == null || element == null ) {
                 continue
             }
 
@@ -85,21 +95,24 @@ public fun XV.systemMountVehicle(
             // hard-coded layout, need to change when we implement an function
             // for element id => archetype
 
-            // TODO: this lookup should be main engine function
-            val archetype = xv.storage.lookup[layout]
-            if ( archetype == null ) {
-                println("ERROR: archetype not found")
+            val transformComponent = element.components.transform
+            val seatsComponent = element.components.seats
+            if ( transformComponent === null ) {
+                // skip if no transform component
+                xv.logger.warning("Mounting failed, no transform component for element ${element.id} (${element.prototype.name})")
+                continue
+            }
+            if ( seatsComponent === null ) {
+                // skip if no transform component
+                xv.logger.warning("Mounting failed, no seats component for element ${element.id} (${element.prototype.name})")
                 continue
             }
 
-            // TODO: create archetype component tuple lookup
-            val transformComponent = archetype.transform!![elementId]
-            val seatsComponent = archetype.seats!![elementId]
-
+            // currently hard-coded mapping to valid mountable components
             val seatToMount = when ( componentType ) {
-                VehicleComponentType.MODEL -> archetype.model!![elementId].seatToMount
-                VehicleComponentType.GUN_BARREL -> archetype.gunBarrel!![elementId].seatToMount
-                VehicleComponentType.GUN_TURRET -> archetype.gunTurret!![elementId].seatToMount
+                VehicleComponentType.MODEL -> element.components.model?.seatToMount ?: -1
+                VehicleComponentType.GUN_BARREL -> element.components.gunBarrel?.seatToMount ?: -1
+                VehicleComponentType.GUN_TURRET -> element.components.gunTurret?.seatToMount ?: -1
                 else -> -1
             }
 
@@ -107,12 +120,26 @@ public fun XV.systemMountVehicle(
             if ( seatToMount >= 0 && seatsComponent.passengers[seatToMount] != player ) {
                 val world = player.world
                 val locSeat = seatsComponent.getSeatLocation(seatToMount, transformComponent)
+                
                 val seatEntity = CustomArmorStand.create(world, locSeat)
                 // val seatEntity = world.spawn(locSeat, ArmorStand::class.java)
                 seatEntity.setGravity(false)
+                seatEntity.setInvulnerable(true)
+                seatEntity.setSmall(true)
+                seatEntity.setMarker(true)
                 seatEntity.setVisible(true)
+
+                player.teleport(locSeat) // without teleporting first, client side interpolation sends player to wrong location
                 seatEntity.addPassenger(player)
-        
+
+                // entity -> vehicle mapping
+                seatEntity.setVehicleUuid(vehicle.uuid, element.uuid)
+                entityVehicleData[seatEntity.uniqueId] = EntityVehicleData(
+                    vehicle,
+                    element,
+                    VehicleComponentType.SEATS,
+                )
+
                 seatsComponent.armorstands[seatToMount] = seatEntity
                 seatsComponent.passengers[seatToMount] = player
             } else {
@@ -370,6 +397,7 @@ public fun XV.systemMountSeatRaycast(
             val szMax = sz + seatsRaycast.hitboxHalfWidth
 
             val box = SeatHitbox(
+                element = el,
                 seats = seats,
                 seatIndex = i,
                 x = sx,
@@ -496,6 +524,7 @@ public fun XV.systemMountSeatRaycast(
         }
 
         // raycast check all seat AABB hitboxes in chunks visited
+        var hitElementId: VehicleElementId? = null
         var hitSeats: SeatsComponent? = null
         var hitSeatIndex: Int = -1
         var hitSeatDistance: Double = Double.MAX_VALUE
@@ -534,6 +563,7 @@ public fun XV.systemMountSeatRaycast(
 
                     // choose this new entity if hit and distance is closer than previous hit
                     if ( hitDistance >= 0.0 && hitDistance < hitSeatDistance && hitDistance < maxRaycastDist ) {
+                        hitElementId = hitbox.element
                         hitSeats = hitbox.seats
                         hitSeatIndex = hitbox.seatIndex
                         hitSeatDistance = hitDistance
@@ -547,16 +577,36 @@ public fun XV.systemMountSeatRaycast(
         }
 
         // mount player into seat if hit found
-        if ( hitSeats !== null ) {
-            val locSeat = Location(world, hitSeatX, hitSeatY, hitSeatZ, hitSeatYaw, 0f)
-            val seatEntity = CustomArmorStand.create(world, locSeat)
-            // val seatEntity = world.spawn(locSeat, ArmorStand::class.java)
-            seatEntity.setGravity(false)
-            seatEntity.setVisible(true)
-            seatEntity.addPassenger(player)
+        if ( hitElementId !== null && hitSeats !== null ) {
+            // get owning element and vehicle
+            val hitElement = xv.storage.getElement(hitElementId)
+            if ( hitElement !== null ) {
+                val hitVehicle = xv.vehicleStorage.getOwningVehicle(hitElement)
+                if ( hitVehicle !== null ) {
+                    val locSeat = Location(world, hitSeatX, hitSeatY, hitSeatZ, hitSeatYaw, 0f)
+                    val seatEntity = CustomArmorStand.create(world, locSeat)
+                    // val seatEntity = world.spawn(locSeat, ArmorStand::class.java)
+                    seatEntity.setGravity(false)
+                    seatEntity.setInvulnerable(true)
+                    seatEntity.setSmall(true)
+                    seatEntity.setMarker(true)
+                    seatEntity.setVisible(true)
 
-            hitSeats.armorstands[hitSeatIndex] = seatEntity
-            hitSeats.passengers[hitSeatIndex] = player
+                    // entity -> vehicle mapping
+                    seatEntity.setVehicleUuid(hitVehicle.uuid, hitElement.uuid)
+                    entityVehicleData[seatEntity.uniqueId] = EntityVehicleData(
+                        hitVehicle,
+                        hitElement,
+                        VehicleComponentType.SEATS,
+                    )
+
+                    player.teleport(locSeat) // without teleporting first, client side interpolation sends player to wrong location
+                    seatEntity.addPassenger(player)
+
+                    hitSeats.armorstands[hitSeatIndex] = seatEntity
+                    hitSeats.passengers[hitSeatIndex] = player
+                }
+            }
         }
 
     }
@@ -579,6 +629,7 @@ data class ChunkCoord3D(
  * Copy-pasted from XC hitbox.
  */
 data class SeatHitbox(
+    val element: VehicleElementId,
     val seats: SeatsComponent,
     val seatIndex: Int,
     val x: Double,

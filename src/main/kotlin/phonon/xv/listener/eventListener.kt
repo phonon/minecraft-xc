@@ -161,7 +161,8 @@ public class EventListener(val xv: XV): Listener {
             if ( vehicleData !== null ) {
                 xv.dismountRequests.add(DismountVehicleRequest(
                     player = player,
-                    elementId = vehicleData.element.id,
+                    vehicle = vehicleData.vehicle,
+                    element = vehicleData.element,
                     componentType = vehicleData.componentType,
                 ))
             }
