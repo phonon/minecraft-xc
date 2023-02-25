@@ -11,12 +11,15 @@ import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.Style
+import net.kyori.adventure.text.format.NamedTextColor
+
 
 public object Message {
 
     public val PREFIX = "[xc]"
-    public val COL_MSG = ChatColor.AQUA
-    public val COL_ERROR = ChatColor.RED
+    public val STYLE_MSG = Style.style(NamedTextColor.AQUA)
+    public val STYLE_ERROR = Style.style(NamedTextColor.RED)
 
     /**
      * Print generic plugin message to command sender's chat (either console
@@ -28,7 +31,7 @@ public object Message {
             return
 		}
 
-        val msg = Component.text("${COL_MSG}${s}")
+        val msg = Component.text(s, STYLE_MSG)
         sender.sendMessage(msg)
     }
 
@@ -41,7 +44,7 @@ public object Message {
             return
 		}
 
-        val msg = Component.text("${COL_ERROR}${s}")
+        val msg = Component.text(s, STYLE_ERROR)
         sender.sendMessage(msg)
     }
 
@@ -50,7 +53,7 @@ public object Message {
      * to all players.
      */
     public fun broadcast(s: String) {
-        val msg = Component.text("${COL_MSG}${s}")
+        val msg = Component.text(s, STYLE_MSG)
         Bukkit.broadcast(msg)
     }
 

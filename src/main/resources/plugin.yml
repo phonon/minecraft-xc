@@ -14,3 +14,7 @@ commands:
     aliases: [ads]
     permission: xc.ads
     usage: /ads off
+permissions:
+  xc.admin:
+    description: Allow xc admin commands
+    default: op
