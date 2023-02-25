@@ -85,14 +85,6 @@ public class XV (
     internal var entityVehicleData: HashMap<UUID, EntityVehicleData> = HashMap()
         private set
     
-    // element uuid -> element
-    internal var uuidToElement: HashMap<UUID, VehicleElement> = HashMap()
-        private set
-    
-        // vehicle uuid -> element
-    internal var uuidToVehicle: HashMap<UUID, Vehicle> = HashMap()
-        private set
-    
     // player uuid -> task
     internal var playerTasks: HashMap<UUID, TaskProgress> = HashMap()
         private set
@@ -112,7 +104,7 @@ public class XV (
     internal var dismountRequests: ArrayList<DismountVehicleRequest> = ArrayList()
     // vehicle creation/deletion requests
     internal var createRequests: Queue<CreateVehicleRequest> = LinkedList()
-    internal var deleteRequests: Queue<DestroyVehicleRequest> = LinkedList()
+    internal var deleteRequests: Queue<DeleteVehicleRequest> = LinkedList()
     // vehicle spawn/despawn system queues
     // finish queues are pushed from async threads so must be thread safe
     internal var spawnRequests: Queue<SpawnVehicleRequest> = ArrayDeque()
@@ -142,8 +134,6 @@ public class XV (
         // user input controls when mounted on entities
         userInputs = HashMap()
         entityVehicleData = HashMap()
-        uuidToElement = HashMap()
-        uuidToVehicle = HashMap()
         
         // save system (includes save pipeline state)
         savingVehicles = false
@@ -394,24 +384,24 @@ public class XV (
             return
         }
 
-        // try to insert each prototype into its archetype
-        val elementIds = IntArray(elementBuilders.size, { _ -> INVALID_VEHICLE_ELEMENT_ID })
-        elementBuilders.forEachIndexed { idx, elem ->
+        // insert builders into storage => emits vehicle elements
+        val elementsInserted: List<VehicleElement?> = elementBuilders.map { elem ->
             try {
-                elementIds[idx] = storage.insert(elem.components)
+                storage.insert(elem)
             } catch ( err: Exception ) {
                 logger.severe("Failed to insert element ${elem.prototype.name} into archetype")
+                null
             }
         }
-        
-        // if any are null, creation failed. remove non-null created elements
-        // from their archetypes
-        if ( elementIds.any { it == INVALID_VEHICLE_ELEMENT_ID } ) {
+
+        // if any elements null, creation failed. rewind creation:
+        // remove non-null created elements, then exit.
+        if ( elementsInserted.any { it == null } ) {
             logger.severe("Failed to create vehicle ${prototype.name}")
 
-            elementIds.forEachIndexed { index, id ->
-                if ( id !== null ) {
-                    storage.lookup[elementBuilders[index].components.layout]?.free(id)
+            elementsInserted.forEachIndexed { index, elem ->
+                if ( elem !== null ) {
+                    storage.remove(elem)
                 } else {
                     logger.severe("Failed to create element ${elementBuilders[index].prototype.name}")
                 }
@@ -421,21 +411,10 @@ public class XV (
             return
         }
 
-        // create vehicle elements from ids
-        val elements = elementBuilders.mapIndexed { idx, elem ->
-            val id = elementIds[idx]
-            val elem = VehicleElement(
-                name="${prototype.name}.${elem.prototype.name}.${id}",
-                uuid=elem.uuid,
-                id=id,
-                prototype=elem.prototype,
-                layout=elem.components.layout,
-                components=elem.components,
-            )
-            this.uuidToElement[elem.uuid] = elem
-            elem
-        }
-        
+        // cast to non-null
+        @Suppress("UNCHECKED_CAST")
+        val elements = elementsInserted as List<VehicleElement>
+
         // set parent/children hierarchy
         for ( (idx, elem) in elements.withIndex() ) {
             val parentIdx = prototype.parentIndex[idx]
@@ -455,15 +434,15 @@ public class XV (
             prototype=prototype,
             elements=elements,
         )
+
         // this should never happen, but check
         if ( vehicle === null ) {
             logger.severe("Failed to create vehicle ${prototype.name}: vehicle storage full")
             // free elements
-            elements.forEach { elem -> this.storage.lookup[elem.layout]?.free(elem.id) }
+            elements.forEach { elem -> this.storage.lookup[elem!!.layout]?.free(elem.id) }
             return
         }
 
-        this.uuidToVehicle[vehicle.uuid] = vehicle
         // xv.logger.info("Created vehicle with uuid $vehicleUuid")
 
         // do element post-processing (note: can use prototype because
@@ -485,6 +464,16 @@ public class XV (
         vehicle: Vehicle,
         despawn: Boolean = false,
     ) {
+        // check if vehicle is actually in storage and is same vehicle.
+        // cases where vehicle doesn't exist may be if delete queue gets
+        // two delete requests for the same vehicle (from different systems)
+        // during the same update tick, in which case the second delete
+        // should be ignored (without raising error)
+        val vehicleUuidInStorage = vehicleStorage.get(vehicle.id)?.uuid
+        if ( vehicleUuidInStorage === null || vehicleUuidInStorage != vehicle.uuid ) {
+            return
+        }
+
         // free vehicle
         vehicleStorage.remove(vehicle)
         // free vehicle elements
@@ -496,9 +485,8 @@ public class XV (
                 this.entityVehicleData,
                 despawn,
             )
-            // free from archetype
-            val archetype = this.storage.lookup[element.layout]!!
-            archetype.free(element.id)
+            // free from vehicle element storage and archetype storage
+            this.storage.remove(element)
         }
     }
 
@@ -823,6 +811,10 @@ public class XV (
      * And eventually convert update into a Schedule object that is
      * re-created each time engine is reloaded, which updates each
      * system's metadata to turn off invalid systems.
+     * 
+     * TODO: schedule certain non-overlapping systems to run in parallel
+     * Need to specially mark thread-safe parallel systems
+     * e.g. they CANNOT access non thread safe Bukkit API
      */
     internal fun update() {
         // handling vehicle saving timer
@@ -857,13 +849,25 @@ public class XV (
         // MUST BE RUN AFTER ALL MOVEMENT CONTROLLERS
         systemUpdateModels(storage)
         systemUpdateSeats(storage, userInputs)
+        systemUpdateSeatHealthDisplay(storage) // update seats health displays
 
         // seat raycast mounting
         mountRequests = systemMountSeatRaycast(storage, mountRequests)
         
+        // =================================
+        // THESE COULD RUN IN PARALLEL
+        // particle effects
+        systemPeriodicParticles(storage)
+        systemPeriodicSmokeParticles(storage)
+        
         // sends info text to players
         systemLandVehicleInfoText(storage)
+        // =================================
 
+        // handle vehicle death
+        systemDeath(storage, vehicleStorage, deleteRequests)
+
+        // finish despawn and destroy vehicles
         systemDespawnVehicle(despawnRequests, despawnFinishQueue)
         systemFinishDespawnVehicle(despawnFinishQueue, deleteRequests)
         systemDestroyVehicle(vehicleStorage, storage, deleteRequests)

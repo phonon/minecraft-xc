@@ -17,7 +17,7 @@ import phonon.xv.core.VehicleElement
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.VehiclePrototype
 import phonon.xv.system.CreateVehicleRequest
-import phonon.xv.system.DestroyVehicleRequest
+import phonon.xv.system.DeleteVehicleRequest
 import phonon.xv.util.TaskProgress
 import phonon.xv.util.progressBar10
 import phonon.xv.util.Message

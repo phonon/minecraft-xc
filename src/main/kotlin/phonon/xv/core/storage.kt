@@ -19,6 +19,8 @@ public class VehicleStorage(
     // count of vehicles in storage
     public var size: Int = 0
         private set
+    // vehicle uuid -> element
+    internal val uuidToVehicle: HashMap<UUID, Vehicle> = HashMap()
     // element uuid => owning vehicle id
     private val elementToVehicle: HashMap<UUID, VehicleId> = HashMap()
 
@@ -41,6 +43,7 @@ public class VehicleStorage(
         for ( i in maxVehicles - 1 downTo 0 ) {
             freeIds.addLast(i)
         }
+        uuidToVehicle.clear()
         elementToVehicle.clear()
         size = 0
     }
@@ -117,6 +120,7 @@ public class VehicleStorage(
             elements,
         )
         this.lookup[id] = vehicle
+        this.uuidToVehicle[uuid] = vehicle
         // TODO these keys will need to be freed upon deletion
         elements.forEach {
             elementToVehicle[it.uuid] = vehicle.id
@@ -132,6 +136,7 @@ public class VehicleStorage(
         vehicle.elements.forEach {
             elementToVehicle.remove(it.uuid)
         }
+        this.uuidToVehicle.remove(vehicle.uuid)
         this.free(vehicle.id)
     }
 
@@ -191,6 +196,9 @@ public class ComponentsStorage(
     // free ids stack
     private val freeElementIds: ArrayDeque<VehicleElementId> = ArrayDeque()
 
+    // element uuid -> element
+    internal val uuidToElement: HashMap<UUID, VehicleElement> = HashMap()
+    
     // count of element ids in storage
     public var size: Int = 0
         private set
@@ -231,6 +239,7 @@ public class ComponentsStorage(
      */
     public fun clear() {
         lookup.clear()
+        uuidToElement.clear()
         archetypes.forEach { it.clear() }
         archetypes.clear()
         matchingArchetypesCache.clear()
@@ -301,24 +310,50 @@ public class ComponentsStorage(
     }
 
     /**
-     * Insert set of vehicle element components into storage.
-     * Return lookup VehicleElementId if successful, null otherwise.
+     * Insert a vehicle element builder into storage and emit a built
+     * VehicleElement if successful. If any step fails, returns null.
      */
     public fun insert(
-        components: VehicleComponents,
-    ): VehicleElementId {
+        elementBuilder: VehicleElementBuilder,
+    ): VehicleElement? {
         val id = this.newId()
         if ( id == INVALID_VEHICLE_ELEMENT_ID ) {
-            return INVALID_VEHICLE_ELEMENT_ID
+            return null
         }
 
-        val resultId = this.lookup[components.layout]!!.insert(id, components)
+        val resultId = this.lookup[elementBuilder.components.layout]!!.insert(id, elementBuilder.components)
         if ( resultId == INVALID_VEHICLE_ELEMENT_ID ) {
             // failed to insert, free id
             this.free(id)
-            return INVALID_VEHICLE_ELEMENT_ID
+            return null
         }
 
-        return id
+        val element = VehicleElement(
+            name="${elementBuilder.prototype.name}.${id}",
+            uuid=elementBuilder.uuid,
+            id=id,
+            prototype=elementBuilder.prototype,
+            layout=elementBuilder.components.layout,
+            components=elementBuilder.components,
+        )
+
+        // map id to element
+        elementsLookup[id] = element
+
+        // map uuid to element
+        uuidToElement[elementBuilder.uuid] = element
+
+        return element
+    }
+
+    /**
+     * Insert a vehicle element builder into storage and emit a built
+     * VehicleElement if successful. If any step fails, returns null.
+     */
+    public fun remove(
+        element: VehicleElement,
+    ) {
+        this.lookup[element.components.layout]!!.free(element.id)
+        this.free(element.id)
     }
 }

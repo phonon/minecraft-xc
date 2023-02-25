@@ -37,7 +37,7 @@ seat_controller = 0 # seat for controlling vehicle
 [seats]
 count = 1
 offsets = [
-    0.0, 0.25, 0.0,
+    0.0, 1.8, 0.0,
 ]
 
 # handles player's input controls for land movement
@@ -49,7 +49,9 @@ speed_max_reverse = 0.2
 
 [health]
 max_health = 40.0
-
+death_sound = "minecraft:entity.generic.explode"
+death_particle = "EXPLOSION_HUGE"
+death_particle_count = 1
 
 [fuel]
 max = 64
@@ -58,3 +60,30 @@ amount_per_item = 1
 max_amount_per_refuel = 32
 time_per_fuel_when_idle = 200
 time_per_fuel_when_moving = 60
+
+# smoke particles when health < 50%
+[smoke_particles]
+particle = "CAMPFIRE_COSY_SMOKE"
+offset_x = 0.0
+offset_y = 1.0
+offset_z = 0.0
+random_x = 0.75
+random_y = 0.4
+random_z = 0.75
+speed = 0.22
+extra_data = 0.22
+health_threshold = 10.0
+tick_period = 4
+
+# lava particles when health < 25%
+[particles]
+particle = "LAVA"
+count = 4
+offset_x = 0.0
+offset_y = 1.0
+offset_z = 0.0
+random_x = 0.3
+random_y = 1.0
+random_z = 0.3
+health_threshold = 5.0
+tick_period = 2

@@ -45,7 +45,7 @@ public data class CreateVehicleRequest(
     val item: ItemStack? = null,
 )
 
-public data class DestroyVehicleRequest(
+public data class DeleteVehicleRequest(
     val vehicle: Vehicle,
 )
 
@@ -122,7 +122,7 @@ public fun XV.systemCreateVehicle(
 public fun XV.systemDestroyVehicle(
     vehicleStorage: VehicleStorage,
     componentStorage: ComponentsStorage,
-    requests: Queue<DestroyVehicleRequest>
+    requests: Queue<DeleteVehicleRequest>
 ) {
     val xv = this
 

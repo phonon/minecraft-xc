@@ -40,6 +40,8 @@ private val SUBCOMMANDS = listOf(
     "despawn",
     "despawnid",
     "despawnarea",
+    "health",
+    "healtharea",
     "help",
     "prototype",
     "reload",
@@ -82,6 +84,8 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
             "despawn" -> despawn(sender, args)
             "despawnid" -> despawnId(sender, args)
             "despawnarea" -> despawnArea(sender, args)
+            "health" -> health(sender, args)
+            "healtharea" -> healthArea(sender, args)
             "prototype" -> prototype(sender, args)
             "reload" -> reload(sender)
             "spawn" -> spawn(sender, args)
@@ -517,6 +521,101 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
                 force = force,
                 skipTimer = false,
             ))
+        }
+    }
+
+    /**
+     * /xv health [health]
+     * Sets health of vehicle you are looking at.
+     */
+    private fun health(sender: CommandSender, args: Array<String>) {
+        if ( sender !is Player ) {
+            Message.error(sender, "Must be a player ingame to use /xv despawn")
+            return
+        }
+
+        if ( args.size < 2 ) {
+            Message.error(sender, "Must specify health value: /xv health [health]")
+            return
+        }
+
+        val health = try {
+            args[1].toDouble()
+        } catch ( err: Exception ) {
+            Message.error(sender, "Invalid health: ${args[1]}")
+            return
+        }
+
+        val vehicle = xv.getVehiclePlayerIsLookingAt(sender)
+        if ( vehicle === null ) {
+            Message.error(sender, "No vehicle found.")
+            return
+        }
+
+        // set health for all health components
+        var setHealth = false
+        for ( e in vehicle.elements ) {
+            val healthComponent = e.components.health
+            if ( healthComponent !== null ) {
+                healthComponent.current = health.coerceIn(0.0, healthComponent.max)
+                setHealth = true
+            }
+        }
+
+        if ( setHealth ) {
+            Message.print(sender, "Setting vehicle health: prototype = ${vehicle.prototype.name}, id = ${vehicle.id}")
+        } else {
+            Message.print(sender, "SKIPPED: vehicle has no health component: prototype = ${vehicle.prototype.name}, id = ${vehicle.id}")
+        }
+    }
+
+    /**
+     * /xv healtharea [radius] [health]
+     * Sets health of vehicles in radius specified.
+     */
+    private fun healthArea(sender: CommandSender, args: Array<String>) {
+        if ( sender !is Player ) {
+            Message.error(sender, "Must be a player ingame to use /xv healtharea [radius] [health]")
+            return
+        }
+        
+        if ( args.size < 3 ) {
+            Message.error(sender, "Must specify radius and health: /xv healtharea [radius] [health]")
+            return
+        }
+
+        val radius = try {
+            args[1].toDouble()
+        } catch ( err: Exception ) {
+            Message.error(sender, "Invalid radius: ${args[1]}")
+            return
+        }
+
+        val health = try {
+            args[2].toDouble()
+        } catch ( err: Exception ) {
+            Message.error(sender, "Invalid radius: ${args[2]}")
+            return
+        }
+
+        Message.print(sender, "Setting health = ${health} for vehicles in radius = ${radius}")
+
+        val vehiclesInArea = xv.getVehiclesNearLocation(sender.location, radius)
+        for ( v in vehiclesInArea ) {
+            var setHealth = false
+            for ( e in v.elements ) {
+                val healthComponent = e.components.health
+                if ( healthComponent !== null ) {
+                    healthComponent.current = health.coerceIn(0.0, healthComponent.max)
+                    setHealth = true
+                }
+            }
+
+            if ( setHealth ) {
+                Message.print(sender, "Setting vehicle health: prototype = ${v.prototype.name}, id = ${v.id}")
+            } else {
+                Message.print(sender, "SKIPPED: vehicle has no health component: prototype = ${v.prototype.name}, id = ${v.id}")
+            }
         }
     }
 

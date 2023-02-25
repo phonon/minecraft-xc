@@ -7,3 +7,14 @@
 
 current = -1.0
 max = 20.0
+
+# whether to support death
+death = true
+
+# death effects
+death_sound = null
+death_particle = null
+death_particle_count = 1
+death_particle_random_x = 0.0
+death_particle_random_y = 0.0
+death_particle_random_z = 0.0

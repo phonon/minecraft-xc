@@ -15,8 +15,10 @@ components = {
     "LAND_MOVEMENT_CONTROLS": "LandMovementControlsComponent",
     "SHIP_MOVEMENT_CONTROLS": "ShipMovementControlsComponent",
     "MODEL": "ModelComponent",
+    "PARTICLES": "ParticlesComponent",
     "SEATS": "SeatsComponent",
     "SEATS_RAYCAST": "SeatsRaycastComponent",
+    "SMOKE_PARTICLES": "SmokeParticlesComponent",
     "TRANSFORM": "TransformComponent",
 }
 

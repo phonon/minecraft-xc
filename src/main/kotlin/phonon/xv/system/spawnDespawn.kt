@@ -24,7 +24,7 @@ import phonon.xv.core.Vehicle
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.VehiclePrototype
 import phonon.xv.system.CreateVehicleRequest
-import phonon.xv.system.DestroyVehicleRequest
+import phonon.xv.system.DeleteVehicleRequest
 import phonon.xv.util.TaskProgress
 import phonon.xv.util.progressBar10
 import phonon.xv.util.Message
@@ -277,7 +277,7 @@ public fun XV.systemDespawnVehicle(
  */
 public fun XV.systemFinishDespawnVehicle(
     requests: ConcurrentLinkedQueue<DespawnVehicleFinish>,
-    deleteRequests: Queue<DestroyVehicleRequest>,
+    deleteRequests: Queue<DeleteVehicleRequest>,
 ) {
     val xv = this
 
@@ -290,7 +290,7 @@ public fun XV.systemFinishDespawnVehicle(
         ) = request
 
         // create request to destroy vehicle
-        deleteRequests.add(DestroyVehicleRequest(vehicle))
+        deleteRequests.add(DeleteVehicleRequest(vehicle))
 
         try {
             // drop item if vehicle has valid position in world

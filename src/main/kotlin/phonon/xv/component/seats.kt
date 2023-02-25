@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.Location
+import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import phonon.xv.core.*
@@ -47,11 +48,18 @@ public data class SeatsComponent(
     override fun self() = this
 
     // armor stand entities
-    var armorstands: Array<Entity?> = Array(count) { null }
+    val armorstands: Array<ArmorStand?> = Array(count) { null }
 
     // quick lookup for passenger in each seat
-    var passengers: Array<Player?> = Array(count) { null }
+    val passengers: Array<Player?> = Array(count) { null }
 
+    // Arrays for tracking and setting vehicle element health display
+    // using seat armorstand health. This caches the current health being
+    // displayed for the armorstand. If the health is different than actual
+    // health component, the armorstand health should be updated.
+    val healthDisplay: DoubleArray = DoubleArray(count) { -1.0 }
+    val healthDisplayMax: DoubleArray = DoubleArray(count) { -1.0 }
+     
     /**
      * Get seat location relative to input transform component.
      * Useful for initializing seat locations

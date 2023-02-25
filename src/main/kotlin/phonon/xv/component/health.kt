@@ -7,6 +7,7 @@ import kotlin.math.min
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.ChatColor
+import org.bukkit.Particle
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataAdapterContext
@@ -23,6 +24,15 @@ val HEALTH_KEY_CURRENT = NamespacedKey("xv", "current")
 public data class HealthComponent(
     var current: Double = -1.0,
     val max: Double = 20.0,
+    // whether to support death
+    val death: Boolean = true,
+    // death effects
+    val deathSound: String? = null,
+    val deathParticle: Particle? = null,
+    var deathParticleCount: Int = 1,
+    var deathParticleRandomX: Double = 0.0,
+    var deathParticleRandomY: Double = 0.0,
+    var deathParticleRandomZ: Double = 0.0,
 ): VehicleComponent<HealthComponent> {
     override val type = VehicleComponentType.HEALTH
 
@@ -45,7 +55,7 @@ public data class HealthComponent(
     ): HealthComponent {
         if ( itemData === null ) return this.self()
         return this.copy(
-            current = itemData.get(HEALTH_KEY_CURRENT, PersistentDataType.DOUBLE)!!
+            current = itemData.get(HEALTH_KEY_CURRENT, PersistentDataType.DOUBLE) ?: this.max,
         )
     }
 
@@ -79,6 +89,15 @@ public data class HealthComponent(
 
             toml.getNumberAs<Double>("current")?.let { properties["current"] = it }
             toml.getNumberAs<Double>("max")?.let { properties["max"] = it }
+
+            toml.getBoolean("death")?.let { properties["death"] = it }
+            
+            toml.getString("death_sound")?.let { properties["deathSound"] = it }
+            toml.getParticle("death_particle")?.let { properties["deathParticle"] = it }
+            toml.getNumberAs<Double>("death_particle_count")?.let { properties["deathParticleCount"] = 1 }
+            toml.getNumberAs<Double>("death_particle_randomX")?.let { properties["deathParticleRandomX"] = 0.0 }
+            toml.getNumberAs<Double>("death_particle_randomY")?.let { properties["deathParticleRandomY"] = 0.0 }
+            toml.getNumberAs<Double>("death_particle_randomZ")?.let { properties["deathParticleRandomZ"] = 0.0 }
 
             return mapToObject(properties, HealthComponent::class)
         }

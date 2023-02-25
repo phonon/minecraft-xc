@@ -11,6 +11,8 @@
 
 package phonon.xv.util.toml
 
+import org.bukkit.Particle
+import org.bukkit.Material
 import org.tomlj.TomlTable
 import org.tomlj.TomlArray
 
@@ -82,4 +84,32 @@ inline fun <reified T: Number> TomlArray.getNumberAs(i: Int): T {
         // :^(
         v as T
     }
+}
+
+/**
+ * Extension function to get and convert a string in toml config
+ * into a material type. Returns null if the string does not match a
+ * material type.
+ */
+internal fun TomlTable.getMaterial(key: String): Material? {
+    return this.getString(key)?.let { s ->
+        Material.matchMaterial(s)
+    } ?: null
+}
+
+/**
+ * Extension function to get and convert a string in toml config
+ * into a particle type. Returns null if string does not match a
+ * particle type.
+ */
+internal fun TomlTable.getParticle(key: String): Particle? {
+    return this.getString(key)?.let { s ->
+        try {
+            Particle.valueOf(s.uppercase())
+        } catch ( err: Exception ) {
+            println("[xv] Invalid toml config particle name for key ${key}: ${s}")
+            err.printStackTrace()
+            null
+        }
+    } ?: null
 }

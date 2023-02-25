@@ -74,8 +74,10 @@ public enum class VehicleComponentType {
     LAND_MOVEMENT_CONTROLS,
     SHIP_MOVEMENT_CONTROLS,
     MODEL,
+    PARTICLES,
     SEATS,
     SEATS_RAYCAST,
+    SMOKE_PARTICLES,
     TRANSFORM,
     ;
 
@@ -93,8 +95,10 @@ public enum class VehicleComponentType {
                 LandMovementControlsComponent::class -> VehicleComponentType.LAND_MOVEMENT_CONTROLS
                 ShipMovementControlsComponent::class -> VehicleComponentType.SHIP_MOVEMENT_CONTROLS
                 ModelComponent::class -> VehicleComponentType.MODEL
+                ParticlesComponent::class -> VehicleComponentType.PARTICLES
                 SeatsComponent::class -> VehicleComponentType.SEATS
                 SeatsRaycastComponent::class -> VehicleComponentType.SEATS_RAYCAST
+                SmokeParticlesComponent::class -> VehicleComponentType.SMOKE_PARTICLES
                 TransformComponent::class -> VehicleComponentType.TRANSFORM
                 else -> throw Exception("Unknown component type")
             }
@@ -111,8 +115,10 @@ val HEALTH_KEY = NamespacedKey("xv", "health")
 val LAND_MOVEMENT_CONTROLS_KEY = NamespacedKey("xv", "land_movement_controls")
 val SHIP_MOVEMENT_CONTROLS_KEY = NamespacedKey("xv", "ship_movement_controls")
 val MODEL_KEY = NamespacedKey("xv", "model")
+val PARTICLES_KEY = NamespacedKey("xv", "particles")
 val SEATS_KEY = NamespacedKey("xv", "seats")
 val SEATS_RAYCAST_KEY = NamespacedKey("xv", "seats_raycast")
+val SMOKE_PARTICLES_KEY = NamespacedKey("xv", "smoke_particles")
 val TRANSFORM_KEY = NamespacedKey("xv", "transform")
 
 /**
@@ -129,8 +135,10 @@ public data class VehicleComponents(
     val landMovementControls: LandMovementControlsComponent? = null,
     val shipMovementControls: ShipMovementControlsComponent? = null,
     val model: ModelComponent? = null,
+    val particles: ParticlesComponent? = null,
     val seats: SeatsComponent? = null,
     val seatsRaycast: SeatsRaycastComponent? = null,
+    val smokeParticles: SmokeParticlesComponent? = null,
     val transform: TransformComponent? = null,
 ) {
     /**
@@ -147,8 +155,10 @@ public data class VehicleComponents(
             landMovementControls = landMovementControls?.copy(),
             shipMovementControls = shipMovementControls?.copy(),
             model = model?.copy(),
+            particles = particles?.copy(),
             seats = seats?.copy(),
             seatsRaycast = seatsRaycast?.copy(),
+            smokeParticles = smokeParticles?.copy(),
             transform = transform?.copy(),
         )
     }
@@ -171,8 +181,10 @@ public data class VehicleComponents(
             landMovementControls = landMovementControls?.injectSpawnProperties(location, player),
             shipMovementControls = shipMovementControls?.injectSpawnProperties(location, player),
             model = model?.injectSpawnProperties(location, player),
+            particles = particles?.injectSpawnProperties(location, player),
             seats = seats?.injectSpawnProperties(location, player),
             seatsRaycast = seatsRaycast?.injectSpawnProperties(location, player),
+            smokeParticles = smokeParticles?.injectSpawnProperties(location, player),
             transform = transform?.injectSpawnProperties(location, player),
         )
     }
@@ -194,8 +206,10 @@ public data class VehicleComponents(
             landMovementControls = landMovementControls?.injectItemProperties(itemData.get(LAND_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER)),
             shipMovementControls = shipMovementControls?.injectItemProperties(itemData.get(SHIP_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER)),
             model = model?.injectItemProperties(itemData.get(MODEL_KEY, PersistentDataType.TAG_CONTAINER)),
+            particles = particles?.injectItemProperties(itemData.get(PARTICLES_KEY, PersistentDataType.TAG_CONTAINER)),
             seats = seats?.injectItemProperties(itemData.get(SEATS_KEY, PersistentDataType.TAG_CONTAINER)),
             seatsRaycast = seatsRaycast?.injectItemProperties(itemData.get(SEATS_RAYCAST_KEY, PersistentDataType.TAG_CONTAINER)),
+            smokeParticles = smokeParticles?.injectItemProperties(itemData.get(SMOKE_PARTICLES_KEY, PersistentDataType.TAG_CONTAINER)),
             transform = transform?.injectItemProperties(itemData.get(TRANSFORM_KEY, PersistentDataType.TAG_CONTAINER)),
         )
     }
@@ -256,6 +270,11 @@ public data class VehicleComponents(
                     model!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(MODEL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
+                VehicleComponentType.PARTICLES -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    particles!!.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(PARTICLES_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
                 VehicleComponentType.SEATS -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
                     seats!!.toItemData(itemMeta, itemLore, componentDataContainer)
@@ -265,6 +284,11 @@ public data class VehicleComponents(
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
                     seatsRaycast!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(SEATS_RAYCAST_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.SMOKE_PARTICLES -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    smokeParticles!!.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(SMOKE_PARTICLES_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.TRANSFORM -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
@@ -308,11 +332,17 @@ public data class VehicleComponents(
                 VehicleComponentType.MODEL -> {
                     json.add("model", model!!.toJson())
                 }
+                VehicleComponentType.PARTICLES -> {
+                    json.add("particles", particles!!.toJson())
+                }
                 VehicleComponentType.SEATS -> {
                     json.add("seats", seats!!.toJson())
                 }
                 VehicleComponentType.SEATS_RAYCAST -> {
                     json.add("seatsRaycast", seatsRaycast!!.toJson())
+                }
+                VehicleComponentType.SMOKE_PARTICLES -> {
+                    json.add("smokeParticles", smokeParticles!!.toJson())
                 }
                 VehicleComponentType.TRANSFORM -> {
                     json.add("transform", transform!!.toJson())
@@ -346,8 +376,10 @@ public data class VehicleComponents(
             landMovementControls = landMovementControls?.injectJsonProperties( json["landMovementControls"]?.asJsonObject ),
             shipMovementControls = shipMovementControls?.injectJsonProperties( json["shipMovementControls"]?.asJsonObject ),
             model = model?.injectJsonProperties( json["model"]?.asJsonObject ),
+            particles = particles?.injectJsonProperties( json["particles"]?.asJsonObject ),
             seats = seats?.injectJsonProperties( json["seats"]?.asJsonObject ),
             seatsRaycast = seatsRaycast?.injectJsonProperties( json["seatsRaycast"]?.asJsonObject ),
+            smokeParticles = smokeParticles?.injectJsonProperties( json["smokeParticles"]?.asJsonObject ),
             transform = transform?.injectJsonProperties( json["transform"]?.asJsonObject ),
         )
     }
@@ -404,12 +436,22 @@ public data class VehicleComponents(
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
+                VehicleComponentType.PARTICLES -> particles?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
                 VehicleComponentType.SEATS -> seats?.afterVehicleCreated(
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.afterVehicleCreated(
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.SMOKE_PARTICLES -> smokeParticles?.afterVehicleCreated(
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
@@ -440,8 +482,10 @@ public data class VehicleComponents(
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.delete(vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.delete(vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.MODEL -> model?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.PARTICLES -> particles?.delete(vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.SEATS -> seats?.delete(vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.SMOKE_PARTICLES -> smokeParticles?.delete(vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.TRANSFORM -> transform?.delete(vehicle, element, entityVehicleData, despawn)
                 null -> {}
             }
@@ -471,8 +515,10 @@ public data class VehicleComponents(
             var landMovementControls: LandMovementControlsComponent? = null
             var shipMovementControls: ShipMovementControlsComponent? = null
             var model: ModelComponent? = null
+            var particles: ParticlesComponent? = null
             var seats: SeatsComponent? = null
             var seatsRaycast: SeatsRaycastComponent? = null
+            var smokeParticles: SmokeParticlesComponent? = null
             var transform: TransformComponent? = null
 
             // parse components from matching keys in toml
@@ -513,6 +559,10 @@ public data class VehicleComponents(
                         layout.add(VehicleComponentType.MODEL)
                         model = ModelComponent.fromToml(toml.getTable(k)!!, logger)
                     }
+                    "particles" -> {
+                        layout.add(VehicleComponentType.PARTICLES)
+                        particles = ParticlesComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
                     "seats" -> {
                         layout.add(VehicleComponentType.SEATS)
                         seats = SeatsComponent.fromToml(toml.getTable(k)!!, logger)
@@ -520,6 +570,10 @@ public data class VehicleComponents(
                     "seats_raycast" -> {
                         layout.add(VehicleComponentType.SEATS_RAYCAST)
                         seatsRaycast = SeatsRaycastComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "smoke_particles" -> {
+                        layout.add(VehicleComponentType.SMOKE_PARTICLES)
+                        smokeParticles = SmokeParticlesComponent.fromToml(toml.getTable(k)!!, logger)
                     }
                     "transform" -> {
                         layout.add(VehicleComponentType.TRANSFORM)
@@ -539,8 +593,10 @@ public data class VehicleComponents(
                 landMovementControls,
                 shipMovementControls,
                 model,
+                particles,
                 seats,
                 seatsRaycast,
+                smokeParticles,
                 transform,
             )
         }
@@ -578,8 +634,10 @@ public class ArchetypeStorage(
     internal val landMovementControls: ArrayList<LandMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.LAND_MOVEMENT_CONTROLS) ) ArrayList() else null
     internal val shipMovementControls: ArrayList<ShipMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.SHIP_MOVEMENT_CONTROLS) ) ArrayList() else null
     internal val model: ArrayList<ModelComponent>? = if ( layout.contains(VehicleComponentType.MODEL) ) ArrayList() else null
+    internal val particles: ArrayList<ParticlesComponent>? = if ( layout.contains(VehicleComponentType.PARTICLES) ) ArrayList() else null
     internal val seats: ArrayList<SeatsComponent>? = if ( layout.contains(VehicleComponentType.SEATS) ) ArrayList() else null
     internal val seatsRaycast: ArrayList<SeatsRaycastComponent>? = if ( layout.contains(VehicleComponentType.SEATS_RAYCAST) ) ArrayList() else null
+    internal val smokeParticles: ArrayList<SmokeParticlesComponent>? = if ( layout.contains(VehicleComponentType.SMOKE_PARTICLES) ) ArrayList() else null
     internal val transform: ArrayList<TransformComponent>? = if ( layout.contains(VehicleComponentType.TRANSFORM) ) ArrayList() else null
 
     // public getter "view"s: only expose immutable List interface
@@ -599,10 +657,14 @@ public class ArchetypeStorage(
         get() = this.shipMovementControls
     public val modelView: List<ModelComponent>?
         get() = this.model
+    public val particlesView: List<ParticlesComponent>?
+        get() = this.particles
     public val seatsView: List<SeatsComponent>?
         get() = this.seats
     public val seatsRaycastView: List<SeatsRaycastComponent>?
         get() = this.seatsRaycast
+    public val smokeParticlesView: List<SmokeParticlesComponent>?
+        get() = this.smokeParticles
     public val transformView: List<TransformComponent>?
         get() = this.transform
 
@@ -624,8 +686,10 @@ public class ArchetypeStorage(
             LandMovementControlsComponent::class -> this.landMovementControlsView?.get(denseIndex) as T
             ShipMovementControlsComponent::class -> this.shipMovementControlsView?.get(denseIndex) as T
             ModelComponent::class -> this.modelView?.get(denseIndex) as T
+            ParticlesComponent::class -> this.particlesView?.get(denseIndex) as T
             SeatsComponent::class -> this.seatsView?.get(denseIndex) as T
             SeatsRaycastComponent::class -> this.seatsRaycastView?.get(denseIndex) as T
+            SmokeParticlesComponent::class -> this.smokeParticlesView?.get(denseIndex) as T
             TransformComponent::class -> this.transformView?.get(denseIndex) as T
             else -> throw Exception("Unknown component type.")
         }
@@ -703,12 +767,20 @@ public class ArchetypeStorage(
                     this.model?.pushAtDenseIndex(denseIndex, components.model!!)
                 }
                 
+                VehicleComponentType.PARTICLES -> {
+                    this.particles?.pushAtDenseIndex(denseIndex, components.particles!!)
+                }
+                
                 VehicleComponentType.SEATS -> {
                     this.seats?.pushAtDenseIndex(denseIndex, components.seats!!)
                 }
                 
                 VehicleComponentType.SEATS_RAYCAST -> {
                     this.seatsRaycast?.pushAtDenseIndex(denseIndex, components.seatsRaycast!!)
+                }
+                
+                VehicleComponentType.SMOKE_PARTICLES -> {
+                    this.smokeParticles?.pushAtDenseIndex(denseIndex, components.smokeParticles!!)
                 }
                 
                 VehicleComponentType.TRANSFORM -> {
@@ -762,8 +834,10 @@ public class ArchetypeStorage(
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.swapRemove(denseIndex)
                 VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.swapRemove(denseIndex)
                 VehicleComponentType.MODEL -> model?.swapRemove(denseIndex)
+                VehicleComponentType.PARTICLES -> particles?.swapRemove(denseIndex)
                 VehicleComponentType.SEATS -> seats?.swapRemove(denseIndex)
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.swapRemove(denseIndex)
+                VehicleComponentType.SMOKE_PARTICLES -> smokeParticles?.swapRemove(denseIndex)
                 VehicleComponentType.TRANSFORM -> transform?.swapRemove(denseIndex)
                 null -> {}
             }
@@ -792,8 +866,10 @@ public class ArchetypeStorage(
         landMovementControls?.clear()
         shipMovementControls?.clear()
         model?.clear()
+        particles?.clear()
         seats?.clear()
         seatsRaycast?.clear()
+        smokeParticles?.clear()
         transform?.clear()
     }
 
@@ -822,8 +898,10 @@ public class ArchetypeStorage(
                 LandMovementControlsComponent::class -> { archetype -> archetype.landMovementControlsView as List<T> }
                 ShipMovementControlsComponent::class -> { archetype -> archetype.shipMovementControlsView as List<T> }
                 ModelComponent::class -> { archetype -> archetype.modelView as List<T> }
+                ParticlesComponent::class -> { archetype -> archetype.particlesView as List<T> }
                 SeatsComponent::class -> { archetype -> archetype.seatsView as List<T> }
                 SeatsRaycastComponent::class -> { archetype -> archetype.seatsRaycastView as List<T> }
+                SmokeParticlesComponent::class -> { archetype -> archetype.smokeParticlesView as List<T> }
                 TransformComponent::class -> { archetype -> archetype.transformView as List<T> }
                 else -> throw Exception("Unknown component type")
             }

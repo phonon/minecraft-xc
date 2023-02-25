@@ -125,8 +125,8 @@ public fun reassociateEntities(
             val elementUuid = entity.getElementUuid()
 
             val invalid = if ( elementUuid !== null || vehicleUuid !== null ) {
-                val vehicle = xv.uuidToVehicle[vehicleUuid]
-                val vehicleElement = xv.uuidToElement[elementUuid]
+                val vehicle = xv.vehicleStorage.uuidToVehicle[vehicleUuid]
+                val vehicleElement = xv.storage.uuidToElement[elementUuid]
                 if ( vehicle !== null && vehicleElement != null ) {
                     val componentName = entity.getPersistentDataContainer().get(ENTITY_KEY_COMPONENT, PersistentDataType.STRING)
                     if ( componentName !== null ) {
