@@ -8,7 +8,7 @@ sea_level = 63 # global sea level, used by some systems
 [material]
 vehicle = "IRON_HORSE_ARMOR"
 
-# culling system: destroy vehicles outside of border
+# world border culling system: destroy vehicles outside of border
 [culling]
 enabled = false
 period = 200 # how often in ticks

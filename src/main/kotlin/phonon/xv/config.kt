@@ -31,9 +31,9 @@ public data class Config(
     // material types for vehicle spawn items
     val materialVehicle: Material = Material.IRON_HORSE_ARMOR,
 
-    // culling system parameters
+    // world border culling system parameters
     val cullingEnabled: Boolean = false,
-    val cullingPeriod: Int = 200,
+    val cullingPeriod: Int = 10,
     val cullingBorderMinX: Double = -1000.0,
     val cullingBorderMinY: Double = -1.0,
     val cullingBorderMinZ: Double = -1000.0,
@@ -98,15 +98,15 @@ public data class Config(
             }
 
             // material
-            toml.getTable("material")?.let { material -> 
-                toml.getString("vehicle")?.let { s ->
+            toml.getTable("material")?.let { materials -> 
+                materials.getString("vehicle")?.let { s ->
                     Material.getMaterial(s)?.let { configOptions["materialVehicle"] = it } ?: run {
                         logger?.warning("[material.vehicle] Invalid material: ${s}")
                     }
                 }
             }
 
-            // culling
+            // world border culling
             toml.getTable("culling")?.let { culling -> 
                 culling.getBoolean("enabled")?.let { configOptions["cullingEnabled"] = it }
                 culling.getLong("period")?.let { configOptions["cullingPeriod"] = it.toInt() }

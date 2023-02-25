@@ -80,6 +80,9 @@ public class XV (
     internal var isLoaded: Boolean = false
         private set
     
+    // world border culling system tick counter
+    private var cullingTick: Int = 0
+    
     // user input controls when mounted on entities
     internal var userInputs: HashMap<UUID, UserInput> = HashMap()
         private set
@@ -872,6 +875,16 @@ public class XV (
 
         // handle vehicle death
         systemDeath(storage, vehicleStorage, deleteRequests)
+
+        // world border culling
+        if ( config.cullingEnabled ) {
+            if ( this.cullingTick <= 0 ) {
+                this.cullingTick = config.cullingPeriod
+                systemWorldBorderCulling(config, storage, deleteRequests)
+            } else {
+                this.cullingTick -= 1
+            }
+        }
 
         // finish despawn and destroy vehicles
         systemDespawnVehicle(despawnRequests, despawnFinishQueue)
