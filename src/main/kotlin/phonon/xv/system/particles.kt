@@ -119,7 +119,9 @@ public fun XV.systemPeriodicSmokeParticles(
                 }
             }
         } catch ( err: Exception ) {
-            xv.logger.severe("Error handling periodic particles for element ${el}: ${err}")
+            if ( xv.debug ) {
+                xv.logger.severe("Error handling periodic particles for element ${el}: ${err}")
+            }
         }
     }
 }

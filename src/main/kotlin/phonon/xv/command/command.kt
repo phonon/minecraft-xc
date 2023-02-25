@@ -34,6 +34,7 @@ private val SUBCOMMANDS = listOf(
     "cleanupentities",
     "clear",
     "create",
+    "debug",
     "delete",
     "deleteid",
     "deletearea",
@@ -78,6 +79,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
             "clear" -> clear(sender, args)
             "cleanupentities" -> cleanupentities(sender, args)
             "create" -> create(sender, args)
+            "debug" -> debug(sender, args)
             "delete" -> delete(sender, args)
             "deleteid" -> deleteId(sender, args)
             "deletearea" -> deleteArea(sender, args)
@@ -187,6 +189,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         Message.print(sender, "/xv clear${ChatColor.WHITE}: clear all vehicles and engine state")
         Message.print(sender, "/xv cleanupentities${ChatColor.WHITE}: cleanup invalid or detached vehicle entities")
         Message.print(sender, "/xv create${ChatColor.WHITE}: create vehicle at location")
+        Message.print(sender, "/xv debug${ChatColor.WHITE}: set debug messages")
         Message.print(sender, "/xv despawn${ChatColor.WHITE}: despawn vehicle you are looking at")
         Message.print(sender, "/xv delete${ChatColor.WHITE}: delete vehicle you are looking at")
         Message.print(sender, "/xv help${ChatColor.WHITE}: this")
@@ -301,6 +304,26 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
             Message.print(sender, "[xv] Cleaned + remapped entities")
             Message.print(sender, "[xv] To force delete invalid entities, use `/xv cleanupentities delete`")
         }
+    }
+
+    /**
+     * /xv debug [true/false]
+     * Turn on/off debug error message logging.
+     */
+    private fun debug(sender: CommandSender, args: Array<String>) {
+        val mode = if ( args.size >= 2 ) {
+            try {
+                args[1].toBoolean()
+            } catch ( err: Exception ) {
+                Message.error(sender, "Invalid debug boolean: ${args[1]}, must be true/false")
+                return
+            }
+        } else {
+            !xv.debug
+        }
+        
+        xv.debug = mode
+        Message.print(sender, "Set xv debug messages to: ${mode}")
     }
 
     /**

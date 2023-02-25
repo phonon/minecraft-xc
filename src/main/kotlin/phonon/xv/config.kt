@@ -61,6 +61,9 @@ public data class Config(
     val saveBackupPeriod: Int = 12000, // default backup every 10 min
     val savePrettyPrintingJson: Boolean = true,
 
+    // default debug mode (can still be toggled with /xv debug)
+    val debug: Boolean = false,
+
     // delete invalid armor stands on load
     // (default avoid, any error in load where vehicles not all loaded
     // can cause all armor stands to be deleted)
@@ -140,6 +143,7 @@ public data class Config(
             }
 
             toml.getTable("misc")?.let { misc -> 
+                misc.getBoolean("debug")?.let { configOptions["debug"] = it }
                 misc.getBoolean("delete_invalid_armor_stands")?.let { configOptions["deleteInvalidArmorStands"] = it }
                 misc.getLong("max_vehicles")?.let { configOptions["maxVehicles"] = it.toInt() }
                 misc.getLong("max_vehicle_elements")?.let { configOptions["maxVehicleElements"] = it.toInt() }

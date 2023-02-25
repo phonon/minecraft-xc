@@ -46,6 +46,9 @@ public class XV (
     internal val plugin: Plugin,
     internal val logger: Logger,
 ) {
+    // flag for setting debug mode logging
+    internal var debug: Boolean = false
+
     // ========================================================================
     // STORAGE
     // ========================================================================
@@ -220,6 +223,9 @@ public class XV (
         }
 
         this.config = config
+
+        // set default debug mode
+        this.debug = config.debug
 
         // re-create new storages
         this.storage = ComponentsStorage(config.maxVehicleElements)
@@ -859,7 +865,7 @@ public class XV (
         // particle effects
         systemPeriodicParticles(storage)
         systemPeriodicSmokeParticles(storage)
-        
+
         // sends info text to players
         systemLandVehicleInfoText(storage)
         // =================================

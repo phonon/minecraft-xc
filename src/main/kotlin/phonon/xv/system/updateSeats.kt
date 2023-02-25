@@ -122,7 +122,9 @@ public fun XV.systemUpdateSeatHealthDisplay(
                 }
             }
         } catch ( err: Exception ) {
-            xv.logger.severe("Error updating seat health display for element ${el}: ${err}")
+            if ( xv.debug ) {
+                xv.logger.severe("Error updating seat health display for element ${el}: ${err}")
+            }
         }
     }
 }

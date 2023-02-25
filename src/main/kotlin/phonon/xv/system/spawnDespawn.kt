@@ -346,6 +346,7 @@ public fun XV.systemFinishDespawnVehicle(
             }
         } catch ( err: Exception ) {
             err.printStackTrace()
+            xv.logger.severe("Error despawning vehicle: ${err.message}")
         }
     }
 }

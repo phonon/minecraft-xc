@@ -90,8 +90,9 @@ public fun XV.systemDeath(
                 }
             }
         } catch ( err: Exception ) {
-            // TODO: deal with logger spam
-            // xv.logger.severe("Error handling death for element ${el}: ${err}")
+            if ( xv.debug ) {
+                xv.logger.severe("Error handling death for element ${el}: ${err}")
+            }
         }
     }
 }
