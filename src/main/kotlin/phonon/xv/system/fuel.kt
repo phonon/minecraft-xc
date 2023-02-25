@@ -1,13 +1,4 @@
-/**
- * Systems for in-game spawning and despawning of vehicles.
- * These manage the request and progress timer for spawn/despawn process.
- * When spawn/despawn is complete, these systems generate a  create/destroy
- * request which finalizes the process. The "create" and "destroy" systems
- * are responsible for the actual creation and destruction of vehicles.
- */
-
 package phonon.xv.system
-
 
 import java.util.Queue
 import java.util.UUID
