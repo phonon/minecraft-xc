@@ -16,6 +16,8 @@ import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.EulerAngle
+import phonon.xc.XC
+import phonon.xc.util.HitboxSize
 import phonon.xv.core.ENTITY_KEY_COMPONENT
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.core.Vehicle
@@ -100,6 +102,12 @@ public data class GunTurretComponent(
     val skinBarrelDefaultVariant: String? = null,
     // whether to show the armor stand (for debugging)
     val armorstandVisible: Boolean = false, // @skip
+    // hitbox size in blocks, at local position
+    // @prop hitbox = [1.0, 1.0, 1.0]
+    val hitboxX: Double = 0.0, // @skip
+    val hitboxY: Double = 0.0, // @skip
+    val hitboxZ: Double = 0.0, // @skip
+    val hitboxYOffset: Double = 0.0,
 
     // @skipall
     // armor stand entities
@@ -117,6 +125,14 @@ public data class GunTurretComponent(
     override val type = VehicleComponentType.GUN_TURRET
 
     override fun self() = this
+
+    // hitbox size
+    val hitboxSize: HitboxSize = HitboxSize(
+        xHalf = (this.hitboxX / 2.0).toFloat(),
+        zHalf = (this.hitboxZ / 2.0).toFloat(),
+        yHeight = this.hitboxY.toFloat(),
+        yOffset = this.hitboxYOffset.toFloat(),
+    )
 
     // local position state
     var turretYawf: Float = turretYaw.toFloat()
@@ -270,22 +286,31 @@ public data class GunTurretComponent(
      * and add model to armorstand.
      */
     override fun afterVehicleCreated(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
     ) {
         val armorstandTurret = this.armorstandTurret
         if ( armorstandTurret !== null ) {
-            // add a stable entity reassociation key used to associate entity
-            // with element this should be stable even if the armor stand
-            // entity needs to be re-created
-            armorstandTurret.setVehicleUuid(vehicle.uuid, element.uuid)
             // entity -> vehicle mapping
             entityVehicleData[armorstandTurret.uniqueId] = EntityVehicleData(
                 vehicle,
                 element,
                 VehicleComponentType.GUN_TURRET,
             )
+
+            // add a stable entity reassociation key used to associate entity
+            // with element this should be stable even if the armor stand
+            // entity needs to be re-created
+            armorstandTurret.setVehicleUuid(vehicle.uuid, element.uuid)
+
+            // register vehicle hitbox in xc combat
+            // NOTE: attaching SINGLE hitbox to the TURRET armorstand
+            //       and NOT the barrel armorstand
+            if ( hitboxSize.xHalf > 0f && hitboxSize.zHalf > 0f && hitboxSize.yHeight > 0f ) {
+                xc.addHitbox(armorstandTurret.getUniqueId(), hitboxSize)
+            }
 
             // add model to armorstand
             if ( turretModelId > 0 ) {
@@ -295,13 +320,15 @@ public data class GunTurretComponent(
 
         val armorstandBarrel = this.armorstandBarrel
         if ( armorstandBarrel !== null ) {
-            armorstandBarrel.setVehicleUuid(vehicle.uuid, element.uuid)
             // entity -> vehicle mapping
             entityVehicleData[armorstandBarrel.uniqueId] = EntityVehicleData(
                 vehicle,
                 element,
                 VehicleComponentType.GUN_TURRET,
             )
+
+            // add a stable entity reassociation key (see above)
+            armorstandBarrel.setVehicleUuid(vehicle.uuid, element.uuid)
 
             // add model to armorstand
             if ( barrelModelId > 0 ) {
@@ -311,6 +338,7 @@ public data class GunTurretComponent(
     }
 
     override fun delete(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
@@ -318,6 +346,7 @@ public data class GunTurretComponent(
     ) {
         val standTurret = this.armorstandTurret
         if ( standTurret !== null ) {
+            xc.removeHitbox(standTurret.getUniqueId())
             entityVehicleData.remove(standTurret.uniqueId)
             standTurret.remove()
         }
@@ -332,6 +361,7 @@ public data class GunTurretComponent(
      * Try to re-attach armorstand to this component, during reloading.
      */
     fun reassociateArmorstand(
+        xc: XC,
         entity: Entity,
         vehicle: Vehicle,
         element: VehicleElement,
@@ -356,6 +386,12 @@ public data class GunTurretComponent(
                     element,
                     VehicleComponentType.GUN_TURRET,
                 )
+                // register vehicle hitbox in xc combat
+                // NOTE: attaching SINGLE hitbox to the TURRET armorstand
+                //       and NOT the barrel armorstand
+                if ( hitboxSize.xHalf > 0f && hitboxSize.zHalf > 0f && hitboxSize.yHeight > 0f ) {
+                    xc.addHitbox(entity.getUniqueId(), hitboxSize)
+                }
             }
         }
     }
@@ -411,6 +447,14 @@ public data class GunTurretComponent(
             toml.getString("skin_barrel_default_variant")?.let { properties["skinBarrelDefaultVariant"] = it }
             
             toml.getBoolean("armorstand_visible")?.let { properties["armorstandVisible"] = it }
+
+            toml.getArray("hitbox")?.let { arr ->
+                properties["hitboxX"] = arr.getNumberAs<Double>(0)
+                properties["hitboxY"] = arr.getNumberAs<Double>(1)
+                properties["hitboxZ"] = arr.getNumberAs<Double>(2)
+            }
+
+            toml.getNumberAs<Double>("hitbox_y_offset")?.let { properties["hitboxYOffset"] = it }
 
             return mapToObject(properties, GunTurretComponent::class)
         }

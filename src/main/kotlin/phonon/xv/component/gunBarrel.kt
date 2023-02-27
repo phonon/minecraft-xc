@@ -15,6 +15,8 @@ import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.EulerAngle
+import phonon.xc.XC
+import phonon.xc.util.HitboxSize
 import phonon.xv.core.ENTITY_KEY_COMPONENT
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.core.Vehicle
@@ -73,6 +75,12 @@ public data class GunBarrelComponent(
     val skinDefaultVariant: String? = null,
     // whether to show the armor stand (for debugging)
     val armorstandVisible: Boolean = false, // @skip
+    // hitbox size in blocks, at local position
+    // @prop hitbox = [1.0, 1.0, 1.0]
+    val hitboxX: Double = 0.0, // @skip
+    val hitboxY: Double = 0.0, // @skip
+    val hitboxZ: Double = 0.0, // @skip
+    val hitboxYOffset: Double = 0.0,
 
     // @skipall
     // armor stand entity
@@ -84,7 +92,15 @@ public data class GunBarrelComponent(
     override val type = VehicleComponentType.GUN_BARREL
 
     override fun self() = this
-    
+
+    // hitbox size
+    val hitboxSize: HitboxSize = HitboxSize(
+        xHalf = (this.hitboxX / 2.0).toFloat(),
+        zHalf = (this.hitboxZ / 2.0).toFloat(),
+        yHeight = this.hitboxY.toFloat(),
+        yOffset = this.hitboxYOffset.toFloat(),
+    )
+
     // local position state
     var yawf: Float = yaw.toFloat()
     var yawRad: Double = Math.toRadians(yaw)
@@ -173,6 +189,7 @@ public data class GunBarrelComponent(
      * and add model to armorstand.
      */
     override fun afterVehicleCreated(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
@@ -191,6 +208,11 @@ public data class GunBarrelComponent(
             // entity needs to be re-created
             armorstand.setVehicleUuid(vehicle.uuid, element.uuid)
 
+            // register vehicle hitbox in xc combat
+            if ( hitboxSize.xHalf > 0f && hitboxSize.zHalf > 0f && hitboxSize.yHeight > 0f ) {
+                xc.addHitbox(armorstand.getUniqueId(), hitboxSize)
+            }
+
             // add model to armorstand
             if ( modelId > 0 ) {
                 armorstand.getEquipment().setHelmet(createCustomModelItem(material, modelId))
@@ -199,6 +221,7 @@ public data class GunBarrelComponent(
     }
 
     override fun delete(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
@@ -206,6 +229,7 @@ public data class GunBarrelComponent(
     ) {
         val stand = this.armorstand
         if ( stand !== null ) {
+            xc.removeHitbox(stand.getUniqueId())
             entityVehicleData.remove(stand.uniqueId)
             stand.remove()
         }
@@ -215,6 +239,7 @@ public data class GunBarrelComponent(
      * Try to re-attach armorstand to this component, during reloading.
      */
     fun reassociateArmorstand(
+        xc: XC,
         entity: Entity,
         vehicle: Vehicle,
         element: VehicleElement,
@@ -228,6 +253,10 @@ public data class GunBarrelComponent(
                 element,
                 VehicleComponentType.GUN_BARREL,
             )
+            // register vehicle hitbox in xc combat
+            if ( hitboxSize.xHalf > 0f && hitboxSize.zHalf > 0f && hitboxSize.yHeight > 0f ) {
+                xc.addHitbox(entity.getUniqueId(), hitboxSize)
+            }
         }
     }
 
@@ -268,6 +297,14 @@ public data class GunBarrelComponent(
             toml.getString("skin_default_variant")?.let { properties["skinDefaultVariant"] = it }
             
             toml.getBoolean("armorstand_visible")?.let { properties["armorstandVisible"] = it }
+
+            toml.getArray("hitbox")?.let { arr ->
+                properties["hitboxX"] = arr.getNumberAs<Double>(0)
+                properties["hitboxY"] = arr.getNumberAs<Double>(1)
+                properties["hitboxZ"] = arr.getNumberAs<Double>(2)
+            }
+
+            toml.getNumberAs<Double>("hitbox_y_offset")?.let { properties["hitboxYOffset"] = it }
 
             return mapToObject(properties, GunBarrelComponent::class)
         }

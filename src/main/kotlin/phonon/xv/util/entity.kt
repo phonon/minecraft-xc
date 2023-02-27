@@ -117,6 +117,7 @@ public fun reassociateEntities(
     entities: Collection<Entity>,
     forceDelete: Boolean = false, // force delete invalid armorstand entities
 ): Int {
+    val xc = xv.xc
     var numRemoved = 0
 
     for ( entity in entities ) {
@@ -137,9 +138,9 @@ public fun reassociateEntities(
                         }
 
                         when ( componentType ) {
-                            VehicleComponentType.MODEL -> vehicleElement.components.model?.reassociateArmorstand(entity, vehicle, vehicleElement, xv.entityVehicleData)
-                            VehicleComponentType.GUN_BARREL -> vehicleElement.components.gunBarrel?.reassociateArmorstand(entity, vehicle, vehicleElement, xv.entityVehicleData)
-                            VehicleComponentType.GUN_TURRET -> vehicleElement.components.gunTurret?.reassociateArmorstand(entity, vehicle, vehicleElement, xv.entityVehicleData)
+                            VehicleComponentType.MODEL -> vehicleElement.components.model?.reassociateArmorstand(xc, entity, vehicle, vehicleElement, xv.entityVehicleData)
+                            VehicleComponentType.GUN_BARREL -> vehicleElement.components.gunBarrel?.reassociateArmorstand(xc, entity, vehicle, vehicleElement, xv.entityVehicleData)
+                            VehicleComponentType.GUN_TURRET -> vehicleElement.components.gunTurret?.reassociateArmorstand(xc, entity, vehicle, vehicleElement, xv.entityVehicleData)
                             else -> {}
                         }
                         false

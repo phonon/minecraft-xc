@@ -29,6 +29,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
+import phonon.xc.XC
 import phonon.xv.component.*
 import java.util.Stack
 
@@ -390,6 +391,7 @@ public data class VehicleComponents(
      * setting up entity to vehicle mappings for armor stands.
      */
     fun afterVehicleCreated(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
@@ -397,66 +399,79 @@ public data class VehicleComponents(
         for ( c in layout ) {
             when ( c ) {
                 VehicleComponentType.AMMO -> ammo?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.FUEL -> fuel?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.GUN_BARREL -> gunBarrel?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.GUN_TURRET -> gunTurret?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.HEALTH -> health?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.MODEL -> model?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.PARTICLES -> particles?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.SEATS -> seats?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.SMOKE_PARTICLES -> smokeParticles?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.TRANSFORM -> transform?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
@@ -467,6 +482,7 @@ public data class VehicleComponents(
     }
 
     fun delete(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
@@ -474,19 +490,19 @@ public data class VehicleComponents(
     ) {
         for ( c in layout ) {
             when ( c ) {
-                VehicleComponentType.AMMO -> ammo?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.FUEL -> fuel?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.GUN_BARREL -> gunBarrel?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.GUN_TURRET -> gunTurret?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.HEALTH -> health?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.MODEL -> model?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.PARTICLES -> particles?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.SEATS -> seats?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.SMOKE_PARTICLES -> smokeParticles?.delete(vehicle, element, entityVehicleData, despawn)
-                VehicleComponentType.TRANSFORM -> transform?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.AMMO -> ammo?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.FUEL -> fuel?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.GUN_BARREL -> gunBarrel?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.GUN_TURRET -> gunTurret?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.HEALTH -> health?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.MODEL -> model?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.PARTICLES -> particles?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.SEATS -> seats?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.SMOKE_PARTICLES -> smokeParticles?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.TRANSFORM -> transform?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 null -> {}
             }
         }

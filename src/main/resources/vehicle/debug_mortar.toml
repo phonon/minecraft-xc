@@ -22,6 +22,8 @@ control_pitch = "wasd"
 update_transform = true
 seat_to_mount = 0 # seat mounted when clicked
 model_id = 101000
+hitbox = [1.0, 1.0, 1.0]
+hitbox_y_offset = 0.5
 
 # seats, needed for controllable vehicle
 [seats]

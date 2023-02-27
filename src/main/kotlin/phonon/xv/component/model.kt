@@ -12,6 +12,8 @@ import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
+import phonon.xc.XC
+import phonon.xc.util.HitboxSize
 import phonon.xv.XV
 import phonon.xv.core.ENTITY_KEY_COMPONENT
 import phonon.xv.core.Vehicle
@@ -34,10 +36,11 @@ public data class ModelComponent(
     val offsetY: Double = 0.0, // @skip
     val offsetZ: Double = 0.0, // @skip
     // hitbox size in blocks, at local position
-    // @prop hitbox = [2.0, 2.0, 2.0]
-    val hitboxX: Double = 2.0, // @skip
-    val hitboxY: Double = 2.0, // @skip
-    val hitboxZ: Double = 2.0, // @skip
+    // @prop hitbox = [0.0, 0.0, 0.0]
+    val hitboxX: Double = 0.0, // @skip
+    val hitboxY: Double = 0.0, // @skip
+    val hitboxZ: Double = 0.0, // @skip
+    val hitboxYOffset: Double = 0.0,
     // seat to mount when armorstand clicked
     val seatToMount: Int = -1, // -1 for none
     // material for model
@@ -58,6 +61,13 @@ public data class ModelComponent(
     override val type = VehicleComponentType.MODEL
 
     override fun self() = this
+
+    val hitboxSize: HitboxSize = HitboxSize(
+        xHalf = (this.hitboxX / 2.0).toFloat(),
+        zHalf = (this.hitboxZ / 2.0).toFloat(),
+        yHeight = this.hitboxY.toFloat(),
+        yOffset = this.hitboxYOffset.toFloat(),
+    )
 
     /**
      * Create armor stand at spawn location.
@@ -87,6 +97,7 @@ public data class ModelComponent(
      * and add model to armorstand.
      */
     override fun afterVehicleCreated(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
@@ -105,6 +116,11 @@ public data class ModelComponent(
             // entity needs to be re-created
             armorstand.setVehicleUuid(vehicle.uuid, element.uuid)
 
+            // register vehicle hitbox in xc combat
+            if ( hitboxSize.xHalf > 0f && hitboxSize.zHalf > 0f && hitboxSize.yHeight > 0f ) {
+                xc.addHitbox(armorstand.getUniqueId(), hitboxSize)
+            }
+
             // add model to armorstand
             if ( modelId > 0 ) {
                 armorstand.getEquipment().setHelmet(createCustomModelItem(material, modelId))
@@ -113,6 +129,7 @@ public data class ModelComponent(
     }
 
     override fun delete(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
@@ -120,6 +137,7 @@ public data class ModelComponent(
     ) {
         val stand = this.armorstand
         if ( stand !== null ) {
+            xc.removeHitbox(stand.getUniqueId())
             entityVehicleData.remove(stand.uniqueId)
             stand.remove()
         }
@@ -129,6 +147,7 @@ public data class ModelComponent(
      * Try to re-attach armorstand to this component, during reloading.
      */
     fun reassociateArmorstand(
+        xc: XC,
         entity: Entity,
         vehicle: Vehicle,
         element: VehicleElement,
@@ -142,6 +161,10 @@ public data class ModelComponent(
                 element,
                 VehicleComponentType.MODEL,
             )
+            // register vehicle hitbox in xc combat
+            if ( hitboxSize.xHalf > 0f && hitboxSize.zHalf > 0f && hitboxSize.yHeight > 0f ) {
+                xc.addHitbox(entity.getUniqueId(), hitboxSize)
+            }
         }
     }
 
@@ -162,6 +185,8 @@ public data class ModelComponent(
                 properties["hitboxY"] = arr.getNumberAs<Double>(1)
                 properties["hitboxZ"] = arr.getNumberAs<Double>(2)
             }
+
+            toml.getNumberAs<Double>("hitbox_y_offset")?.let { properties["hitboxYOffset"] = it }
 
             toml.getLong("seat_to_mount")?.let { properties["seatToMount"] = it.toInt() }
 

@@ -18,6 +18,7 @@ item_lore = [
 [model]
 model_id = 104001
 seat_to_mount = 0 # seat mounted when clicked
+hitbox = [2.5, 2.5, 2.5]
 
 # rotating gun turret, controlled by mouse
 [gun_turret]
@@ -31,7 +32,7 @@ barrel_control_pitch = "mouse"
 turret_model_id = 104002
 barrel_model_id = 104003
 seat_to_mount = 0 # seat mounted when clicked
-seat_controller = 0 # seat for controlling vehicle
+seat_controller = 0 # seat for controlling gun
 
 # seats, needed for controllable vehicle
 [seats]

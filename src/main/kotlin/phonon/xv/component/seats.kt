@@ -7,6 +7,7 @@ import org.bukkit.Location
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
+import phonon.xc.XC
 import phonon.xv.core.*
 import phonon.xv.util.mapToObject
 import phonon.xv.util.toml.*
@@ -89,6 +90,7 @@ public data class SeatsComponent(
     }
 
     override fun delete(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,

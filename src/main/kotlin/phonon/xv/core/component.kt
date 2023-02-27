@@ -11,6 +11,7 @@ import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
+import phonon.xc.XC
 
 /**
  * Component interface. Recursive interface so we can use self
@@ -93,6 +94,7 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
      * setting up entity to vehicle mappings for armor stands.
      */
     fun afterVehicleCreated(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
@@ -102,6 +104,7 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
      * Handler for 
      */
     fun delete(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,

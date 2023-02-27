@@ -462,6 +462,7 @@ public class XV (
         // for elements with armorstands models, this does entity -> element mapping
         for ( elem in elements ) {
             elem.components.afterVehicleCreated(
+                xc=xc,
                 vehicle=vehicle,
                 element=elem,
                 entityVehicleData=this.entityVehicleData,
@@ -492,6 +493,7 @@ public class XV (
         vehicle.elements.forEach { element ->
             // handle component specific deletion handlers
             element.components.delete(
+                xc,
                 vehicle,
                 element,
                 this.entityVehicleData,

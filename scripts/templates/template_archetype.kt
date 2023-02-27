@@ -29,6 +29,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
+import phonon.xc.XC
 import phonon.xv.component.*
 import java.util.Stack
 
@@ -218,6 +219,7 @@ public data class VehicleComponents(
      * setting up entity to vehicle mappings for armor stands.
      */
     fun afterVehicleCreated(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
@@ -226,6 +228,7 @@ public data class VehicleComponents(
             when ( c ) {
                 {%- for c in components %}
                 VehicleComponentType.{{ c.enum }} -> {{ c.storage }}?.afterVehicleCreated(
+                    xc=xc,
                     vehicle=vehicle,
                     element=element,
                     entityVehicleData=entityVehicleData,
@@ -237,6 +240,7 @@ public data class VehicleComponents(
     }
 
     fun delete(
+        xc: XC,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
@@ -245,7 +249,7 @@ public data class VehicleComponents(
         for ( c in layout ) {
             when ( c ) {
                 {%- for c in components %}
-                VehicleComponentType.{{ c.enum }} -> {{ c.storage }}?.delete(vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.{{ c.enum }} -> {{ c.storage }}?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 {%- endfor %}
                 null -> {}
             }
