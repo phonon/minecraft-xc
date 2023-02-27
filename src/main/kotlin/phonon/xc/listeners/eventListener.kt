@@ -692,7 +692,7 @@ public class EventListener(
                         val target = e.getEntity()
                         if ( target is LivingEntity ) {
                             // melee damage handler
-                            val damage = damageAfterArmorAndResistance(
+                            val damage = xc.damageAfterArmorAndResistance(
                                 weapon.damage,
                                 target,
                                 weapon.damageArmorReduction,
@@ -773,7 +773,7 @@ public class EventListener(
     }
 
     /**
-     * Entity damage event.
+     * Entity damage false fall event cancel.
      * For cancelling fall damage when jumping then activating crawl.
      * Minecraft bug? When jump then crawl, it pushes players to ground
      * causing massive fall damage. With NO JUMP potion effect, fall damage
@@ -797,6 +797,47 @@ public class EventListener(
                         e.setCancelled(true)
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Cancel damage if player in vehicle with invincible armor.
+     */
+    @EventHandler
+    public fun onDamageVehicleArmor(e: EntityDamageEvent) {
+        val cause = e.getCause()
+        // println("[onDamageVehicleArmor] dmg cause ${cause}")
+
+        // ignore custom gun damage and world environment damage causes
+        if ( cause == DamageCause.CUSTOM ||
+            cause == DamageCause.DROWNING ||
+            cause == DamageCause.FIRE_TICK ||
+            cause == DamageCause.LAVA ||
+            cause == DamageCause.POISON ||
+            cause == DamageCause.STARVATION ||
+            cause == DamageCause.SUFFOCATION ||
+            cause == DamageCause.SUICIDE ||
+            cause == DamageCause.VOID ||
+            cause == DamageCause.WITHER
+        ) {
+            return
+        }
+
+        val entity = e.getEntity()
+        val vehicle = entity.getVehicle()
+        if ( vehicle === null ) {
+            return
+        }
+
+        val vehicleArmor = xc.vehiclePassengerArmor[vehicle.getUniqueId()]
+        if ( vehicleArmor !== null ) {
+            val rawDamage = e.getDamage()
+            val finalDamage = rawDamage - vehicleArmor
+            if ( finalDamage <= 0.0 ) {
+                e.setCancelled(true)
+            } else {
+                e.setDamage(finalDamage)
             }
         }
     }

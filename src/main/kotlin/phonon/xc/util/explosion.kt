@@ -69,8 +69,10 @@ public fun XC.createExplosion(
     weaponId: Int,   // metadata for player death tracking
     weaponMaterial: Material, // metadata for player death tracking
 ) {
+    val xc = this
+
     // check if region allows explosions
-    if ( !this.canExplodeAt(location) ) {
+    if ( !xc.canExplodeAt(location) ) {
         // print to player cannot attack here?
         return
     }
@@ -100,7 +102,7 @@ public fun XC.createExplosion(
                     if ( baseDamage > 0.0 ) {
                         val target = hitbox.entity
                         if ( target is LivingEntity ) {
-                            val finalDamage = explosionDamageAfterArmor(
+                            val finalDamage = xc.explosionDamageAfterArmor(
                                 baseDamage,
                                 target,
                                 armorReduction,
@@ -109,11 +111,11 @@ public fun XC.createExplosion(
 
                             if ( target is Player ) {
                                 // mark player entering combat
-                                this.addPlayerToCombatLogging(target)
+                                xc.addPlayerToCombatLogging(target)
 
                                 // player died
                                 if ( target.getHealth() > 0.0 && finalDamage >= target.getHealth() ) {
-                                    this.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
+                                    xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
                                         player = target,
                                         killer = source,
                                         weaponType = weaponType,
@@ -146,7 +148,7 @@ public fun XC.createExplosion(
     }
     
     // create block explosion if power > 0
-    if ( this.config.blockDamageExplosion && blockDamagePower > 0.0f ) {
+    if ( xc.config.blockDamageExplosion && blockDamagePower > 0.0f ) {
         location.world?.createExplosion(
             location.x,
             location.y,
@@ -157,7 +159,7 @@ public fun XC.createExplosion(
     
     // queue explosion particle effect
     if ( particles != null ) {
-        this.particleExplosionQueue.add(ParticleExplosion(
+        xc.particleExplosionQueue.add(ParticleExplosion(
             particles,
             location.world,
             location.x,

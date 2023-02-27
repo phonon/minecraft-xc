@@ -109,7 +109,7 @@ public val entityDamageHitHandler = fun(
         // final damage after 
         // 1. gun damage drop: gun.damageAtDistance(distance)
         // 2. applying armor/resistance
-        val damage = damageAfterArmorAndResistance(
+        val damage = xc.damageAfterArmorAndResistance(
             gun.projectileDamageAtDistance(distance),
             target,
             gun.projectileArmorReduction,
@@ -174,7 +174,7 @@ public val entityExplosionHitHandler = fun(
             return
         }
 
-        val damage = damageAfterArmorAndResistance(
+        val damage = xc.damageAfterArmorAndResistance(
             gun.projectileDamageAtDistance(distance),
             target,
             gun.projectileArmorReduction,

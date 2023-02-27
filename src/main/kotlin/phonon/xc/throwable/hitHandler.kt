@@ -169,7 +169,7 @@ public val entityDamageHitHandler = fun(
             return
         }
 
-        val damage = damageAfterArmorAndResistance(
+        val damage = xc.damageAfterArmorAndResistance(
             throwable.throwDamage,
             target,
             throwable.throwDamageArmorReduction,
@@ -222,7 +222,7 @@ public val entityExplosionHitHandler = fun(
             return
         }
 
-        val damage = damageAfterArmorAndResistance(
+        val damage = xc.damageAfterArmorAndResistance(
             throwable.throwDamage,
             target,
             throwable.throwDamageArmorReduction,

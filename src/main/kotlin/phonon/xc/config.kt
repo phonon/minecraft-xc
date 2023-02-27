@@ -116,8 +116,8 @@ public data class Config(
     
     // ============================================================
     // sway settings
-    public val swayMovementSpeedDecay: Double = 0.35, // exponential moving avg factor in calculating move speed
-    public val swayMovementThreshold: Double = 2.50, // threshold
+    public val swayMovementSpeedDecay: Double = 0.5, // exponential moving avg factor in calculating move speed
+    public val swayMovementThreshold: Double = 3.0, // threshold
     public val playersBeforePipelinedSway: Int = 4, // number of players before pipelined sway system enabled
     
     // ============================================================

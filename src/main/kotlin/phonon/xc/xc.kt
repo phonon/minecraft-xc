@@ -191,8 +191,15 @@ public class XC(
     // INTERNAL PLUGIN SPECIFIC STORAGE
     // ========================================================================
     // custom hitboxes for armor stand custom models, maps EntityId => HitboxSize
-    internal val customModelHitboxes: HashMap<UUID, HitboxSize> = HashMap()
-
+    internal var customModelHitboxes: HashMap<UUID, HitboxSize> = HashMap()
+        private set
+    
+    // map of vehicle entity UUIDs where passengers have extra armor
+    // to combat damage (guns, melee, etc.)
+    // map vehicle uuid => additional armor
+    internal var vehiclePassengerArmor: HashMap<UUID, Double> = HashMap()
+        private set
+    
     // projectile systems for each world, map world uuid => ProjectileSystem
     internal val projectileSystems: HashMap<UUID, ProjectileSystem> = HashMap(4) // initial capacity 4 worlds
 
@@ -409,6 +416,9 @@ public class XC(
         throwableIdCounter = 0
 
         // clear all queues/maps
+        customModelHitboxes = HashMap()
+        vehiclePassengerArmor = HashMap()
+        
         projectileSystems.clear()
 
         playerShootDelay.clear()
@@ -1057,6 +1067,20 @@ public class XC(
      */
     public fun removeHitbox(uuid: UUID) {
         customModelHitboxes.remove(uuid)
+    }
+
+    /**
+     * Set vehicle passenger armor mapping.
+     */
+    public fun addVehiclePassengerArmor(uuid: UUID, armor: Double) {
+        vehiclePassengerArmor[uuid] = armor
+    }
+
+    /**
+     * Remove vehicle passenger armor mapping.
+     */
+    public fun removeVehiclePassengerArmor(uuid: UUID) {
+        vehiclePassengerArmor.remove(uuid)
     }
 
     /**

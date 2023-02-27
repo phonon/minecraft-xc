@@ -5,10 +5,12 @@
 package phonon.xc.util.damage
 
 import kotlin.math.max
+import org.bukkit.entity.EntityType
 import org.bukkit.entity.LivingEntity
 import org.bukkit.attribute.Attribute
 import org.bukkit.attribute.Attributable
 import org.bukkit.enchantments.Enchantment
+import phonon.xc.XC
 
 
 /**
@@ -56,16 +58,37 @@ public enum class DamageType {
  * This only factors in armor points and potion damage resistance.
  * This does not include armor toughness or armor enchant protection.
  * This also does not include location-dependent damage (like headshots).
+ * 
+ * TODO: make armor reduction factor a table of protection for damage
+ * types, configured for players.
  */
-public fun damageAfterArmorAndResistance(
+public fun XC.damageAfterArmorAndResistance(
     baseDamage: Double,
     entity: LivingEntity,
     armorReductionFactor: Double,
     _resistReductionFactor: Double,
 ): Double {
+    val xc = this
+
     // get total entity armor value
     // note: LivingEntity extends Attributable, so attribute should always exist
     val armor = entity.getAttribute(Attribute.GENERIC_ARMOR)?.getValue() ?: 0.0
+
+    // get custom vehicle armor
+    val vehicle = entity.getVehicle()
+    val vehicleArmor = if ( vehicle !== null && vehicle.type == EntityType.ARMOR_STAND ) {
+        xc.vehiclePassengerArmor[vehicle.uniqueId] ?: 0.0
+    } else {
+        0.0
+    }
+    
+    // if applying vehicle armor, make minimum damage 0.0 (no damage)
+    // to allow fully protected passengers. otherwise, clamp damage to 1.0
+    val damage = if ( vehicleArmor > 0.0 ) {
+        max(0.0, baseDamage - ((armor + vehicleArmor) * armorReductionFactor))
+    } else {
+        max(1.0, baseDamage - (armor * armorReductionFactor))
+    }
 
     // potion resistance/increase damage
     // UNNEEDED: vanilla will already apply potion modifier to damage
@@ -77,7 +100,7 @@ public fun damageAfterArmorAndResistance(
     //     potionModifier -= magnitude * resistReductionFactor
     // }
 
-    return max(1.0, baseDamage - (armor * armorReductionFactor))
+    return damage
 }
 
 
@@ -85,16 +108,29 @@ public fun damageAfterArmorAndResistance(
  * Calculate explosion damage after armor.
  * This is used after calculating explosion damage from
  * distance using baseExplosionDamage().
+ * 
+ * TODO: make armor reduction factor a table of protection for damage
+ * types, configured for players.
  */
-public fun explosionDamageAfterArmor(
+public fun XC.explosionDamageAfterArmor(
     baseDamage: Double,
     entity: LivingEntity,
     armorReductionFactor: Double,
     blastProtReductionFactor: Double,
 ): Double {
+    val xc = this
+
     // get total entity armor value
     // note: LivingEntity extends Attributable, so attribute should always exist
     val armor = entity.getAttribute(Attribute.GENERIC_ARMOR)?.getValue() ?: 0.0
+
+    // get custom vehicle armor
+    val vehicle = entity.getVehicle()
+    val vehicleArmor = if ( vehicle !== null && vehicle.type == EntityType.ARMOR_STAND ) {
+        xc.vehiclePassengerArmor[vehicle.uniqueId] ?: 0.0
+    } else {
+        0.0
+    }
 
     var totalBlastProtectionLevel = 0.0
 
@@ -106,5 +142,13 @@ public fun explosionDamageAfterArmor(
         equipment.getBoots()?.getItemMeta()?.let { it -> totalBlastProtectionLevel += it.getEnchantLevel(Enchantment.PROTECTION_EXPLOSIONS).toDouble() }
     }
 
-    return max(1.0, baseDamage - (armor * armorReductionFactor) - (totalBlastProtectionLevel * blastProtReductionFactor))
+    // if applying vehicle armor, make minimum damage 0.0 (no damage)
+    // to allow fully protected passengers. otherwise, clamp damage to 1.0
+    val damage = if ( vehicleArmor > 0.0 ) {
+        max(0.0, baseDamage - ((armor + vehicleArmor) * armorReductionFactor) - (totalBlastProtectionLevel * blastProtReductionFactor))
+    } else {
+        max(1.0, baseDamage - (armor * armorReductionFactor) - (totalBlastProtectionLevel * blastProtReductionFactor))
+    }
+
+    return damage
 }
