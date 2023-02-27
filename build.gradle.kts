@@ -79,7 +79,7 @@ dependencies {
     compileOnly("com.github.retrooper.packetevents:spigot:2.0.0-SNAPSHOT")
     
     // xc (combat core)
-    // compileOnly(files("../xc/build/libs/xc-1.16-SNAPSHOT-0.0.0.jar"))
+    compileOnly(files("../xc/build/libs/xc-1.18.2-SNAPSHOT-0.0.1.jar"))
 
     // required so mineman api appears for kotlin vscode plugin
     // api("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")

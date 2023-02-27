@@ -27,6 +27,7 @@ model_id = 101000
 [seats]
 count = 1
 offsets = [0.0, 0.0, -0.75]
+armor = [4.0]
 
 [health]
 max_health = 20.0

@@ -39,6 +39,7 @@ count = 1
 offsets = [
     0.0, 1.8, 0.0,
 ]
+armor = [ 9001.0 ]
 
 # handles player's input controls for land movement
 [land_movement_controls]

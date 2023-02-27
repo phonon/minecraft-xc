@@ -42,6 +42,11 @@ public data class SeatsComponent(
     val offsets: DoubleArray = doubleArrayOf(
         0.0, 0.0, 0.0,
     ),
+    // seat passenger extra armor values, corresponding to each seat,
+    // size must equal count
+    val armor: DoubleArray = doubleArrayOf(
+        0.0,
+    ),
 ): VehicleComponent<SeatsComponent> {
     override val type = VehicleComponentType.SEATS
 
@@ -59,7 +64,7 @@ public data class SeatsComponent(
     // health component, the armorstand health should be updated.
     val healthDisplay: DoubleArray = DoubleArray(count) { -1.0 }
     val healthDisplayMax: DoubleArray = DoubleArray(count) { -1.0 }
-     
+    
     /**
      * Get seat location relative to input transform component.
      * Useful for initializing seat locations
@@ -117,6 +122,14 @@ public data class SeatsComponent(
                 }
             }
             properties["offsets"] = offsets
+
+            val armor = DoubleArray(count)
+            toml.getArray("armor")?.let { arr ->
+                for ( i in 0 until count ) {
+                    armor[i] = arr.getNumberAs<Double>(i)
+                }
+            }
+            properties["armor"] = armor
 
             return mapToObject(properties, SeatsComponent::class)
         }

@@ -26,6 +26,7 @@ import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 import org.bukkit.scheduler.BukkitTask
 import org.bukkit.inventory.ItemStack
+import phonon.xc.XC
 import phonon.xv.core.*
 import phonon.xv.system.*
 import phonon.xv.common.UserInput
@@ -42,6 +43,8 @@ import phonon.xv.util.TaskProgress
  * Stores all game state and provide XV engine api.
  */
 public class XV (
+    // link to combat core engine dependency
+    internal val xc: XC,
     // spigot plugin variables links
     internal val plugin: Plugin,
     internal val logger: Logger,

@@ -132,6 +132,11 @@ public fun XV.systemMountVehicle(
                 player.teleport(locSeat) // without teleporting first, client side interpolation sends player to wrong location
                 seatEntity.addPassenger(player)
 
+                // armorstand gun plugin vehicle armor
+                if ( seatsComponent.armor[seatToMount] > 0.0 ) {
+                    xc.addVehiclePassengerArmor(seatEntity.getUniqueId(), seatsComponent.armor[seatToMount])
+                }
+
                 // entity -> vehicle mapping
                 seatEntity.setVehicleUuid(vehicle.uuid, element.uuid)
                 entityVehicleData[seatEntity.uniqueId] = EntityVehicleData(

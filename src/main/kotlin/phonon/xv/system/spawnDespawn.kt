@@ -228,6 +228,25 @@ public fun XV.systemDespawnVehicle(
                     break // player already running task, skip
                 }
 
+                if ( !force ) { // check for passengers
+                    var hasPassengers = false
+                    elements@ for ( element in vehicle.elements ) {
+                        val seats = element.components.seats
+                        if ( seats !== null ) {
+                            for ( p in seats.passengers ) {
+                                if ( p !== null ) {
+                                    hasPassengers = true
+                                    break@elements
+                                }
+                            }
+                        }
+                    }
+                    if ( hasPassengers ) {
+                        Message.announcement(player, "${ChatColor.RED}Vehicle has passengers, cannot despawn!")
+                        continue
+                    }
+                }
+
                 if ( vehicle.prototype.despawnTimeMillis > 0.0 ) {
                     val taskDespawn = TaskProgress(
                         timeTaskMillis = vehicle.prototype.despawnTimeMillis,

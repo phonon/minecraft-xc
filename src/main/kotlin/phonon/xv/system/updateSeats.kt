@@ -5,6 +5,7 @@ import kotlin.math.max
 import org.bukkit.attribute.Attribute
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Player
+import phonon.xc.XC
 import phonon.xv.XV
 import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.VehicleComponentType
@@ -40,6 +41,7 @@ public fun XV.systemUpdateSeats(
                     val playerVehicle = player.getVehicle()
                     if ( playerVehicle === null || playerVehicle.getUniqueId() !== armorstand?.getUniqueId() || !player.isOnline() || player.isDead() ) {
                         if ( armorstand !== null ) {
+                            xv.xc.removeVehiclePassengerArmor(armorstand.getUniqueId())
                             xv.entityVehicleData.remove(armorstand.getUniqueId())
                             armorstand.remove()
                         }

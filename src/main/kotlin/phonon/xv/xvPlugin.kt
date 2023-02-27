@@ -15,6 +15,8 @@ import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder
 import io.github.retrooper.packetevents.injector.SpigotChannelInjector
 import org.bukkit.Bukkit
 import org.bukkit.entity.ArmorStand
+import phonon.xc.XC
+import phonon.xc.XCPlugin
 import phonon.xv.XV
 import phonon.xv.command.*
 import phonon.xv.listener.*
@@ -25,10 +27,7 @@ import java.util.logging.Level
 public class XVPlugin : JavaPlugin() {
 
     // plugin internal state
-    val xv: XV = XV(
-        this,
-        this.getLogger(),
-    )
+    var xv: XV? = null
 
     // listeners (store refs so we can register/unregister)
     var controlsPacketListener: PacketListenerCommon? = null
@@ -52,6 +51,18 @@ public class XVPlugin : JavaPlugin() {
         val logger = this.getLogger()
         val pluginManager = this.getServer().getPluginManager()
 
+        val xcPlugin = pluginManager.getPlugin("xc") as XCPlugin
+        if ( xcPlugin === null || pluginManager.isPluginEnabled(xcPlugin) == false ) {
+            logger.severe("xc plugin not found")
+            return
+        }
+
+        val xv = XV(
+            xcPlugin.xc,
+            this,
+            this.getLogger(),
+        )
+
         // register listeners
         pluginManager.registerEvents(EventListener(xv), this)
         pluginManager.registerEvents(ArmorstandListener(xv), this)
@@ -61,7 +72,7 @@ public class XVPlugin : JavaPlugin() {
         // PacketEvents.getAPI().getSettings().readOnlyListeners(true)
         //     .checkForUpdates(true)
         // PacketEvents.getAPI().load()
-        println("packetevents loaded: ${PacketEvents.getAPI().isLoaded()} initialized: ${PacketEvents.getAPI().isInitialized()}")
+        // println("packetevents loaded: ${PacketEvents.getAPI().isLoaded()} initialized: ${PacketEvents.getAPI().isInitialized()}")
         this.controlsPacketListener = PacketEvents.getAPI().getEventManager().registerListener(ControlsListener(xv), PacketListenerPriority.MONITOR)
         PacketEvents.getAPI().init()
 
@@ -89,6 +100,9 @@ public class XVPlugin : JavaPlugin() {
         // start engine
         xv.start()
 
+        // save reference
+        this.xv = xv
+
         // print load time
         val timeEnd = System.currentTimeMillis()
         val timeLoad = timeEnd - timeStart
@@ -99,8 +113,8 @@ public class XVPlugin : JavaPlugin() {
     }
 
     override fun onDisable() {
-        xv.stop()
-        xv.saveVehiclesJson()
+        this.xv?.stop()
+        this.xv?.saveVehiclesJson()
         HandlerList.unregisterAll(this)
         // PacketEvents.getAPI().getEventManager().unregisterListener(this.controlsPacketListener)
         // PacketEvents.getAPI().terminate()
