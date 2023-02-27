@@ -17,6 +17,7 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.entity.Entity
+import org.bukkit.entity.EntityType
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.entity.Damageable
@@ -98,6 +99,19 @@ public val entityDamageHitHandler = fun(
     distance: Double,
 ) {
     if ( target is LivingEntity ) {
+        // for armor stands, typically are vehicles, emit event for
+        // external vehicle plugin to read
+        if ( target.type == EntityType.ARMOR_STAND ) {
+            Bukkit.getPluginManager().callEvent(XCProjectileDamageEvent(
+                gun = gun,
+                location = location,
+                target = target,
+                source = source,
+                distance = distance,
+            ))
+            return
+        }
+
         if ( target is Player && !xc.canPvpAt(location) ) {
             return
         }
@@ -146,14 +160,6 @@ public val entityDamageHitHandler = fun(
             target.setFireTicks(gun.hitFireTicks)
         }
     }
-
-    // emit event for external plugins to read
-    Bukkit.getPluginManager().callEvent(XCProjectileDamageEvent(
-        target,
-        gun.projectileDamage,
-        gun.projectileDamageType,
-        source,
-    ))
 }
 
 /**
@@ -169,56 +175,22 @@ public val entityExplosionHitHandler = fun(
     distance: Double,
 ) {
     // do main damage directly to target
-    if ( target is LivingEntity ) {
-        if ( target is Player && !xc.canPvpAt(location) ) {
-            return
-        }
-
-        val damage = xc.damageAfterArmorAndResistance(
-            gun.projectileDamageAtDistance(distance),
-            target,
-            gun.projectileArmorReduction,
-            gun.projectileResistanceReduction,
-        )
-
-        // player specific target handling
-        if ( target is Player ) {
-            // mark player entering combat
-            xc.addPlayerToCombatLogging(target)
-
-            // player died -> custom death event
-            if ( target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-                xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
-                    player = target,
-                    killer = source,
-                    weaponType = XC.ITEM_TYPE_GUN,
-                    weaponId = gun.itemModelDefault,
-                    weaponMaterial = xc.config.materialGun,
-                )
-            }
-
-            // play sound for shooter indicating succesful player hit
-            if ( xc.config.soundOnHitEnabled && source is Player ) {
-                source.playSound(source.getLocation(), xc.config.soundOnHit, xc.config.soundOnHitVolume, 1.0f)
-            }
-        }
-
-        target.damage(damage, null)
-        target.setNoDamageTicks(0)
-
-        // add fire ticks
-        if ( gun.hitFireTicks > 0 ) {
-            target.setFireTicks(gun.hitFireTicks)
-        }
-    }
-
-    // emit event for external plugins to read
-    Bukkit.getPluginManager().callEvent(XCProjectileDamageEvent(
+    entityDamageHitHandler(
+        xc,
+        hitboxes,
+        gun,
+        location,
         target,
-        gun.projectileDamage,
-        gun.projectileDamageType,
         source,
-    ))
+        distance,
+    )
+
+    // try playing sound
+    try {
+        location.getWorld()?.playSound(location, gun.soundExplosion, gun.soundExplosionVolume, gun.soundExplosionPitch)
+    } catch (err: Exception) {
+        xc.logger.warning("Failed to play sound ${gun.soundExplosion} at ${location}")
+    }
 
     // summon explosion effect at location
     xc.createExplosion(
@@ -257,6 +229,13 @@ public val blockExplosionHitHandler = fun(
     _block: Block,
     source: Entity,
 ) {
+    // try playing sound
+    try {
+        location.getWorld()?.playSound(location, gun.soundExplosion, gun.soundExplosionVolume, gun.soundExplosionPitch)
+    } catch (err: Exception) {
+        xc.logger.warning("Failed to play sound ${gun.soundExplosion} at ${location}")
+    }
+    
     xc.createExplosion(
         hitboxes,
         location,

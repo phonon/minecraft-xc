@@ -445,10 +445,11 @@ public data class Hitbox(
             map[EntityType.MINECART_HOPPER] = true
             map[EntityType.MINECART_MOB_SPAWNER] = true
             
-            // disable, since armor stands and item frames often used for decoration
-            // should set by user in config
-            // map[EntityType.ARMOR_STAND] = true
-            // map[EntityType.ITEM_FRAME] = true
+            // disable, since armor stands used as decoration or custom vehicles
+            map[EntityType.ARMOR_STAND] = false
+
+            // disable, used as decoration
+            map[EntityType.ITEM_FRAME] = false
 
             // maybe?
             // map[EntityType.ENDER_CRYSTAL] = true

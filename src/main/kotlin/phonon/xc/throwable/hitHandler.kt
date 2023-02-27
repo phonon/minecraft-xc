@@ -17,10 +17,12 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.entity.Entity
+import org.bukkit.entity.EntityType
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.entity.Damageable
 import phonon.xc.XC
+import phonon.xc.event.XCThrowableDamageEvent
 import phonon.xc.util.damage.*
 import phonon.xc.util.ChunkCoord3D
 import phonon.xc.util.Hitbox
@@ -165,6 +167,18 @@ public val entityDamageHitHandler = fun(
 ) {
     // do main damage directly to target
     if ( target is LivingEntity ) {
+        // for armor stands, typically are vehicles, emit event for
+        // external vehicle plugin to read
+        if ( target.type == EntityType.ARMOR_STAND ) {
+            Bukkit.getPluginManager().callEvent(XCThrowableDamageEvent(
+                throwable = throwable,
+                location = location,
+                target = target,
+                source = source,
+            ))
+            return
+        }
+
         if ( target is Player && !xc.canPvpAt(location) ) {
             return
         }
@@ -200,9 +214,6 @@ public val entityDamageHitHandler = fun(
             target.setFireTicks(throwable.throwFireTicks)
         }
     }
-
-    // TODO: emit event for target hit
-    // e.g. for vehicles
 }
 
 /**
@@ -216,46 +227,15 @@ public val entityExplosionHitHandler = fun(
     target: Entity,
     source: Entity,
 ) {
-    // do main damage directly to target
-    if ( target is LivingEntity ) {
-        if ( target is Player && !xc.canPvpAt(location) ) {
-            return
-        }
-
-        val damage = xc.damageAfterArmorAndResistance(
-            throwable.throwDamage,
-            target,
-            throwable.throwDamageArmorReduction,
-            throwable.throwDamageResistanceReduction,
-        )
-
-        if ( target is Player ) {
-            // mark player entering combat
-            xc.addPlayerToCombatLogging(target)
-
-            // player died -> custom death event
-            if ( target.getHealth() > 0.0 && damage >= target.getHealth() ) {
-                xc.deathEvents[target.getUniqueId()] = XcPlayerDeathEvent(
-                    player = target,
-                    killer = source,
-                    weaponType = XC.ITEM_TYPE_THROWABLE,
-                    weaponId = throwable.itemModelDefault,
-                    weaponMaterial = xc.config.materialThrowable,
-                )
-            }
-        }
-
-        target.damage(damage, null)
-        target.setNoDamageTicks(0)
-
-        // add fire ticks
-        if ( throwable.throwFireTicks > 0 ) {
-            target.setFireTicks(throwable.throwFireTicks)
-        }
-    }
-
-    // TODO: emit event for target hit
-    // e.g. for vehicles
+    // do main damage hit handler directly to target
+    entityDamageHitHandler(
+        xc,
+        hitboxes,
+        throwable,
+        location,
+        target,
+        source,
+    )
 
     // try playing sound
     try {

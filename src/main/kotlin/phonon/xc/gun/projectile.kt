@@ -243,9 +243,7 @@ public class ProjectileSystem(
 
     /**
      * Adds projectile to be ticked starting during next tick update.
-     * This method is threadsafe, and you may call this method async.
-     *
-     * @param projectile New projectile to tick
+     * This method is threadsafe, can be called from async threads.
      */
     public fun addProjectile(projectile: Projectile) {
         if ( Bukkit.getServer().isPrimaryThread() ) {
@@ -257,9 +255,7 @@ public class ProjectileSystem(
 
     /**
      * Adds the given projectiles to be ticked starting during the next tick.
-     * This method is threadsafe, and you may call this method async.
-     *
-     * @param projectiles The non-null collection of non-null projectiles.
+     * This method is threadsafe, can be called from async threads.
      */
     public fun addProjectiles(projectiles: Collection<Projectile>) {
         if ( Bukkit.getServer().isPrimaryThread() ) {
@@ -815,7 +811,10 @@ private fun runProjectileRaytrace(
                     // choose this new entity if hit and distance is closer than previous hit
                     if ( hitDistance != null && hitDistance < hitEntityDistance && hitDistance < maxEntityDist ) {
                         // make sure this is not entity shooter or its vehicle or shooter's passenger
-                        if ( hitbox.entity !== projectile.source && hitbox.entity !== projectile.source.vehicle && !projectile.source.getPassengers().contains(hitbox.entity) ) {
+                        if ( hitbox.entity !== projectile.source && 
+                            hitbox.entity !== projectile.source.vehicle && 
+                            !projectile.source.getPassengers().contains(hitbox.entity)
+                        ) {
                             hitEntity = hitbox.entity
                             hitEntityDistance = hitDistance
                         }

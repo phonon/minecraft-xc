@@ -42,12 +42,15 @@ public data class Config(
     public val pathFilesThrowable: Path = Paths.get("plugins", "xc", "throwable"),
 
     // flag that entity targetable
+    // TODO: make configurable
     public val entityTargetable: EnumArrayMap<EntityType, Boolean> = Hitbox.defaultEntityTargetable(),
     
     // entity hitbox sizes
+    // TODO: make configurable
     public val entityHitboxSizes: EnumArrayMap<EntityType, HitboxSize> = Hitbox.defaultEntityHitboxSizes(),
     
     // block collision handlers
+    // TODO: make configurable
     public val blockCollision: EnumArrayMap<Material, BlockCollisionHandler> = blockCollisionHandlers(),
     
     // max number of item types, used to size storage arrays

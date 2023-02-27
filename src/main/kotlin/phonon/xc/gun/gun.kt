@@ -267,6 +267,12 @@ public data class Gun(
     public val soundReloadFinish: String = "gun_reload_finish",
     public val soundReloadFinishVolume: Float = 1f,
     public val soundReloadFinishPitch: Float = 1f,
+    public val soundImpact: String? = null, // for hit entity or block handler
+    public val soundImpactVolume: Float = 1f,
+    public val soundImpactPitch: Float = 1f,
+    public val soundExplosion: String = "minecraft:entity.generic.explode", // for explosion handler
+    public val soundExplosionVolume: Float = 1f,
+    public val soundExplosionPitch: Float = 1f,
 ): IntoItemStack {
 
     // This contains an array of all possible combinations of
@@ -683,6 +689,26 @@ public data class Gun(
                         }
                     } else {
                         sound.getString("reload_finish")?.let { properties["soundReloadFinish"] = it }
+                    }
+
+                    if ( sound.isTable("impact") ) {
+                        sound.getTable("impact")?.let { shootSound ->
+                            shootSound.getString("name")?.let { properties["soundImpact"] = it }
+                            shootSound.getDouble("volume")?.let { properties["soundImpactVolume"] = it.toFloat() }
+                            shootSound.getDouble("pitch")?.let { properties["soundImpacthPitch"] = it.toFloat() }
+                        }
+                    } else {
+                        sound.getString("impact")?.let { properties["soundImpact"] = it }
+                    }
+
+                    if ( sound.isTable("explosion") ) {
+                        sound.getTable("explosion")?.let { shootSound ->
+                            shootSound.getString("name")?.let { properties["soundExplosion"] = it }
+                            shootSound.getDouble("volume")?.let { properties["soundExplosionVolume"] = it.toFloat() }
+                            shootSound.getDouble("pitch")?.let { properties["soundExplosionPitch"] = it.toFloat() }
+                        }
+                    } else {
+                        sound.getString("explosion")?.let { properties["soundExplosion"] = it }
                     }
                 }
 
