@@ -11,6 +11,7 @@ import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.entity.Entity
+import org.bukkit.entity.EntityType
 import org.bukkit.entity.Player
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Damageable
@@ -101,7 +102,24 @@ public fun XC.createExplosion(
                     val baseDamage = baseExplosionDamage(damage, distance, radius, falloff)
                     if ( baseDamage > 0.0 ) {
                         val target = hitbox.entity
-                        if ( target is LivingEntity ) {
+                        if ( target.type == EntityType.ARMOR_STAND ) {
+                            // emit event for external plugins to read
+                            try {
+                                Bukkit.getPluginManager().callEvent(XCExplosionDamageEvent(
+                                    target = target,
+                                    damage = baseDamage,
+                                    damageType = damageType,
+                                    distance = distance,
+                                    source = source,
+                                    weaponType = weaponType,
+                                    weaponId = weaponId,
+                                    weaponMaterial = weaponMaterial,
+                                ))
+                            } catch ( err: Exception ) {
+                                xc.logger.warning("Error calling XCExplosionDamageEvent for ${target}: ${err.message}")
+                            }
+                        }
+                        else if ( target is LivingEntity ) {
                             val finalDamage = xc.explosionDamageAfterArmor(
                                 baseDamage,
                                 target,
@@ -132,15 +150,6 @@ public fun XC.createExplosion(
                                 target.setFireTicks(fireTicks)
                             }
                         }
-                        
-                        // emit event for external plugins to read
-                        Bukkit.getPluginManager().callEvent(XCExplosionDamageEvent(
-                            target,
-                            baseDamage,
-                            damageType,
-                            distance,
-                            source,
-                        ))
                     }
                 }
             }

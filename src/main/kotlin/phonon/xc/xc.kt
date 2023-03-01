@@ -219,7 +219,8 @@ public class XC(
     internal var playerPreviousLocation: Map<UUID, Location> = HashMap()
     
     // map of players => custom death messages
-    internal val deathEvents: HashMap<UUID, XcPlayerDeathEvent> = HashMap()
+    // currently public so other plugins can use (e.g. vehicle library)
+    public val deathEvents: HashMap<UUID, XcPlayerDeathEvent> = HashMap()
 
     // list of saved death events for statistics
     internal var playerDeathRecords: ArrayList<PlayerDeathRecord> = ArrayList()

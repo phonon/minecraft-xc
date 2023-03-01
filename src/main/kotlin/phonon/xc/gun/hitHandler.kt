@@ -102,13 +102,18 @@ public val entityDamageHitHandler = fun(
         // for armor stands, typically are vehicles, emit event for
         // external vehicle plugin to read
         if ( target.type == EntityType.ARMOR_STAND ) {
-            Bukkit.getPluginManager().callEvent(XCProjectileDamageEvent(
-                gun = gun,
-                location = location,
-                target = target,
-                source = source,
-                distance = distance,
-            ))
+            try {
+                Bukkit.getPluginManager().callEvent(XCProjectileDamageEvent(
+                    gun = gun,
+                    location = location,
+                    target = target,
+                    source = source,
+                    damage = gun.projectileDamageAtDistance(distance),
+                    distance = distance,
+                ))
+            } catch ( err: Exception ) {
+                xc.logger.warning("Error calling XCProjectileDamageEvent for ${target}: ${err.message}")
+            }
             return
         }
 

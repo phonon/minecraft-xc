@@ -93,8 +93,8 @@ dependencies {
     // configurations["resolvableImplementation"]("org.jetbrains.kotlin:kotlin-reflect")
     
     // toml parsing library
-    compileOnly("org.tomlj:tomlj:1.0.0")
-    configurations["resolvableImplementation"]("org.tomlj:tomlj:1.0.0")
+    compileOnly("org.tomlj:tomlj:1.1.0")
+    configurations["resolvableImplementation"]("org.tomlj:tomlj:1.1.0")
 
     // paper api
     // api("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")

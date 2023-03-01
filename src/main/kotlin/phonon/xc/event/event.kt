@@ -5,6 +5,7 @@
 package phonon.xc.event
 
 import org.bukkit.Location
+import org.bukkit.Material
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.event.Cancellable
@@ -25,6 +26,7 @@ public data class XCProjectileDamageEvent(
     public val location: Location,
     public val target: Entity,
     public val source: Entity,
+    public val damage: Double,
     public val distance: Double,
 ): Event(), Cancellable {
     // event cancelled
@@ -103,6 +105,9 @@ public data class XCExplosionDamageEvent(
     public val damageType: DamageType,
     public val distance: Double, // distance from explosion center
     public val source: Entity?,
+    public val weaponType: Int,
+    public val weaponId: Int,
+    public val weaponMaterial: Material,
 ): Event(), Cancellable {
     // event cancelled
     private var cancelled: Boolean = false
