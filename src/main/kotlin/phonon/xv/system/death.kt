@@ -3,6 +3,7 @@ package phonon.xv.system
 import java.util.Queue
 import org.bukkit.Location
 import org.bukkit.entity.Player
+import phonon.xc.util.death.XcPlayerDeathEvent
 import phonon.xv.XV
 import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.VehicleStorage
@@ -13,7 +14,9 @@ import phonon.xv.component.TransformComponent
 import phonon.xv.system.DeleteVehicleRequest
 
 /**
- * System for handling vehicle death.
+ * System for handling vehicle death. Handle death here instead of individual
+ * damage events so we can re-use death logic for all vehicle specific damage
+ * sources.
  */
 public fun XV.systemDeath(
     storage: ComponentsStorage,
@@ -35,6 +38,9 @@ public fun XV.systemDeath(
                 deleteRequests.add(DeleteVehicleRequest(vehicle))
 
                 // remove and kill passengers
+                val damagePassenger = health.deathPassengerDamage
+                val vehicleDeathEvent = health.deathEvent
+
                 for ( i in 0 until seats.count ) {
                     val armorstand = seats.armorstands[i]
                     if ( armorstand !== null ) {
@@ -42,18 +48,17 @@ public fun XV.systemDeath(
                     }
 
                     val passenger = seats.passengers[i]
-                    if ( passenger !== null ) {
-
-                        // TODO: add death event for passengers
-                        // xc.deathEvents[passenger.getUniqueId()] = XcPlayerDeathEvent(
-                        //     player = target,
-                        //     killer = source,
-                        //     weaponType = XC.ITEM_TYPE_GUN,
-                        //     weaponId = gun.itemModelDefault,
-                        //     weaponMaterial = xc.config.materialGun,
-                        // )
+                    if ( passenger !== null && passenger.isValid() ) {
+                        if ( damagePassenger > passenger.getHealth() ) {
+                            if ( vehicleDeathEvent !== null ) {
+                                xc.deathEvents[passenger.getUniqueId()] = vehicleDeathEvent.toPlayerDeathEvent(passenger)
+                            } else {
+                                // TODO: put some kind of default death msg here
+                                xc.deathEvents.remove(passenger.getUniqueId())
+                            }
+                        }
                     
-                        passenger.damage(9999.9, null) // insta-kill
+                        passenger.damage(damagePassenger, null)
                     }
                 }
 

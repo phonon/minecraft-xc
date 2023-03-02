@@ -55,6 +55,13 @@ death_sound = "minecraft:entity.generic.explode"
 death_particle = "EXPLOSION_HUGE"
 death_particle_count = 1
 
+[health.damage_multiplier]
+ANTI_TANK_RIFLE = 0.1
+ARMOR_PIERCING_SHELL = 1.0
+EXPLOSIVE = 0.2
+EXPLOSIVE_SHELL = 0.5
+FIRE = 0.2
+
 [fuel]
 max = 64
 material = "DRAGON_BREATH"

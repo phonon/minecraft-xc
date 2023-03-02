@@ -125,6 +125,8 @@ public class XV (
     // fuel system state
     internal var fuelRequests: Queue<FuelVehicleRequest> = ArrayDeque()
     internal var fuelFinishQueue: ConcurrentLinkedQueue<FuelVehicleFinish> = ConcurrentLinkedQueue()
+    // damage queues
+    internal var damageQueue: Queue<VehicleDamageRequest> = ArrayDeque()
 
     // ========================================================================
     // RUNNING TASKS

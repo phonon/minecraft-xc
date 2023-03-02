@@ -7,12 +7,18 @@ import kotlin.math.min
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.ChatColor
+import org.bukkit.Material
 import org.bukkit.Particle
+import org.bukkit.entity.Entity
+import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataAdapterContext
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
+import phonon.xc.util.damage.DamageType
+import phonon.xc.util.EnumArrayMap
+import phonon.xc.util.death.XcPlayerDeathEvent
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
@@ -21,11 +27,40 @@ import phonon.xv.util.toml.*
 // namespace keys for saving item persistent data
 val HEALTH_KEY_CURRENT = NamespacedKey("xv", "current")
 
+/**
+ * Small death event for vehicles which contains killer but not player
+ * killed, so that when a vehicle is killed we can create death events for
+ * all passengers in the vehicle.
+ */
+public data class VehicleKilledEvent(
+    val killer: Entity?,
+    val weaponType: Int, // use XC.ITEM_TYPE_*
+    val weaponId: Int,   // to get weapon id in array
+    val weaponMaterial: Material, // used for weapons attached to a material (e.g. landmine)
+) {
+    public fun toPlayerDeathEvent(player: Player): XcPlayerDeathEvent {
+        return XcPlayerDeathEvent(
+            player = player,
+            killer = this.killer,
+            weaponType = this.weaponType,
+            weaponId = this.weaponId,
+            weaponMaterial = this.weaponMaterial,
+        )
+    }
+}
+
+/**
+ * Health and death component.
+ */
 public data class HealthComponent(
     var current: Double = -1.0,
     val max: Double = 20.0,
+    // damage sources multipliers
+    val damageMultiplier: EnumArrayMap<DamageType, Double> = EnumArrayMap.from({_dmg -> 0.0}),
     // whether to support death
     val death: Boolean = true,
+    // how much damage to deal to passengers when vehicle dies
+    val deathPassengerDamage: Double = 9999.9,
     // death effects
     val deathSound: String? = null,
     val deathParticle: Particle? = null,
@@ -37,6 +72,9 @@ public data class HealthComponent(
     override val type = VehicleComponentType.HEALTH
 
     override fun self() = this
+
+    // runtime death message
+    var deathEvent: VehicleKilledEvent? = null
 
     init {
         current = if ( current <= 0.0 ) {
@@ -91,6 +129,10 @@ public data class HealthComponent(
             toml.getNumberAs<Double>("max")?.let { properties["max"] = it }
 
             toml.getBoolean("death")?.let { properties["death"] = it }
+            
+            toml.getNumberAs<Double>("death_passenger_damage")?.let { properties["deathPassengerDamage"] = it }
+
+            toml.getTable("damage_multiplier")?.let { properties["damageMultiplier"] = it.getEnumArrayMap<DamageType, Double>(0.0) }
             
             toml.getString("death_sound")?.let { properties["deathSound"] = it }
             toml.getParticle("death_particle")?.let { properties["deathParticle"] = it }

@@ -15,6 +15,8 @@ import org.bukkit.Particle
 import org.bukkit.Material
 import org.tomlj.TomlTable
 import org.tomlj.TomlArray
+import phonon.xc.util.EnumArrayMap
+
 
 /**
  * Extension function to get and convert any number format
@@ -112,4 +114,25 @@ internal fun TomlTable.getParticle(key: String): Particle? {
             null
         }
     } ?: null
+}
+
+/**
+ * Parse a enum array map in the toml config, where keys are names of enum
+ * type K and values are of type V.
+ */
+@Suppress("UNCHECKED_CAST")
+inline fun <reified K: Enum<K>, reified V> TomlTable.getEnumArrayMap(defaultValue: V): EnumArrayMap<K, V> {
+    val enumMap: EnumArrayMap<K, V> = EnumArrayMap.from({_k -> defaultValue})
+    
+    for ( (key, value) in this.entrySet() ) {
+        try {
+            val enumValue = java.lang.Enum.valueOf(key as Class<K>, key.uppercase())
+            enumMap[enumValue] = value as V
+        } catch ( err: Exception ) {
+            println("[xv] Invalid toml config enum name for key ${key}")
+            err.printStackTrace()
+        }
+    }
+
+    return enumMap
 }

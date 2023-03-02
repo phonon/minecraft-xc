@@ -66,7 +66,7 @@ public class XVPlugin : JavaPlugin() {
         // register listeners
         pluginManager.registerEvents(ArmorstandListener(xv), this)
         pluginManager.registerEvents(EventListener(xv), this)
-        pluginManager.registerEvents(HitboxListener(xv), this)
+        pluginManager.registerEvents(DamageListener(xv), this)
         
         // PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this))
         // // Are all listeners read only?
