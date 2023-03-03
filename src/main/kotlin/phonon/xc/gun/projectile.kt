@@ -65,6 +65,9 @@ public data class Projectile(
     val gravity: Float = 0.0125f,
     // hit sphere bound radius for proximity based entity collision (e.g. flak guns)
     val proximity: Float = 0.0f,
+    // which entity actually fired the projectile, for vehicles the 
+    // shooter (Player) is not same as source (ArmorStand)
+    val shooter: Entity = source,
 ) {
     // current lifetime in ticks
     var lifetime: Int = 0
@@ -401,7 +404,7 @@ public class ProjectileSystem(
                 hitBlocksQueue.add(ProjectileHitBlock(
                     block = hitBlock,
                     location = hitLoc,
-                    source = projectile.source,
+                    source = projectile.shooter,
                     gun = projectile.gun,
                 ))
 
@@ -428,7 +431,7 @@ public class ProjectileSystem(
                 hitEntitiesQueue.add(ProjectileHitEntity(
                     entity = hitEntity,
                     location = raytraceResult.location!!,
-                    source = projectile.source,
+                    source = projectile.shooter,
                     gun = projectile.gun,
                     distance = projectile.distance.toDouble() + raytraceResult.distance,
                 ))
@@ -811,10 +814,11 @@ private fun runProjectileRaytrace(
                     // choose this new entity if hit and distance is closer than previous hit
                     if ( hitDistance != null && hitDistance < hitEntityDistance && hitDistance < maxEntityDist ) {
                         // make sure this is not entity shooter or its vehicle or shooter's passenger
-                        if ( hitbox.entity !== projectile.source && 
-                            hitbox.entity !== projectile.source.vehicle && 
-                            !projectile.source.getPassengers().contains(hitbox.entity)
+                        if ( hitbox.entity.uniqueId != projectile.source.uniqueId && 
+                            hitbox.entity.uniqueId != projectile.source.vehicle?.uniqueId && 
+                            projectile.source.getPassengers().indexOfFirst{ it.uniqueId == hitbox.entity.uniqueId } == -1
                         ) {
+                            // println("hitbox entity: ${hitbox.entity.uniqueId} source: ${projectile.source.uniqueId} shooter vehicle: ${projectile.source.vehicle?.uniqueId} shooter passenger: ${projectile.source.getPassengers().indexOfFirst{ it.uniqueId == hitbox.entity.uniqueId }}")
                             hitEntity = hitbox.entity
                             hitEntityDistance = hitDistance
                         }

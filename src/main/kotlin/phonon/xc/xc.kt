@@ -201,7 +201,7 @@ public class XC(
         private set
     
     // projectile systems for each world, map world uuid => ProjectileSystem
-    internal val projectileSystems: HashMap<UUID, ProjectileSystem> = HashMap(4) // initial capacity 4 worlds
+    public val projectileSystems: HashMap<UUID, ProjectileSystem> = HashMap(4) // initial capacity 4 worlds
 
     // map of players and aim down sights settings
     internal val dontUseAimDownSights: HashSet<UUID> = HashSet()
@@ -322,11 +322,13 @@ public class XC(
     // gun ammo message packets
     internal var gunAmmoInfoMessageQueue: ArrayList<AmmoInfoMessagePacket> = ArrayList()
 
-    // sounds queue
-    internal var soundQueue: ArrayList<SoundPacket> = ArrayList()
-
-    // recoil packets
-    internal var recoilQueue: ArrayList<RecoilPacket> = ArrayList()
+    // sounds queue, public so other plugins can insert
+    public var soundQueue: ArrayList<SoundPacket> = ArrayList()
+        private set
+        
+    // recoil packets, public so other plugins can insert
+    public var recoilQueue: ArrayList<RecoilPacket> = ArrayList()
+        private set
 
     // ========================================================================
     // Debug/benchmarking

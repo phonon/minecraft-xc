@@ -72,6 +72,43 @@ public fun XC.getItemTypeInHand(player: Player): Int {
 }
 
 /**
+ * Return custom item id if item in hand matches the config material
+ * for item type. This is basically a helper to get custom model data from item.
+ * 
+ * `itemType` must be one of the hardcoded integer item type constants
+ * in XC like `XC.ITEM_TYPE_GUN` or `XC.ITEM_TYPE_AMMO`.
+ * 
+ * Returns -1 if item in hand is not of the correct material type or
+ * if there is no custom model data.
+ */
+public fun XC.getCustomItemIdInHand(player: Player, itemType: Int): Int {
+    val craftPlayer = player as CraftPlayer
+    val nmsItem = craftPlayer.getMainHandNMSItem()
+
+    // note: nms item is never null, if hand empty this gives air material
+    // println("getItemTypeInHand -> itemInHand: $nmsItem")
+    
+    // internally uses IntArray lookup table using material enum ordinal
+    val material = CraftMagicNumbers.getMaterial(nmsItem.getItem())
+    val itemTypeInHand = this.config.materialToCustomItemType[material]
+    if ( itemTypeInHand != itemType ) {
+        return -1
+    }
+
+    val tags: NmsNBTTagCompound? = nmsItem.getTag()
+    // println("tags = $tags")
+    // NOTE: must check first before getting tag
+    if ( tags != null && tags.containsKeyOfType("CustomModelData", NBT_TAG_INT) ) {
+        // https://www.spigotmc.org/threads/registering-custom-entities-in-1-14-2.381499/#post-3460944
+        val modelId = tags.getInt("CustomModelData")
+        // println("tags['CustomModelData'] = ${modelId}")
+        return modelId
+    }
+
+    return -1
+}
+
+/**
  * Get custom item type from nms item stack using raw NBT tags.
  * Checks if material matches, then uses its custom model id to
  * index into custom type storage array. Return null if material
