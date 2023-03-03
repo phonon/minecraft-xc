@@ -877,7 +877,7 @@ public class XV (
         systemAmmoLoadVehicle(ammoLoadRequests, ammoLoadFinishQueue)
         systemFinishAmmoLoadVehicle(ammoLoadFinishQueue)
         systemFireWhenLoaded(storage, shootWeaponRequests)
-        
+
         // player vehicle movement controls
         systemLandMovementFuel(storage)
         systemLandMovement(storage, userInputs)
@@ -887,6 +887,9 @@ public class XV (
         systemGunBarrelControls(storage, userInputs)
         systemGunTurretControls(storage, userInputs)
         
+        // damage systems
+        systemDamage(storage, damageQueue)
+
         // update vehicle models after transforms updated
         // MUST BE RUN AFTER ALL MOVEMENT CONTROLLERS
         systemUpdateModels(storage)

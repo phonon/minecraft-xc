@@ -31,6 +31,7 @@ import phonon.xv.system.SpawnVehicleRequest
 import phonon.xv.system.MountVehicleRequest
 import phonon.xv.system.DismountVehicleRequest
 import phonon.xv.system.VehicleInteract
+import phonon.xv.system.VehicleInteractInside
 import phonon.xv.system.VehicleInteraction
 
 
@@ -45,12 +46,33 @@ public class EventListener(val xv: XV): Listener {
         val player = event.getPlayer()
         val entity = event.getRightClicked()
         val uuid = entity.getUniqueId()
-        val vehicleData = xv.entityVehicleData[uuid]
-        if ( vehicleData !== null ) {
+        val targetVehicleData = xv.entityVehicleData[uuid]
+        if ( targetVehicleData !== null ) {
+            // if player inside a plugin vehicle, create an inside vehicle interaction
+            val playerVehicle = player.getVehicle()
+            if ( playerVehicle !== null ) {
+                val playerVehicleData = xv.entityVehicleData[playerVehicle.uniqueId]
+                if ( playerVehicleData !== null && playerVehicleData.vehicle.uuid == targetVehicleData.vehicle.uuid ) {
+                    xv.interactInsideRequests.add(VehicleInteractInside(
+                        player = player,
+                        action = VehicleInteraction.RIGHT_CLICK,
+                        playerVehicle = playerVehicleData.vehicle,
+                        playerElement = playerVehicleData.element,
+                        playerComponentType = playerVehicleData.componentType,
+                        targetEntity = entity,
+                        targetVehicle = targetVehicleData.vehicle,
+                        targetElement = targetVehicleData.element,
+                        targetComponentType = targetVehicleData.componentType,
+                    ))
+                    return
+                }
+            }
+
+            // otherwise, create a normal vehicle interaction
             xv.interactRequests.add(VehicleInteract(
-                vehicle = vehicleData.vehicle,
-                element = vehicleData.element,
-                componentType = vehicleData.componentType,
+                vehicle = targetVehicleData.vehicle,
+                element = targetVehicleData.element,
+                componentType = targetVehicleData.componentType,
                 player = player,
                 entity = entity,
                 action = VehicleInteraction.RIGHT_CLICK,
@@ -71,12 +93,33 @@ public class EventListener(val xv: XV): Listener {
 
         val entity = event.entity
         val uuid = entity.getUniqueId()
-        val vehicleData = xv.entityVehicleData[uuid]
-        if ( vehicleData !== null ) {
+        val targetVehicleData = xv.entityVehicleData[uuid]
+        if ( targetVehicleData !== null ) {
+            // if player inside the same vehicle, create an inside vehicle interaction
+            val playerVehicle = player.getVehicle()
+            if ( playerVehicle !== null ) {
+                val playerVehicleData = xv.entityVehicleData[playerVehicle.uniqueId]
+                if ( playerVehicleData !== null && playerVehicleData.vehicle.uuid == targetVehicleData.vehicle.uuid ) {
+                    xv.interactInsideRequests.add(VehicleInteractInside(
+                        player = player,
+                        action = VehicleInteraction.LEFT_CLICK,
+                        playerVehicle = playerVehicleData.vehicle,
+                        playerElement = playerVehicleData.element,
+                        playerComponentType = playerVehicleData.componentType,
+                        targetEntity = entity,
+                        targetVehicle = targetVehicleData.vehicle,
+                        targetElement = targetVehicleData.element,
+                        targetComponentType = targetVehicleData.componentType,
+                    ))
+                    return
+                }
+            }
+
+            // otherwise, create a normal vehicle interaction
             xv.interactRequests.add(VehicleInteract(
-                vehicle = vehicleData.vehicle,
-                element = vehicleData.element,
-                componentType = vehicleData.componentType,
+                vehicle = targetVehicleData.vehicle,
+                element = targetVehicleData.element,
+                componentType = targetVehicleData.componentType,
                 player = player,
                 entity = entity,
                 action = VehicleInteraction.LEFT_CLICK,
@@ -105,6 +148,36 @@ public class EventListener(val xv: XV): Listener {
             return
         }
 
+        // check if player inside vehicle, if so do vehicle interaction events
+        val playerVehicle = player.getVehicle()
+        if ( playerVehicle !== null ) {
+            val playerVehicleData = xv.entityVehicleData[playerVehicle.uniqueId]
+            if ( playerVehicleData !== null ) {
+                // println("PLAYER INSIDE VEHICLE: ${playerVehicleData.vehicle.name}")
+                val interaction = when ( action ) {
+                    Action.LEFT_CLICK_AIR -> VehicleInteraction.LEFT_CLICK
+                    Action.LEFT_CLICK_BLOCK -> VehicleInteraction.LEFT_CLICK
+                    Action.RIGHT_CLICK_AIR -> VehicleInteraction.RIGHT_CLICK
+                    Action.RIGHT_CLICK_BLOCK -> VehicleInteraction.RIGHT_CLICK
+                    else -> null
+                }
+                if ( interaction !== null ) {
+                    xv.interactInsideRequests.add(VehicleInteractInside(
+                        player = player,
+                        action = interaction,
+                        playerVehicle = playerVehicleData.vehicle,
+                        playerElement = playerVehicleData.element,
+                        playerComponentType = playerVehicleData.componentType,
+                        targetEntity = null,
+                        targetVehicle = null,
+                        targetElement = null,
+                        targetComponentType = null,
+                    ))
+                }
+            }
+        }
+
+        // outside of vehicle actions
         if ( 
             action == Action.RIGHT_CLICK_AIR ||
             action == Action.RIGHT_CLICK_BLOCK
@@ -117,7 +190,7 @@ public class EventListener(val xv: XV): Listener {
                 if ( prototypeName !== null ) {
                     val vehiclePrototype = xv.vehiclePrototypes[prototypeName]
                     if ( vehiclePrototype !== null ) {
-                        println("SPAWN VEHICLE REQUEST: ${vehiclePrototype.name}")
+                        // println("SPAWN VEHICLE REQUEST: ${vehiclePrototype.name}")
                         xv.spawnRequests.add(
                             SpawnVehicleRequest(
                                 vehiclePrototype,

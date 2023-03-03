@@ -32,6 +32,7 @@ import phonon.xv.core.VehicleBuilder
 import phonon.xv.core.VehicleElementBuilder
 import phonon.xv.core.VehiclePrototype
 import phonon.xv.core.VehicleStorage
+import phonon.xv.util.drain
 
 /**
  * A request to create a vehicle, containing optional creation sources
@@ -58,13 +59,13 @@ public fun XV.systemCreateVehicle(
 ) {
     val xv = this // alias
 
-    while ( requests.isNotEmpty() ) {
+    for ( request in requests.drain() ) {
         val (
             prototype,
             location,
             player,
             item,
-        ) = requests.remove()
+        ) = request
 
         if ( xv.vehicleStorage.size >= xv.vehicleStorage.maxVehicles ) {
             xv.logger.severe("Failed to create new vehicle ${prototype.name} at ${location}: vehicle storage full")

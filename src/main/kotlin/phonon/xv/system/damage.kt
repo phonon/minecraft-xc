@@ -14,12 +14,12 @@ import phonon.xv.XV
 import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.Vehicle
 import phonon.xv.core.VehicleElement
-import phonon.xv.core.VehicleStorage
 import phonon.xv.core.iter.*
 import phonon.xv.component.HealthComponent
 import phonon.xv.component.VehicleKilledEvent
 import phonon.xv.component.SeatsComponent
 import phonon.xv.system.DeleteVehicleRequest
+import phonon.xv.util.drain
 
 data class VehicleDamageRequest(
     val vehicle: Vehicle,
@@ -37,11 +37,10 @@ data class VehicleDamageRequest(
  */
 public fun XV.systemDamage(
     storage: ComponentsStorage,
-    vehicleStorage: VehicleStorage,
     damageRequests: Queue<VehicleDamageRequest>,
 ) {
     val xv = this
-    for ( request in damageRequests ) {
+    for ( request in damageRequests.drain() ) {
         val (
             vehicle,
             element,

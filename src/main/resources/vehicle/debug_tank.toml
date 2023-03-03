@@ -34,6 +34,7 @@ seat_to_mount = 0 # seat mounted when clicked
 seat_controller = 0 # seat for controlling gun
 shoot_mouse_weapon = 0 # which ammo group to shoot
 hitbox = [2.3, 2.4, 2.3]
+hitbox_y_offset = -0.5
 
 # seats, needed for controllable vehicle
 [seats]
