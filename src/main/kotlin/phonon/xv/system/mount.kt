@@ -121,6 +121,12 @@ public fun XV.systemMountVehicle(
                 val world = player.world
                 val locSeat = seatsComponent.getSeatLocation(seatToMount, transformComponent)
                 
+                // limit distance players can mount
+                val dist = locSeat.distance(player.location)
+                if ( dist > 2.5 ) { // TODO: configurable parameter inside vehicle components
+                    continue
+                }
+
                 val seatEntity = CustomArmorStand.create(world, locSeat)
                 // val seatEntity = world.spawn(locSeat, ArmorStand::class.java)
                 seatEntity.setGravity(false)

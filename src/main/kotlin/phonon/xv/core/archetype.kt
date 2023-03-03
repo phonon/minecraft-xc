@@ -68,6 +68,7 @@ private fun <T> ArrayList<T>.swapRemove(index: Int) {
  */
 public enum class VehicleComponentType {
     AMMO,
+    AMMO_FIRE_WHEN_LOADED,
     FUEL,
     GUN_BARREL,
     GUN_TURRET,
@@ -89,6 +90,7 @@ public enum class VehicleComponentType {
         public inline fun <reified T: VehicleComponent<T>> from(): VehicleComponentType {
             return when ( T::class ) {
                 AmmoComponent::class -> VehicleComponentType.AMMO
+                AmmoFireWhenLoadedComponent::class -> VehicleComponentType.AMMO_FIRE_WHEN_LOADED
                 FuelComponent::class -> VehicleComponentType.FUEL
                 GunBarrelComponent::class -> VehicleComponentType.GUN_BARREL
                 GunTurretComponent::class -> VehicleComponentType.GUN_TURRET
@@ -109,6 +111,7 @@ public enum class VehicleComponentType {
 
 // namespaced keys, for use in toItem()
 val AMMO_KEY = NamespacedKey("xv", "ammo")
+val AMMO_FIRE_WHEN_LOADED_KEY = NamespacedKey("xv", "ammo_fire_when_loaded")
 val FUEL_KEY = NamespacedKey("xv", "fuel")
 val GUN_BARREL_KEY = NamespacedKey("xv", "gun_barrel")
 val GUN_TURRET_KEY = NamespacedKey("xv", "gun_turret")
@@ -129,6 +132,7 @@ val TRANSFORM_KEY = NamespacedKey("xv", "transform")
 public data class VehicleComponents(
     val layout: EnumSet<VehicleComponentType>,
     val ammo: AmmoComponent? = null,
+    val ammoFireWhenLoaded: AmmoFireWhenLoadedComponent? = null,
     val fuel: FuelComponent? = null,
     val gunBarrel: GunBarrelComponent? = null,
     val gunTurret: GunTurretComponent? = null,
@@ -149,6 +153,7 @@ public data class VehicleComponents(
         return VehicleComponents(
             layout,
             ammo = ammo?.copy(),
+            ammoFireWhenLoaded = ammoFireWhenLoaded?.copy(),
             fuel = fuel?.copy(),
             gunBarrel = gunBarrel?.copy(),
             gunTurret = gunTurret?.copy(),
@@ -175,6 +180,7 @@ public data class VehicleComponents(
     ): VehicleComponents {
         return copy(
             ammo = ammo?.injectSpawnProperties(location, player),
+            ammoFireWhenLoaded = ammoFireWhenLoaded?.injectSpawnProperties(location, player),
             fuel = fuel?.injectSpawnProperties(location, player),
             gunBarrel = gunBarrel?.injectSpawnProperties(location, player),
             gunTurret = gunTurret?.injectSpawnProperties(location, player),
@@ -200,6 +206,7 @@ public data class VehicleComponents(
     ): VehicleComponents {
         return copy(
             ammo = ammo?.injectItemProperties(itemData.get(AMMO_KEY, PersistentDataType.TAG_CONTAINER)),
+            ammoFireWhenLoaded = ammoFireWhenLoaded?.injectItemProperties(itemData.get(AMMO_FIRE_WHEN_LOADED_KEY, PersistentDataType.TAG_CONTAINER)),
             fuel = fuel?.injectItemProperties(itemData.get(FUEL_KEY, PersistentDataType.TAG_CONTAINER)),
             gunBarrel = gunBarrel?.injectItemProperties(itemData.get(GUN_BARREL_KEY, PersistentDataType.TAG_CONTAINER)),
             gunTurret = gunTurret?.injectItemProperties(itemData.get(GUN_TURRET_KEY, PersistentDataType.TAG_CONTAINER)),
@@ -235,6 +242,11 @@ public data class VehicleComponents(
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
                     ammo!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(AMMO_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.AMMO_FIRE_WHEN_LOADED -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    ammoFireWhenLoaded!!.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(AMMO_FIRE_WHEN_LOADED_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.FUEL -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
@@ -312,6 +324,9 @@ public data class VehicleComponents(
                 VehicleComponentType.AMMO -> {
                     json.add("ammo", ammo!!.toJson())
                 }
+                VehicleComponentType.AMMO_FIRE_WHEN_LOADED -> {
+                    json.add("ammoFireWhenLoaded", ammoFireWhenLoaded!!.toJson())
+                }
                 VehicleComponentType.FUEL -> {
                     json.add("fuel", fuel!!.toJson())
                 }
@@ -370,6 +385,7 @@ public data class VehicleComponents(
     ): VehicleComponents {
         return copy(
             ammo = ammo?.injectJsonProperties( json["ammo"]?.asJsonObject ),
+            ammoFireWhenLoaded = ammoFireWhenLoaded?.injectJsonProperties( json["ammoFireWhenLoaded"]?.asJsonObject ),
             fuel = fuel?.injectJsonProperties( json["fuel"]?.asJsonObject ),
             gunBarrel = gunBarrel?.injectJsonProperties( json["gunBarrel"]?.asJsonObject ),
             gunTurret = gunTurret?.injectJsonProperties( json["gunTurret"]?.asJsonObject ),
@@ -399,6 +415,12 @@ public data class VehicleComponents(
         for ( c in layout ) {
             when ( c ) {
                 VehicleComponentType.AMMO -> ammo?.afterVehicleCreated(
+                    xc=xc,
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.AMMO_FIRE_WHEN_LOADED -> ammoFireWhenLoaded?.afterVehicleCreated(
                     xc=xc,
                     vehicle=vehicle,
                     element=element,
@@ -491,6 +513,7 @@ public data class VehicleComponents(
         for ( c in layout ) {
             when ( c ) {
                 VehicleComponentType.AMMO -> ammo?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.AMMO_FIRE_WHEN_LOADED -> ammoFireWhenLoaded?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.FUEL -> fuel?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.GUN_BARREL -> gunBarrel?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.GUN_TURRET -> gunTurret?.delete(xc, vehicle, element, entityVehicleData, despawn)
@@ -524,6 +547,7 @@ public data class VehicleComponents(
         public fun fromToml(toml: TomlTable, logger: Logger? = null): VehicleComponents {
             // all possible components to be parsed
             var ammo: AmmoComponent? = null
+            var ammoFireWhenLoaded: AmmoFireWhenLoadedComponent? = null
             var fuel: FuelComponent? = null
             var gunBarrel: GunBarrelComponent? = null
             var gunTurret: GunTurretComponent? = null
@@ -546,6 +570,10 @@ public data class VehicleComponents(
                     "ammo" -> {
                         layout.add(VehicleComponentType.AMMO)
                         ammo = AmmoComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "ammo_fire_when_loaded" -> {
+                        layout.add(VehicleComponentType.AMMO_FIRE_WHEN_LOADED)
+                        ammoFireWhenLoaded = AmmoFireWhenLoadedComponent.fromToml(toml.getTable(k)!!, logger)
                     }
                     "fuel" -> {
                         layout.add(VehicleComponentType.FUEL)
@@ -602,6 +630,7 @@ public data class VehicleComponents(
             return VehicleComponents(
                 layout,
                 ammo,
+                ammoFireWhenLoaded,
                 fuel,
                 gunBarrel,
                 gunTurret,
@@ -643,6 +672,7 @@ public class ArchetypeStorage(
     // dense packed components storages
     // only components in layout will be non-null
     internal val ammo: ArrayList<AmmoComponent>? = if ( layout.contains(VehicleComponentType.AMMO) ) ArrayList() else null
+    internal val ammoFireWhenLoaded: ArrayList<AmmoFireWhenLoadedComponent>? = if ( layout.contains(VehicleComponentType.AMMO_FIRE_WHEN_LOADED) ) ArrayList() else null
     internal val fuel: ArrayList<FuelComponent>? = if ( layout.contains(VehicleComponentType.FUEL) ) ArrayList() else null
     internal val gunBarrel: ArrayList<GunBarrelComponent>? = if ( layout.contains(VehicleComponentType.GUN_BARREL) ) ArrayList() else null
     internal val gunTurret: ArrayList<GunTurretComponent>? = if ( layout.contains(VehicleComponentType.GUN_TURRET) ) ArrayList() else null
@@ -659,6 +689,8 @@ public class ArchetypeStorage(
     // public getter "view"s: only expose immutable List interface
     public val ammoView: List<AmmoComponent>?
         get() = this.ammo
+    public val ammoFireWhenLoadedView: List<AmmoFireWhenLoadedComponent>?
+        get() = this.ammoFireWhenLoaded
     public val fuelView: List<FuelComponent>?
         get() = this.fuel
     public val gunBarrelView: List<GunBarrelComponent>?
@@ -695,6 +727,7 @@ public class ArchetypeStorage(
         
         return when ( T::class ) {
             AmmoComponent::class -> this.ammoView?.get(denseIndex) as T
+            AmmoFireWhenLoadedComponent::class -> this.ammoFireWhenLoadedView?.get(denseIndex) as T
             FuelComponent::class -> this.fuelView?.get(denseIndex) as T
             GunBarrelComponent::class -> this.gunBarrelView?.get(denseIndex) as T
             GunTurretComponent::class -> this.gunTurretView?.get(denseIndex) as T
@@ -753,6 +786,10 @@ public class ArchetypeStorage(
             when ( c ) {
                 VehicleComponentType.AMMO -> {
                     this.ammo?.pushAtDenseIndex(denseIndex, components.ammo!!)
+                }
+                
+                VehicleComponentType.AMMO_FIRE_WHEN_LOADED -> {
+                    this.ammoFireWhenLoaded?.pushAtDenseIndex(denseIndex, components.ammoFireWhenLoaded!!)
                 }
                 
                 VehicleComponentType.FUEL -> {
@@ -843,6 +880,7 @@ public class ArchetypeStorage(
         for ( c in layout ) {
             when ( c ) {
                 VehicleComponentType.AMMO -> ammo?.swapRemove(denseIndex)
+                VehicleComponentType.AMMO_FIRE_WHEN_LOADED -> ammoFireWhenLoaded?.swapRemove(denseIndex)
                 VehicleComponentType.FUEL -> fuel?.swapRemove(denseIndex)
                 VehicleComponentType.GUN_BARREL -> gunBarrel?.swapRemove(denseIndex)
                 VehicleComponentType.GUN_TURRET -> gunTurret?.swapRemove(denseIndex)
@@ -875,6 +913,7 @@ public class ArchetypeStorage(
             elements[i] = INVALID_VEHICLE_ELEMENT_ID
         }
         ammo?.clear()
+        ammoFireWhenLoaded?.clear()
         fuel?.clear()
         gunBarrel?.clear()
         gunTurret?.clear()
@@ -907,6 +946,7 @@ public class ArchetypeStorage(
         public inline fun <reified T> accessor(): (ArchetypeStorage) -> List<T> {
             return when ( T::class ) {
                 AmmoComponent::class -> { archetype -> archetype.ammoView as List<T> }
+                AmmoFireWhenLoadedComponent::class -> { archetype -> archetype.ammoFireWhenLoadedView as List<T> }
                 FuelComponent::class -> { archetype -> archetype.fuelView as List<T> }
                 GunBarrelComponent::class -> { archetype -> archetype.gunBarrelView as List<T> }
                 GunTurretComponent::class -> { archetype -> archetype.gunTurretView as List<T> }

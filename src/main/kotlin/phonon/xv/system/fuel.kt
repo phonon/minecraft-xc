@@ -3,6 +3,7 @@ package phonon.xv.system
 import java.util.Queue
 import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.math.max
 import kotlin.math.min
 import org.bukkit.ChatColor
 import org.bukkit.Location
@@ -43,24 +44,14 @@ public data class FuelVehicleFinish(
 
 
 /**
- * Handle vehicle spawn requests, from player vehicle item or command.
- * If the vehicle has a "spawn" component, this initiates a spawn
- * sequence:
- *     1. Begin spawn progress bar timer
- *     2. Handle spawn tick progress on async thread. If player moves
- *        past a certain distance, or swaps item, etc. cancel spawn.
- *     3. When progress finished, queue finish spawn request on main thread.
- * 
- * If the vehicle does not have a "spawn" component, this bypasses the
- * spawn progress and goes directly to the finish spawn request.
- * 
- * Actual vehicle creation handled inside create system `systemCreateVehicle`.
+ * Handle vehicle fuel requests, from player vehicle item or command.
  */
 public fun XV.systemFuelVehicle(
     requests: Queue<FuelVehicleRequest>,
     finishQueue: ConcurrentLinkedQueue<FuelVehicleFinish>,
 ) {
     val xv = this
+    val infoMessage = xv.infoMessage
 
     for ( request in requests.drain() ) {
         val (
@@ -72,12 +63,12 @@ public fun XV.systemFuelVehicle(
         try {
             if ( player !== null ) {
                 if ( xv.isPlayerRunningTask(player) ) {
-                    break // player already running task, skip
+                    continue // player already running task, skip
                 }
 
                 if ( fuelComponent.current >= fuelComponent.max ) {
-                    Message.announcement(player, "${ChatColor.RED}Vehicle fuel is already full!")
-                    break
+                    infoMessage.put(player, 2, "${ChatColor.RED}Vehicle fuel is already full!")
+                    continue
                 }
 
                 if ( fuelComponent.timeRefuel > 0.0 && !skipTimer ) {
@@ -87,12 +78,12 @@ public fun XV.systemFuelVehicle(
                         itemMaterial = fuelComponent.material,
                         maxMoveDistance = 0.5, // TODO: make configurable
                         onProgress = { progress ->
-                            Message.announcement(player, progressBar10(progress))
+                            infoMessage.put(player, 2, progressBar10(progress))
                         },
                         onCancel = { reason ->
                             when ( reason ) {
-                                TaskProgress.CancelReason.ITEM_CHANGED -> Message.announcement(player, "${ChatColor.RED}Item changed, fueling cancelled!")
-                                TaskProgress.CancelReason.MOVED -> Message.announcement(player, "${ChatColor.RED}Moved too far, fueling cancelled!")
+                                TaskProgress.CancelReason.ITEM_CHANGED -> infoMessage.put(player, 2, "${ChatColor.RED}Item changed, fueling cancelled!")
+                                TaskProgress.CancelReason.MOVED -> infoMessage.put(player, 2, "${ChatColor.RED}Moved too far, fueling cancelled!")
                                 else -> {}
                             }
                         },
@@ -118,6 +109,9 @@ public fun XV.systemFuelVehicle(
     }
 }
 
+/**
+ * Handle vehicle finish fuel requests, from player vehicle item or command.
+ */
 public fun XV.systemFinishFuelVehicle(
     requests: ConcurrentLinkedQueue<FuelVehicleFinish>,
 ) {
@@ -140,7 +134,7 @@ public fun XV.systemFinishFuelVehicle(
                 }
 
                 // calculate how many items needed to refuel to max
-                var itemsUsed = 1 + (fuelComponent.max - fuelComponent.current) / fuelComponent.amountPerItem
+                var itemsUsed = max(1, (fuelComponent.max - fuelComponent.current) / fuelComponent.amountPerItem)
                 // clamp by max allowed per refuel
                 itemsUsed = min(itemsUsed, fuelComponent.maxAmountPerRefuel)
                 // clamp by amount actually in player hand

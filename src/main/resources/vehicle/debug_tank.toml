@@ -18,13 +18,12 @@ item_lore = [
 [model]
 model_id = 104001
 seat_to_mount = 0 # seat mounted when clicked
-hitbox = [2.5, 2.5, 2.5]
 
 # rotating gun turret, controlled by mouse
 [gun_turret]
 turret_offset = [0.0, 0.5, 0.0]
-barrel_offset = [0.0, 0.5, 2.0]
-barrel_pitch_min = -15.0
+barrel_offset = [0.0, 0.0, 1.45]
+barrel_pitch_min = -10.0
 barrel_pitch_max = 15.0
 turret_control_yaw = "mouse"
 barrel_control_yaw = "mouse"
@@ -33,12 +32,15 @@ turret_model_id = 104002
 barrel_model_id = 104003
 seat_to_mount = 0 # seat mounted when clicked
 seat_controller = 0 # seat for controlling gun
+shoot_mouse_weapon = 0 # which ammo group to shoot
+hitbox = [2.3, 2.4, 2.3]
 
 # seats, needed for controllable vehicle
 [seats]
+# max_mount_distance = 2.0 # TODO
 count = 1
 offsets = [
-    0.0, 1.8, 0.0,
+    0.0, 1.4, 0.0,
 ]
 armor = [ 9001.0 ]
 
@@ -69,6 +71,18 @@ amount_per_item = 1
 max_amount_per_refuel = 32
 time_per_fuel_when_idle = 200
 time_per_fuel_when_moving = 60
+
+[ammo]
+can_reload_inside = true
+time_reload_inside = 4000 # milliseconds
+can_reload_outside = false
+groups = [
+    { max_ammo = 1 }, # group 0
+]
+types = [
+    { group = 0, ammo = 200, gun = 20 }, # he shell
+    { group = 0, ammo = 201, gun = 30 }, # ap shell
+]
 
 # smoke particles when health < 50%
 [smoke_particles]

@@ -79,7 +79,7 @@ dependencies {
     compileOnly("com.github.retrooper.packetevents:spigot:2.0.0-SNAPSHOT")
     
     // xc (combat core)
-    compileOnly(files("../xc/build/libs/xc-1.18.2-SNAPSHOT-0.0.1.jar"))
+    compileOnly(files("../xc/build/libs/xc-1.18.2-SNAPSHOT-0.0.2.jar"))
 
     // required so mineman api appears for kotlin vscode plugin
     // api("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
@@ -90,21 +90,18 @@ dependencies {
     // Use the Kotlin JUnit integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
-    if ( project.hasProperty("1.12") === true ) {
-        compileOnly("com.destroystokyo.paper:paper-api:1.12.2-R0.1-SNAPSHOT")
-        target = "1.12"
-    } else if ( project.hasProperty("1.16") === true ) {
+    if ( project.hasProperty("1.16") === true ) {
         java.toolchain.languageVersion.set(JavaLanguageVersion.of(16)) // need java==16 for 1.16.5
         sourceSets["main"].java.srcDir("src/nms/v1_16_R3")
         paperDevBundle("1.16.5-R0.1-SNAPSHOT")
         compileOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
-        target = "1.16"
+        target = "1.16.5"
     } else if ( project.hasProperty("1.18") === true ) {
         java.toolchain.languageVersion.set(JavaLanguageVersion.of(17)) // need java==17 for 1.18.2
         sourceSets["main"].java.srcDir("src/nms/v1_18_R2")
         paperDevBundle("1.18.2-R0.1-SNAPSHOT")
         compileOnly("io.papermc.paper:paper-api:1.18.2-R0.1-SNAPSHOT")
-        target = "1.18"
+        target = "1.18.2"
 
         tasks {
             assemble {
@@ -129,9 +126,9 @@ tasks {
     named<ShadowJar>("shadowJar") {
         // verify valid target minecraft version
         doFirst {
-            val supportedMinecraftVersions = setOf("1.12", "1.16", "1.18")
+            val supportedMinecraftVersions = setOf("1.16.5", "1.18.2")
             if ( !supportedMinecraftVersions.contains(target) ) {
-                throw Exception("Invalid Minecraft version! Supported versions are: 1.12, 1.16, 1.18")
+                throw Exception("Invalid Minecraft version! Supported versions are: 1.16.5, 1.18.2")
             }
         }
 

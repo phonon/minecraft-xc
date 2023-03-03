@@ -82,3 +82,12 @@ skin_barrel = null
 skin_barrel_default_variant = null
 
 # whether to show the armor stand (for debugging)
+# hitbox size in blocks, at local position
+hitbox = [1.0, 1.0, 1.0]
+hitbox_y_offset = 0.0
+
+# if can shoot with left mouse, which ammo group to shoot (-1 to disable)
+shoot_mouse_weapon = 0
+
+# if can shoot with spacebar, which ammo group to shoot (-1 to disable)
+shoot_spacebar_weapon = -1

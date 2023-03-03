@@ -115,7 +115,7 @@ public fun XV.systemSpawnVehicle(
         try {
             if ( player !== null ) {
                 if ( xv.isPlayerRunningTask(player) ) {
-                    break // player already running task, skip
+                    continue // player already running task, skip
                 }
 
                 // attach id tag to item, so we can check if item changed during spawn
@@ -187,7 +187,7 @@ public fun XV.systemFinishSpawnVehicle(
             if ( player !== null && item !== null ) {
                 if ( !player.itemInMainHandEquivalentTo(item, itemIdTag) ) {
                     Message.announcement(player, "${ChatColor.RED}Item changed, spawn cancelled!")
-                    return
+                    continue
                 }
                 // else, passed check, consume item
                 player.inventory.setItemInMainHand(null)
@@ -225,7 +225,7 @@ public fun XV.systemDespawnVehicle(
         try {
             if ( player !== null ) {
                 if ( xv.isPlayerRunningTask(player) ) {
-                    break // player already running task, skip
+                    continue // player already running task, skip
                 }
 
                 if ( !force ) { // check for passengers
@@ -317,7 +317,7 @@ public fun XV.systemFinishDespawnVehicle(
                 // search elements for first element with transform component
                 // -> use that element as vehicle "location"
                 var location: Location? = null
-                for ( element in vehicle.elements ) {
+                findloc@ for ( element in vehicle.elements ) {
                     if ( element.layout.contains(VehicleComponentType.TRANSFORM) ) {
                         val transform = element.components.transform!!
                         val world = transform.world
@@ -325,7 +325,7 @@ public fun XV.systemFinishDespawnVehicle(
                             // add some y offset so that item drops from near middle of vehicle
                             location = Location(world, transform.x, transform.y + 1.0, transform.z)
                         }
-                        break
+                        break@findloc
                     }
                 }
 

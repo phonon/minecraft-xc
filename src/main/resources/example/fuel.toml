@@ -11,6 +11,12 @@ max = 100
 # how long it takes to refuel (in milliseconds)
 time_refuel = 4000
 
+# flag if player can reload outside vehicle
+can_reload_outside = true
+
+# flag if player can reload inside vehicle
+can_reload_inside = false
+
 # minecraft material used as fuel
 material = "DRAGON_BREATH"
 

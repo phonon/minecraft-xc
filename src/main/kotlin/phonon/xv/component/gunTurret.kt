@@ -108,7 +108,13 @@ public data class GunTurretComponent(
     val hitboxY: Double = 0.0, // @skip
     val hitboxZ: Double = 0.0, // @skip
     val hitboxYOffset: Double = 0.0,
-
+    // if can shoot with left mouse, which ammo group to shoot (-1 to disable)
+    val shootMouseWeapon: Int = 0,
+    // if can shoot with spacebar, which ammo group to shoot (-1 to disable)
+    val shootSpacebarWeapon: Int = -1,
+    // offset along barrel direction to spawn projectile
+    val projectileOffset: Double = 1.0,
+    
     // @skipall
     // armor stand entities
     var armorstandBarrel: ArmorStand? = null,
@@ -455,6 +461,11 @@ public data class GunTurretComponent(
             }
 
             toml.getNumberAs<Double>("hitbox_y_offset")?.let { properties["hitboxYOffset"] = it }
+
+            toml.getLong("shoot_mouse_weapon")?.let { properties["shootMouseWeapon"] = it.toInt() }
+            toml.getLong("shoot_spacebar_weapon")?.let { properties["shootSpacebarWeapon"] = it.toInt() }
+
+            toml.getNumberAs<Double>("projectile_offset")?.let { properties["projectileOffset"] = it }
 
             return mapToObject(properties, GunTurretComponent::class)
         }

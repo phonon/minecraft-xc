@@ -19,14 +19,16 @@ import phonon.xv.component.FuelComponent
 import phonon.xv.component.LandMovementControlsComponent
 import phonon.xv.component.SeatsComponent
 import phonon.xv.util.Message
+import phonon.xv.util.ConcurrentPlayerInfoMessageMap
 import phonon.xv.util.progressBar10Green
 import phonon.xv.util.progressBar10Red
 
 /**
  * System for sending vehicle info text to player driving a land vehicle.
  */
-public fun systemLandVehicleInfoText(
+public fun systemLandVehicleFuelInfoText(
     storage: ComponentsStorage,
+    infoMessage: ConcurrentPlayerInfoMessageMap,
 ) {
     for ( (_, landMovement, seats, fuel) in ComponentTuple3.query<
         LandMovementControlsComponent,
@@ -37,7 +39,10 @@ public fun systemLandVehicleInfoText(
             landMovement.infoTick = 0
 
             val player = seats.passengers[landMovement.seatController]
-            if ( player !== null ) {
+            if ( player !== null && !infoMessage.contains(player) ) { 
+                // NOTE: the infoMessage.contains check is not really synchronized
+                // since infoMessage is concurrent...oh well rip!
+
                 // val fuelPercent = fuel.current.toDouble() / fuel.max.toDouble()
                 // val fuelText = if ( fuel.current == 0 ) {
                 //     val fuelBar = progressBar10Red(0.0)
@@ -58,7 +63,7 @@ public fun systemLandVehicleInfoText(
                 }
 
                 val text = "${fuelText}"
-                Message.announcement(player, text)
+                infoMessage.put(player, 0, text)
             }
         } else {
             landMovement.infoTick += 1

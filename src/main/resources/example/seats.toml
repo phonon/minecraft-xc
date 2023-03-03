@@ -31,3 +31,9 @@ count = 1
 offsets = [
     0.0, 0.0, 0.0,
 ]
+
+# seat passenger extra armor values, corresponding to each seat,
+# size must equal count
+armor = [
+    0.0,
+]

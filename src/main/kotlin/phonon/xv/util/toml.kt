@@ -126,7 +126,7 @@ inline fun <reified K: Enum<K>, reified V> TomlTable.getEnumArrayMap(defaultValu
     
     for ( (key, value) in this.entrySet() ) {
         try {
-            val enumValue = java.lang.Enum.valueOf(key as Class<K>, key.uppercase())
+            val enumValue = java.lang.Enum.valueOf(K::class.java, key.uppercase())
             enumMap[enumValue] = value as V
         } catch ( err: Exception ) {
             println("[xv] Invalid toml config enum name for key ${key}")

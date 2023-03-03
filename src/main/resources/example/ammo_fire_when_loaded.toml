@@ -1,0 +1,11 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# Marker component indicating vehicle should immediately fire when
+# ammo is loaded. Made this separate component since many vehicles
+# will have ammo but not fire immediately. Want to avoid iterating
+# all vehicles with ammo (most vehicles) to check if they should fire
+# when loaded
+
+[ammo_fire_when_loaded]
+

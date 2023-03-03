@@ -110,6 +110,11 @@ public fun XV.systemGunBarrelControls(
                         gunBarrel.pitch
                     }
                 }
+
+                // print message to player
+                if ( dirtyPitch ) {
+                    xv.infoMessage.put(player, 1, "Pitch: %.1f".format(-newPitch))
+                }
             }
 
             // update local position and rotation if updated here or if transform is dirty

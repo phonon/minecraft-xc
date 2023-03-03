@@ -35,6 +35,7 @@ import phonon.xv.util.file.listDirFiles
 import phonon.xv.util.file.newBackupPath
 import phonon.xv.util.file.readJson
 import phonon.xv.util.file.writeJson
+import phonon.xv.util.ConcurrentPlayerInfoMessageMap
 import phonon.xv.util.TaskProgress
 
 
@@ -98,6 +99,10 @@ public class XV (
     internal var playerTasks: HashMap<UUID, TaskProgress> = HashMap()
         private set
     
+    // map of player info messages
+    internal var infoMessage: ConcurrentPlayerInfoMessageMap = ConcurrentPlayerInfoMessageMap()
+        private set
+    
     // save system (includes save pipeline state)
     internal var savingVehicles: Boolean = false
     internal var saveVehiclesQueue: Array<Vehicle?> = arrayOf()
@@ -122,9 +127,15 @@ public class XV (
     internal var despawnFinishQueue: ConcurrentLinkedQueue<DespawnVehicleFinish> = ConcurrentLinkedQueue()
     // vehicle interaction queue
     internal var interactRequests: Queue<VehicleInteract> = ArrayDeque()
+    internal var interactInsideRequests: Queue<VehicleInteractInside> = ArrayDeque()
     // fuel system state
     internal var fuelRequests: Queue<FuelVehicleRequest> = ArrayDeque()
     internal var fuelFinishQueue: ConcurrentLinkedQueue<FuelVehicleFinish> = ConcurrentLinkedQueue()
+    // ammo system state
+    internal var ammoLoadRequests: Queue<AmmoLoadRequest> = ArrayDeque()
+    internal var ammoLoadFinishQueue: ConcurrentLinkedQueue<AmmoLoadFinish> = ConcurrentLinkedQueue()
+    // shoot weapon state
+    internal var shootWeaponRequests: Queue<ShootWeaponRequest> = ArrayDeque()
     // damage queues
     internal var damageQueue: Queue<VehicleDamageRequest> = ArrayDeque()
 
@@ -145,7 +156,8 @@ public class XV (
         // user input controls when mounted on entities
         userInputs = HashMap()
         entityVehicleData = HashMap()
-        
+        infoMessage = ConcurrentPlayerInfoMessageMap()
+
         // save system (includes save pipeline state)
         savingVehicles = false
         saveVehiclesQueue = arrayOf()
@@ -169,9 +181,17 @@ public class XV (
         despawnFinishQueue = ConcurrentLinkedQueue()
         // vehicle interaction queue
         interactRequests = ArrayDeque()
+        interactInsideRequests = ArrayDeque()
         // fuel system state
         fuelRequests = ArrayDeque()
         fuelFinishQueue = ConcurrentLinkedQueue()
+        // ammo system state
+        ammoLoadRequests = ArrayDeque()
+        ammoLoadFinishQueue = ConcurrentLinkedQueue()
+        // shoot weapon state
+        shootWeaponRequests = ArrayDeque()
+        // damage queue
+        damageQueue = ArrayDeque()
         
         // kill player tasks
         for ( (uuid, task) in playerTasks ) {
@@ -842,7 +862,8 @@ public class XV (
         systemCreateVehicle(storage, createRequests)
 
         // vehicle interact requests
-        systemInteract(interactRequests)
+        systemInteractWithVehicle(interactRequests)
+        systemInteractInsideVehicle(interactInsideRequests)
         
         // mount and dismount request handlers
         mountRequests = systemMountVehicle(storage, mountRequests) // filters direct interaction mounting
@@ -852,6 +873,11 @@ public class XV (
         systemFuelVehicle(fuelRequests, fuelFinishQueue)
         systemFinishFuelVehicle(fuelFinishQueue)
 
+        // vehicle ammo loading systems
+        systemAmmoLoadVehicle(ammoLoadRequests, ammoLoadFinishQueue)
+        systemFinishAmmoLoadVehicle(ammoLoadFinishQueue)
+        systemFireWhenLoaded(storage, shootWeaponRequests)
+        
         // player vehicle movement controls
         systemLandMovementFuel(storage)
         systemLandMovement(storage, userInputs)
@@ -870,14 +896,20 @@ public class XV (
         // seat raycast mounting
         mountRequests = systemMountSeatRaycast(storage, mountRequests)
         
+        // shoot weapons
+        systemShootWeapon(shootWeaponRequests)
+
         // =================================
         // THESE COULD RUN IN PARALLEL
         // particle effects
         systemPeriodicParticles(storage)
         systemPeriodicSmokeParticles(storage)
 
-        // sends info text to players
-        systemLandVehicleInfoText(storage)
+        // default info message systems
+        systemLandVehicleFuelInfoText(storage, infoMessage)
+        
+        // sends info text to players and clears the info messages map
+        systemPrintInfoMessages(infoMessage)
         // =================================
 
         // handle vehicle death

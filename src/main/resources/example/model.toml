@@ -9,7 +9,8 @@
 offset = [0.0, 0.0, 0.0]
 
 # hitbox size in blocks, at local position
-hitbox = [2.0, 2.0, 2.0]
+hitbox = [0.0, 0.0, 0.0]
+hitbox_y_offset = 0.0
 
 # seat to mount when armorstand clicked
 seat_to_mount = -1

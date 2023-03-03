@@ -31,7 +31,7 @@ import phonon.xv.system.SpawnVehicleRequest
 import phonon.xv.system.MountVehicleRequest
 import phonon.xv.system.DismountVehicleRequest
 import phonon.xv.system.VehicleInteract
-import phonon.xv.system.VehicleEntityInteraction
+import phonon.xv.system.VehicleInteraction
 
 
 public class EventListener(val xv: XV): Listener {
@@ -53,7 +53,7 @@ public class EventListener(val xv: XV): Listener {
                 componentType = vehicleData.componentType,
                 player = player,
                 entity = entity,
-                action = VehicleEntityInteraction.RIGHT_CLICK,
+                action = VehicleInteraction.RIGHT_CLICK,
             ))
         }
     }
@@ -79,7 +79,7 @@ public class EventListener(val xv: XV): Listener {
                 componentType = vehicleData.componentType,
                 player = player,
                 entity = entity,
-                action = VehicleEntityInteraction.LEFT_CLICK,
+                action = VehicleInteraction.LEFT_CLICK,
             ))
         }
     }

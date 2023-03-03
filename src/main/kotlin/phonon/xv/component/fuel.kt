@@ -28,6 +28,10 @@ public data class FuelComponent(
     val max: Int = 100,
     // how long it takes to refuel (in milliseconds)
     val timeRefuel: Long = 4000,
+    // flag if player can reload outside vehicle
+    val canReloadOutside: Boolean = true,
+    // flag if player can reload inside vehicle
+    val canReloadInside: Boolean = false,
     // minecraft material used as fuel
     // @prop material = "DRAGON_BREATH"
     val material: Material = Material.DRAGON_BREATH, // @skip
@@ -110,6 +114,9 @@ public data class FuelComponent(
             toml.getNumberAs<Int>("max")?.let { properties["max"] = it }
 
             toml.getLong("time_refuel")?.let { properties["timeRefuel"] = it }
+            
+            toml.getBoolean("can_reload_outside")?.let { properties["canReloadOutside"] = it }
+            toml.getBoolean("can_reload_inside")?.let { properties["canReloadInside"] = it }
             
             toml.getString("material")?.let { s ->
                 Material.getMaterial(s)?.let { properties["material"] = it } ?: run {
