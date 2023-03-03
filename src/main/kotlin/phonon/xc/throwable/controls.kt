@@ -507,7 +507,7 @@ internal fun XC.tickThrownThrowableSystem(
 ): ArrayList<ThrownThrowable> {
     val newThrowables = ArrayList<ThrownThrowable>()
 
-    for ( th in requests ) {
+    requests@ for ( th in requests ) {
         // unpack
         val (
             throwable,
@@ -632,7 +632,8 @@ internal fun XC.tickThrownThrowableSystem(
                 val cy = floor(currLocY).toInt() shr 4
                 val cz = floor(currLocZ).toInt() shr 4
 
-                hitboxes[ChunkCoord3D(cx, cy, cz)]?.let { hbs ->
+                val hbs = hitboxes[ChunkCoord3D(cx, cy, cz)]
+                if ( hbs !== null ) {
                     for ( hitbox in hbs ) {
                         // skip if hitbox is thrower
                         if ( hitbox.entity === thrower ) {
@@ -651,7 +652,7 @@ internal fun XC.tickThrownThrowableSystem(
                                 thrower,
                             )
 
-                            continue
+                            continue@requests
                         }
                     }
                 }

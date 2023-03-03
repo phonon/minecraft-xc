@@ -78,6 +78,12 @@ public fun XC.createExplosion(
         return
     }
 
+    // explosion id is a tag for tracking an explosion and which hitboxes
+    // have already been damaged by it. since hitboxes can be attached to
+    // multiple chunks, we need to track which hitboxes have already been
+    // damaged by this explosion. explosion id must be unique per explosion.
+    val explosionId = xc.nextExplosionId()
+
     // get chunks intersecting with explosion radius
     val cxmin = floor(location.x - maxDistance).toInt() shr 4
     val cxmax = ceil(location.x + maxDistance).toInt() shr 4
@@ -93,6 +99,15 @@ public fun XC.createExplosion(
                 val hitboxesInChunk = hitboxes[coord] ?: continue
 
                 for ( hitbox in hitboxesInChunk ) {
+                    
+                    // skip hitboxes that have already been damaged by this explosion
+                    if ( hitbox.lastExplosionId == explosionId ) {
+                        continue
+                    }
+                    hitbox.lastExplosionId = explosionId
+
+                    val target = hitbox.entity
+                    
                     // distance from hitbox center to explosion location,
                     // with hitbox min radius subtracted
                     val distance = (hitbox.distance(location.x.toFloat(), location.y.toFloat(), location.z.toFloat()) - hitbox.radiusMin).toDouble()
@@ -101,7 +116,6 @@ public fun XC.createExplosion(
                     // if base damage > 0.0, then apply damage to entity target
                     val baseDamage = baseExplosionDamage(damage, distance, radius, falloff)
                     if ( baseDamage > 0.0 ) {
-                        val target = hitbox.entity
                         if ( target.type == EntityType.ARMOR_STAND ) {
                             // emit event for external plugins to read
                             try {

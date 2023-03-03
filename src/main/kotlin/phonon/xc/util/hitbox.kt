@@ -66,6 +66,13 @@ public data class Hitbox(
     // so this is NOT a sphere bound radius
     public val radiusMin: Float,
 ) {
+    // explosion id is a tag for tracking an explosion and which hitboxes
+    // have already been damaged by it. since hitboxes can be attached to
+    // multiple chunks, we need to track which hitboxes have already been
+    // damaged by this explosion. explosion id must be unique per explosion.
+    // this value is set by the `createExplosion` function each time
+    public var lastExplosionId: Int = -1
+
     /**
      * Check if hitbox contains a point.
      */

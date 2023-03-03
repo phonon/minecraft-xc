@@ -258,6 +258,10 @@ public class XC(
     // id counter for throwable items (when they are readied)
     internal var throwableIdCounter: Int = 0
         private set
+    
+    // id counter for explosion tags
+    internal var explosionIdCounter: Int = 0
+        private set
 
     // player death message storage, death event checks this for custom messages
     internal val playerDeathMessages: HashMap<UUID, String> = HashMap()
@@ -417,6 +421,7 @@ public class XC(
         crawlRefreshTick0Count = 0
         crawlRefreshTick1Count = 0
         throwableIdCounter = 0
+        explosionIdCounter = 0
 
         // clear all queues/maps
         customModelHitboxes = HashMap()
@@ -912,6 +917,28 @@ public class XC(
     }
 
     /**
+     * Create new explosion id from global counter (explosion ids used to
+     * tag hitboxes so that hitboxes do not get damaged by same explosion
+     * twice). See `createExplosion` for usage. These should be reset
+     * on each update tick using `resetExplosionIds`.
+     */
+    internal fun nextExplosionId(): Int {
+        val id = explosionIdCounter
+        explosionIdCounter += 1
+        return id
+    }
+
+    /**
+     * Create new explosion id from global counter (explosion ids used to
+     * tag hitboxes so that hitboxes do not get damaged by same explosion
+     * twice). See `createExplosion` for usage. These should be reset
+     * on each update tick using `resetExplosionIds`.
+     */
+    internal fun resetExplosionIdCounter() {
+        explosionIdCounter = 0
+    }
+
+    /**
      * Protection check if location allows player pvp damage.
      * In future, this should add other hooked plugin checks.
      */
@@ -1264,6 +1291,9 @@ public class XC(
 
         // timestamp for beginning update tick
         val timestamp = System.currentTimeMillis()
+
+        // clear explosion tag id counter
+        resetExplosionIdCounter()
 
         // kill combat loggers
         if ( config.antiCombatLogEnabled ) {
