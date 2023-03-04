@@ -273,16 +273,18 @@ public class XV (
         // load vehicle config files
 
         // wtf why isnt it saving this shit automatically??
-        listOf(
-            "vehicle/debug_cannon.toml",
-            "vehicle/debug_car.toml",
-            "vehicle/debug_humvee.toml",
-            "vehicle/debug_mg34.toml",
-            "vehicle/debug_mortar.toml",
-            "vehicle/debug_multi_turret.toml",
-            "vehicle/debug_tank.toml",
-            "vehicle/debug_ship.toml",
-        ).forEach { p -> this.plugin.saveResource(p, false) }
+        if ( config.createDemoConfigs ) {
+            listOf(
+                "vehicle/debug_cannon.toml",
+                "vehicle/debug_car.toml",
+                "vehicle/debug_humvee.toml",
+                "vehicle/debug_mg34.toml",
+                "vehicle/debug_mortar.toml",
+                "vehicle/debug_multi_turret.toml",
+                "vehicle/debug_tank.toml",
+                "vehicle/debug_ship.toml",
+            ).forEach { p -> this.plugin.saveResource(p, false) }
+        }
 
         val elementPrototypes = mutableMapOf<String, VehicleElementPrototype>()
 

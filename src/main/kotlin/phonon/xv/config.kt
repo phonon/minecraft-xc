@@ -79,6 +79,9 @@ public data class Config(
 
     // max vehicle element instances allowed in world
     val maxVehicleElements: Int = 40000,
+
+    // create demo vehicle .toml configs
+    val createDemoConfigs: Boolean = true,
 ) {
     
     companion object {
@@ -154,6 +157,7 @@ public data class Config(
                 misc.getBoolean("delete_invalid_armor_stands")?.let { configOptions["deleteInvalidArmorStands"] = it }
                 misc.getLong("max_vehicles")?.let { configOptions["maxVehicles"] = it.toInt() }
                 misc.getLong("max_vehicle_elements")?.let { configOptions["maxVehicleElements"] = it.toInt() }
+                misc.getBoolean("create_demo_configs")?.let { configOptions["createDemoConfigs"] = it }
             }
 
             return mapToObject(configOptions, Config::class)

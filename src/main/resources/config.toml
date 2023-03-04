@@ -59,3 +59,5 @@ debug_contact_points = false
 delete_invalid_armor_stands = false
 # max vehicle instances allowed in world
 max_vehicles = 10000
+# create default configs
+create_demo_configs = true
