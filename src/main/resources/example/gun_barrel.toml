@@ -68,3 +68,6 @@ shoot_mouse_weapon = 0
 
 # if can shoot with spacebar, which ammo group to shoot (-1 to disable)
 shoot_spacebar_weapon = -1
+
+# offset along barrel direction to spawn projectile
+projectile_offset = 1.0

@@ -70,6 +70,7 @@ public enum class VehicleComponentType {
     AMMO,
     AMMO_FIRE_WHEN_LOADED,
     FUEL,
+    GRAVITY,
     GUN_BARREL,
     GUN_TURRET,
     HEALTH,
@@ -92,6 +93,7 @@ public enum class VehicleComponentType {
                 AmmoComponent::class -> VehicleComponentType.AMMO
                 AmmoFireWhenLoadedComponent::class -> VehicleComponentType.AMMO_FIRE_WHEN_LOADED
                 FuelComponent::class -> VehicleComponentType.FUEL
+                GravityComponent::class -> VehicleComponentType.GRAVITY
                 GunBarrelComponent::class -> VehicleComponentType.GUN_BARREL
                 GunTurretComponent::class -> VehicleComponentType.GUN_TURRET
                 HealthComponent::class -> VehicleComponentType.HEALTH
@@ -113,6 +115,7 @@ public enum class VehicleComponentType {
 val AMMO_KEY = NamespacedKey("xv", "ammo")
 val AMMO_FIRE_WHEN_LOADED_KEY = NamespacedKey("xv", "ammo_fire_when_loaded")
 val FUEL_KEY = NamespacedKey("xv", "fuel")
+val GRAVITY_KEY = NamespacedKey("xv", "gravity")
 val GUN_BARREL_KEY = NamespacedKey("xv", "gun_barrel")
 val GUN_TURRET_KEY = NamespacedKey("xv", "gun_turret")
 val HEALTH_KEY = NamespacedKey("xv", "health")
@@ -134,6 +137,7 @@ public data class VehicleComponents(
     val ammo: AmmoComponent? = null,
     val ammoFireWhenLoaded: AmmoFireWhenLoadedComponent? = null,
     val fuel: FuelComponent? = null,
+    val gravity: GravityComponent? = null,
     val gunBarrel: GunBarrelComponent? = null,
     val gunTurret: GunTurretComponent? = null,
     val health: HealthComponent? = null,
@@ -155,6 +159,7 @@ public data class VehicleComponents(
             ammo = ammo?.copy(),
             ammoFireWhenLoaded = ammoFireWhenLoaded?.copy(),
             fuel = fuel?.copy(),
+            gravity = gravity?.copy(),
             gunBarrel = gunBarrel?.copy(),
             gunTurret = gunTurret?.copy(),
             health = health?.copy(),
@@ -182,6 +187,7 @@ public data class VehicleComponents(
             ammo = ammo?.injectSpawnProperties(location, player),
             ammoFireWhenLoaded = ammoFireWhenLoaded?.injectSpawnProperties(location, player),
             fuel = fuel?.injectSpawnProperties(location, player),
+            gravity = gravity?.injectSpawnProperties(location, player),
             gunBarrel = gunBarrel?.injectSpawnProperties(location, player),
             gunTurret = gunTurret?.injectSpawnProperties(location, player),
             health = health?.injectSpawnProperties(location, player),
@@ -208,6 +214,7 @@ public data class VehicleComponents(
             ammo = ammo?.injectItemProperties(itemData.get(AMMO_KEY, PersistentDataType.TAG_CONTAINER)),
             ammoFireWhenLoaded = ammoFireWhenLoaded?.injectItemProperties(itemData.get(AMMO_FIRE_WHEN_LOADED_KEY, PersistentDataType.TAG_CONTAINER)),
             fuel = fuel?.injectItemProperties(itemData.get(FUEL_KEY, PersistentDataType.TAG_CONTAINER)),
+            gravity = gravity?.injectItemProperties(itemData.get(GRAVITY_KEY, PersistentDataType.TAG_CONTAINER)),
             gunBarrel = gunBarrel?.injectItemProperties(itemData.get(GUN_BARREL_KEY, PersistentDataType.TAG_CONTAINER)),
             gunTurret = gunTurret?.injectItemProperties(itemData.get(GUN_TURRET_KEY, PersistentDataType.TAG_CONTAINER)),
             health = health?.injectItemProperties(itemData.get(HEALTH_KEY, PersistentDataType.TAG_CONTAINER)),
@@ -252,6 +259,11 @@ public data class VehicleComponents(
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
                     fuel!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(FUEL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
+                VehicleComponentType.GRAVITY -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    gravity!!.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(GRAVITY_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
                 VehicleComponentType.GUN_BARREL -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
@@ -330,6 +342,9 @@ public data class VehicleComponents(
                 VehicleComponentType.FUEL -> {
                     json.add("fuel", fuel!!.toJson())
                 }
+                VehicleComponentType.GRAVITY -> {
+                    json.add("gravity", gravity!!.toJson())
+                }
                 VehicleComponentType.GUN_BARREL -> {
                     json.add("gunBarrel", gunBarrel!!.toJson())
                 }
@@ -387,6 +402,7 @@ public data class VehicleComponents(
             ammo = ammo?.injectJsonProperties( json["ammo"]?.asJsonObject ),
             ammoFireWhenLoaded = ammoFireWhenLoaded?.injectJsonProperties( json["ammoFireWhenLoaded"]?.asJsonObject ),
             fuel = fuel?.injectJsonProperties( json["fuel"]?.asJsonObject ),
+            gravity = gravity?.injectJsonProperties( json["gravity"]?.asJsonObject ),
             gunBarrel = gunBarrel?.injectJsonProperties( json["gunBarrel"]?.asJsonObject ),
             gunTurret = gunTurret?.injectJsonProperties( json["gunTurret"]?.asJsonObject ),
             health = health?.injectJsonProperties( json["health"]?.asJsonObject ),
@@ -427,6 +443,12 @@ public data class VehicleComponents(
                     entityVehicleData=entityVehicleData,
                 )
                 VehicleComponentType.FUEL -> fuel?.afterVehicleCreated(
+                    xc=xc,
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
+                VehicleComponentType.GRAVITY -> gravity?.afterVehicleCreated(
                     xc=xc,
                     vehicle=vehicle,
                     element=element,
@@ -515,6 +537,7 @@ public data class VehicleComponents(
                 VehicleComponentType.AMMO -> ammo?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.AMMO_FIRE_WHEN_LOADED -> ammoFireWhenLoaded?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.FUEL -> fuel?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.GRAVITY -> gravity?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.GUN_BARREL -> gunBarrel?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.GUN_TURRET -> gunTurret?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.HEALTH -> health?.delete(xc, vehicle, element, entityVehicleData, despawn)
@@ -549,6 +572,7 @@ public data class VehicleComponents(
             var ammo: AmmoComponent? = null
             var ammoFireWhenLoaded: AmmoFireWhenLoadedComponent? = null
             var fuel: FuelComponent? = null
+            var gravity: GravityComponent? = null
             var gunBarrel: GunBarrelComponent? = null
             var gunTurret: GunTurretComponent? = null
             var health: HealthComponent? = null
@@ -578,6 +602,10 @@ public data class VehicleComponents(
                     "fuel" -> {
                         layout.add(VehicleComponentType.FUEL)
                         fuel = FuelComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
+                    "gravity" -> {
+                        layout.add(VehicleComponentType.GRAVITY)
+                        gravity = GravityComponent.fromToml(toml.getTable(k)!!, logger)
                     }
                     "gun_barrel" -> {
                         layout.add(VehicleComponentType.GUN_BARREL)
@@ -632,6 +660,7 @@ public data class VehicleComponents(
                 ammo,
                 ammoFireWhenLoaded,
                 fuel,
+                gravity,
                 gunBarrel,
                 gunTurret,
                 health,
@@ -674,6 +703,7 @@ public class ArchetypeStorage(
     internal val ammo: ArrayList<AmmoComponent>? = if ( layout.contains(VehicleComponentType.AMMO) ) ArrayList() else null
     internal val ammoFireWhenLoaded: ArrayList<AmmoFireWhenLoadedComponent>? = if ( layout.contains(VehicleComponentType.AMMO_FIRE_WHEN_LOADED) ) ArrayList() else null
     internal val fuel: ArrayList<FuelComponent>? = if ( layout.contains(VehicleComponentType.FUEL) ) ArrayList() else null
+    internal val gravity: ArrayList<GravityComponent>? = if ( layout.contains(VehicleComponentType.GRAVITY) ) ArrayList() else null
     internal val gunBarrel: ArrayList<GunBarrelComponent>? = if ( layout.contains(VehicleComponentType.GUN_BARREL) ) ArrayList() else null
     internal val gunTurret: ArrayList<GunTurretComponent>? = if ( layout.contains(VehicleComponentType.GUN_TURRET) ) ArrayList() else null
     internal val health: ArrayList<HealthComponent>? = if ( layout.contains(VehicleComponentType.HEALTH) ) ArrayList() else null
@@ -693,6 +723,8 @@ public class ArchetypeStorage(
         get() = this.ammoFireWhenLoaded
     public val fuelView: List<FuelComponent>?
         get() = this.fuel
+    public val gravityView: List<GravityComponent>?
+        get() = this.gravity
     public val gunBarrelView: List<GunBarrelComponent>?
         get() = this.gunBarrel
     public val gunTurretView: List<GunTurretComponent>?
@@ -729,6 +761,7 @@ public class ArchetypeStorage(
             AmmoComponent::class -> this.ammoView?.get(denseIndex) as T
             AmmoFireWhenLoadedComponent::class -> this.ammoFireWhenLoadedView?.get(denseIndex) as T
             FuelComponent::class -> this.fuelView?.get(denseIndex) as T
+            GravityComponent::class -> this.gravityView?.get(denseIndex) as T
             GunBarrelComponent::class -> this.gunBarrelView?.get(denseIndex) as T
             GunTurretComponent::class -> this.gunTurretView?.get(denseIndex) as T
             HealthComponent::class -> this.healthView?.get(denseIndex) as T
@@ -794,6 +827,10 @@ public class ArchetypeStorage(
                 
                 VehicleComponentType.FUEL -> {
                     this.fuel?.pushAtDenseIndex(denseIndex, components.fuel!!)
+                }
+                
+                VehicleComponentType.GRAVITY -> {
+                    this.gravity?.pushAtDenseIndex(denseIndex, components.gravity!!)
                 }
                 
                 VehicleComponentType.GUN_BARREL -> {
@@ -882,6 +919,7 @@ public class ArchetypeStorage(
                 VehicleComponentType.AMMO -> ammo?.swapRemove(denseIndex)
                 VehicleComponentType.AMMO_FIRE_WHEN_LOADED -> ammoFireWhenLoaded?.swapRemove(denseIndex)
                 VehicleComponentType.FUEL -> fuel?.swapRemove(denseIndex)
+                VehicleComponentType.GRAVITY -> gravity?.swapRemove(denseIndex)
                 VehicleComponentType.GUN_BARREL -> gunBarrel?.swapRemove(denseIndex)
                 VehicleComponentType.GUN_TURRET -> gunTurret?.swapRemove(denseIndex)
                 VehicleComponentType.HEALTH -> health?.swapRemove(denseIndex)
@@ -915,6 +953,7 @@ public class ArchetypeStorage(
         ammo?.clear()
         ammoFireWhenLoaded?.clear()
         fuel?.clear()
+        gravity?.clear()
         gunBarrel?.clear()
         gunTurret?.clear()
         health?.clear()
@@ -948,6 +987,7 @@ public class ArchetypeStorage(
                 AmmoComponent::class -> { archetype -> archetype.ammoView as List<T> }
                 AmmoFireWhenLoadedComponent::class -> { archetype -> archetype.ammoFireWhenLoadedView as List<T> }
                 FuelComponent::class -> { archetype -> archetype.fuelView as List<T> }
+                GravityComponent::class -> { archetype -> archetype.gravityView as List<T> }
                 GunBarrelComponent::class -> { archetype -> archetype.gunBarrelView as List<T> }
                 GunTurretComponent::class -> { archetype -> archetype.gunTurretView as List<T> }
                 HealthComponent::class -> { archetype -> archetype.healthView as List<T> }

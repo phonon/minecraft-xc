@@ -67,6 +67,3 @@ can_reload_outside = true
 
 # time to reload from outside in milliseconds
 time_reload_outside = 2000
-
-# if true, immediately fires if ammo available
-fire_when_loaded = false

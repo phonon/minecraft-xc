@@ -185,7 +185,7 @@ public class CustomArmorStand(
 
     override public fun setGravity(gravity: Boolean) {
         super.setGravity(gravity)
-        getHandle().noPhysics = false
+        getHandle().noPhysics = true
         // Potential problem line above due to invert in naming
         // Armor stands are special
         // OVERRIDEN GET FUKT
@@ -257,12 +257,13 @@ public class CustomArmorStand(
         entity.level = (location.getWorld() as CraftWorld).getHandle()
 
         // entity.setLocation() throws no event, and so cannot be cancelled
-        entity.setPos(location.getX(), location.getY(), location.getZ())
-        entity.setRot(location.getYaw(), location.getPitch())
-        
-        // SPIGOT-619: Force sync head rotation also
-        entity.setYRot(location.getYaw())
+        // entity.setPos(location.getX(), location.getY(), location.getZ())
+        // entity.setRot(location.getYaw(), location.getPitch())
+        entity.absMoveTo(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
 
+        // SPIGOT-619: Force sync head rotation also
+        entity.setYHeadRot(location.getYaw())
+        
         return true
     }
 

@@ -878,6 +878,9 @@ public class XV (
         systemFinishAmmoLoadVehicle(ammoLoadFinishQueue)
         systemFireWhenLoaded(storage, shootWeaponRequests)
 
+        // gravity (apply before player movement controls)
+        systemGravity(storage)
+        
         // player vehicle movement controls
         systemLandMovementFuel(storage)
         systemLandMovement(storage, userInputs)

@@ -11,6 +11,11 @@ despawn_time = 2.0
 # contains position, rotation, etc.
 [transform]
 
+# apply gravity
+[gravity]
+area = 1
+delay = 1
+
 # armor stand gun barrel
 [gun_barrel]
 barrel_offset = [0.0, -0.35, 0.0]

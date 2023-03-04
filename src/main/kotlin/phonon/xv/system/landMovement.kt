@@ -224,9 +224,9 @@ public fun XV.systemLandMovement(
                 val yRear0 = getContactPointBlockY(world, bly, xCurr, zCurr, transform.yawSin, transform.yawCos, 2, landMovement.contactPoints[6], landMovement.contactPoints[7], landMovement.contactPoints[8])
                 val yRear1 = getContactPointBlockY(world, bly, xCurr, zCurr, transform.yawSin, transform.yawCos, 2, landMovement.contactPoints[9], landMovement.contactPoints[10], landMovement.contactPoints[11])
 
-
-
-                visualizePoints(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, landMovement.contactPoints)
+                if ( xv.config.debugContactPoints ) {
+                    visualizePoints(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, landMovement.contactPoints)
+                }
 
                 if ( yCenter < bly && yFront0 < bly && yFront1 < bly && yRear0 < bly && yRear1 < bly ) {
                     yNew = blyBelow.toDouble() // does at most -1 block/tick

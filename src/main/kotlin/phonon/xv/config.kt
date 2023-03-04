@@ -66,6 +66,8 @@ public data class Config(
     val debug: Boolean = false,
     // debug vehicle damage taken (can use when balancing damage)
     val debugDamage: Boolean = false,
+    // debug vehicle contact points
+    val debugContactPoints: Boolean = false,
 
     // delete invalid armor stands on load
     // (default avoid, any error in load where vehicles not all loaded
@@ -148,6 +150,7 @@ public data class Config(
             toml.getTable("misc")?.let { misc -> 
                 misc.getBoolean("debug")?.let { configOptions["debug"] = it }
                 misc.getBoolean("debug_damage")?.let { configOptions["debugDamage"] = it }
+                misc.getBoolean("debug_contact_points")?.let { configOptions["debugContactPoints"] = it }
                 misc.getBoolean("delete_invalid_armor_stands")?.let { configOptions["deleteInvalidArmorStands"] = it }
                 misc.getLong("max_vehicles")?.let { configOptions["maxVehicles"] = it.toInt() }
                 misc.getLong("max_vehicle_elements")?.let { configOptions["maxVehicleElements"] = it.toInt() }

@@ -70,9 +70,11 @@ public fun XV.systemShipMovement(
         val yRear1 = getHighestContactPointBlock(world, bly, xCurr, zCurr, transform.yawSin, transform.yawCos, 2, shipMovement.groundContactPoints, 9).y
         // FOR TESTING
         // visualize front and ground contacts
-        visualizePoints(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints)
-        visualizePoints(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, shipMovement.frontContactPoints)
-
+        if ( xv.config.debugContactPoints ) {
+            visualizePoints(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, shipMovement.groundContactPoints)
+            visualizePoints(world, xCurr, yCurr, zCurr, transform.yawSin, transform.yawCos, shipMovement.frontContactPoints)
+        }
+        
         if ( yCenter < bly && yFront0 < bly && yFront1 < bly && yRear0 < bly && yRear1 < bly ) {
             yNew = blyBelow.toDouble() // does at most -1 block/tick
             positionChanged = true

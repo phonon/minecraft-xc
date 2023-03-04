@@ -10,6 +10,7 @@ components = {
     "AMMO": "AmmoComponent",
     "AMMO_FIRE_WHEN_LOADED": "AmmoFireWhenLoadedComponent",
     "FUEL": "FuelComponent",
+    "GRAVITY": "GravityComponent",
     "GUN_BARREL": "GunBarrelComponent",
     "GUN_TURRET": "GunTurretComponent",
     "HEALTH": "HealthComponent",
