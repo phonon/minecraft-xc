@@ -116,8 +116,8 @@ public fun XV.systemMountVehicle(
                 else -> -1
             }
 
-            // check valid seat and player isnt remounting something they're already on
-            if ( seatToMount >= 0 && seatsComponent.passengers[seatToMount] != player ) {
+            // check valid seat and slot is empty
+            if ( seatToMount >= 0 && seatsComponent.passengers[seatToMount] === null ) {
                 val world = player.world
                 val locSeat = seatsComponent.getSeatLocation(seatToMount, transformComponent)
                 
