@@ -35,11 +35,10 @@ public fun systemLandVehicleFuelInfoText(
         SeatsComponent,
         FuelComponent,
     >(storage) ) {
-        if ( landMovement.infoTick >= 2 ) {
-            landMovement.infoTick = 0
-
+        if ( landMovement.infoTick <= 0 ) {
+            landMovement.infoTick = 2
             val player = seats.passengers[landMovement.seatController]
-            if ( player !== null && !infoMessage.contains(player) ) { 
+            if ( player !== null && !infoMessage.contains(player) ) {
                 // NOTE: the infoMessage.contains check is not really synchronized
                 // since infoMessage is concurrent...oh well rip!
 
@@ -64,9 +63,11 @@ public fun systemLandVehicleFuelInfoText(
 
                 val text = "${fuelText}"
                 infoMessage.put(player, 0, text)
+            } else {
+                landMovement.infoTick = 20
             }
         } else {
-            landMovement.infoTick += 1
+            landMovement.infoTick -= 1
         }
     }
 }

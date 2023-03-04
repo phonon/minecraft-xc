@@ -108,7 +108,7 @@ public fun XV.systemCreateVehicle(
             ))
 
             // test stuff
-            player?.sendMessage("Created ${prototype.name} at ${location}")
+            // player?.sendMessage("Created ${prototype.name} at ${location}")
         }
         catch ( e: Exception ) {
             xv.logger.severe("Failed to create vehicle ${prototype.name} at ${location}")
