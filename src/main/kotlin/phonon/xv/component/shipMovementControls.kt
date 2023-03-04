@@ -127,6 +127,10 @@ public data class ShipMovementControlsComponent(
 
     override fun self() = this
 
+    override fun deepclone(): ShipMovementControlsComponent {
+        return this.copy()
+    }
+
     override fun toJson(): JsonObject {
         val json = JsonObject()
         json.add("speed", JsonPrimitive(speed))

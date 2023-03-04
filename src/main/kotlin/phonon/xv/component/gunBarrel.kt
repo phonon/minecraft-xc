@@ -93,11 +93,15 @@ public data class GunBarrelComponent(
     var armorstand: ArmorStand? = null,
     // rotation
     var yaw: Double = 0.0,
-    var pitch: Double = 0.0,
+    var pitch: Double = -(0.5 * pitchMin + 0.5 * pitchMax),
 ): VehicleComponent<GunBarrelComponent> {
     override val type = VehicleComponentType.GUN_BARREL
 
     override fun self() = this
+
+    override fun deepclone(): GunBarrelComponent {
+        return this.copy()
+    }
 
     // hitbox size
     val hitboxSize: HitboxSize = HitboxSize(
@@ -163,7 +167,7 @@ public data class GunBarrelComponent(
         armorstand.setVisible(armorstandVisible)
         armorstand.setRotation(locSpawn.yaw, 0f)
         armorstand.setHeadPose(EulerAngle(
-            0.0,
+            this.pitchRad,
             spawnYawRad,
             0.0,
         ))
@@ -171,7 +175,6 @@ public data class GunBarrelComponent(
         return this.copy(
             armorstand = armorstand,
             yaw = spawnYaw,
-            pitch = 0.0,
         )
     }
 
@@ -186,7 +189,7 @@ public data class GunBarrelComponent(
         if ( json === null ) return this.self()
         return this.copy(
             yaw = json["yaw"]?.asDouble ?: 0.0,
-            pitch = json["pitch"]?.asDouble ?: 0.0,
+            pitch = json["pitch"]?.asDouble ?: this.pitchMin,
         )
     }
 

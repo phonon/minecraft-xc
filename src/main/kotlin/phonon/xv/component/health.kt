@@ -73,6 +73,10 @@ public data class HealthComponent(
 
     override fun self() = this
 
+    override fun deepclone(): HealthComponent {
+        return this.copy()
+    }
+
     // runtime death message
     var deathEvent: VehicleKilledEvent? = null
 

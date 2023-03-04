@@ -25,6 +25,10 @@ public data class AmmoFireWhenLoadedComponent(
 
     override fun self() = this
 
+    override fun deepclone(): AmmoFireWhenLoadedComponent {
+        return this.copy()
+    }
+
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): AmmoFireWhenLoadedComponent {

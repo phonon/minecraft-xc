@@ -35,6 +35,14 @@ public interface VehicleComponent<T: VehicleComponent<T>> {
     fun self(): T 
 
     /**
+     * Create a deep clone of this component. Used when inserting
+     * vehicle into archetype. Component must manually implement deep clone
+     * so components with objects like `Array` or `IntArray` are properly
+     * cloned.
+     */
+    fun deepclone(): T
+
+    /**
      * During creation, inject spawn specific properties and generate
      * a new instance of this component. Such as spawn location, player
      * who spawned the vehicle, etc.

@@ -109,7 +109,7 @@ public data class VehicleComponents(
         return VehicleComponents(
             layout,
             {%- for c in components %}
-            {{ c.storage }} = {{ c.storage }}?.copy(),
+            {{ c.storage }} = {{ c.storage }}?.deepclone(),
             {%- endfor %}
         )
     }

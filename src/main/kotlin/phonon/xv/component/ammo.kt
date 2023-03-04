@@ -123,6 +123,16 @@ public data class AmmoComponent(
     }
 
     /**
+     * This needs to deepclone the `current` and `currentType` arrays.
+     */
+    override fun deepclone(): AmmoComponent {
+        return this.copy(
+            current = this.current.clone(),
+            currentType = this.currentType.clone(),
+        )
+    }
+
+    /**
      * During creation, inject item specific properties and generate
      * a new instance of this component.
      */

@@ -52,7 +52,11 @@ public data class FuelComponent(
     override val type = VehicleComponentType.FUEL
 
     override fun self() = this
-    
+
+    override fun deepclone(): FuelComponent {
+        return this.copy()
+    }
+
     // burn rates (inverse of fuel duration), relative to idle time
     val burnRateIdle: Double = 1.0
     val burnRateMoving: Double = burnRateIdle * timePerFuelWhenIdle / timePerFuelWhenMoving

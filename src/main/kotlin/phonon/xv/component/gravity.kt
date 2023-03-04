@@ -30,6 +30,10 @@ public data class GravityComponent(
 
     override fun self() = this
 
+    override fun deepclone(): GravityComponent {
+        return this.copy()
+    }
+
     // counter for delay
     var delayCounter = 0
 

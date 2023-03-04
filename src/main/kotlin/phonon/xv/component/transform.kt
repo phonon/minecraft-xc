@@ -43,6 +43,10 @@ public data class TransformComponent(
 
     override fun self() = this
 
+    override fun deepclone(): TransformComponent {
+        return this.copy()
+    }
+
     // dirty flag
     var positionDirty: Boolean = false
 

@@ -65,7 +65,11 @@ public data class SeatsComponent(
     // health component, the armorstand health should be updated.
     val healthDisplay: DoubleArray = DoubleArray(count) { -1.0 }
     val healthDisplayMax: DoubleArray = DoubleArray(count) { -1.0 }
-    
+
+    override fun deepclone(): SeatsComponent {
+        return this.copy()
+    }
+
     /**
      * Get seat location relative to input transform component.
      * Useful for initializing seat locations

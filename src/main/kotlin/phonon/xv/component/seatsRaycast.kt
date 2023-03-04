@@ -28,6 +28,10 @@ public data class SeatsRaycastComponent(
 
     override fun self() = this
 
+    override fun deepclone(): SeatsRaycastComponent {
+        return this.copy()
+    }
+    
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): SeatsRaycastComponent {

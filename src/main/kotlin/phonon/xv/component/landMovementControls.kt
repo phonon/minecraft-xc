@@ -79,6 +79,10 @@ public data class LandMovementControlsComponent(
 
     override fun self() = this
 
+    override fun deepclone(): LandMovementControlsComponent {
+        return this.copy()
+    }
+
     // system specific state that should reset when vehicle recreated
     var noFuel = false
     var infoTick: Int = 0 // tick counter for info messages

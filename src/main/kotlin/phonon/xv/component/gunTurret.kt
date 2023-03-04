@@ -134,6 +134,10 @@ public data class GunTurretComponent(
 
     override fun self() = this
 
+    override fun deepclone(): GunTurretComponent {
+        return this.copy()
+    }
+    
     // hitbox size
     val hitboxSize: HitboxSize = HitboxSize(
         xHalf = (this.hitboxX / 2.0).toFloat(),

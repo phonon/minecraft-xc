@@ -62,6 +62,10 @@ public data class ModelComponent(
 
     override fun self() = this
 
+    override fun deepclone(): ModelComponent {
+        return this.copy()
+    }
+    
     val hitboxSize: HitboxSize = HitboxSize(
         xHalf = (this.hitboxX / 2.0).toFloat(),
         zHalf = (this.hitboxZ / 2.0).toFloat(),

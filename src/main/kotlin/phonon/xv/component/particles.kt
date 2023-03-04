@@ -54,6 +54,10 @@ public data class ParticlesComponent(
     // system specific state that should reset when vehicle recreated
     var tickCounter: Int = 0
 
+    override fun deepclone(): ParticlesComponent {
+        return this.copy()
+    }
+    
     companion object {
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): ParticlesComponent {
