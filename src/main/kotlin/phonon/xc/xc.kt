@@ -593,8 +593,10 @@ public class XC(
 
             // model ids are valid, now map each id => object
             for ( modelId in gunModels ) {
-                guns[modelId]?.let { old -> logger.warning("Gun ${item.itemName} (${modelId}) overwrites gun ${old.itemName}") }
-                guns[modelId] = item
+                if ( modelId >= 0 ) { // ignore negative values
+                    guns[modelId]?.let { old -> logger.warning("Gun ${item.itemName} (${modelId}) overwrites gun ${old.itemName}") }
+                    guns[modelId] = item
+                }
             }
 
             // add default gun model id to validGunIds (this overwrites duplicates)
