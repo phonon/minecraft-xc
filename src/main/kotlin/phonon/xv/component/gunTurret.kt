@@ -114,6 +114,8 @@ public data class GunTurretComponent(
     val shootSpacebarWeapon: Int = -1,
     // offset along barrel direction to spawn projectile
     val projectileOffset: Double = 1.0,
+    // shooting height offset
+    val shootOffsetY: Double = 0.0,
     
     // @skipall
     // armor stand entities
@@ -466,6 +468,7 @@ public data class GunTurretComponent(
             toml.getLong("shoot_spacebar_weapon")?.let { properties["shootSpacebarWeapon"] = it.toInt() }
 
             toml.getNumberAs<Double>("projectile_offset")?.let { properties["projectileOffset"] = it }
+            toml.getNumberAs<Double>("shoot_offset_y")?.let { properties["shootOffsetY"] = it }
 
             return mapToObject(properties, GunTurretComponent::class)
         }

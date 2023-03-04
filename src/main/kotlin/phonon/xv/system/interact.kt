@@ -183,7 +183,25 @@ public fun XV.systemInteractInsideVehicle(
 
         try {
             if ( action == VehicleInteraction.LEFT_CLICK ) { // punching
+                // xv.logger.info("left click inside vehicle SHOOT, ${playerComponentType}")
                 // create shoot request TODO
+                if ( playerElement.layout.contains(VehicleComponentType.GUN_BARREL) ) {
+                    val shoot = ShootWeaponRequest(
+                        element = playerElement,
+                        component = VehicleComponentType.GUN_BARREL,
+                        group = 0,
+                        player = player,
+                    )
+                    xv.shootWeaponRequests.add(shoot)
+                } else if ( playerElement.layout.contains(VehicleComponentType.GUN_TURRET) ) {
+                    val shoot = ShootWeaponRequest(
+                        element = playerElement,
+                        component = VehicleComponentType.GUN_TURRET,
+                        group = 0,
+                        player = player,
+                    )
+                    xv.shootWeaponRequests.add(shoot)
+                }
             }
             else if ( action == VehicleInteraction.RIGHT_CLICK ) {
                 // try actions in order depending on layout:

@@ -4,8 +4,6 @@
  */
 package phonon.xv.system
 
-
-
 import java.util.Queue
 import java.util.UUID
 import java.util.concurrent.ThreadLocalRandom
@@ -88,7 +86,7 @@ public fun XV.systemShootWeapon(
 
             ammo.current[group] = ammoAmount - 1
 
-            xv.logger.info("Shooting weapon: ${ammoType}")
+            // xv.logger.info("Shooting weapon: ${ammoType}")
 
             // if no transform close
             val transform = element.components.transform
@@ -105,13 +103,13 @@ public fun XV.systemShootWeapon(
                 val gunTurret = element.components.gunTurret!!
                 source = gunTurret.armorstandTurret
                 if ( source === null ) {
-                    xv.logger.warning("TODO: Cannot shoot weapon without gun turret yet")
+                    xv.logger.warning("TODO: Cannot shoot weapon without gun turret yet: ${gunTurret.armorstandTurret}")
                     continue
                 }
                 shootPosition = Location(
                     source.world,
                     transform.x + gunTurret.turretYawCos * gunTurret.turretX - gunTurret.turretYawSin * gunTurret.turretZ,
-                    transform.y + gunTurret.turretY,
+                    transform.y + gunTurret.turretY + gunTurret.shootOffsetY,
                     transform.z + gunTurret.turretYawSin * gunTurret.turretX + gunTurret.turretYawCos * gunTurret.turretZ,
                     gunTurret.barrelYawf,
                     gunTurret.barrelPitchf,
@@ -147,7 +145,7 @@ public fun XV.systemShootWeapon(
                 continue
             }
 
-            xv.logger.info("Shooting weapon: ${ammoType} from ${shootPosition} in direction ${shootDirection} (source: ${source})")
+            // xv.logger.info("Shooting weapon: ${ammoType} from ${shootPosition} in direction ${shootDirection} (source: ${source})")
 
             if ( ammoType.weaponType == XC.ITEM_TYPE_GUN ) {
                 val gunType = xv.xc.storage.gun[ammoType.weaponId]

@@ -271,7 +271,7 @@ public fun XV.systemFireWhenLoaded(
                     component = VehicleComponentType.GUN_BARREL, // TODO: make configurable
                     group = idx,
                     player = playerWhoLoaded,
-                    ignoreAmmo = true,
+                    ignoreAmmo = false,
                 )
                 shootRequests.add(request)
             }
