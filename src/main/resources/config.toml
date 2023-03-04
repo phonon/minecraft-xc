@@ -48,6 +48,8 @@ json_pretty_printing = false # are vehicles saved in human-readable json, or all
 [misc]
 # default debug mode when plugin reloads (can still be toggled via command)
 debug = false
+# debug print vehicle damage taken (can use when balancing damage)
+debug_damage = false
 # Setting this true will delete invaid armor stands when 
 # entities loaded. Default AVOID THIS because any error in load
 # function can cause all player vehicles to be accidentally deleted

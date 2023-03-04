@@ -33,11 +33,11 @@ public class DamageListener(val xv: XV): Listener {
      */
     @EventHandler
     public fun onProjectileDamage(e: XCProjectileDamageEvent) {
-        xv.logger.info("Projectile hit vehicle: ${e}")
+        // xv.logger.info("Projectile hit vehicle: ${e}")
         val target = e.target
         val vehicleData = xv.entityVehicleData[target.uniqueId]
         if ( vehicleData !== null ) {
-            xv.logger.info("Projectile hit vehicle: ${target.type} ${target.uniqueId}")
+            // xv.logger.info("Projectile hit vehicle: ${target.type} ${target.uniqueId}")
             xv.damageQueue.add(VehicleDamageRequest(
                 vehicle = vehicleData.vehicle,
                 element = vehicleData.element,
@@ -56,11 +56,11 @@ public class DamageListener(val xv: XV): Listener {
      */
     @EventHandler
     public fun onThrowableDamage(e: XCThrowableDamageEvent) {
-        xv.logger.info("Throwable hit vehicle: ${e}")
+        // xv.logger.info("Throwable hit vehicle: ${e}")
         val target = e.target
         val vehicleData = xv.entityVehicleData[target.uniqueId]
         if ( vehicleData !== null ) {
-            xv.logger.info("Throwable hit vehicle: ${target.type} ${target.uniqueId}")
+            // xv.logger.info("Throwable hit vehicle: ${target.type} ${target.uniqueId}")
             xv.damageQueue.add(VehicleDamageRequest(
                 vehicle = vehicleData.vehicle,
                 element = vehicleData.element,
@@ -79,11 +79,11 @@ public class DamageListener(val xv: XV): Listener {
      */
     @EventHandler
     public fun onExplosionDamage(e: XCExplosionDamageEvent) {
-        xv.logger.info("Explosion hit vehicle: ${e}")
+        // xv.logger.info("Explosion hit vehicle: ${e}")
         val target = e.target
         val vehicleData = xv.entityVehicleData[target.uniqueId]
         if ( vehicleData !== null ) {
-            xv.logger.info("Explosion hit vehicle: ${target.type} ${target.uniqueId}")
+            // xv.logger.info("Explosion hit vehicle: ${target.type} ${target.uniqueId}")
             xv.damageQueue.add(VehicleDamageRequest(
                 vehicle = vehicleData.vehicle,
                 element = vehicleData.element,

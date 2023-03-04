@@ -59,11 +59,12 @@ death_particle = "EXPLOSION_HUGE"
 death_particle_count = 1
 
 [health.damage_multiplier]
-ANTI_TANK_RIFLE = 0.1
+ANTI_TANK_RIFLE = 0.15
+ARMOR_PIERCING = 1.0
 ARMOR_PIERCING_SHELL = 1.0
-EXPLOSIVE = 0.2
+EXPLOSIVE = 0.16
 EXPLOSIVE_SHELL = 0.5
-FIRE = 0.2
+FIRE = 1.3
 
 [fuel]
 max = 64

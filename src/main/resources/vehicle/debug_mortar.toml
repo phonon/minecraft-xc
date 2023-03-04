@@ -14,7 +14,7 @@ despawn_time = 2.0
 # armor stand gun barrel
 [gun_barrel]
 barrel_offset = [0.0, -0.35, 0.0]
-pitch_min = 40.0
+pitch_min = 30.0
 pitch_max = 70.0
 pitch_rotation_speed = 0.2
 control_yaw = "mouse"
@@ -39,6 +39,14 @@ death_particle_count = 8
 death_particle_random_x = 0.5
 death_particle_random_y = 0.75
 death_particle_random_z = 0.5
+
+[health.damage_multiplier]
+ANTI_TANK_RIFLE = 0.5
+ARMOR_PIERCING = 1.0
+ARMOR_PIERCING_SHELL = 1.0
+EXPLOSIVE = 0.75
+EXPLOSIVE_SHELL = 1.0
+FIRE = 1.0
 
 [ammo]
 can_reload_inside = true

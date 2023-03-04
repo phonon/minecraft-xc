@@ -58,7 +58,9 @@ public fun XV.systemDamage(
             val damageFinal = damage * healthComponent.damageMultiplier[damageType]
             healthComponent.current = max(0.0, healthComponent.current - damageFinal)
             
-            println("damage ${damageFinal}, health: ${healthComponent.current} / ${healthComponent.max}")
+            if ( xv.config.debugDamage ) {
+                xv.logger.info("${element.prototype.name} damage ${damageFinal}, health: ${healthComponent.current} / ${healthComponent.max}")
+            }
             
             // if vehicle destroyed by this, bind a death event to health component
             if ( healthComponent.current <= 0.0 && healthComponent.deathEvent === null ) {
