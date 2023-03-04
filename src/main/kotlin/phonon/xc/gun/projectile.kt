@@ -412,7 +412,7 @@ public class ProjectileSystem(
                 // and particles on block hit
                 if ( projectile.gun.projectileBlockHitParticles ) {
                     val hitBlockData = hitBlock.getBlockData().clone()
-                    xc.particleBulletImpactQueue.add(ParticleBulletImpact(
+                    xc.particleBulletBlockImpactQueue.add(ParticleBulletBlockImpact(
                         world = world,
                         count = xc.config.particleBulletImpactCount,
                         x = hitLoc.x,
@@ -428,6 +428,8 @@ public class ProjectileSystem(
             
             // handle entity hit
             if ( hitEntity != null ) {
+                val hitLoc = raytraceResult.location!!
+
                 hitEntitiesQueue.add(ProjectileHitEntity(
                     entity = hitEntity,
                     location = raytraceResult.location!!,
@@ -435,6 +437,23 @@ public class ProjectileSystem(
                     gun = projectile.gun,
                     distance = projectile.distance.toDouble() + raytraceResult.distance,
                 ))
+
+                // queue packets for hitbox impact particles
+                val particleImpact = projectile.gun.projectileImpactParticles
+                if ( particleImpact !== null ) {
+                    xc.particleBulletHitboxImpactQueue.add(ParticleBulletHitboxImpact(
+                        world = world,
+                        particle = particleImpact.particle,
+                        count = particleImpact.count,
+                        x = hitLoc.x,
+                        y = hitLoc.y,
+                        z = hitLoc.z,
+                        randomX = particleImpact.randomX,
+                        randomY = particleImpact.randomY,
+                        randomZ = particleImpact.randomZ,
+                        force = particleImpact.force,
+                    ))
+                }
             }
 
             // bullet trails particle effects

@@ -231,6 +231,9 @@ public data class Gun(
     // flag for projectile block hit particles and crack animation
     public val projectileBlockHitParticles: Boolean = true,
 
+    // projectile hitbox impact particles
+    public val projectileImpactParticles: ParticlePacket? = null,
+
     // explosion damage and radius and falloff (unused if no explosion)
     public val explosionDamage: Double = 8.0,
     public val explosionMaxDistance: Double = 8.0,        // max distance for checking entities
@@ -606,6 +609,31 @@ public data class Gun(
                     particles.getBoolean("block_hit_particles")?.let { properties["projectileBlockHitParticles"] = it }
                 }
 
+                // hitbox impact particles
+                toml.getTable("projectile.impact_particles")?.let { particles ->
+                    val particleType = particles.getString("type")?.let { ty ->
+                        try {
+                            Particle.valueOf(ty)
+                        } catch ( err: Exception ) {
+                            err.printStackTrace()
+                            Particle.EXPLOSION_NORMAL
+                        }
+                    } ?: Particle.EXPLOSION_NORMAL
+                    val count = particles.getLong("count")?.toInt() ?: 6
+                    val randomX = particles.getDouble("random_x") ?: 0.25
+                    val randomY = particles.getDouble("random_y") ?: 0.25
+                    val randomZ = particles.getDouble("random_z") ?: 0.25
+                    val force = particles.getBoolean("force") ?: true
+                    properties["projectileImpactParticles"] = ParticlePacket(
+                        particle = particleType,
+                        count = count,
+                        randomX = randomX,
+                        randomY = randomY,
+                        randomZ = randomZ,
+                        force = force,
+                    )
+                }
+
                 // explosion
                 toml.getTable("explosion")?.let { explosion ->
                     explosion.getDouble("damage")?.let { properties["explosionDamage"] = it }
@@ -640,12 +668,14 @@ public data class Gun(
                     val randomX = particles.getDouble("random_x") ?: 0.0
                     val randomY = particles.getDouble("random_y") ?: 0.0
                     val randomZ = particles.getDouble("random_z") ?: 0.0
+                    val force = particles.getBoolean("force") ?: true
                     properties["explosionParticles"] = ParticlePacket(
                         particle = particleType,
                         count = count,
                         randomX = randomX,
                         randomY = randomY,
-                        randomZ = randomZ
+                        randomZ = randomZ,
+                        force = force,
                     )
                 }
                 

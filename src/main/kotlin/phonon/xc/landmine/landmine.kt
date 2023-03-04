@@ -166,12 +166,14 @@ public data class Landmine(
                     val randomX = particles.getDouble("random_x") ?: 0.0
                     val randomY = particles.getDouble("random_y") ?: 0.0
                     val randomZ = particles.getDouble("random_z") ?: 0.0
+                    val force = particles.getBoolean("force") ?: true
                     properties["explosionParticles"] = ParticlePacket(
                         particle = particleType,
                         count = count,
                         randomX = randomX,
                         randomY = randomY,
-                        randomZ = randomZ
+                        randomZ = randomZ,
+                        force = force,
                     )
                 }
 

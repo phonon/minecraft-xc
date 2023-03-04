@@ -120,6 +120,14 @@ spacing = 1.5
 force_render = true
 block_hit_particles = true # particles on block hit
 
+[projectile.impact_particles]
+type = "EXPLOSION_NORMAL"
+count = 6
+random_x = 0.25
+random_y = 0.25
+random_z = 0.25
+force = true
+
 # Explosion damage properties. These are only used if the handler
 # for block or entity hit has an explosion effect.
 [explosion]

@@ -22,6 +22,7 @@ public data class ParticlePacket(
     val randomX: Double,
     val randomY: Double,
     val randomZ: Double,
+    val force: Boolean,
 ) {
     
     companion object {
@@ -35,6 +36,21 @@ public data class ParticlePacket(
                 randomX = 0.0,
                 randomY = 0.0,
                 randomZ = 0.0,
+                force = true,
+            )
+        }
+
+        /**
+         * Placeholder packet for strong bullet hitbox impact.
+         */
+        public fun placeholderImpact(): ParticlePacket {
+            return ParticlePacket(
+                particle = Particle.EXPLOSION_NORMAL,
+                count = 6,
+                randomX = 0.25,
+                randomY = 0.25,
+                randomZ = 0.25,
+                force = true,
             )
         }
     }
@@ -65,7 +81,7 @@ public data class ParticleBulletTrail(
  * Runnable task to spawn bullet trails.
  */
 public class TaskSpawnParticleBulletTrails(
-    val particles: ArrayList<ParticleBulletTrail>,
+    val particles: List<ParticleBulletTrail>,
 ): Runnable {
     override fun run() {
         for ( p in particles ) {
@@ -115,7 +131,7 @@ public class TaskSpawnParticleBulletTrails(
 /**
  * Particle that appears when block hit by projectile.
  */
-public data class ParticleBulletImpact(
+public data class ParticleBulletBlockImpact(
     val world: World,
     val count: Int,
     val x: Double,
@@ -128,8 +144,8 @@ public data class ParticleBulletImpact(
 /**
  * Runnable task to spawn bullet impact particles
  */
-public class TaskSpawnParticleBulletImpacts(
-    val particles: ArrayList<ParticleBulletImpact>,
+public class TaskSpawnParticleBulletBlockImpacts(
+    val particles: List<ParticleBulletBlockImpact>,
 ): Runnable {
     override fun run() {
         for ( p in particles ) {
@@ -166,6 +182,47 @@ public class TaskSpawnParticleBulletImpacts(
     }
 }
 
+/**
+ * Particle that appears when block hit by projectile.
+ */
+public data class ParticleBulletHitboxImpact(
+    val world: World,
+    val particle: Particle,
+    val count: Int,
+    val x: Double,
+    val y: Double,
+    val z: Double,
+    val randomX: Double,
+    val randomY: Double,
+    val randomZ: Double,
+    val force: Boolean,
+)
+
+/**
+ * Runnable task to spawn bullet impact particles
+ */
+public class TaskSpawnParticleBulletHitboxImpacts(
+    val particles: List<ParticleBulletHitboxImpact>,
+): Runnable {
+    override fun run() {
+        for ( p in particles ) {
+            p.world.spawnParticle(
+                p.particle,
+                p.x,
+                p.y,
+                p.z,
+                p.count,
+                p.randomX, // offset.x
+                p.randomY, // offset.y
+                p.randomZ, // offset.z
+                0.0, // extra
+                null,
+                p.force,
+            )
+        }
+    }
+}
+
 
 /**
  * Particle for explosions.
@@ -183,7 +240,7 @@ public data class ParticleExplosion(
  * Runnable task to spawn explosion particles
  */
 public class TaskSpawnParticleExplosion(
-    val particles: ArrayList<ParticleExplosion>,
+    val particles: List<ParticleExplosion>,
 ): Runnable {
     override fun run() {
         for ( p in particles ) {
@@ -210,7 +267,7 @@ public class TaskSpawnParticleExplosion(
  * Shitpost.
  */
 public class TaskSpawnParticleExplosionTrans(
-    val particles: ArrayList<ParticleExplosion>,
+    val particles: List<ParticleExplosion>,
 ): Runnable {
     override fun run() {
         for ( p in particles ) {

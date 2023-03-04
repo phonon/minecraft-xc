@@ -317,7 +317,8 @@ public class XC(
     // ========================================================================
     // particle packet spawn queues
     internal var particleBulletTrailQueue: ArrayList<ParticleBulletTrail> = ArrayList()
-    internal var particleBulletImpactQueue: ArrayList<ParticleBulletImpact> = ArrayList()
+    internal var particleBulletBlockImpactQueue: ArrayList<ParticleBulletBlockImpact> = ArrayList()
+    internal var particleBulletHitboxImpactQueue: ArrayList<ParticleBulletHitboxImpact> = ArrayList()
     internal var particleExplosionQueue: ArrayList<ParticleExplosion> = ArrayList()
 
     // block cracking packet animation queue
@@ -474,7 +475,8 @@ public class XC(
         wearHatRequests = ArrayList()
 
         particleBulletTrailQueue = ArrayList()
-        particleBulletImpactQueue = ArrayList()
+        particleBulletBlockImpactQueue = ArrayList()
+        particleBulletHitboxImpactQueue = ArrayList()
         particleExplosionQueue = ArrayList()
         blockCrackAnimationQueue = ArrayList()
         gunAmmoInfoMessageQueue = ArrayList()
@@ -1443,7 +1445,8 @@ public class XC(
         val tStartPackets = debugNanoTime() // timing probe
 
         val particleBulletTrails = particleBulletTrailQueue
-        val particleBulletImpacts = particleBulletImpactQueue
+        val particleBulletBlockImpacts = particleBulletBlockImpactQueue
+        val particleBulletHitboxImpacts = particleBulletHitboxImpactQueue
         val particleExplosions = particleExplosionQueue
         val gunAmmoInfoMessages = gunAmmoInfoMessageQueue
         val soundPackets = soundQueue
@@ -1451,7 +1454,8 @@ public class XC(
         val blockCrackAnimations = blockCrackAnimationQueue
 
         particleBulletTrailQueue = ArrayList()
-        particleBulletImpactQueue = ArrayList()
+        particleBulletBlockImpactQueue = ArrayList()
+        particleBulletHitboxImpactQueue = ArrayList()
         particleExplosionQueue = ArrayList()
         gunAmmoInfoMessageQueue = ArrayList()
         soundQueue = ArrayList()
@@ -1473,7 +1477,11 @@ public class XC(
             )
             Bukkit.getScheduler().runTaskAsynchronously(
                 plugin,
-                TaskSpawnParticleBulletImpacts(particleBulletImpacts),
+                TaskSpawnParticleBulletBlockImpacts(particleBulletBlockImpacts),
+            )
+            Bukkit.getScheduler().runTaskAsynchronously(
+                plugin,
+                TaskSpawnParticleBulletHitboxImpacts(particleBulletHitboxImpacts),
             )
             Bukkit.getScheduler().runTaskAsynchronously(
                 plugin,
@@ -1493,7 +1501,8 @@ public class XC(
             TaskBroadcastBlockCrackAnimations(blockCrackAnimations).run()
             TaskRecoil(recoilPackets).run()
             TaskSpawnParticleBulletTrails(particleBulletTrails).run()
-            TaskSpawnParticleBulletImpacts(particleBulletImpacts).run()
+            TaskSpawnParticleBulletBlockImpacts(particleBulletBlockImpacts).run()
+            TaskSpawnParticleBulletHitboxImpacts(particleBulletHitboxImpacts).run()
             TaskSpawnParticleExplosion(particleExplosions).run()
             TaskAmmoInfoMessages(gunAmmoInfoMessages).run()
             TaskSounds(soundPackets).run()
