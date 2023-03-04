@@ -68,6 +68,8 @@ public data class Config(
     val debugDamage: Boolean = false,
     // debug vehicle contact points
     val debugContactPoints: Boolean = false,
+    // debug vehicle seats by turning armor stands visible
+    val debugSeats: Boolean = false,
 
     // delete invalid armor stands on load
     // (default avoid, any error in load where vehicles not all loaded
@@ -154,6 +156,7 @@ public data class Config(
                 misc.getBoolean("debug")?.let { configOptions["debug"] = it }
                 misc.getBoolean("debug_damage")?.let { configOptions["debugDamage"] = it }
                 misc.getBoolean("debug_contact_points")?.let { configOptions["debugContactPoints"] = it }
+                misc.getBoolean("debug_seats")?.let { configOptions["debugSeats"] = it }
                 misc.getBoolean("delete_invalid_armor_stands")?.let { configOptions["deleteInvalidArmorStands"] = it }
                 misc.getLong("max_vehicles")?.let { configOptions["maxVehicles"] = it.toInt() }
                 misc.getLong("max_vehicle_elements")?.let { configOptions["maxVehicleElements"] = it.toInt() }

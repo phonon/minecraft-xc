@@ -133,7 +133,7 @@ public fun XV.systemMountVehicle(
                 seatEntity.setInvulnerable(true)
                 seatEntity.setSmall(true)
                 seatEntity.setMarker(true)
-                seatEntity.setVisible(true)
+                seatEntity.setVisible(xv.config.debugSeats)
 
                 player.teleport(locSeat) // without teleporting first, client side interpolation sends player to wrong location
                 seatEntity.addPassenger(player)
@@ -601,7 +601,7 @@ public fun XV.systemMountSeatRaycast(
                     seatEntity.setInvulnerable(true)
                     seatEntity.setSmall(true)
                     seatEntity.setMarker(true)
-                    seatEntity.setVisible(true)
+                    seatEntity.setVisible(xv.config.debugSeats)
 
                     // entity -> vehicle mapping
                     seatEntity.setVehicleUuid(hitVehicle.uuid, hitElement.uuid)
