@@ -7,9 +7,13 @@
 name = "debug_tank"
 
 item_name = "Debug Tank"
+item_custom_model_data = 104000
 item_lore = [
     "Tanks when",
 ]
+
+spawn_time = 4.0
+despawn_time = 4.0
 
 # contains position, rotation, etc.
 [transform]

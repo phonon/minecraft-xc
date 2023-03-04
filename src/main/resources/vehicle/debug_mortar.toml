@@ -5,6 +5,11 @@
 # single anonymous element.
 
 name = "debug_mortar"
+
+item_name = "Debug Mortar"
+item_custom_model_data = 101000
+item_lore = []
+
 spawn_time = 2.0
 despawn_time = 2.0
 

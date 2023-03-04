@@ -60,6 +60,8 @@ public data class VehiclePrototype(
     val itemName: String,
     // item base lore description
     val itemLore: List<String>,
+    // item custom model data (TEMPORARY)
+    val itemCustomModelData: Int,
     // tree depth-sorted elements
     val elements: List<VehicleElementPrototype>,
     // index of parent element in elements list
@@ -118,8 +120,12 @@ public data class VehiclePrototype(
         // attach prototype name
         itemData.set(ITEM_KEY_PROTOTYPE, PersistentDataType.STRING, this.name)
 
-        // item name
+        // item name and custom model data
         itemMeta.setDisplayName(this.itemName)
+
+        if ( this.itemCustomModelData > 0 ) {
+            itemMeta.setCustomModelData(this.itemCustomModelData)
+        }
 
         // item lore (initialized with base prototype lore)
         val itemLore = ArrayList<String>(this.itemLore)
@@ -133,7 +139,9 @@ public data class VehiclePrototype(
         }
         itemData.set(ITEM_KEY_ELEMENTS, PersistentDataType.TAG_CONTAINER, elementsData)
 
-        itemMeta.setLore(itemLore)
+        if ( itemLore.size > 0 ) {
+            itemMeta.setLore(itemLore)
+        }
         item.setItemMeta(itemMeta)
         return item
     }
@@ -151,6 +159,7 @@ public data class VehiclePrototype(
             name: String,
             itemName: String,
             itemLore: List<String>,
+            itemCustomModelData: Int,
             unsortedElements: List<VehicleElementPrototype>,
             spawnTimeSeconds: Double,
             despawnTimeSeconds: Double,
@@ -284,6 +293,7 @@ public data class VehiclePrototype(
                 name,
                 itemName,
                 itemLore,
+                itemCustomModelData,
                 depthSortedElements,
                 depthSortedParents,
                 depthSortedDepths,
@@ -308,6 +318,7 @@ public data class VehiclePrototype(
                 // item properties
                 val itemName = toml.getString("item_name") ?: name
                 val itemLore = toml.getArrayOrEmpty("item_lore").toList().map { it.toString() }
+                val itemCustomModelData = toml.getNumberAs<Int>("item_custom_model_data") ?: 0
                 val spawnTimeSeconds = toml.getNumberAs<Double>("spawn_time") ?: 4.0
                 val despawnTimeSeconds = toml.getNumberAs<Double>("despawn_time") ?: 4.0
 
@@ -326,6 +337,7 @@ public data class VehiclePrototype(
                     name,
                     itemName,
                     itemLore,
+                    itemCustomModelData,
                     unsortedElements,
                     spawnTimeSeconds,
                     despawnTimeSeconds,
