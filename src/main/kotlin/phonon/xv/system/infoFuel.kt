@@ -43,24 +43,24 @@ public fun systemLandVehicleFuelInfoText(
                 // NOTE: the infoMessage.contains check is not really synchronized
                 // since infoMessage is concurrent...oh well rip!
 
-                // val fuelPercent = fuel.current.toDouble() / fuel.max.toDouble()
-                // val fuelText = if ( fuel.current == 0 ) {
-                //     val fuelBar = progressBar10Red(0.0)
-                //     "${fuelBar} ${fuel.current}/${fuel.max}"
-                // } else {
-                //     val fuelBar = progressBar10Green(fuelPercent)
-                //     "${fuelBar} ${fuel.current}/${fuel.max}"
-                // }
-                
-                //// printing fuel tick percent, for debugging
-                val fuelTickPercent = fuel.timeRemaining.toDouble() / fuel.timePerFuelWhenIdle.toDouble()
+                val fuelPercent = fuel.current.toDouble() / fuel.max.toDouble()
                 val fuelText = if ( fuel.current == 0 ) {
                     val fuelBar = progressBar10Red(0.0)
-                    "${fuelBar} ${fuel.current}/${fuel.max}"
+                    "${ChatColor.RED}Fuel: ${fuelBar} ${fuel.current}/${fuel.max}"
                 } else {
-                    val fuelBar = progressBar10Green(fuelTickPercent)
-                    "${fuelBar} ${fuel.current}/${fuel.max}"
+                    val fuelBar = progressBar10Green(fuelPercent)
+                    "${ChatColor.GREEN}Fuel: ${fuelBar} ${fuel.current}/${fuel.max}"
                 }
+                
+                // //// printing fuel tick percent, for debugging
+                // val fuelTickPercent = fuel.timeRemaining.toDouble() / fuel.timePerFuelWhenIdle.toDouble()
+                // val fuelText = if ( fuel.current == 0 ) {
+                //     val fuelBar = progressBar10Red(0.0)
+                //     "Fuel Tick: ${fuelBar} ${fuel.current}/${fuel.max}"
+                // } else {
+                //     val fuelBar = progressBar10Green(fuelTickPercent)
+                //     "Fuel Tick: ${fuelBar} ${fuel.current}/${fuel.max}"
+                // }
 
                 val text = "${fuelText}"
                 infoMessage.put(player, 0, text)
