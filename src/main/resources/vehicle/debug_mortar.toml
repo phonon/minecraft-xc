@@ -42,7 +42,7 @@ offsets = [0.0, 0.0, -0.75]
 armor = [4.0]
 
 [health]
-max_health = 20.0
+max = 20.0
 death_sound = "minecraft:entity.generic.explode"
 death_particle = "EXPLOSION_NORMAL"
 death_particle_count = 8

@@ -58,7 +58,7 @@ speed_max_forward = 0.3
 speed_max_reverse = 0.2
 
 [health]
-max_health = 40.0
+max = 20.0
 death_sound = "minecraft:entity.generic.explode"
 death_particle = "EXPLOSION_HUGE"
 death_particle_count = 1
