@@ -111,7 +111,7 @@ public data class VehiclePrototype(
      */
     public fun toItemStack(
         material: Material,
-        elements: List<VehicleElement>? = null,
+        instanceElements: List<VehicleElement>? = null,
     ): ItemStack {
         val item = ItemStack(material, 1)
         val itemMeta = item.getItemMeta()
@@ -132,11 +132,21 @@ public data class VehiclePrototype(
         
         // attach element data
         val elementsData = itemData.adapterContext.newPersistentDataContainer()
-        for ( elem in this.elements ) {
-            val elemData = elementsData.adapterContext.newPersistentDataContainer()
-            elem.components.toItemData(itemMeta, itemLore, elemData)
-            elementsData.set(elem.itemKey(), PersistentDataType.TAG_CONTAINER, elemData)
+
+        if ( instanceElements !== null ) {
+            for ( elem in instanceElements ) {
+                val elemData = elementsData.adapterContext.newPersistentDataContainer()
+                elem.components.toItemData(itemMeta, itemLore, elemData)
+                elementsData.set(elem.prototype.itemKey(), PersistentDataType.TAG_CONTAINER, elemData)
+            }
+        } else {
+            for ( elem in this.elements ) {
+                val elemData = elementsData.adapterContext.newPersistentDataContainer()
+                elem.components.toItemData(itemMeta, itemLore, elemData)
+                elementsData.set(elem.itemKey(), PersistentDataType.TAG_CONTAINER, elemData)
+            }
         }
+
         itemData.set(ITEM_KEY_ELEMENTS, PersistentDataType.TAG_CONTAINER, elementsData)
 
         if ( itemLore.size > 0 ) {
