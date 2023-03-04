@@ -78,6 +78,9 @@ public class XV (
 
     //// VEHICLE SKINS/DECALS STORAGE
     internal var skins: SkinStorage = SkinStorage.empty()
+        private set
+    internal var decals: SimpleVehicleSkinStorage = SimpleVehicleSkinStorage.empty()
+        private set
 
     //// ENGINE STATE
     // if vehicles state has been loaded at least once
@@ -157,6 +160,10 @@ public class XV (
         userInputs = HashMap()
         entityVehicleData = HashMap()
         infoMessage = ConcurrentPlayerInfoMessageMap()
+
+        // clear skins storage
+        skins = SkinStorage.empty()
+        decals = SimpleVehicleSkinStorage.empty()
 
         // save system (includes save pipeline state)
         savingVehicles = false
@@ -268,7 +275,8 @@ public class XV (
         val skinConfigFiles = listDirFiles(config.pathFilesSkins)
             .filter { f -> f.toString().lowercase().endsWith(".toml") }
             .map { f -> config.pathFilesSkins.resolve(f) }
-        this.skins = SkinStorage.fromTomlFiles(skinConfigFiles, this.logger)
+        // this.skins = SkinStorage.fromTomlFiles(skinConfigFiles, this.logger)
+        this.decals = SimpleVehicleSkinStorage.fromTomlFiles(skinConfigFiles, this.logger)
 
         // load vehicle config files
 
@@ -340,7 +348,7 @@ public class XV (
         val timeLoad = timeEnd - timeStart
         this.logger.info("Reloaded in ${timeLoad}ms")
         this.logger.info("- Prototypes: ${vehiclePrototypes.size}")
-        this.logger.info("- Skins: ${this.skins.size}")
+        this.logger.info("- Skins: ${this.decals.size}")
     }
 
     /**

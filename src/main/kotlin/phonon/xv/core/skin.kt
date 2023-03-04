@@ -165,3 +165,79 @@ public class SkinStorage(
         }
     }
 }
+
+/**
+ * TEMPORARY simplified decal variant storage.
+ */
+public class VehicleDecals(
+    val name: String,
+    val variants: Map<String, Int>,
+) {
+    // pre-computed lists of full variant, base, and decal names
+    val variantNames: List<String> = variants.keys.toList()
+
+    companion object {
+        public fun fromToml(toml: TomlTable, logger: Logger? = null): VehicleDecals? {
+            val name = toml.getString("name")
+            if ( name == null ) {
+                logger?.warning("Invalid decals entry, must have name")
+                return null
+            }
+
+            // Must use `keyPathset` because key entries are dotted `skin1.decal1`.
+            // Just using entrySet will mark these dotted keys as sub tables, 
+            // instead of integer mappings.
+            val variants = HashMap<String, Int>()
+            val variantsTable = toml.getTable("variants")
+            if ( variantsTable !== null ) {
+                val keys = variantsTable.keySet()
+                for ( k in keys ) {
+                    variantsTable.getLong(k)?.let { variants[k] = it.toInt() }
+                }
+            }
+
+            return VehicleDecals(name, variants)
+        }
+    }
+}
+
+public class SimpleVehicleSkinStorage(
+    val skins: Map<String, VehicleDecals>,
+) {
+    // pre-computed list of all skin names
+    val skinNames = skins.keys.toList()
+
+    // collection size = map size
+    val size: Int get() = this.skins.size
+
+    // route map key accessor to skins map
+    operator fun get(s: String): VehicleDecals? = this.skins[s]
+
+    companion object {
+        /**
+         * Create empty skin storage.
+         */
+        public fun empty(): SimpleVehicleSkinStorage = SimpleVehicleSkinStorage(HashMap())
+
+        /**
+         * Load skins from a list of toml files.
+         * Does not validate if the files are actual `.toml` files, the 
+         * caller should do that before running this.
+         */
+        public fun fromTomlFiles(files: List<Path>, logger: Logger? = null): SimpleVehicleSkinStorage {
+            val skins = HashMap<String, VehicleDecals>()
+
+            for ( f in files ) {
+                val toml = Toml.parse(f)
+                val decals = VehicleDecals.fromToml(toml, logger)
+                if ( decals !== null ) {
+                    skins[decals.name] = decals
+                } else {
+                    logger?.warning("Invalid decals entry in $f")
+                }
+            }
+
+            return SimpleVehicleSkinStorage(skins)
+        }
+    }
+}

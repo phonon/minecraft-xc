@@ -22,6 +22,7 @@ despawn_time = 4.0
 [model]
 model_id = 104001
 seat_to_mount = 0 # seat mounted when clicked
+decals = "panzer_ii_tomate_body"
 
 # rotating gun turret, controlled by mouse
 [gun_turret]

@@ -15,7 +15,9 @@ import org.bukkit.entity.Player
 import phonon.xv.XV
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.EntityVehicleData
+import phonon.xv.core.SimpleVehicleSkinStorage
 import phonon.xv.util.Message
+import phonon.xv.util.item.createCustomModelItem
 
 
 /**
@@ -89,7 +91,7 @@ public class VehicleDecalCommand(val xv: XV) : CommandExecutor, TabCompleter {
     fun onTabCompleteConsole(args: Array<String>): List<String> {        
         // print available skins
         if ( args.size < 2 ) {
-            return xv.skins.skinNames
+            return listOf()
         }
 
         return listOf()
@@ -110,8 +112,28 @@ public class VehicleDecalCommand(val xv: XV) : CommandExecutor, TabCompleter {
         // parse subcommand (keep in alphabetical order)
         val arg = args[0].lowercase()
         
-        // TODO: check if player is inside vehicle, then send
-        // request to change skin
+        // check if player is inside vehicle
+        val playerVehicle = player.getVehicle()
+        if ( playerVehicle !== null ) {
+            val playerVehicleData = xv.entityVehicleData[playerVehicle.uniqueId]
+            if ( playerVehicleData !== null ) {
+                val element = playerVehicleData.element
+                val model = element.components.model
+                if ( model !== null ) {
+                    val decalsName = model.decals
+                    if ( decalsName !== null ) {
+                        val skinsStorage = xv.decals
+                        val variant = skinsStorage.skins.get(decalsName)?.variants?.get(arg)
+                        if ( variant !== null ) {
+                            val armorstand = model.armorstand
+                            if ( armorstand !== null ) {
+                                armorstand.getEquipment().setHelmet(createCustomModelItem(model.material, variant))
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         return true
     }
@@ -124,6 +146,33 @@ public class VehicleDecalCommand(val xv: XV) : CommandExecutor, TabCompleter {
         
         // get vehicle + components, check for valid components with skins
         // then get first component with skin, and use it to get available skins
+
+        // parse subcommand (keep in alphabetical order)
+        if ( args.size < 1 ) {
+            return listOf()
+        }
+
+        val arg = args[0].lowercase()
+        
+        // check if player is inside vehicle
+        val playerVehicle = player.getVehicle()
+        if ( playerVehicle !== null ) {
+            val playerVehicleData = xv.entityVehicleData[playerVehicle.uniqueId]
+            if ( playerVehicleData !== null ) {
+                val element = playerVehicleData.element
+                val model = element.components.model
+                if ( model !== null ) {
+                    val decalsName = model.decals
+                    if ( decalsName !== null ) {
+                        val skinsStorage = xv.decals
+                        val decals = skinsStorage.skins.get(decalsName)
+                        if ( decals !== null ) {
+                            return decals.variantNames
+                        }
+                    }
+                }
+            }
+        }
 
         return listOf()
     }

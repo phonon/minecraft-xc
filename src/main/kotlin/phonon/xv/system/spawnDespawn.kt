@@ -355,7 +355,9 @@ public fun XV.systemFinishDespawnVehicle(
                         if ( element.layout.contains(VehicleComponentType.AMMO) ) {
                             val ammo = element.components.ammo!!
                             if ( ammo.dropItem ) {
-                                println("TODO: drop ammo item")
+                                if ( xv.debug ) {
+                                    xv.logger.warning("TODO: drop ammo item")
+                                }
                             }
                         }
                     }

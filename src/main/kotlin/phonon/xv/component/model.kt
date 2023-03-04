@@ -51,6 +51,8 @@ public data class ModelComponent(
     // name of skins variant set to use instead of single model id (optional)
     val skin: String? = null,
     val skinDefaultVariant: String? = null,
+    // decals group
+    val decals: String? = null,
     // whether to show the armor stand (for debugging)
     val armorstandVisible: Boolean = false, // @skip
 
@@ -204,6 +206,8 @@ public data class ModelComponent(
 
             toml.getString("skin")?.let { properties["skin"] = it }
             toml.getString("skin_default_variant")?.let { properties["skinDefaultVariant"] = it }
+
+            toml.getString("decals")?.let { properties["decals"] = it }
             
             toml.getBoolean("armorstand_visible")?.let { properties["armorstandVisible"] = it }
 
