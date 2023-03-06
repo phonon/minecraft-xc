@@ -19,6 +19,7 @@ import org.bukkit.event.Listener
 import org.bukkit.event.Event
 import org.bukkit.event.block.Action
 import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerInteractAtEntityEvent
@@ -83,18 +84,25 @@ public class EventListener(val xv: XV): Listener {
     /**
      * Handle player left click (punching) interacting with vehicle entities.
      * Just routes interaction into the interact system.
+     * 
+     * Do NOT set armor stands to invulnerable, it will cause this event
+     * to never be triggered:
+     *    armorstand.setInvulnerable(true) // DONT DO THIS
      */
     @EventHandler(priority = EventPriority.NORMAL)
     public fun onPlayerEntityDamage(event: EntityDamageByEntityEvent) {
-        val player = event.damager
-        if ( player !is Player ) {
-            return
-        }
-
         val entity = event.entity
         val uuid = entity.getUniqueId()
         val targetVehicleData = xv.entityVehicleData[uuid]
         if ( targetVehicleData !== null ) {
+            // cancel event
+            event.setCancelled(true)
+
+            val player = event.damager
+            if ( player !is Player ) {
+                return
+            }
+
             // if player inside the same vehicle, create an inside vehicle interaction
             val playerVehicle = player.getVehicle()
             if ( playerVehicle !== null ) {
@@ -124,6 +132,18 @@ public class EventListener(val xv: XV): Listener {
                 entity = entity,
                 action = VehicleInteraction.LEFT_CLICK,
             ))
+        }
+    }
+
+    /**
+     * For plugin armorstands, disable damage event instead.
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public fun onEntityDamage(event: EntityDamageEvent) {
+        val entity = event.entity
+        val uuid = entity.getUniqueId()
+        if ( xv.entityVehicleData.contains(uuid) ) {
+            event.setCancelled(true)
         }
     }
 

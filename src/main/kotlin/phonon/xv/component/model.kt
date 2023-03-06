@@ -89,7 +89,7 @@ public data class ModelComponent(
         val armorstand: ArmorStand = locSpawn.world.spawn(locSpawn, ArmorStand::class.java)
         armorstand.persistentDataContainer.set(ENTITY_KEY_COMPONENT, PersistentDataType.STRING, VehicleComponentType.MODEL.toString())
         armorstand.setGravity(false)
-        armorstand.setInvulnerable(true)
+        // armorstand.setInvulnerable(true) // DONT DO THIS, EntityDamageByEntityEvent never triggers
         armorstand.setVisible(armorstandVisible)
         armorstand.setRotation(locSpawn.yaw, 0f)
 
@@ -161,6 +161,7 @@ public data class ModelComponent(
     ) {
         if ( entity is ArmorStand ) {
             this.armorstand = entity
+            entity.setInvulnerable(false) // make sure armorstand vulnerable so interact triggers
             // entity -> vehicle mapping
             entityVehicleData[entity.uniqueId] = EntityVehicleData(
                 vehicle,

@@ -234,7 +234,7 @@ public data class GunTurretComponent(
         val armorstandTurret: ArmorStand = locSpawnTurret.world.spawn(locSpawnTurret, ArmorStand::class.java)
         armorstandTurret.persistentDataContainer.set(ENTITY_KEY_COMPONENT, PersistentDataType.STRING, VehicleComponentType.GUN_TURRET.toString())
         armorstandTurret.setGravity(false)
-        armorstandTurret.setInvulnerable(true)
+        // armorstand.setInvulnerable(true) // DONT DO THIS, EntityDamageByEntityEvent never triggers
         armorstandTurret.setVisible(armorstandVisible)
         armorstandTurret.setRotation(0f, 0f)
         armorstandTurret.setHeadPose(EulerAngle(
@@ -250,7 +250,7 @@ public data class GunTurretComponent(
         val armorstandBarrel: ArmorStand = locSpawnBarrel.world.spawn(locSpawnBarrel, ArmorStand::class.java)
         armorstandBarrel.persistentDataContainer.set(ENTITY_KEY_COMPONENT, PersistentDataType.STRING, VehicleComponentType.GUN_TURRET.toString())
         armorstandBarrel.setGravity(false)
-        armorstandBarrel.setInvulnerable(true)
+        // armorstand.setInvulnerable(true) // DONT DO THIS, EntityDamageByEntityEvent never triggers
         armorstandBarrel.setVisible(armorstandVisible)
         armorstandBarrel.setRotation(0f, 0f)
         armorstandBarrel.setHeadPose(EulerAngle(
@@ -384,6 +384,7 @@ public data class GunTurretComponent(
             val uuid = entity.getUniqueId()
             if ( uuid == this.uuidBarrel ) {
                 this.armorstandBarrel = entity
+                entity.setInvulnerable(false) // make sure armorstand vulnerable so interact triggers
                 // entity -> vehicle mapping
                 entityVehicleData[entity.uniqueId] = EntityVehicleData(
                     vehicle,
@@ -392,6 +393,7 @@ public data class GunTurretComponent(
                 )
             } else if ( uuid == this.uuidTurret ) {
                 this.armorstandTurret = entity
+                entity.setInvulnerable(false) // make sure armorstand vulnerable so interact triggers
                 // entity -> vehicle mapping
                 entityVehicleData[entity.uniqueId] = EntityVehicleData(
                     vehicle,
