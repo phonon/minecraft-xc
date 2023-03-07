@@ -213,6 +213,11 @@ public data class Gun(
     // proximity projectiles, like flak gun rounds, explode when < distance from target
     public val projectileProximity: Float = 0.0f, // distance in blocks
 
+    // make projectiles pass through doors + trapdoors
+    // TODO: in future this could be enum with different "standard" projectile
+    // passthrough handlers for other materials as well
+    public val projectilePassthroughDoors: Boolean = false,
+
     // main projectile damage
     public val projectileDamage: Double = 4.0,
     public val projectileArmorReduction: Double = 0.5,
@@ -578,6 +583,7 @@ public data class Gun(
                     projectile.getLong("lifetime")?.let { properties["projectileLifetime"] = it.toInt() }
                     projectile.getDouble("max_distance")?.let { properties["projectileMaxDistance"] = it.toFloat() }
                     projectile.getDouble("proximity")?.let { properties["projectileProximity"] = it.toFloat() }
+                    projectile.getBoolean("passthrough_doors")?.let { properties["projectilePassthroughDoors"] = it }
                     projectile.getString("damage_type")?.let { name ->
                         val damageType = DamageType.match(name)
                         if ( damageType != null ) {

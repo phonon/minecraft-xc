@@ -25,6 +25,7 @@ import phonon.xc.util.Hitbox
 import phonon.xc.util.HitboxSize
 import phonon.xc.util.BlockCollisionHandler
 import phonon.xc.util.blockCollisionHandlers
+import phonon.xc.util.blockCollisionHandlersPassthroughDoors
 import phonon.xc.util.toml.getNumberAs
 
 
@@ -150,6 +151,11 @@ public data class Config(
     // number of threads to use for parallelizing projectiles
     public val numProjectileThreads: Int = 4,
 ) {
+    // modified block collision handlers that passthrough doors
+    // since doors/trapdoors extremely common, this hardcoded set of
+    // handlers lets specific weapons pass through doors.
+    public val blockCollisionPassthroughDoors: EnumArrayMap<Material, BlockCollisionHandler>
+        = blockCollisionHandlersPassthroughDoors(blockCollision)
 
     // Lookup table for Material => Int constant for plugin custom
     // item types defined by XC.ITEM_TYPE_* constants.

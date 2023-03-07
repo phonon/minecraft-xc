@@ -769,3 +769,36 @@ private fun aabbRayCollision2D(
 
     return if ( tmax >= tmin ) tmin else Float.MAX_VALUE
 }
+
+/**
+ * Create a clone of collision handlers map but make bullets pass through
+ * all door type blocks (doors, trapdoors).
+ */
+public fun blockCollisionHandlersPassthroughDoors(
+    handlers: EnumArrayMap<Material, BlockCollisionHandler>
+): EnumArrayMap<Material, BlockCollisionHandler> {
+    return EnumArrayMap.from<Material, BlockCollisionHandler>({ m ->
+        if ( !m.isBlock() ) { // items, non-blocks, etc.
+            defaultNoCollisionHandler
+        } else {
+            try {
+                val bData = m.createBlockData()
+                if ( bData is Door || bData is TrapDoor ) {
+                    defaultNoCollisionHandler
+                }
+                else {
+                    handlers[m]
+                }
+            }
+            catch ( e: Exception ) {
+                // probably not a block, this should never run
+                if ( m.isOccluding() ) {
+                    defaultSolidBlockHandler
+                }
+                else {
+                    defaultNoCollisionHandler
+                }
+            }
+        }
+    })
+}

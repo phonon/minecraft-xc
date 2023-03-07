@@ -65,6 +65,9 @@ public data class Projectile(
     val gravity: Float = 0.0125f,
     // hit sphere bound radius for proximity based entity collision (e.g. flak guns)
     val proximity: Float = 0.0f,
+    // passthrough door blocks (doors, trapdoors)
+    // TODO: in future can make this an enum to customize block hit handling
+    val passthroughDoors: Boolean = false,
     // which entity actually fired the projectile, for vehicles the 
     // shooter (Player) is not same as source (ArmorStand)
     val shooter: Entity = source,
@@ -700,16 +703,29 @@ private fun runProjectileRaytrace(
             val zStart = z0 + (tTraveled * dirZ)
 
             // defer fine raytrace to block material specific handler
-            val hitDistance = xc.config.blockCollision[bl.type](
-                bl,
-                xStart,
-                yStart,
-                zStart,
-                dirX,
-                dirY,
-                dirZ,
-                stepLength,
-            )
+            val hitDistance = if ( projectile.passthroughDoors ) {
+                xc.config.blockCollisionPassthroughDoors[bl.type](
+                    bl,
+                    xStart,
+                    yStart,
+                    zStart,
+                    dirX,
+                    dirY,
+                    dirZ,
+                    stepLength,
+                )
+            } else {
+                xc.config.blockCollision[bl.type](
+                    bl,
+                    xStart,
+                    yStart,
+                    zStart,
+                    dirX,
+                    dirY,
+                    dirZ,
+                    stepLength,
+                )
+            }
 
             if ( hitDistance != Float.MAX_VALUE ) {
                 hitBlock = bl

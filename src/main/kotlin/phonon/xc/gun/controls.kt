@@ -331,6 +331,7 @@ private fun XC.doSingleShot(
             maxLifetime = gun.projectileLifetime,
             maxDistance = gun.projectileMaxDistance,
             proximity = gun.projectileProximity,
+            passthroughDoors = gun.projectilePassthroughDoors,
         )
 
         projectileSystem.addProjectile(projectile)

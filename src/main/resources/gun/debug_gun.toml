@@ -110,6 +110,8 @@ max_distance = 128.0     # distance before despawning
 damage_type = "BULLET"
 damage_min = 4.0           # min damage after distance damage drop
 damage_drop_distance = 0.0 # distance for damage drop
+proximity = 0.0            # proximity before bullet hits
+passthrough_doors = false  # make bullet pass through doors + trapdoors
 
 # projectile particle trail properties
 [projectile.particles]
