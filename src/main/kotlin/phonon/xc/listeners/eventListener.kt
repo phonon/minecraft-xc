@@ -19,6 +19,7 @@ import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.Event
 import org.bukkit.event.block.Action
+import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.block.BlockRedstoneEvent
 import org.bukkit.event.entity.EntityDeathEvent
 import org.bukkit.event.entity.EntityToggleSwimEvent
@@ -859,4 +860,22 @@ public class EventListener(
             }
         }
     }
+
+    /**
+     * When breaking landmines, make it not drop item by replacing
+     * block with air after BlockBreakEvent.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public fun onBlockBreakSuccess(event: BlockBreakEvent) {
+        if ( !xc.config.landmineDisableDrop || event.isCancelled() ) {
+            return
+        }
+
+        val block = event.block
+
+        if ( xc.storage.landmine.contains(block.type) ) {
+            block.setType(Material.AIR)
+        }
+    }
+    
 }

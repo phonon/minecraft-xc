@@ -49,6 +49,7 @@ auto_fire_ticks_before_reload = 2 # number of ticks with auto guns before auto-r
 # landmine configs
 [landmine]
 min_redstone_current = 5 # min redstone current to trigger landmine activation
+disable_drop = true # disable item drop from destroying landmine block after placed
 
 # block damage
 [block_damage]

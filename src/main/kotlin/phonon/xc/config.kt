@@ -91,7 +91,9 @@ public data class Config(
 
     // landmine settings
     public val landmineMinRedstoneCurrent: Int = 5,
-    
+    // disable landmine item drop when block destroyed by player
+    public val landmineDisableDrop: Boolean = true,
+
     // ============================================================
 
     // block damage
@@ -259,6 +261,7 @@ public data class Config(
             // landmine config
             toml.getTable("landmine")?.let { landmineConfig ->
                 landmineConfig.getLong("min_redstone_current")?.let { configOptions["landmineMinRedstoneCurrent"] = it.toInt() }
+                landmineConfig.getBoolean("disable_drop")?.let { configOptions["landmineDisableDrop"] = it }
             }
             
             // crawl config
