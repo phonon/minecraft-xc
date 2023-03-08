@@ -20,13 +20,16 @@ import phonon.xc.XC
  */
 public enum class DamageType {
     ANTI_TANK_RIFLE,      // dedicated anti tank rifle damage type
-    ARMOR_PIERCING,       // armor piercing round, e.g. anti-tank rifle
+    ARMOR_PIERCING,       // armor piercing round
     ARMOR_PIERCING_SHELL, // armor piercing shell, e.g. tank ap shell
     BULLET,               // regular guns
     EXPLOSIVE,            // generic explosive like grenade
     EXPLOSIVE_SHELL,      // e.g. artillery or tank vehicle type damage
-    FIRE,                 // fire, like flamethrower
+    FIRE,                 // generic fire damage type
+    FLAK,                 // flak (anti air) gun damage
+    FLAMETHROWER,         // flamethrower damage type
     MELEE,                // melee weapons
+    MOLOTOV,              // molotov weapons
     UNKNOWN,              // placeholder or none specified
     ; // end enums
 
@@ -44,7 +47,10 @@ public enum class DamageType {
                 "EXPLOSIVE" -> EXPLOSIVE
                 "EXPLOSIVE_SHELL" -> EXPLOSIVE_SHELL
                 "FIRE" -> FIRE
+                "FLAK" -> FLAK
+                "FLAMETHROWER" -> FLAMETHROWER
                 "MELEE" -> MELEE
+                "MOLOTOV" -> MOLOTOV
                 "UNKNOWN" -> UNKNOWN
                 else -> null
             }
