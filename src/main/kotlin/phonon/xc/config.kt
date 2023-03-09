@@ -116,6 +116,8 @@ public data class Config(
     public val armorValues: EnumMap<Material, Int> = EnumMap<Material, Int>(Material::class.java), // armor values
 
     // global sound effect settings
+    // note sound volume controls distance players can hear sound:
+    // https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/browse/src/main/java/org/bukkit/craftbukkit/CraftWorld.java#1566
     public val soundOnHitEnabled: Boolean = true, // flag t oplay sound when shooting entity
     public val soundOnHit: String = "",           // sound to play when successfully hitting entity
     public val soundOnHitVolume: Float = 1.0f,    // volume of sound when successfully hitting entity

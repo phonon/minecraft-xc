@@ -157,7 +157,7 @@ empty = "gun_empty"
 reload_start = "gun_reload_start"
 reload_finish = "gun_reload_finish"
 # alternative detailed mode to specify volume and pitch
-# shoot = { name = "gun_shoot", volume = 1.0, pitch = 1.0 } 
+# shoot = { name = "gun_shoot", volume = 6.0, pitch = 1.0 } 
 # empty = { name = "gun_empty", volume = 1.0, pitch = 1.0 } 
 # reload_start = { name = "gun_reload_start", volume = 1.0, pitch = 1.0 } 
 # reload_finish = { name = "gun_reload_finish", volume = 1.0, pitch = 1.0 } 

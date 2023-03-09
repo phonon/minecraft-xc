@@ -81,6 +81,8 @@ public data class Landmine(
 
     // sounds
     public val soundExplosion: String = "minecraft:entity.generic.explode",
+    public val soundExplosionVolume: Float = 6f,
+    public val soundExplosionPitch: Float = 1f,
 ): IntoItemStack {
 
     /**
@@ -178,8 +180,16 @@ public data class Landmine(
                 }
 
                 // sounds
-                toml.getTable("sound")?.let { item -> 
-                    item.getString("explosion")?.let { properties["soundExplosion"] = it }
+                toml.getTable("sound")?.let { sound -> 
+                    if ( sound.isTable("explosion") ) {
+                        sound.getTable("explosion")?.let { s ->
+                            s.getString("name")?.let { properties["soundExplosion"] = it }
+                            s.getDouble("volume")?.let { properties["soundExplosionVolume"] = it.toFloat() }
+                            s.getDouble("pitch")?.let { properties["soundExplosionPitch"] = it.toFloat() }
+                        }
+                    } else {
+                        sound.getString("explosion")?.let { properties["soundExplosion"] = it }
+                    }
                 }
                 
                 return mapToObject(properties, Landmine::class)
@@ -305,7 +315,12 @@ internal fun XC.landmineHandleExplosionSystem(
         // playing sound can fail if sound string formatted improperly
         try {
             val world = block.getWorld()
-            world.playSound(location, landmine.soundExplosion, 1f, 1f)
+            world.playSound(
+                location,
+                landmine.soundExplosion,
+                landmine.soundExplosionVolume,
+                landmine.soundExplosionPitch,
+            )
         } catch ( e: Exception ) {
             e.printStackTrace()
             this.logger.severe("Failed to play sound: ${landmine.soundExplosion}")

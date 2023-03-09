@@ -179,7 +179,12 @@ internal fun XC.requestReadyThrowableSystem(
             try {
                 val world = player.getWorld()
                 val location = player.getLocation()
-                world.playSound(location, throwable.soundReady, 1f, 1f)
+                world.playSound(
+                    location,
+                    throwable.soundReady,
+                    throwable.soundReadyVolume,
+                    throwable.soundReadyPitch,
+                )
             } catch ( e: Exception ) {
                 e.printStackTrace()
                 this.logger.severe("Failed to play sound: ${throwable.soundReady}")
@@ -272,7 +277,12 @@ internal fun XC.requestThrowThrowableSystem(
             // play throw sound
             // playing sound can fail if sound string formatted improperly
             try {
-                world.playSound(location, throwable.soundThrow, 1f, 1f)
+                world.playSound(
+                    location,
+                    throwable.soundThrow,
+                    throwable.soundThrowVolume,
+                    throwable.soundThrowPitch,
+                )
             } catch ( e: Exception ) {
                 e.printStackTrace()
                 this.logger.severe("Failed to play sound: ${throwable.soundThrow}")

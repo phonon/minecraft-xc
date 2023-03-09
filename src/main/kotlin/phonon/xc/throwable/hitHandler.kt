@@ -122,7 +122,12 @@ public val timerExpiredExplosionHandler = fun(
 ) {
     // try playing sound
     try {
-        location.getWorld()?.playSound(location, throwable.soundExplosion, 1.0f, 1.0f)
+        location.getWorld()?.playSound(
+            location,
+            throwable.soundExplosion,
+            throwable.soundExplosionVolume,
+            throwable.soundExplosionPitch,
+        )
     } catch (e: Exception) {
         xc.logger.warning("Failed to play sound ${throwable.soundExplosion} at ${location}")
     }
@@ -243,7 +248,12 @@ public val entityExplosionHitHandler = fun(
 
     // try playing sound
     try {
-        location.getWorld()?.playSound(location, throwable.soundExplosion, 1.0f, 1.0f)
+        location.getWorld()?.playSound(
+            location,
+            throwable.soundExplosion,
+            throwable.soundExplosionVolume,
+            throwable.soundExplosionPitch,
+        )
     } catch (e: Exception) {
         xc.logger.warning("Failed to play sound ${throwable.soundExplosion} at ${location}")
     }
@@ -287,7 +297,12 @@ public val blockExplosionHitHandler = fun(
 ) {
     // try playing sound at location
     try {
-        location.getWorld()?.playSound(location, throwable.soundExplosion, 1.0f, 1.0f)
+        location.getWorld()?.playSound(
+            location,
+            throwable.soundExplosion,
+            throwable.soundExplosionVolume,
+            throwable.soundExplosionPitch,
+        )
     } catch (e: Exception) {
         xc.logger.warning("Failed to play sound ${throwable.soundExplosion} at ${location}")
     }

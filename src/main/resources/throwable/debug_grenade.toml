@@ -64,3 +64,5 @@ explosion = "grenade.explosion"
 # alternative detailed mode to specify volume and pitch
 # ready = { name = "grenade.ready", volume = 1.0, pitch = 1.0 } 
 # throw = { name = "grenade.throw", volume = 1.0, pitch = 1.0 }
+# impact = { name = "grenade.impact", volume = 6.0, pitch = 1.0 }
+# explosion = { name = "grenade.explosion", volume = 6.0, pitch = 1.0 }

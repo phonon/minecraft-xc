@@ -263,8 +263,10 @@ public data class Gun(
     public val hitBlockFireProbability: Double = 0.04,
 
     // sounds
+    // note sound volume controls distance players can hear sound:
+    // https://hub.spigotmc.org/stash/projects/SPIGOT/repos/craftbukkit/browse/src/main/java/org/bukkit/craftbukkit/CraftWorld.java#1566
     public val soundShoot: String = "gun_shoot",
-    public val soundShootVolume: Float = 1f,
+    public val soundShootVolume: Float = 6f,
     public val soundShootPitch: Float = 1f,
     public val soundEmpty: String = "gun_empty",
     public val soundEmptyVolume: Float = 1f,
@@ -276,10 +278,10 @@ public data class Gun(
     public val soundReloadFinishVolume: Float = 1f,
     public val soundReloadFinishPitch: Float = 1f,
     public val soundImpact: String? = null, // for hit entity or block handler
-    public val soundImpactVolume: Float = 1f,
+    public val soundImpactVolume: Float = 6f,
     public val soundImpactPitch: Float = 1f,
     public val soundExplosion: String = "minecraft:entity.generic.explode", // for explosion handler
-    public val soundExplosionVolume: Float = 1f,
+    public val soundExplosionVolume: Float = 6f,
     public val soundExplosionPitch: Float = 1f,
 ): IntoItemStack {
 
@@ -688,60 +690,60 @@ public data class Gun(
                 // sounds
                 toml.getTable("sound")?.let { sound ->
                     if ( sound.isTable("shoot") ) {
-                        sound.getTable("shoot")?.let { shootSound ->
-                            shootSound.getString("name")?.let { properties["soundShoot"] = it }
-                            shootSound.getDouble("volume")?.let { properties["soundShootVolume"] = it.toFloat() }
-                            shootSound.getDouble("pitch")?.let { properties["soundShootPitch"] = it.toFloat() }
+                        sound.getTable("shoot")?.let { s ->
+                            s.getString("name")?.let { properties["soundShoot"] = it }
+                            s.getDouble("volume")?.let { properties["soundShootVolume"] = it.toFloat() }
+                            s.getDouble("pitch")?.let { properties["soundShootPitch"] = it.toFloat() }
                         }
                     } else {
                         sound.getString("shoot")?.let { properties["soundShoot"] = it }
                     }
 
                     if ( sound.isTable("empty") ) {
-                        sound.getTable("empty")?.let { shootSound ->
-                            shootSound.getString("name")?.let { properties["soundEmpty"] = it }
-                            shootSound.getDouble("volume")?.let { properties["soundEmptyVolume"] = it.toFloat() }
-                            shootSound.getDouble("pitch")?.let { properties["soundEmptyPitch"] = it.toFloat() }
+                        sound.getTable("empty")?.let { s ->
+                            s.getString("name")?.let { properties["soundEmpty"] = it }
+                            s.getDouble("volume")?.let { properties["soundEmptyVolume"] = it.toFloat() }
+                            s.getDouble("pitch")?.let { properties["soundEmptyPitch"] = it.toFloat() }
                         }
                     } else {
                         sound.getString("empty")?.let { properties["soundEmpty"] = it }
                     }
 
                     if ( sound.isTable("reload_start") ) {
-                        sound.getTable("reload_start")?.let { shootSound ->
-                            shootSound.getString("name")?.let { properties["soundReloadStart"] = it }
-                            shootSound.getDouble("volume")?.let { properties["soundReloadStartVolume"] = it.toFloat() }
-                            shootSound.getDouble("pitch")?.let { properties["soundReloadStartPitch"] = it.toFloat() }
+                        sound.getTable("reload_start")?.let { s ->
+                            s.getString("name")?.let { properties["soundReloadStart"] = it }
+                            s.getDouble("volume")?.let { properties["soundReloadStartVolume"] = it.toFloat() }
+                            s.getDouble("pitch")?.let { properties["soundReloadStartPitch"] = it.toFloat() }
                         }
                     } else {
                         sound.getString("reload_start")?.let { properties["soundReloadStart"] = it }
                     }
 
                     if ( sound.isTable("reload_finish") ) {
-                        sound.getTable("reload_finish")?.let { shootSound ->
-                            shootSound.getString("name")?.let { properties["soundReloadFinish"] = it }
-                            shootSound.getDouble("volume")?.let { properties["soundReloadFinishVolume"] = it.toFloat() }
-                            shootSound.getDouble("pitch")?.let { properties["soundReloadFinishPitch"] = it.toFloat() }
+                        sound.getTable("reload_finish")?.let { s ->
+                            s.getString("name")?.let { properties["soundReloadFinish"] = it }
+                            s.getDouble("volume")?.let { properties["soundReloadFinishVolume"] = it.toFloat() }
+                            s.getDouble("pitch")?.let { properties["soundReloadFinishPitch"] = it.toFloat() }
                         }
                     } else {
                         sound.getString("reload_finish")?.let { properties["soundReloadFinish"] = it }
                     }
 
                     if ( sound.isTable("impact") ) {
-                        sound.getTable("impact")?.let { shootSound ->
-                            shootSound.getString("name")?.let { properties["soundImpact"] = it }
-                            shootSound.getDouble("volume")?.let { properties["soundImpactVolume"] = it.toFloat() }
-                            shootSound.getDouble("pitch")?.let { properties["soundImpacthPitch"] = it.toFloat() }
+                        sound.getTable("impact")?.let { s ->
+                            s.getString("name")?.let { properties["soundImpact"] = it }
+                            s.getDouble("volume")?.let { properties["soundImpactVolume"] = it.toFloat() }
+                            s.getDouble("pitch")?.let { properties["soundImpacthPitch"] = it.toFloat() }
                         }
                     } else {
                         sound.getString("impact")?.let { properties["soundImpact"] = it }
                     }
 
                     if ( sound.isTable("explosion") ) {
-                        sound.getTable("explosion")?.let { shootSound ->
-                            shootSound.getString("name")?.let { properties["soundExplosion"] = it }
-                            shootSound.getDouble("volume")?.let { properties["soundExplosionVolume"] = it.toFloat() }
-                            shootSound.getDouble("pitch")?.let { properties["soundExplosionPitch"] = it.toFloat() }
+                        sound.getTable("explosion")?.let { s ->
+                            s.getString("name")?.let { properties["soundExplosion"] = it }
+                            s.getDouble("volume")?.let { properties["soundExplosionVolume"] = it.toFloat() }
+                            s.getDouble("pitch")?.let { properties["soundExplosionPitch"] = it.toFloat() }
                         }
                     } else {
                         sound.getString("explosion")?.let { properties["soundExplosion"] = it }

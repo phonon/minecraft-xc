@@ -77,9 +77,17 @@ public data class ThrowableItem(
 
     // sounds
     public val soundReady: String = "minecraft:block.lever.click",
+    public val soundReadyVolume: Float = 1f,
+    public val soundReadyPitch: Float = 1f,
     public val soundThrow: String = "minecraft:entity.arrow.shoot",
+    public val soundThrowVolume: Float = 1f,
+    public val soundThrowPitch: Float = 1f,
     public val soundImpact: String = "minecraft:block.glass.break", // for hit entity or block handler
+    public val soundImpactVolume: Float = 6f,
+    public val soundImpactPitch: Float = 1f,
     public val soundExplosion: String = "minecraft:entity.generic.explode", // for explosion handler
+    public val soundExplosionVolume: Float = 6f,
+    public val soundExplosionPitch: Float = 1f,
 ): IntoItemStack {
     // flags for handlers, used in thrown throwable tick loop
     // to enable handling for block and entity hit detection 
@@ -228,11 +236,46 @@ public data class ThrowableItem(
                 }
 
                 // sounds
-                toml.getTable("sound")?.let { item -> 
-                    item.getString("ready")?.let { properties["soundReady"] = it }
-                    item.getString("throw")?.let { properties["soundThrow"] = it }
-                    item.getString("impact")?.let { properties["soundImpact"] = it }
-                    item.getString("explosion")?.let { properties["soundExplosion"] = it }
+                toml.getTable("sound")?.let { sound -> 
+                    if ( sound.isTable("ready") ) {
+                        sound.getTable("ready")?.let { s ->
+                            s.getString("name")?.let { properties["soundReady"] = it }
+                            s.getDouble("volume")?.let { properties["soundReadyVolume"] = it.toFloat() }
+                            s.getDouble("pitch")?.let { properties["soundReadyPitch"] = it.toFloat() }
+                        }
+                    } else {
+                        sound.getString("ready")?.let { properties["soundReady"] = it }
+                    }
+
+                    if ( sound.isTable("throw") ) {
+                        sound.getTable("throw")?.let { s ->
+                            s.getString("name")?.let { properties["soundThrow"] = it }
+                            s.getDouble("volume")?.let { properties["soundThrowVolume"] = it.toFloat() }
+                            s.getDouble("pitch")?.let { properties["soundThrowPitch"] = it.toFloat() }
+                        }
+                    } else {
+                        sound.getString("throw")?.let { properties["soundThrow"] = it }
+                    }
+
+                    if ( sound.isTable("impact") ) {
+                        sound.getTable("impact")?.let { s ->
+                            s.getString("name")?.let { properties["soundImpact"] = it }
+                            s.getDouble("volume")?.let { properties["soundImpactVolume"] = it.toFloat() }
+                            s.getDouble("pitch")?.let { properties["soundImpactPitch"] = it.toFloat() }
+                        }
+                    } else {
+                        sound.getString("impact")?.let { properties["soundImpact"] = it }
+                    }
+
+                    if ( sound.isTable("explosion") ) {
+                        sound.getTable("explosion")?.let { s ->
+                            s.getString("name")?.let { properties["soundExplosion"] = it }
+                            s.getDouble("volume")?.let { properties["soundExplosionVolume"] = it.toFloat() }
+                            s.getDouble("pitch")?.let { properties["soundExplosionPitch"] = it.toFloat() }
+                        }
+                    } else {
+                        sound.getString("explosion")?.let { properties["soundExplosion"] = it }
+                    }
                 }
                 
                 return mapToObject(properties, ThrowableItem::class)
