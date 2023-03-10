@@ -895,6 +895,8 @@ public class XV (
         systemLandMovementFuel(storage)
         systemLandMovement(storage, userInputs)
         systemShipMovement(storage, userInputs)
+        systemPlaneFuel(storage)
+        systemPlaneMovement(storage, userInputs, despawnFinishQueue)
 
         // vehicle gun controls
         systemGunBarrelControls(storage, userInputs)

@@ -50,12 +50,29 @@ public data class TransformComponent(
     // dirty flag
     var positionDirty: Boolean = false
 
+    // yaw derived state
     var yawf: Float = yaw.toFloat()
     var yawRad: Double = Math.toRadians(yaw)
     var yawSin: Double = Math.sin(yawRad)
     var yawCos: Double = Math.cos(yawRad)
-    // dirty flag
-    var yawDirty: Boolean = false
+    var yawDirty: Boolean = false // dirty flag
+    
+    // pitch derived state
+    var pitchf: Float = pitch.toFloat()
+    var pitchRad: Double = Math.toRadians(pitch)
+    var pitchSin: Double = Math.sin(pitchRad)
+    var pitchCos: Double = Math.cos(pitchRad)
+    var pitchDirty: Boolean = false // dirty flag
+
+    // for now roll is NOT saved into json
+    // most vehicles only use yaw/pitch, roll is used by some (planes)
+    // for aesthetics but no real vehicle physics.
+    var roll: Double = 0.0
+    var rollf: Float = roll.toFloat()
+    var rollRad: Double = Math.toRadians(roll)
+    var rollSin: Double = Math.sin(rollRad)
+    var rollCos: Double = Math.cos(rollRad)
+    var rollDirty: Boolean = false // dirty flag
 
     // flag that vehicle in water
     var inWater: Boolean = false
@@ -69,18 +86,86 @@ public data class TransformComponent(
      * Helper to update yaw and its derived values.
      */
     fun updateYaw(
-        yaw: Double,
-        yawf: Float = yaw.toFloat(),
-        yawRad: Double = Math.toRadians(yaw),
-        yawSin: Double = Math.sin(yawRad),
-        yawCos: Double = Math.cos(yawRad)
+        newYaw: Double,
     ) {
-        this.yaw = yaw
-        this.yawf = yawf
-        this.yawRad = yawRad
-        this.yawSin = yawSin
-        this.yawCos = yawCos
+        val newYawRad = Math.toRadians(newYaw)
+        val newYawSin = Math.sin(newYawRad)
+        val newYawCos = Math.cos(newYawRad)
+        this.yaw = newYaw
+        this.yawf = newYaw.toFloat()
+        this.yawRad = newYawRad
+        this.yawSin = newYawSin
+        this.yawCos = newYawCos
         this.yawDirty = true
+    }
+
+    /**
+     * Helper to update pitch and its derived values.
+     */
+    fun updatePitch(
+        newPitch: Double,
+    ) {
+        val newPitchRad = Math.toRadians(newPitch)
+        val newPitchSin = Math.sin(newPitchRad)
+        val newPitchCos = Math.cos(newPitchRad)
+        this.pitch = newPitch
+        this.pitchf = newPitch.toFloat()
+        this.pitchRad = newPitchRad
+        this.pitchSin = newPitchSin
+        this.pitchCos = newPitchCos
+        this.pitchDirty = true
+    }
+
+    /**
+     * Helper to update roll and its derived values.
+     */
+    fun updateRoll(
+        newRoll: Double,
+    ) {
+        val newRollRad = Math.toRadians(newRoll)
+        val newRollSin = Math.sin(newRollRad)
+        val newRollCos = Math.cos(newRollRad)
+        this.roll = newRoll
+        this.rollf = newRoll.toFloat()
+        this.rollRad = newRollRad
+        this.rollSin = newRollSin
+        this.rollCos = newRollCos
+        this.rollDirty = true
+    }
+
+    /**
+     * Helper to set yaw to zero.
+     */
+    fun zeroYaw() {
+        this.yaw = 0.0
+        this.yawf = 0f
+        this.yawRad = 0.0
+        this.yawSin = 0.0
+        this.yawCos = 1.0
+        this.yawDirty = true
+    }
+
+    /**
+     * Helper to set roll to zero.
+     */
+    fun zeroPitch() {
+        this.pitch = 0.0
+        this.pitchf = 0f
+        this.pitchRad = 0.0
+        this.pitchSin = 0.0
+        this.pitchCos = 1.0
+        this.pitchDirty = true
+    }
+    /**
+     * Helper to set roll to zero.
+     */
+    fun zeroRoll() {
+        this.roll = 0.0
+        this.rollf = 0f
+        this.rollRad = 0.0
+        this.rollSin = 0.0
+        this.rollCos = 1.0
+        this.rollDirty = true
     }
 
     /**
@@ -122,7 +207,7 @@ public data class TransformComponent(
             y = json["y"].asDouble,
             z = json["z"].asDouble,
             yaw = json["yaw"].asDouble,
-            pitch = json["pitch"].asDouble
+            pitch = json["pitch"].asDouble,
         )
     }
 

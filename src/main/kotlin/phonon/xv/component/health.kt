@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import org.bukkit.NamespacedKey
 import kotlin.math.min
+import kotlin.math.max
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.ChatColor
@@ -121,6 +122,13 @@ public data class HealthComponent(
         return this.copy(
             current = json["current"].asDouble.coerceIn(0.0, this.max)
         )
+    }
+
+    /**
+     * Helper to deal damage to this component, with built-in clamp to 0.0.
+     */
+    public fun damage(dmg: Double) {
+        this.current = max(0.0, this.current - dmg)
     }
 
     companion object {

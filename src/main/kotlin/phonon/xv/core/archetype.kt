@@ -67,6 +67,7 @@ private fun <T> ArrayList<T>.swapRemove(index: Int) {
  * Note: keep in alphabetical order.
  */
 public enum class VehicleComponentType {
+    AIRPLANE,
     AMMO,
     AMMO_FIRE_WHEN_LOADED,
     FUEL,
@@ -90,6 +91,7 @@ public enum class VehicleComponentType {
          */
         public inline fun <reified T: VehicleComponent<T>> from(): VehicleComponentType {
             return when ( T::class ) {
+                AirplaneComponent::class -> VehicleComponentType.AIRPLANE
                 AmmoComponent::class -> VehicleComponentType.AMMO
                 AmmoFireWhenLoadedComponent::class -> VehicleComponentType.AMMO_FIRE_WHEN_LOADED
                 FuelComponent::class -> VehicleComponentType.FUEL
@@ -112,6 +114,7 @@ public enum class VehicleComponentType {
 }
 
 // namespaced keys, for use in toItem()
+val AIRPLANE_KEY = NamespacedKey("xv", "airplane")
 val AMMO_KEY = NamespacedKey("xv", "ammo")
 val AMMO_FIRE_WHEN_LOADED_KEY = NamespacedKey("xv", "ammo_fire_when_loaded")
 val FUEL_KEY = NamespacedKey("xv", "fuel")
@@ -134,6 +137,7 @@ val TRANSFORM_KEY = NamespacedKey("xv", "transform")
  */
 public data class VehicleComponents(
     val layout: EnumSet<VehicleComponentType>,
+    val airplane: AirplaneComponent? = null,
     val ammo: AmmoComponent? = null,
     val ammoFireWhenLoaded: AmmoFireWhenLoadedComponent? = null,
     val fuel: FuelComponent? = null,
@@ -156,6 +160,7 @@ public data class VehicleComponents(
     fun clone(): VehicleComponents {
         return VehicleComponents(
             layout,
+            airplane = airplane?.deepclone(),
             ammo = ammo?.deepclone(),
             ammoFireWhenLoaded = ammoFireWhenLoaded?.deepclone(),
             fuel = fuel?.deepclone(),
@@ -184,6 +189,7 @@ public data class VehicleComponents(
         player: Player?,
     ): VehicleComponents {
         return copy(
+            airplane = airplane?.injectSpawnProperties(location, player),
             ammo = ammo?.injectSpawnProperties(location, player),
             ammoFireWhenLoaded = ammoFireWhenLoaded?.injectSpawnProperties(location, player),
             fuel = fuel?.injectSpawnProperties(location, player),
@@ -211,6 +217,7 @@ public data class VehicleComponents(
         itemData: PersistentDataContainer
     ): VehicleComponents {
         return copy(
+            airplane = airplane?.injectItemProperties(itemData.get(AIRPLANE_KEY, PersistentDataType.TAG_CONTAINER)),
             ammo = ammo?.injectItemProperties(itemData.get(AMMO_KEY, PersistentDataType.TAG_CONTAINER)),
             ammoFireWhenLoaded = ammoFireWhenLoaded?.injectItemProperties(itemData.get(AMMO_FIRE_WHEN_LOADED_KEY, PersistentDataType.TAG_CONTAINER)),
             fuel = fuel?.injectItemProperties(itemData.get(FUEL_KEY, PersistentDataType.TAG_CONTAINER)),
@@ -245,6 +252,11 @@ public data class VehicleComponents(
     ) {
         for ( c in layout ) { // only create data containers for components which exist in layout
             when ( c ) {
+                VehicleComponentType.AIRPLANE -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    airplane!!.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(AIRPLANE_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
                 VehicleComponentType.AMMO -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
                     ammo!!.toItemData(itemMeta, itemLore, componentDataContainer)
@@ -333,6 +345,9 @@ public data class VehicleComponents(
         for ( c in this.layout ) {
             // serialize component state in json
             when ( c ) {
+                VehicleComponentType.AIRPLANE -> {
+                    json.add("airplane", airplane!!.toJson())
+                }
                 VehicleComponentType.AMMO -> {
                     json.add("ammo", ammo!!.toJson())
                 }
@@ -399,6 +414,7 @@ public data class VehicleComponents(
         json: JsonObject,
     ): VehicleComponents {
         return copy(
+            airplane = airplane?.injectJsonProperties( json["airplane"]?.asJsonObject ),
             ammo = ammo?.injectJsonProperties( json["ammo"]?.asJsonObject ),
             ammoFireWhenLoaded = ammoFireWhenLoaded?.injectJsonProperties( json["ammoFireWhenLoaded"]?.asJsonObject ),
             fuel = fuel?.injectJsonProperties( json["fuel"]?.asJsonObject ),
@@ -430,6 +446,12 @@ public data class VehicleComponents(
     ) {
         for ( c in layout ) {
             when ( c ) {
+                VehicleComponentType.AIRPLANE -> airplane?.afterVehicleCreated(
+                    xc=xc,
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
                 VehicleComponentType.AMMO -> ammo?.afterVehicleCreated(
                     xc=xc,
                     vehicle=vehicle,
@@ -534,6 +556,7 @@ public data class VehicleComponents(
     ) {
         for ( c in layout ) {
             when ( c ) {
+                VehicleComponentType.AIRPLANE -> airplane?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.AMMO -> ammo?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.AMMO_FIRE_WHEN_LOADED -> ammoFireWhenLoaded?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.FUEL -> fuel?.delete(xc, vehicle, element, entityVehicleData, despawn)
@@ -569,6 +592,7 @@ public data class VehicleComponents(
          */
         public fun fromToml(toml: TomlTable, logger: Logger? = null): VehicleComponents {
             // all possible components to be parsed
+            var airplane: AirplaneComponent? = null
             var ammo: AmmoComponent? = null
             var ammoFireWhenLoaded: AmmoFireWhenLoadedComponent? = null
             var fuel: FuelComponent? = null
@@ -591,6 +615,10 @@ public data class VehicleComponents(
             for ( k in keys ) {
                 when ( k ) {
                     "name", "parent" -> continue
+                    "airplane" -> {
+                        layout.add(VehicleComponentType.AIRPLANE)
+                        airplane = AirplaneComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
                     "ammo" -> {
                         layout.add(VehicleComponentType.AMMO)
                         ammo = AmmoComponent.fromToml(toml.getTable(k)!!, logger)
@@ -657,6 +685,7 @@ public data class VehicleComponents(
             
             return VehicleComponents(
                 layout,
+                airplane,
                 ammo,
                 ammoFireWhenLoaded,
                 fuel,
@@ -700,6 +729,7 @@ public class ArchetypeStorage(
 
     // dense packed components storages
     // only components in layout will be non-null
+    internal val airplane: ArrayList<AirplaneComponent>? = if ( layout.contains(VehicleComponentType.AIRPLANE) ) ArrayList() else null
     internal val ammo: ArrayList<AmmoComponent>? = if ( layout.contains(VehicleComponentType.AMMO) ) ArrayList() else null
     internal val ammoFireWhenLoaded: ArrayList<AmmoFireWhenLoadedComponent>? = if ( layout.contains(VehicleComponentType.AMMO_FIRE_WHEN_LOADED) ) ArrayList() else null
     internal val fuel: ArrayList<FuelComponent>? = if ( layout.contains(VehicleComponentType.FUEL) ) ArrayList() else null
@@ -717,6 +747,8 @@ public class ArchetypeStorage(
     internal val transform: ArrayList<TransformComponent>? = if ( layout.contains(VehicleComponentType.TRANSFORM) ) ArrayList() else null
 
     // public getter "view"s: only expose immutable List interface
+    public val airplaneView: List<AirplaneComponent>?
+        get() = this.airplane
     public val ammoView: List<AmmoComponent>?
         get() = this.ammo
     public val ammoFireWhenLoadedView: List<AmmoFireWhenLoadedComponent>?
@@ -758,6 +790,7 @@ public class ArchetypeStorage(
         }
         
         return when ( T::class ) {
+            AirplaneComponent::class -> this.airplaneView?.get(denseIndex) as T
             AmmoComponent::class -> this.ammoView?.get(denseIndex) as T
             AmmoFireWhenLoadedComponent::class -> this.ammoFireWhenLoadedView?.get(denseIndex) as T
             FuelComponent::class -> this.fuelView?.get(denseIndex) as T
@@ -817,6 +850,10 @@ public class ArchetypeStorage(
         // push components into storages
         for ( c in components.layout ) {
             when ( c ) {
+                VehicleComponentType.AIRPLANE -> {
+                    this.airplane?.pushAtDenseIndex(denseIndex, components.airplane!!)
+                }
+                
                 VehicleComponentType.AMMO -> {
                     this.ammo?.pushAtDenseIndex(denseIndex, components.ammo!!)
                 }
@@ -916,6 +953,7 @@ public class ArchetypeStorage(
         // swap remove elements in component arrays
         for ( c in layout ) {
             when ( c ) {
+                VehicleComponentType.AIRPLANE -> airplane?.swapRemove(denseIndex)
                 VehicleComponentType.AMMO -> ammo?.swapRemove(denseIndex)
                 VehicleComponentType.AMMO_FIRE_WHEN_LOADED -> ammoFireWhenLoaded?.swapRemove(denseIndex)
                 VehicleComponentType.FUEL -> fuel?.swapRemove(denseIndex)
@@ -950,6 +988,7 @@ public class ArchetypeStorage(
             lookup[i] = INVALID_VEHICLE_ELEMENT_ID
             elements[i] = INVALID_VEHICLE_ELEMENT_ID
         }
+        airplane?.clear()
         ammo?.clear()
         ammoFireWhenLoaded?.clear()
         fuel?.clear()
@@ -984,6 +1023,7 @@ public class ArchetypeStorage(
         @Suppress("UNCHECKED_CAST")
         public inline fun <reified T> accessor(): (ArchetypeStorage) -> List<T> {
             return when ( T::class ) {
+                AirplaneComponent::class -> { archetype -> archetype.airplaneView as List<T> }
                 AmmoComponent::class -> { archetype -> archetype.ammoView as List<T> }
                 AmmoFireWhenLoadedComponent::class -> { archetype -> archetype.ammoFireWhenLoadedView as List<T> }
                 FuelComponent::class -> { archetype -> archetype.fuelView as List<T> }

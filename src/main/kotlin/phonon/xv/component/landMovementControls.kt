@@ -95,7 +95,7 @@ public data class LandMovementControlsComponent(
     }
 
     override fun injectJsonProperties(json: JsonObject?): LandMovementControlsComponent {
-        if ( json === null ) return this.self()
+        if ( json === null ) return this.copy()
         return this.copy(
             speed = json["speed"].asDouble,
             yawRotationSpeed = json["yawRotationSpeed"].asDouble

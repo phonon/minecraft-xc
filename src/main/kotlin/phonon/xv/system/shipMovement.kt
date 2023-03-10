@@ -352,12 +352,7 @@ public fun XV.systemShipMovement(
                     zNew = zNext
                     positionChanged = true
                     // update yaw
-                    transform.updateYaw(
-                        yaw = newYaw,
-                        yawRad = yawRad,
-                        yawSin = yawSin,
-                        yawCos = yawCos
-                    )
+                    transform.updateYaw(newYaw)
                 }
             }
 
