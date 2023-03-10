@@ -90,7 +90,7 @@ public data class Config(
     // LANDMINE CONFIG
 
     // landmine settings
-    public val landmineMinRedstoneCurrent: Int = 5,
+    public val landmineMinRedstoneCurrent: Int = 5, // DEPRECATED, UNUSED
     // disable landmine item drop when block destroyed by player
     public val landmineDisableDrop: Boolean = true,
 

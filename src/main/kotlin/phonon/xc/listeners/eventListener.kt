@@ -408,8 +408,6 @@ public class EventListener(
                 else -> {}
             }
         }
-        
-        
     }
     
 
@@ -495,11 +493,27 @@ public class EventListener(
 
         // println("ON PLAYER INTERACT EVENT: ${action} (hand=${e.getHand()}) (use=${e.useInteractedBlock()})")
 
+        // check for landmine activation
+        if ( action == Action.PHYSICAL ) {
+            val block = e.getClickedBlock()
+            if ( block !== null ) {
+                // pressure plate land mine, queue landmine activation handling
+                xc.storage.landmine[block.type]?.let { landmine ->
+                    xc.landmineActivationRequests.add(LandmineActivationRequest(
+                        block = block,
+                        landmine = landmine,
+                    ))
+                }
+            }
+
+            return
+        }
+
         // ignores off hand event, physical events, or cancelled block interact event
         // this event runs twice, 2nd main hand event is cancelled block interact event
         // ISSUE: when crawling, having the interacted block is glitchy???
         // TODO: INVESTIGATE DEAD ZONES
-        if ( e.getHand() != EquipmentSlot.HAND || action == Action.PHYSICAL ) {
+        if ( e.getHand() != EquipmentSlot.HAND ) {
             return
         }
 
@@ -845,21 +859,26 @@ public class EventListener(
 
     /**
      * Block activation for landmine event handling.
+     * DISABLED: when using other protection plugins like Nodes,
+     * they cancel player block interact event, which prevents redstone event
+     * from ever getting triggered. So instead, move landmine activation into
+     * onPlayerInteract event and check when Action physical triggered and
+     * a landmine block is interacted with.
      */
-    @EventHandler(priority = EventPriority.NORMAL)
-    public fun onLandmineBlockActivation(event: BlockRedstoneEvent) {
-        val block = event.block
+    // @EventHandler(priority = EventPriority.NORMAL)
+    // public fun onLandmineBlockActivation(event: BlockRedstoneEvent) {
+    //     val block = event.block
 
-        // pressure plate land mine, queue landmine activation handling
-        xc.storage.landmine[block.type]?.let { landmine ->
-            if ( event.getNewCurrent() > xc.config.landmineMinRedstoneCurrent ) {
-                xc.landmineActivationRequests.add(LandmineActivationRequest(
-                    block = block,
-                    landmine = landmine,
-                ))
-            }
-        }
-    }
+    //     // pressure plate land mine, queue landmine activation handling
+    //     xc.storage.landmine[block.type]?.let { landmine ->
+    //         if ( event.getNewCurrent() > xc.config.landmineMinRedstoneCurrent ) {
+    //             xc.landmineActivationRequests.add(LandmineActivationRequest(
+    //                 block = block,
+    //                 landmine = landmine,
+    //             ))
+    //         }
+    //     }
+    // }
 
     /**
      * When breaking landmines, make it not drop item by replacing
