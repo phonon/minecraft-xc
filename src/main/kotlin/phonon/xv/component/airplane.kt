@@ -129,8 +129,14 @@ public data class AirplaneComponent(
     val bulletOffset2X: Double = -1.0,
     val bulletOffset2Y: Double = 2.5,
     val bulletOffset2Z: Double = 1.5,
+    // flag to use both bullet offsets (TODO: generalize)
+    val useMultipleBulletOffsets: Boolean = false,
     // fire rate in ticks
-    val firerate: Int = 1,
+    val firerate: Int = 2,
+    // bullet convergence parameters
+    val bulletConvergenceDistanceMin: Double = 60.0,
+    val bulletConvergenceDistanceMax: Double = 140.0,
+    val bulletConvergenceDistanceAdjustment: Double = 1.0,
 
     // @skipall
     // armor stand entity
@@ -139,6 +145,8 @@ public data class AirplaneComponent(
     var speed: Double = 0.0,
     var yawRotationSpeed: Double = 0.0,
     var pitchRotationSpeed: Double = 0.0,
+    // distance for bullets to converge
+    var bulletConvergenceDistance: Double = 80.0,
 ): VehicleComponent<AirplaneComponent> {
     override val type = VehicleComponentType.AIRPLANE
 
@@ -171,7 +179,7 @@ public data class AirplaneComponent(
     var bulletSpawnOffset2Z: Double = 0.0
 
     // bullet location counter
-    var bulletLocationIndex: Int = 0
+    var bulletSpawnIndex: Int = 0
 
     // hitbox size
     val hitboxSize: HitboxSize = HitboxSize(
@@ -215,7 +223,7 @@ public data class AirplaneComponent(
         armorstand.setVisible(armorstandVisible)
         armorstand.setRotation(locSpawn.yaw, 0f)
         armorstand.setHeadPose(EulerAngle(
-            this.groundPitch,
+            -Math.toRadians(this.groundPitch),
             0.0,
             0.0,
         ))
@@ -426,7 +434,12 @@ public data class AirplaneComponent(
                 properties["bulletOffset2Y"] = arr.getNumberAs<Double>(1)
                 properties["bulletOffset2Z"] = arr.getNumberAs<Double>(2)
             }
+            toml.getBoolean("use_multiple_bullet_offsets")?.let { properties["useMultipleBulletOffsets"] = it }
             toml.getNumberAs<Int>("firerate")?.let { properties["firerate"] = it }
+            toml.getNumberAs<Double>("bullet_convergence_distance")?.let { properties["bulletConvergenceDistance"] = it }
+            toml.getNumberAs<Double>("bullet_convergence_distance_min")?.let { properties["bulletConvergenceDistanceMin"] = it }
+            toml.getNumberAs<Double>("bullet_convergence_distance_max")?.let { properties["bulletConvergenceDistanceMax"] = it }
+            toml.getNumberAs<Double>("bullet_convergence_distance_adjustment")?.let { properties["bulletConvergenceDistanceAdjustment"] = it }
 
             return mapToObject(properties, AirplaneComponent::class)
         }

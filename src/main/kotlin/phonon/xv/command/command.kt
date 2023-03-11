@@ -30,6 +30,7 @@ import phonon.xv.util.entity.reassociateEntities
 
 
 private val SUBCOMMANDS = listOf(
+    "ammo",
     "browse",
     "cleanupentities",
     "clear",
@@ -74,7 +75,8 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         val arg = args[0].lowercase()
         when ( arg ) {
             "help" -> printHelp(sender)
-
+            
+            "ammo" -> ammo(sender, args)
             "browse" -> browseVehiclesGui(sender, args)
             "clear" -> clear(sender, args)
             "cleanupentities" -> cleanupentities(sender, args)
@@ -185,6 +187,7 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
      */
     private fun printHelp(sender: CommandSender) {
         Message.print(sender, "[xv] mineman tanks when!!!")
+        Message.print(sender, "/xv ammo${ChatColor.WHITE}: set ammo of vehicle you are looking at")
         Message.print(sender, "/xv browse${ChatColor.WHITE}: view gui with all vehicle spawn items")
         Message.print(sender, "/xv clear${ChatColor.WHITE}: clear all vehicles and engine state")
         Message.print(sender, "/xv cleanupentities${ChatColor.WHITE}: cleanup invalid or detached vehicle entities")
@@ -199,6 +202,54 @@ public class Command(val xv: XV) : CommandExecutor, TabCompleter {
         Message.print(sender, "/xv stats${ChatColor.WHITE}: print engine stats")
         Message.print(sender, "/xv start${ChatColor.WHITE}: start engine")
         Message.print(sender, "/xv stop${ChatColor.WHITE}: stop engine")
+    }
+
+    /**
+     * /xv ammo [amount]
+     * Sets ammo of vehicle you are looking at.
+     */
+    private fun ammo(sender: CommandSender, args: Array<String>) {
+        if ( sender !is Player ) {
+            Message.error(sender, "Must be a player ingame to use /xv ammo")
+            return
+        }
+
+        if ( args.size < 2 ) {
+            Message.error(sender, "Must specify ammo amount: /xv ammo [ammo]")
+            return
+        }
+
+        val amount = try {
+            args[1].toInt()
+        } catch ( err: Exception ) {
+            Message.error(sender, "Invalid ammo amount: ${args[1]}")
+            return
+        }
+
+        val vehicle = xv.getVehiclePlayerIsLookingAt(sender)
+        if ( vehicle === null ) {
+            Message.error(sender, "No vehicle found.")
+            return
+        }
+
+        // set health for all health components
+        var setAmmo = false
+        for ( e in vehicle.elements ) {
+            val ammoComponent = e.components.ammo
+            if ( ammoComponent !== null ) {
+                for ( i in 0 until ammoComponent.max.size ) {
+                    ammoComponent.current[i] = amount.coerceIn(0, ammoComponent.max[i])
+                    ammoComponent.currentType[i] = ammoComponent.validTypes[0] // set type to first
+                }
+                setAmmo = true
+            }
+        }
+
+        if ( setAmmo ) {
+            Message.print(sender, "Setting vehicle ammo: prototype = ${vehicle.prototype.name}, id = ${vehicle.id}")
+        } else {
+            Message.print(sender, "SKIPPED: vehicle has no ammo component: prototype = ${vehicle.prototype.name}, id = ${vehicle.id}")
+        }
     }
 
 

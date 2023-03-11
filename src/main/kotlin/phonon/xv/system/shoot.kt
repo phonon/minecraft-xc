@@ -19,6 +19,7 @@ import phonon.xc.gun.Gun
 import phonon.xc.gun.Projectile
 import phonon.xc.gun.ProjectileSystem
 import phonon.xc.util.sound.SoundPacket
+import phonon.xc.throwable.ThrownThrowable
 import phonon.xv.XV
 import phonon.xv.core.Vehicle
 import phonon.xv.core.VehicleComponentType
@@ -43,6 +44,12 @@ public data class ShootWeaponRequest(
     val player: Player? = null,
     // if true, ignore ammo check
     val ignoreAmmo: Boolean = false,
+    // vehicle entity source of weapon
+    val source: ArmorStand? = null,
+    // location to spawn projectile
+    val shootPosition: Location? = null,
+    // direction for projectile
+    val shootDirection: Vector? = null,
 )
 
 /**
@@ -62,6 +69,9 @@ public fun XV.systemShootWeapon(
             group,
             player,
             ignoreAmmo,
+            reqSource,
+            reqShootPosition,
+            reqShootDirection,
         ) = request
 
         val ammo = element.components.ammo
@@ -96,9 +106,9 @@ public fun XV.systemShootWeapon(
             }
 
             // find entity source of bullet
-            var source: ArmorStand? = null
-            var shootPosition: Location? = null
-            var shootDirection: Vector? = null
+            var source: ArmorStand? = reqSource
+            var shootPosition: Location? = reqShootPosition
+            var shootDirection: Vector? = reqShootDirection
             if ( component == VehicleComponentType.GUN_TURRET ) {
                 val gunTurret = element.components.gunTurret!!
                 source = gunTurret.armorstandTurret
@@ -135,6 +145,10 @@ public fun XV.systemShootWeapon(
                 shootDirection = shootPosition.direction
                 shootPosition.add(shootDirection.clone().multiply(2.0))
             }
+            else if ( component == VehicleComponentType.AIRPLANE ) {
+
+                
+            }
             else {
                 xv.logger.warning("TODO: Cannot shoot weapon without gun turret or gun barrel yet")
                 continue
@@ -163,7 +177,29 @@ public fun XV.systemShootWeapon(
                 }
             }
             else if ( ammoType.weaponType == XC.ITEM_TYPE_THROWABLE ) {
-                // TODO
+                val throwableType = xv.xc.storage.throwable[ammoType.weaponId]
+                if ( throwableType !== null && player !== null ) {
+                    // spawn throwable item entity
+                    val itemThrown = throwableType.toThrownItem(xv.xc)
+                    val itemEntity = source.world.dropItem(shootPosition, itemThrown)
+                    itemEntity.setPickupDelay(Integer.MAX_VALUE)
+                    itemEntity.setVelocity(shootDirection.multiply(throwableType.throwSpeed))
+
+                    // add throwable
+                    xc.thrownThrowables[source.world.getUID()]?.let { throwables ->
+                        throwables.add(ThrownThrowable(
+                            throwable = throwableType,
+                            id = 0, // unused
+                            ticksElapsed = 0,
+                            itemEntity = itemEntity,
+                            source = source,
+                            thrower = player,
+                        ))
+                    }
+                } else {
+                    xv.logger.warning("TODO: Cannot shoot gun without player yet")
+                }
+                
             }
             
         } catch ( err: Exception ) {

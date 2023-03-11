@@ -7,6 +7,7 @@ import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 import org.bukkit.Bukkit
+import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Particle
@@ -19,17 +20,22 @@ import org.bukkit.util.EulerAngle
 import net.kyori.adventure.text.Component
 import phonon.xv.XV
 import phonon.xv.common.UserInput
+import phonon.xv.component.AmmoComponent
 import phonon.xv.component.FuelComponent
 import phonon.xv.component.HealthComponent
 import phonon.xv.component.SeatsComponent
 import phonon.xv.component.AirplaneComponent
 import phonon.xv.component.TransformComponent
 import phonon.xv.core.ComponentsStorage
+import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.iter.*
 import phonon.xv.util.math.directionFromPrecomputedYawPitch
 import phonon.xv.util.math.EulerOrder
 import phonon.xv.util.math.distanceToAngle
 import phonon.xv.util.math.moveTowardsAngle
+import phonon.xv.util.ConcurrentPlayerInfoMessageMap
+import phonon.xv.util.progressBar10Green
+import phonon.xv.util.progressBar10Red
 
 /**
  * System for doing plane movement fuel checks. Should run before plane
@@ -94,7 +100,14 @@ public fun XV.systemPlaneMovement(
 
             val pilot = seats.passengers[plane.seatController]
             var isFiring = false // will update with pilot controls spacebar
-            
+
+            // get user input
+            val controls = if ( pilot !== null ) {
+                userInputs[pilot.getUniqueId()] ?: UserInput()
+            } else {
+                UserInput()
+            }
+
             // current block location of plane
             val blx = floor(transform.x).toInt()
             val bly = floor(transform.y).toInt()
@@ -186,9 +199,6 @@ public fun XV.systemPlaneMovement(
             
             // handle plane interaction
             if ( pilot !== null && health.current >= plane.healthControllable && !plane.noFuel ) {
-                // get user input
-                val controls = userInputs[pilot.getUniqueId()] ?: UserInput()
-
                 // set isFiring flag from spacebar
                 isFiring = controls.jump
 
@@ -286,6 +296,16 @@ public fun XV.systemPlaneMovement(
                 }
                 // in air, speed steady
                 else {
+                    // adjust bullet convergence (only do while in air)
+                    if ( controls.left ) {
+                        plane.bulletConvergenceDistance = max(plane.bulletConvergenceDistanceMin, plane.bulletConvergenceDistance - plane.bulletConvergenceDistanceAdjustment)
+                        xv.infoMessage.put(pilot, 2, "Convergence: ${plane.bulletConvergenceDistance.toInt()}")
+                    }
+                    else if ( controls.right ) {
+                        plane.bulletConvergenceDistance = min(plane.bulletConvergenceDistanceMax, plane.bulletConvergenceDistance + plane.bulletConvergenceDistanceAdjustment)
+                        xv.infoMessage.put(pilot, 2, "Convergence: ${plane.bulletConvergenceDistance.toInt()}")
+                    }
+                    
                     // pilot facing direction
                     val pilotLoc = pilot.location
                     val pilotViewPitch = pilotLoc.pitch.toDouble()
@@ -459,10 +479,11 @@ public fun XV.systemPlaneMovement(
                 
                 // update bullet spawn location
                 val newBulletPosition: Vector = plane.rotMatrix.transformVector(plane.bulletOffset, Vector())
-                val newBulletPosition2: Vector = plane.rotMatrix.transformVector(plane.bulletOffset2, Vector())
                 plane.bulletSpawnOffsetX = transform.x + newBulletPosition.x
                 plane.bulletSpawnOffsetY = transform.y + newBulletPosition.y
                 plane.bulletSpawnOffsetZ = transform.z + newBulletPosition.z
+
+                val newBulletPosition2: Vector = plane.rotMatrix.transformVector(plane.bulletOffset2, Vector())
                 plane.bulletSpawnOffset2X = transform.x + newBulletPosition2.x
                 plane.bulletSpawnOffset2Y = transform.y + newBulletPosition2.y
                 plane.bulletSpawnOffset2Z = transform.z + newBulletPosition2.z
@@ -505,40 +526,117 @@ public fun XV.systemPlaneMovement(
             // =================================
             // firing controls
             // =================================
-            if ( pilot !== null && isFiring && plane.fireDelayCounter <= 0 ) {
-                xv.infoMessage.put(pilot, 1, "SHOOTING (TODO)")
-                plane.fireDelayCounter = plane.firerate
+            if ( pilot !== null ) {
+                if ( isFiring && plane.fireDelayCounter <= 0 ) {
+                    plane.fireDelayCounter = plane.firerate
+                    val shootTarget = plane.direction.clone().multiply(plane.bulletConvergenceDistance)
+                    var shootPosition: Location
+                    var shootDirection: Vector
+                    if ( plane.bulletSpawnIndex == 0 ) {
+                        shootPosition = Location(
+                            world,
+                            plane.bulletSpawnOffsetX,
+                            plane.bulletSpawnOffsetY,
+                            plane.bulletSpawnOffsetZ,
+                        )
+                        shootDirection = Vector(
+                            (transform.x + shootTarget.x) - plane.bulletSpawnOffsetX,
+                            (transform.y + shootTarget.y) - plane.bulletSpawnOffsetY,
+                            (transform.z + shootTarget.z) - plane.bulletSpawnOffsetZ,
+                        )
+                    } else {
+                        shootPosition = Location(
+                            world,
+                            plane.bulletSpawnOffset2X,
+                            plane.bulletSpawnOffset2Y,
+                            plane.bulletSpawnOffset2Z,
+                        )
+                        shootDirection = Vector(
+                            (transform.x + shootTarget.x) - plane.bulletSpawnOffset2X,
+                            (transform.y + shootTarget.y) - plane.bulletSpawnOffset2Y,
+                            (transform.z + shootTarget.z) - plane.bulletSpawnOffset2Z,
+                        )
+                    }
+
+                    plane.bulletSpawnIndex = (plane.bulletSpawnIndex + 1) % 2
+
+                    val element = xv.storage.getElement(el)
+                    if ( element !== null ) {
+                        xv.shootWeaponRequests.add(ShootWeaponRequest(
+                            element = element,
+                            component = VehicleComponentType.AIRPLANE,
+                            group = 0,
+                            player = pilot,
+                            source = plane.armorstand,
+                            shootPosition = shootPosition,
+                            shootDirection = shootDirection,
+                        ))
+
+                        // force print new message (to show new ammo amount)
+                        plane.infoTick = 0
+                    }
+                }
             }
 
             // reduce firing reload tick
             plane.fireDelayCounter = max(0, plane.fireDelayCounter - 1)
 
-            // // final pilot handling TODO: migrate
-            // if ( pilot !== null ) {
-                
-            //     // tick time to print info to pilot
-            //     plane.printInfoTick -= 1
-            //     if ( plane.printInfoTick < 0 ) {
-            //         printInfo = true
-            //         plane.printInfoTick = plane.timePrintInfo
-            //     }
-                
-            //     // message pilot
-            //     if ( printInfo ) {
-            //         val fuelProgress = plane.fuelBurn.toDouble() / plane.fuelBurnRate.toDouble()
-            //         xv.infoMessage.put(pilot, "${ChatColor.GRAY}Ammo: [${plane.ammo}/${plane.ammoMax}] | Fuel: ${plane.fuel}/${plane.fuelMax} ${progressBarSmall(fuelProgress)}")
-            //     }
-
-            //     // if seat passenger empty, then remove passenger reference
-            //     if ( plane.planeElement.entity?.getPassengers()?.getOrNull(0) === null ) {
-            //         plane.removePassenger()
-            //     }
-            // }
         } catch ( err: Exception ) {
             if ( xv.debug ) {
                 err.printStackTrace()
                 xv.logger.severe("Error in plane tick: ${err.message}")
             }
+        }
+    }
+}
+
+/**
+ * System for sending airplane vehicle info text to player.
+ */
+public fun systemPlaneInfoText(
+    storage: ComponentsStorage,
+    infoMessage: ConcurrentPlayerInfoMessageMap,
+) {
+    for ( (_, seats, ammo, fuel, plane) in ComponentTuple4.query<
+        SeatsComponent,
+        AmmoComponent,
+        FuelComponent,
+        AirplaneComponent,
+    >(storage) ) {
+        if ( plane.infoTick <= 0 ) {
+            plane.infoTick = 2
+            val player = seats.passengers[plane.seatController]
+            if ( player !== null && !infoMessage.contains(player) ) {
+                // NOTE: the infoMessage.contains check is not really synchronized
+                // since infoMessage is concurrent...oh well rip!
+                val ammoCurrent = ammo.current.getOrNull(0) ?: 0
+                val ammoMax = ammo.max.getOrNull(0) ?: 0
+
+                val fuelPercent = fuel.current.toDouble() / fuel.max.toDouble()
+                val finalText = if ( fuel.current == 0 ) {
+                    val fuelBar = progressBar10Red(0.0)
+                    "${ChatColor.RED}Fuel: ${fuelBar} ${fuel.current}/${fuel.max} | Ammo: ${ammoCurrent}/${ammoMax}"
+                } else {
+                    val fuelBar = progressBar10Green(fuelPercent)
+                    "${ChatColor.GREEN}Fuel: ${fuelBar} ${fuel.current}/${fuel.max} | Ammo: ${ammoCurrent}/${ammoMax}"
+                }
+                
+                // //// printing fuel tick percent, for debugging
+                // val fuelTickPercent = fuel.timeRemaining.toDouble() / fuel.timePerFuelWhenIdle.toDouble()
+                // val fuelText = if ( fuel.current == 0 ) {
+                //     val fuelBar = progressBar10Red(0.0)
+                //     "Fuel Tick: ${fuelBar} ${fuel.current}/${fuel.max}"
+                // } else {
+                //     val fuelBar = progressBar10Green(fuelTickPercent)
+                //     "Fuel Tick: ${fuelBar} ${fuel.current}/${fuel.max}"
+                // }
+
+                infoMessage.put(player, 0, finalText)
+            } else {
+                plane.infoTick = 20
+            }
+        } else {
+            plane.infoTick -= 1
         }
     }
 }

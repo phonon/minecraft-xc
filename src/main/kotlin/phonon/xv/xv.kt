@@ -926,6 +926,7 @@ public class XV (
 
         // default info message systems
         systemLandVehicleFuelInfoText(storage, infoMessage)
+        systemPlaneInfoText(storage, infoMessage)
         
         // sends info text to players and clears the info messages map
         systemPrintInfoMessages(infoMessage)

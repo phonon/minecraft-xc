@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 // plugin versioning
-version = "0.0.0"
+version = "0.0.3"
 
 // base of output jar name
 val OUTPUT_JAR_NAME = "xv"
@@ -79,7 +79,7 @@ dependencies {
     compileOnly("com.github.retrooper.packetevents:spigot:2.0.0-SNAPSHOT")
     
     // xc (combat core)
-    compileOnly(files("../xc/build/libs/xc-1.18.2-SNAPSHOT-0.0.2.jar"))
+    compileOnly(files("../xc/build/libs/xc-1.18.2-SNAPSHOT-0.0.3.jar"))
 
     // required so mineman api appears for kotlin vscode plugin
     // api("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")

@@ -56,7 +56,7 @@ ARMOR_PIERCING = 1.0
 ARMOR_PIERCING_SHELL = 1.0
 EXPLOSIVE = 0.75
 EXPLOSIVE_SHELL = 1.0
-FIRE = 1.0
+MOLOTOV = 1.0
 
 [ammo]
 can_reload_inside = true

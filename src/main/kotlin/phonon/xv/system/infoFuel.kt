@@ -18,7 +18,6 @@ import phonon.xv.core.iter.*
 import phonon.xv.component.FuelComponent
 import phonon.xv.component.LandMovementControlsComponent
 import phonon.xv.component.SeatsComponent
-import phonon.xv.util.Message
 import phonon.xv.util.ConcurrentPlayerInfoMessageMap
 import phonon.xv.util.progressBar10Green
 import phonon.xv.util.progressBar10Red
