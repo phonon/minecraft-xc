@@ -24,6 +24,7 @@ public enum class DamageType {
     ARMOR_PIERCING_SHELL, // armor piercing shell, e.g. tank ap shell
     BULLET,               // regular guns
     EXPLOSIVE,            // generic explosive like grenade
+    EXPLOSIVE_BOMB,       // bomb from plane
     EXPLOSIVE_SHELL,      // e.g. artillery or tank vehicle type damage
     FIRE,                 // generic fire damage type
     FLAK,                 // flak (anti air) gun damage
@@ -45,6 +46,7 @@ public enum class DamageType {
                 "ARMOR_PIERCING_SHELL" -> ARMOR_PIERCING_SHELL
                 "BULLET" -> BULLET
                 "EXPLOSIVE" -> EXPLOSIVE
+                "EXPLOSIVE_BOMB" -> EXPLOSIVE_BOMB
                 "EXPLOSIVE_SHELL" -> EXPLOSIVE_SHELL
                 "FIRE" -> FIRE
                 "FLAK" -> FLAK
