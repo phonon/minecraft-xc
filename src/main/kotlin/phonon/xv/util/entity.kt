@@ -138,6 +138,9 @@ public fun reassociateEntities(
                         }
 
                         when ( componentType ) {
+                            VehicleComponentType.AIRPLANE -> {
+                                vehicleElement.components.airplane?.reassociateArmorstand(xc, entity, vehicle, vehicleElement, xv.entityVehicleData)
+                            }
                             VehicleComponentType.MODEL -> vehicleElement.components.model?.reassociateArmorstand(xc, entity, vehicle, vehicleElement, xv.entityVehicleData)
                             VehicleComponentType.GUN_BARREL -> vehicleElement.components.gunBarrel?.reassociateArmorstand(xc, entity, vehicle, vehicleElement, xv.entityVehicleData)
                             VehicleComponentType.GUN_TURRET -> vehicleElement.components.gunTurret?.reassociateArmorstand(xc, entity, vehicle, vehicleElement, xv.entityVehicleData)

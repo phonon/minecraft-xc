@@ -33,6 +33,7 @@ public fun XV.systemUpdateSeats(
             for ( i in 0 until seats.count ) {
                 val armorstand = seats.armorstands[i]
                 val player = seats.passengers[i]
+                val armorstandIsExternal = seats.armorstandIsExternal[i]
 
                 // debug
                 // println("armorstand: ${armorstand?.getUniqueId()}, player: $player, player.getVehicle() ${ ?.getVehicle()?.getUniqueId()}")
@@ -40,7 +41,7 @@ public fun XV.systemUpdateSeats(
                 if ( player !== null ) {
                     val playerVehicle = player.getVehicle()
                     if ( playerVehicle === null || playerVehicle.getUniqueId() !== armorstand?.getUniqueId() || !player.isOnline() || player.isDead() ) {
-                        if ( armorstand !== null ) {
+                        if ( armorstand !== null && armorstandIsExternal == false ) {
                             xv.xc.removeVehiclePassengerArmor(armorstand.getUniqueId())
                             xv.entityVehicleData.remove(armorstand.getUniqueId())
                             armorstand.remove()
@@ -53,7 +54,7 @@ public fun XV.systemUpdateSeats(
                 }
 
                 // update seat armorstand position
-                if ( armorstand !== null && armorstand.isValid() ) {
+                if ( armorstand !== null && armorstand.isValid() && armorstandIsExternal == false ) {
                     val seatPos = armorstand.location
                     if (
                         transform.yawDirty ||

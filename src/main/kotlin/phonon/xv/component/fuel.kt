@@ -45,6 +45,8 @@ public data class FuelComponent(
     val timePerFuelWhenMoving: Long = 60,
     // drop fuel item instead of storing into item during despawn
     val dropItem: Boolean = true,
+    // debug flag for ignoring fuel
+    val ignore: Boolean = false,
 ): VehicleComponent<FuelComponent> {
     // create item stack for checking if items are correct fuel item type
     val item: ItemStack = ItemStack(material)
@@ -134,6 +136,8 @@ public data class FuelComponent(
             toml.getLong("time_per_fuel_when_moving")?.let { properties["timePerFuelWhenMoving"] = it }
             
             toml.getBoolean("drop_item")?.let { properties["dropItem"] = it }
+
+            toml.getBoolean("ignore")?.let { properties["ignore"] = it }
 
             return mapToObject(properties, FuelComponent::class)
         }

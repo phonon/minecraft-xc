@@ -283,6 +283,7 @@ public class XV (
         // wtf why isnt it saving this shit automatically??
         if ( config.createDemoConfigs ) {
             listOf(
+                "vehicle/debug_airplane.toml",
                 "vehicle/debug_cannon.toml",
                 "vehicle/debug_car.toml",
                 "vehicle/debug_humvee.toml",

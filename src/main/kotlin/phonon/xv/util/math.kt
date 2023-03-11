@@ -14,6 +14,46 @@ private fun clamp(v: Double, min: Double, max: Double): Double {
 }
 
 /**
+ * Extension helpers to rotate double by yaw or pitch using standard
+ * minecraft transform axes order. 
+ */
+public fun Double.rotatePrecomputedYawX(yawSin: Double, yawCos: Double): Double {
+    return yawCos * this - yawSin * this
+}
+public fun Double.rotatePrecomputedYawZ(yawSin: Double, yawCos: Double): Double {
+    return yawSin * this + yawCos * this
+}
+
+/**
+ * Extension helpers to get distance to target 360 deg euler angle.
+ * Value should be in range [0, 360] 
+ */
+public fun Double.distanceToAngle(target: Double): Double {
+    val diff = (target - this) % 360.0
+    val dist = ((2.0 * diff) % 360.0) - diff
+    return dist
+}
+
+/**
+ * Extension helpers to move a 360 degree euler angle this towards a
+ * target angle, with automatic wrapping to ensure result is within [0, 360].
+ */
+public fun Double.moveTowardsAngle(target: Double, amount: Double): Double {
+    val diff = (target - this) % 360.0
+    val dist = ((2.0 * diff) % 360.0) - diff
+
+    if ( dist > 0.0 ) {
+        return Math.min(this + amount, this + dist)
+    }
+    else if ( dist < 0.0 ) {
+        return Math.max(this - amount, this + dist)
+    }
+    else {
+        return this
+    }
+}
+
+/**
  * Set vector to a normalized direction vector from yaw, pitch.
  * Assume y-up. Inputs should be in degrees
  */

@@ -4,15 +4,43 @@ import com.google.gson.JsonObject
 import java.util.logging.Logger
 import org.tomlj.TomlTable
 import org.bukkit.Location
+import org.bukkit.NamespacedKey
 import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
+import org.bukkit.persistence.PersistentDataType
 import phonon.xc.XC
 import phonon.xv.core.*
 import phonon.xv.util.mapToObject
 import phonon.xv.util.toml.*
 import java.util.*
 import kotlin.collections.HashMap
+
+/**
+ * Namespace keys for tagging entities as dynamically created armorstand seats.
+ */
+val SEAT_ENTITY_TAG = NamespacedKey("xv", "seat")
+
+/**
+ * Helper function to tag an entity as a dynamically created armorstand seat,
+ * with SEAT_ENTITY_TAG. The only thing that matters is the tag is present,
+ * value attached is arbitrary.
+ */
+public fun Entity.addSeatTag() {
+    this.getPersistentDataContainer().set(
+        SEAT_ENTITY_TAG,
+        PersistentDataType.BYTE,
+        0, // ARBITRARY VALUE
+    )
+}
+
+/**
+ * Helper function to check if entity has seat tag.
+ */
+public fun Entity.hasSeatTag(): Boolean {
+    val dataContainer = this.getPersistentDataContainer()
+    return dataContainer.has(SEAT_ENTITY_TAG, PersistentDataType.BYTE)
+}
 
 /**
  * This adds a list of player seats to the vehicle element.
@@ -58,6 +86,13 @@ public data class SeatsComponent(
 
     // quick lookup for passenger in each seat
     val passengers: Array<Player?> = Array(count) { null }
+
+    // flag for whether armor stand is controlled by seats systems
+    // or is an external armor stand. e.g. for planes, typically
+    // pilot mounts the plane entity armorstand itself, so we need
+    // to flag that this armorstand is an "external" armorstand
+    // and not controlled by seats systems.
+    val armorstandIsExternal: BooleanArray = BooleanArray(count) { false }
 
     // Arrays for tracking and setting vehicle element health display
     // using seat armorstand health. This caches the current health being

@@ -11,6 +11,7 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import org.bukkit.World
 import org.bukkit.Location
+import org.bukkit.entity.ArmorStand
 import org.bukkit.entity.Player
 import org.bukkit.Particle
 import phonon.xv.XV
@@ -24,6 +25,8 @@ import phonon.xv.core.iter.*
 import phonon.xv.component.SeatsComponent
 import phonon.xv.component.SeatsRaycastComponent
 import phonon.xv.component.TransformComponent
+import phonon.xv.component.addSeatTag
+import phonon.xv.component.hasSeatTag
 import phonon.xv.util.CustomArmorStand
 import phonon.xv.util.entity.setVehicleUuid
 
@@ -109,11 +112,26 @@ public fun XV.systemMountVehicle(
             }
 
             // currently hard-coded mapping to valid mountable components
-            val seatToMount = when ( componentType ) {
-                VehicleComponentType.MODEL -> element.components.model?.seatToMount ?: -1
-                VehicleComponentType.GUN_BARREL -> element.components.gunBarrel?.seatToMount ?: -1
-                VehicleComponentType.GUN_TURRET -> element.components.gunTurret?.seatToMount ?: -1
-                else -> -1
+            var seatToMount: Int = -1
+            var armorstandToMount: ArmorStand? = null
+            when ( componentType ) {
+                VehicleComponentType.AIRPLANE -> {
+                    val airplaneComponent = element.components.airplane
+                    if ( airplaneComponent !== null ) {
+                        seatToMount = airplaneComponent.seatToMount
+                        armorstandToMount = airplaneComponent.armorstand
+                    }
+                }
+                VehicleComponentType.MODEL -> {
+                    seatToMount = element.components.model?.seatToMount ?: -1
+                }
+                VehicleComponentType.GUN_BARREL -> {
+                    seatToMount = element.components.gunBarrel?.seatToMount ?: -1
+                }
+                VehicleComponentType.GUN_TURRET -> {
+                    seatToMount = element.components.gunTurret?.seatToMount ?: -1
+                }
+                else -> {}
             }
 
             // check valid seat and slot is empty
@@ -127,32 +145,45 @@ public fun XV.systemMountVehicle(
                     continue
                 }
 
-                val seatEntity = CustomArmorStand.create(world, locSeat)
-                // val seatEntity = world.spawn(locSeat, ArmorStand::class.java)
-                seatEntity.setGravity(false)
-                seatEntity.setInvulnerable(true)
-                seatEntity.setSmall(true)
-                seatEntity.setMarker(true)
-                seatEntity.setVisible(xv.config.debugSeats)
+                // flag whether we are mounting an armorstand owned by another component
+                var armorstandIsExternal = armorstandToMount !== null
 
-                player.teleport(locSeat) // without teleporting first, client side interpolation sends player to wrong location
-                seatEntity.addPassenger(player)
+                val seatEntity = if ( armorstandToMount !== null ) { 
+                    player.teleport(armorstandToMount.location) // without teleporting first, client side interpolation sends player to wrong location
+                    armorstandToMount.addPassenger(player)
+                    armorstandToMount
+                } else { // create armorstand
+                    val seatEntity = CustomArmorStand.create(world, locSeat)
+                    // val seatEntity = world.spawn(locSeat, ArmorStand::class.java)
+                    seatEntity.addSeatTag()
+                    seatEntity.setGravity(false)
+                    seatEntity.setInvulnerable(true)
+                    seatEntity.setSmall(true)
+                    seatEntity.setMarker(true)
+                    seatEntity.setVisible(xv.config.debugSeats)
+
+                    player.teleport(locSeat) // without teleporting first, client side interpolation sends player to wrong location
+                    seatEntity.addPassenger(player)
+
+                    // entity -> vehicle mapping
+                    seatEntity.setVehicleUuid(vehicle.uuid, element.uuid)
+                    entityVehicleData[seatEntity.uniqueId] = EntityVehicleData(
+                        vehicle,
+                        element,
+                        VehicleComponentType.SEATS,
+                    )
+
+                    seatEntity
+                }
 
                 // armorstand gun plugin vehicle armor
                 if ( seatsComponent.armor[seatToMount] > 0.0 ) {
                     xc.addVehiclePassengerArmor(seatEntity.getUniqueId(), seatsComponent.armor[seatToMount])
                 }
 
-                // entity -> vehicle mapping
-                seatEntity.setVehicleUuid(vehicle.uuid, element.uuid)
-                entityVehicleData[seatEntity.uniqueId] = EntityVehicleData(
-                    vehicle,
-                    element,
-                    VehicleComponentType.SEATS,
-                )
-
                 seatsComponent.armorstands[seatToMount] = seatEntity
                 seatsComponent.passengers[seatToMount] = player
+                seatsComponent.armorstandIsExternal[seatToMount] = armorstandIsExternal
             } else {
                 // not mounting directly, try raycast
                 requestsNotHandled.add(req)
@@ -597,6 +628,7 @@ public fun XV.systemMountSeatRaycast(
                     val locSeat = Location(world, hitSeatX, hitSeatY, hitSeatZ, hitSeatYaw, 0f)
                     val seatEntity = CustomArmorStand.create(world, locSeat)
                     // val seatEntity = world.spawn(locSeat, ArmorStand::class.java)
+                    seatEntity.addSeatTag()
                     seatEntity.setGravity(false)
                     seatEntity.setInvulnerable(true)
                     seatEntity.setSmall(true)
