@@ -298,11 +298,13 @@ public data class AirplaneComponent(
     }
 
     /**
-     * Try to re-attach armorstand to this component, during reloading.
+     * Re-creates armorstand for this airplane element.
+     * Used when re-associating armor stands (after server restart) or
+     * after player logs off which makes armorstand disappear and useless.
      */
-    fun reassociateArmorstand(
+    fun recreateArmorstand(
         xc: XC,
-        entity: Entity,
+        oldEntity: Entity,
         vehicle: Vehicle,
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
@@ -311,7 +313,7 @@ public data class AirplaneComponent(
         // airplane uses CustomArmorStand. whenever server restarts, it becomes
         // a normal armorstand (which cannot teleport when players are riding)
         // so always re-create armorstand after restart and re-association.
-        val loc = entity.location
+        val loc = oldEntity.location
         // must use custom armorstand so we can teleport with player riding
         val newArmorstand: ArmorStand = CustomArmorStand.create(loc.world, loc)
         newArmorstand.persistentDataContainer.set(ENTITY_KEY_COMPONENT, PersistentDataType.STRING, VehicleComponentType.AIRPLANE.toString())
@@ -319,8 +321,8 @@ public data class AirplaneComponent(
         newArmorstand.setInvulnerable(false) // make sure armorstand vulnerable so EntityDamageByEntityEvent triggers
         newArmorstand.setVisible(armorstandVisible)
         newArmorstand.setRotation(loc.yaw, 0f)
-        if ( entity is ArmorStand ) {
-            newArmorstand.setHeadPose(entity.getHeadPose())
+        if ( oldEntity is ArmorStand ) {
+            newArmorstand.setHeadPose(oldEntity.getHeadPose())
         }
 
         // add model to armorstand
@@ -345,8 +347,29 @@ public data class AirplaneComponent(
 
         this.armorstand = newArmorstand
 
-        // remove old entity
-        entity.remove()
+        // remove old entity and entity -> vehicle mapping
+        entityVehicleData.remove(oldEntity.uniqueId)
+        xc.removeHitbox(oldEntity.getUniqueId())
+        oldEntity.remove()
+    }
+
+    /**
+     * Try to re-attach armorstand to this component, during reloading.
+     */
+    fun reassociateArmorstand(
+        xc: XC,
+        entity: Entity,
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+    ) {
+        recreateArmorstand(
+            xc,
+            entity,
+            vehicle,
+            element,
+            entityVehicleData,
+        )
     }
 
     companion object {

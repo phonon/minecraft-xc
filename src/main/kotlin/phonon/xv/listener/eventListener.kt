@@ -261,4 +261,21 @@ public class EventListener(val xv: XV): Listener {
             }
         }
     }
+    
+    /**
+     * Handle player join, check if player has been marked riding
+     * an invalid armorstand, remove entity if exists.
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public fun onPlayerJoin(event: PlayerJoinEvent) {
+        val player = event.getPlayer()
+        if ( xv.hasInvalidVehicle.contains(player.getUniqueId()) ) {
+            xv.hasInvalidVehicle.remove(player.getUniqueId())
+            val vehicle = player.getVehicle()
+            if ( vehicle !== null ) {
+                player.eject()
+                vehicle.remove()
+            }
+        }
+    }
 }

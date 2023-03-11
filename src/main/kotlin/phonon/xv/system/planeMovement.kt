@@ -173,7 +173,8 @@ public fun XV.systemPlaneMovement(
             val blockAbovePassable = blockAbove.isPassable()
             val inSolid = !blockPassable && !blockBelowPassable && !blockAbovePassable
             
-            // if inside solid blocks too long, force despawn
+            // other despawn conditions:
+            // - if inside solid blocks too long, force despawn
             if ( inSolid ) {
                 plane.inSolidDespawnCounter += 1
                 if ( plane.inSolidDespawnCounter > 40 ) { // ~2 seconds, force despawn
@@ -188,9 +189,32 @@ public fun XV.systemPlaneMovement(
                             ))
                         }
                     }
+                    continue
                 }
             } else {
                 plane.inSolidDespawnCounter = 0
+            }
+            
+            // pilot online check, immediately despawn plane
+            if ( pilot !== null ) {
+                if ( !pilot.isOnline ) {
+                    xv.hasInvalidVehicle.add(pilot.getUniqueId())
+                }
+                val pilotInvalid = !pilot.isOnline() || pilot.isDead()
+                if ( pilotInvalid ) {
+                    val element = xv.storage.getElement(el)
+                    if ( element !== null ) {
+                        val vehicle = xv.vehicleStorage.getOwningVehicle(element)
+                        if ( vehicle !== null ) {
+                            despawnRequests.add(DespawnVehicleFinish(
+                                vehicle = vehicle,
+                                dropItem = true,
+                                force = true,
+                            ))
+                        }
+                    }
+                    continue
+                }
             }
 
             val prevYaw = transform.yaw

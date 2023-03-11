@@ -106,6 +106,12 @@ public class XV (
     internal var infoMessage: ConcurrentPlayerInfoMessageMap = ConcurrentPlayerInfoMessageMap()
         private set
     
+    // map of player UUID who logged out -> invalid vehicle entity needs to be destroyed
+    // e.g. when riding plane and logging out, the plane is invalid and must be
+    // removed next time player logs in
+    internal var hasInvalidVehicle: HashSet<UUID> = HashSet()
+        private set
+    
     // save system (includes save pipeline state)
     internal var savingVehicles: Boolean = false
     internal var saveVehiclesQueue: Array<Vehicle?> = arrayOf()
@@ -160,6 +166,7 @@ public class XV (
         userInputs = HashMap()
         entityVehicleData = HashMap()
         infoMessage = ConcurrentPlayerInfoMessageMap()
+        hasInvalidVehicle = HashSet()
 
         // clear skins storage
         skins = SkinStorage.empty()
