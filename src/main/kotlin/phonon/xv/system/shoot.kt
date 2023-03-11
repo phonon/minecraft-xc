@@ -183,7 +183,7 @@ public fun XV.systemShootWeapon(
                     val itemThrown = throwableType.toThrownItem(xv.xc)
                     val itemEntity = source.world.dropItem(shootPosition, itemThrown)
                     itemEntity.setPickupDelay(Integer.MAX_VALUE)
-                    itemEntity.setVelocity(shootDirection.multiply(throwableType.throwSpeed))
+                    itemEntity.setVelocity(shootDirection.normalize().multiply(throwableType.throwSpeed))
 
                     // add throwable
                     xc.thrownThrowables[source.world.getUID()]?.let { throwables ->

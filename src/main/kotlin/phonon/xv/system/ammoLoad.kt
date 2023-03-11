@@ -199,11 +199,14 @@ public fun XV.systemFinishAmmoLoadVehicle(
                 val maxAmmo = ammoComponent.max[group]
                 val currentAmmo = ammoComponent.current[group]
                 val amountPerItem = ammoComponent.amountPerItem[group]
-                
+                val maxPerReload = ammoComponent.maxPerReload[group]
+
                 // calculate how many items needed to reload to max
                 var itemsUsed = max(1, (maxAmmo - currentAmmo) / amountPerItem)
-                // // clamp by max allowed per reload TODO
-                // itemsUsed = min(itemsUsed, ammoComponent.maxAmountPerRefuel)
+                // clamp by max allowed per reload
+                if ( maxPerReload > 0 ) {
+                    itemsUsed = min(itemsUsed, maxPerReload)
+                }
                 // clamp by amount actually in player hand
                 itemsUsed = min(itemsUsed, itemInHand.amount)
 

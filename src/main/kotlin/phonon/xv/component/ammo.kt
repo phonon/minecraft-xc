@@ -66,6 +66,8 @@ public data class AmmoComponent(
     val currentType: Array<AmmoWeaponType> = arrayOf(),
     // amount of ammo per item for each group, each index corresponds to an ammo group
     val amountPerItem: IntArray = intArrayOf(),
+    // max ammo items allowed per reload for each group, each index corresponds to an ammo group
+    val maxPerReload: IntArray = intArrayOf(),
     // ======================================================
     // flattened list of all valid types
     val validTypes: Array<AmmoWeaponType> = arrayOf(),
@@ -240,11 +242,13 @@ public data class AmmoComponent(
             // parse ammo group properties
             val groupMaxAmmo = ArrayList<Int>()
             val groupAmmoPerItem = ArrayList<Int>()
+            val groupMaxPerReload = ArrayList<Int>()
             toml.getArray("groups")?.let { groups ->
                 for ( i in 0 until groups.size() ) {
                     val group = groups.getTable(i)
                     groupMaxAmmo.add(group.getNumberAs<Int>("max_ammo") ?: 1)
                     groupAmmoPerItem.add(group.getNumberAs<Int>("ammo_per_item") ?: 1)
+                    groupMaxPerReload.add(group.getNumberAs<Int>("max_reload") ?: -1)
                 }
             }
 
@@ -299,6 +303,7 @@ public data class AmmoComponent(
             
             properties["max"] = groupMaxAmmo.toIntArray()
             properties["amountPerItem"] = groupAmmoPerItem.toIntArray()
+            properties["maxPerReload"] = groupMaxPerReload.toIntArray()
             properties["current"] = IntArray(numGroups) { 0 }
             properties["currentType"] = Array(numGroups) { AmmoWeaponType.INVALID }
             properties["validTypes"] = ammoTypes.values.toTypedArray()

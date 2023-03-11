@@ -99,7 +99,8 @@ groups = [
     { max_ammo = 1000, ammo_per_item = 250 }, # group 0
 ]
 types = [
-    { group = 0, ammo = 150, gun = 600 }, # machinegun
+    # { group = 0, ammo = 150, gun = 600 }, # machinegun
+    { group = 0, ammo = 250, throwable = 50 }, # bomb
 ]
 
 # smoke particles when health < 50%

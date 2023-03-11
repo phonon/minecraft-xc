@@ -57,7 +57,7 @@ public fun systemPlaneFuel(
         }
 
         // for now do simple check: either use idle rate or moving rate
-        if ( transform.isMoving ) {
+        if ( plane.speed > 0.5 ) { // TODO: configurable threshold
             fuel.timeRemaining -= fuel.burnRateMoving
         } else {
             fuel.timeRemaining -= fuel.burnRateIdle
