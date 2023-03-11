@@ -16,6 +16,7 @@ import phonon.xv.component.ModelComponent
 import phonon.xv.core.ENTITY_KEY_COMPONENT
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.core.VehicleComponentType
+import phonon.xv.system.MountVehicleRequest
 
 /**
  * Key for storing a vehicle element UUID in an entity's persistent
@@ -111,6 +112,7 @@ public fun Entity.hasVehicleUuid(): Boolean {
 /**
  * Reassociate entities in input with their engine mapped vehicle elements.
  * Returns number of invalid entities removed.
+ * TODO: this should be in systems.
  */
 public fun reassociateEntities(
     xv: XV,
@@ -139,6 +141,17 @@ public fun reassociateEntities(
 
                         when ( componentType ) {
                             VehicleComponentType.AIRPLANE -> {
+                                val pilot = entity.getPassengers().firstOrNull()
+                                if ( pilot !== null && pilot is Player) { // re-add pilot if exists TODO: do this for all components
+                                    pilot.eject()
+                                    xv.mountRequests.add(MountVehicleRequest(
+                                        player = pilot,
+                                        vehicle = vehicle,
+                                        element = vehicleElement,
+                                        componentType = componentType,
+                                        doRaycast = false,
+                                    ))
+                                }
                                 vehicleElement.components.airplane?.reassociateArmorstand(xc, entity, vehicle, vehicleElement, xv.entityVehicleData)
                             }
                             VehicleComponentType.MODEL -> vehicleElement.components.model?.reassociateArmorstand(xc, entity, vehicle, vehicleElement, xv.entityVehicleData)

@@ -299,20 +299,46 @@ public data class AirplaneComponent(
         element: VehicleElement,
         entityVehicleData: HashMap<UUID, EntityVehicleData>,
     ) {
+        // re-create armorstand:
+        // airplane uses CustomArmorStand. whenever server restarts, it becomes
+        // a normal armorstand (which cannot teleport when players are riding)
+        // so always re-create armorstand after restart and re-association.
+        val loc = entity.location
+        // must use custom armorstand so we can teleport with player riding
+        val newArmorstand: ArmorStand = CustomArmorStand.create(loc.world, loc)
+        newArmorstand.persistentDataContainer.set(ENTITY_KEY_COMPONENT, PersistentDataType.STRING, VehicleComponentType.AIRPLANE.toString())
+        newArmorstand.setGravity(false)
+        newArmorstand.setInvulnerable(false) // make sure armorstand vulnerable so EntityDamageByEntityEvent triggers
+        newArmorstand.setVisible(armorstandVisible)
+        newArmorstand.setRotation(loc.yaw, 0f)
         if ( entity is ArmorStand ) {
-            this.armorstand = entity
-            entity.setInvulnerable(false) // make sure armorstand vulnerable so interact triggers
-            // entity -> vehicle mapping
-            entityVehicleData[entity.uniqueId] = EntityVehicleData(
-                vehicle,
-                element,
-                VehicleComponentType.AIRPLANE,
-            )
-            // register vehicle hitbox in xc combat
-            if ( hitboxSize.xHalf > 0f && hitboxSize.zHalf > 0f && hitboxSize.yHeight > 0f ) {
-                xc.addHitbox(entity.getUniqueId(), hitboxSize)
-            }
+            newArmorstand.setHeadPose(entity.getHeadPose())
         }
+
+        // add model to armorstand
+        if ( modelId > 0 ) {
+            newArmorstand.getEquipment().setHelmet(createCustomModelItem(material, modelId))
+        }
+
+        // add a stable entity reassociation key
+        newArmorstand.setVehicleUuid(vehicle.uuid, element.uuid)
+
+        // entity -> vehicle mapping
+        entityVehicleData[newArmorstand.uniqueId] = EntityVehicleData(
+            vehicle,
+            element,
+            VehicleComponentType.AIRPLANE,
+        )
+
+        // register vehicle hitbox in xc combat
+        if ( hitboxSize.xHalf > 0f && hitboxSize.zHalf > 0f && hitboxSize.yHeight > 0f ) {
+            xc.addHitbox(newArmorstand.getUniqueId(), hitboxSize)
+        }
+
+        this.armorstand = newArmorstand
+
+        // remove old entity
+        entity.remove()
     }
 
     companion object {
