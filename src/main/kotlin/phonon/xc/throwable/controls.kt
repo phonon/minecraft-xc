@@ -88,12 +88,13 @@ internal data class ExpiredThrowable(
  * Data for a throwable that has been thrown from a player.
  * This is now tracks an item entity in the world.
  */
-internal data class ThrownThrowable(
+public data class ThrownThrowable(
     val throwable: ThrowableItem,
-    val id: Int,            // item key id for this throwable
-    val ticksElapsed: Int,  // current # of ticks passed
+    val id: Int,                // item key id for this throwable
+    val ticksElapsed: Int,      // current # of ticks passed
     val itemEntity: ItemEntity, // entity for this throwable
-    val thrower: Entity,    // thrower of this throwable (used to track kill source)
+    val source: Entity,         // entity source for throwable (for hitbox purposes)
+    val thrower: Entity,        // actual player thrower of this throwable (used to track kill source)
     // position: used to project forward to detect block hit
     // NO LONGER NEEDED: velocity for Item entity is accurate, so can project
     // next motion state with just instantaneous pos/vel during system tick.
@@ -267,6 +268,7 @@ internal fun XC.requestThrowThrowableSystem(
                     id = throwId,
                     ticksElapsed = ticksElapsed,
                     itemEntity = itemEntity,
+                    source = player,
                     thrower = player,
                     // prevLocX = location.x,
                     // prevLocY = location.y,
@@ -345,6 +347,7 @@ internal fun XC.droppedThrowableSystem(
                     id = throwId,
                     ticksElapsed = ticksElapsed,
                     itemEntity = itemEntity,
+                    source = player,
                     thrower = player,
                     // prevLocX = location.x,
                     // prevLocY = location.y,
@@ -524,6 +527,7 @@ internal fun XC.tickThrownThrowableSystem(
             throwId,
             ticksElapsed,
             itemEntity,
+            source,
             thrower,
             // prevLocX,
             // prevLocY,
@@ -646,7 +650,7 @@ internal fun XC.tickThrownThrowableSystem(
                 if ( hbs !== null ) {
                     for ( hitbox in hbs ) {
                         // skip if hitbox is thrower
-                        if ( hitbox.entity === thrower ) {
+                        if ( hitbox.entity === source ) {
                             continue
                         }
 
@@ -675,6 +679,7 @@ internal fun XC.tickThrownThrowableSystem(
                 id = throwId,
                 ticksElapsed = ticksElapsed + 1,
                 itemEntity = itemEntity,
+                source = source,
                 thrower = thrower,
                 // prevLocX = currLocX,
                 // prevLocY = currLocY,

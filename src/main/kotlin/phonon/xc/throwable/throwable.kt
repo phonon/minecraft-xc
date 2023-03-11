@@ -115,6 +115,24 @@ public data class ThrowableItem(
         return item
     }
 
+    /**
+     * Create a new ItemStack for creating Item entity for throwing.
+     */
+    public fun toThrownItem(xc: XC): ItemStack {
+        val item = ItemStack(xc.config.materialThrowable, 1)
+        val itemMeta = item.getItemMeta()
+        
+        // name
+        itemMeta.setDisplayName("${ChatColor.RESET}${this.itemName}")
+        
+        // model
+        itemMeta.setCustomModelData(this.itemModelReady)
+
+        item.setItemMeta(itemMeta)
+
+        return item
+    }
+
     companion object {
         /**
          * Parse and return a Throwable from a `throwable.toml` file.

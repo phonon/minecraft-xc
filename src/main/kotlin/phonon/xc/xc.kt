@@ -294,7 +294,8 @@ public class XC(
     internal var readyThrowables: HashMap<Int, ReadyThrowable> = HashMap()
     // per-world throwables queues, map world uuid => queue
     internal var expiredThrowables: HashMap<UUID, ArrayList<ExpiredThrowable>> = HashMap()
-    internal var thrownThrowables: HashMap<UUID, ArrayList<ThrownThrowable>> = HashMap()
+    public var thrownThrowables: HashMap<UUID, ArrayList<ThrownThrowable>> = HashMap() // public so other plugins can add throwables
+        private set
     // landmine systems
     internal var landmineActivationRequests: ArrayList<LandmineActivationRequest> = ArrayList(0)
     internal var landmineFinishUseRequests: ArrayList<LandmineFinishUseRequest> = ArrayList(0)
