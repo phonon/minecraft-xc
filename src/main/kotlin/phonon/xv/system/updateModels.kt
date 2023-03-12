@@ -12,6 +12,7 @@ import phonon.xv.XV
 import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.iter.*
+import phonon.xv.util.item.createCustomModelItem
 import phonon.xv.component.ModelComponent
 import phonon.xv.component.ModelGroupComponent
 import phonon.xv.component.TransformComponent
@@ -78,6 +79,7 @@ public fun XV.systemUpdateModelGroups(
             for ( i in 0 until model.parts.size ) {
                 val part = model.parts[i]
                 val armorstand = model.armorstands[i]
+                val currentModelId = model.currentModelIds[i]
 
                 if ( armorstand != null && armorstand.isValid() ) {
                     val modelPos = armorstand.location
@@ -107,6 +109,18 @@ public fun XV.systemUpdateModelGroups(
                         //     0.0, // no yaw, handle yaw in model position itself
                         //     transform.rollRad, // roll?
                         // ))
+                    }
+
+                    // update model depending on transform state
+                    val newModelId = if ( transform.isMoving ) {
+                        part.modelIdMoving
+                    } else {
+                        part.modelId
+                    }
+
+                    if ( currentModelId != newModelId ) {
+                        model.currentModelIds[i] = newModelId
+                        armorstand.getEquipment().setHelmet(createCustomModelItem(model.material, newModelId))
                     }
                 }
             }

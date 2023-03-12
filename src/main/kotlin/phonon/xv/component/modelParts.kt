@@ -93,8 +93,11 @@ public data class ModelPart(
             // map with keys as constructor property names
             val properties = HashMap<String, Any>()
 
-            toml.getLong("model_id")?.let { properties["modelId"] = it.toInt() }
-            toml.getLong("model_id_moving")?.let { properties["modelIdMoving"] = it.toInt() }
+            val defaultModelId = toml.getLong("model_id")?.toInt() ?: 0
+            properties["modelId"] = defaultModelId
+
+            // other model ids: if not in config, use default
+            properties["modelIdMoving"] = toml.getLong("model_id_moving")?.toInt() ?: defaultModelId
 
             toml.getArray("offset")?.let { arr ->
                 properties["offsetX"] = arr.getNumberAs<Double>(0)
@@ -151,13 +154,30 @@ public data class ModelGroupComponent(
     // @skipall
     // armor stand entity
     var armorstands: Array<ArmorStand?> = arrayOfNulls(parts.size),
-): VehicleComponent<ModelGroupComponent> {
+    ): VehicleComponent<ModelGroupComponent> {
     override val type = VehicleComponentType.MODEL_GROUP
-
+    
     override fun self() = this
 
+    // stores current model id for each model part
+    val currentModelIds: IntArray = IntArray(parts.size)
+    
+    init {
+        // set default model id
+        for ( i in 0 until parts.size ) {
+            currentModelIds[i] = parts[i].modelId
+        }
+    }
+
+    /**
+     * Make sure armorstands array is deepcloned.
+     * `parts` can be shared array because it is immutable
+     * and only contains shared config options for each part.
+     */
     override fun deepclone(): ModelGroupComponent {
-        return this.copy()
+        return this.copy(
+            armorstands = this.armorstands.clone(),
+        )
     }
 
     /**
