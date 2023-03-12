@@ -353,7 +353,7 @@ public data class VehiclePrototype(
                     despawnTimeSeconds,
                 )
             } catch (e: Exception) {
-                logger?.warning("Failed to parse landmine file: ${source.toString()}, ${e}")
+                logger?.warning("Failed to parse prototype file: ${source.toString()}, ${e}")
                 e.printStackTrace()
                 return null
             }

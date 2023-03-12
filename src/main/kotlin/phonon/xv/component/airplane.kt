@@ -208,9 +208,9 @@ public data class AirplaneComponent(
         val spawnYawSin = Math.sin(spawnYawRad)
         val spawnYawCos = Math.cos(spawnYawRad)
 
-        val spawnX = location.x + this.modelOffsetX.rotatePrecomputedYawX(spawnYawSin, spawnYawCos)
+        val spawnX = location.x + rotatePrecomputedYawX(this.modelOffsetX, this.modelOffsetZ, spawnYawSin, spawnYawCos)
         val spawnY = location.y + this.modelOffsetY
-        val spawnZ = location.z + this.modelOffsetZ.rotatePrecomputedYawZ(spawnYawSin, spawnYawCos)
+        val spawnZ = location.z + rotatePrecomputedYawZ(this.modelOffsetX, this.modelOffsetZ, spawnYawSin, spawnYawCos)
         val locSpawn = Location(location.world, spawnX, spawnY, spawnZ, spawnYaw.toFloat(), 0f)
 
         // val armorstand: ArmorStand = locSpawn.world.spawn(locSpawn, ArmorStand::class.java)

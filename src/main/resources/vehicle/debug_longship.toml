@@ -1,0 +1,153 @@
+# Simple vehicles do not have any duplicate components so
+# these only need a single element. In this case, we can
+# just write components directly in the config.
+# Parser will do a scan and recognize this only needs a
+# single anonymous element.
+
+name = "debug_longship"
+
+item_name = "Debug Longship"
+item_custom_model_data = 120000
+item_lore = [
+    "Hyperborea",
+]
+
+spawn_time = 2.0
+despawn_time = 2.0
+
+# contains position, rotation, etc.
+[transform]
+
+# armor stand model
+[model_group]
+armorstand_visible = true
+# NOTE: below is a toml array of model part tables
+[[model_group.parts]] # front
+model_id = 120001
+offset = [0.0, -0.5, 1.8]
+hitbox = [2.3, 2.4, 2.3]
+hitbox_y_offset = 0.5
+
+[[model_group.parts]] # rear
+model_id = 120002
+offset = [0.0, -0.5, -0.7]
+hitbox = [2.3, 2.4, 2.3]
+hitbox_y_offset = 0.5
+
+[[model_group.parts]] # sails
+model_id = 120003
+offset = [0.0, 0.0, 0.0]
+
+[[model_group.parts]] # oars left
+model_id = 120004
+model_id_moving = 120005 # when moving
+offset = [0.5, 0.0, 0.0]
+
+[[model_group.parts]] # oars right
+model_id = 120006
+model_id_moving = 120007 # when moving
+offset = [-0.5, 0.0, 0.0]
+
+[health]
+max = 20.0
+death_sound = "minecraft:entity.generic.explode"
+death_particle = "EXPLOSION_HUGE"
+death_particle_count = 1
+
+[health.damage_multiplier]
+ANTI_TANK_RIFLE = 0.15
+ARMOR_PIERCING = 1.0
+ARMOR_PIERCING_SHELL = 1.0
+EXPLOSIVE = 0.16
+EXPLOSIVE_SHELL = 0.5
+MOLOTOV = 1.3
+
+# seats, needed for controllable vehicle
+[seats]
+# max_mount_distance = 2.0 # TODO
+count = 9
+offsets = [
+    0.0, 0.5, -4.0, # controller
+    
+     0.75, 0.5, -3.0, # rear right
+    -0.75, 0.5, -3.0, # rear left
+
+     0.75, 0.5, -1.0, # mid rear right
+    -0.75, 0.5, -1.0, # mid rear left
+
+     0.75, 0.5, 1.0, # mid front right
+    -0.75, 0.5, 1.0, # mid front left
+
+     0.75, 0.5, 3.0, # front right
+    -0.75, 0.5, 3.0, # front left
+]
+armor = [
+    10.0,
+    10.0, 10.0,
+    10.0, 10.0,
+    10.0, 10.0,
+    10.0, 10.0,
+]
+
+# use seat raycasting for mounting
+[seats_raycast]
+
+# handles player's input controls for ship movement
+[ship_movement_controls]
+# seat index that controls vehicle
+seat_controller = 0
+
+# translational speed parameters (all positive)
+acceleration = 0.02
+deceleration_multiplier = 0.8
+speed_max_forward = 0.4
+speed_max_reverse = 0.3
+
+# yaw turning rate parameters
+yaw_rotation_acceleration = 0.1
+yaw_rotation_deceleration_multiplier = 0.5
+yaw_rotation_speed_max = 2.0
+
+# the speed at which boats can
+# turn at the full turn accel
+yaw_rotation_effective_speed = 0.1
+
+# collision settings
+# i-frame after collision, -1 to disable
+collision_cooldown_ticks = 60
+
+# min speed needed to register a collision, -1 to disable
+min_collision_speed = 0.2
+
+# contact points for gravity
+ground_contact_points = [
+    1.2, 0.0, 2.0,
+    -1.2, 0.0, 2.0,
+    1.2, 0.0, -2.0,
+    -1.2, 0.0, -2.0,
+]
+front_contact_points = [
+    1.2, 0.0, 4.0,
+    -1.2, 0.0, 4.0,
+    1.2, 3.0, 4.0,
+    -1.2, 3.0, 4.0,
+    0.0, 1.5, 4.0,
+]
+backward_contacts_displace = [
+    0.0,
+    0.0,
+    -4.0
+]
+
+# lava particles when health < 25%
+[particles]
+particle = "WATER_SPLASH"
+count = 4
+offset_x = 0.0
+offset_y = 1.0
+offset_z = 0.0
+random_x = 0.3
+random_y = 1.0
+random_z = 0.3
+health_threshold = 10.0
+tick_period = 2

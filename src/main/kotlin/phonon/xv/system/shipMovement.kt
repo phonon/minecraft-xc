@@ -32,6 +32,7 @@ public fun XV.systemShipMovement(
         // clear transform dirty flags
         transform.positionDirty = false
         transform.yawDirty = false
+        transform.isMoving = false
 
         // calculate ground contact points first, and do gravity. We need
         // to figure out if ship can move. If it can't, speed=0 and we
@@ -287,6 +288,8 @@ public fun XV.systemShipMovement(
             // APPLY FORWARD/BACKWARD CONTROLLED TRANSLATIONAL MOTION
             // ============================================
             if ( shipMovement.speed != 0.0 ) {
+                transform.isMoving = true
+
                 // next position from forward vector
                 val dx = -yawSin * shipMovement.speed
                 val dz = yawCos * shipMovement.speed

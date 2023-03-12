@@ -17,11 +17,11 @@ private fun clamp(v: Double, min: Double, max: Double): Double {
  * Extension helpers to rotate double by yaw or pitch using standard
  * minecraft transform axes order. 
  */
-public fun Double.rotatePrecomputedYawX(yawSin: Double, yawCos: Double): Double {
-    return yawCos * this - yawSin * this
+public fun rotatePrecomputedYawX(x: Double, z: Double, yawSin: Double, yawCos: Double): Double {
+    return yawCos * x - yawSin * z
 }
-public fun Double.rotatePrecomputedYawZ(yawSin: Double, yawCos: Double): Double {
-    return yawSin * this + yawCos * this
+public fun rotatePrecomputedYawZ(x: Double, z: Double, yawSin: Double, yawCos: Double): Double {
+    return yawSin * x + yawCos * z
 }
 
 /**

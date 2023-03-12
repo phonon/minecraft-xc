@@ -294,6 +294,7 @@ public class XV (
                 "vehicle/debug_cannon.toml",
                 "vehicle/debug_car.toml",
                 "vehicle/debug_humvee.toml",
+                "vehicle/debug_longship.toml",
                 "vehicle/debug_mg34.toml",
                 "vehicle/debug_mortar.toml",
                 "vehicle/debug_multi_turret.toml",
@@ -916,6 +917,7 @@ public class XV (
         // update vehicle models after transforms updated
         // MUST BE RUN AFTER ALL MOVEMENT CONTROLLERS
         systemUpdateModels(storage)
+        systemUpdateModelGroups(storage)
         systemUpdateSeats(storage, userInputs)
         systemUpdateSeatHealthDisplay(storage) // update seats health displays
 

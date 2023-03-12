@@ -78,6 +78,7 @@ public enum class VehicleComponentType {
     LAND_MOVEMENT_CONTROLS,
     SHIP_MOVEMENT_CONTROLS,
     MODEL,
+    MODEL_GROUP,
     PARTICLES,
     SEATS,
     SEATS_RAYCAST,
@@ -102,6 +103,7 @@ public enum class VehicleComponentType {
                 LandMovementControlsComponent::class -> VehicleComponentType.LAND_MOVEMENT_CONTROLS
                 ShipMovementControlsComponent::class -> VehicleComponentType.SHIP_MOVEMENT_CONTROLS
                 ModelComponent::class -> VehicleComponentType.MODEL
+                ModelGroupComponent::class -> VehicleComponentType.MODEL_GROUP
                 ParticlesComponent::class -> VehicleComponentType.PARTICLES
                 SeatsComponent::class -> VehicleComponentType.SEATS
                 SeatsRaycastComponent::class -> VehicleComponentType.SEATS_RAYCAST
@@ -125,6 +127,7 @@ val HEALTH_KEY = NamespacedKey("xv", "health")
 val LAND_MOVEMENT_CONTROLS_KEY = NamespacedKey("xv", "land_movement_controls")
 val SHIP_MOVEMENT_CONTROLS_KEY = NamespacedKey("xv", "ship_movement_controls")
 val MODEL_KEY = NamespacedKey("xv", "model")
+val MODEL_GROUP_KEY = NamespacedKey("xv", "model_group")
 val PARTICLES_KEY = NamespacedKey("xv", "particles")
 val SEATS_KEY = NamespacedKey("xv", "seats")
 val SEATS_RAYCAST_KEY = NamespacedKey("xv", "seats_raycast")
@@ -148,6 +151,7 @@ public data class VehicleComponents(
     val landMovementControls: LandMovementControlsComponent? = null,
     val shipMovementControls: ShipMovementControlsComponent? = null,
     val model: ModelComponent? = null,
+    val modelGroup: ModelGroupComponent? = null,
     val particles: ParticlesComponent? = null,
     val seats: SeatsComponent? = null,
     val seatsRaycast: SeatsRaycastComponent? = null,
@@ -171,6 +175,7 @@ public data class VehicleComponents(
             landMovementControls = landMovementControls?.deepclone(),
             shipMovementControls = shipMovementControls?.deepclone(),
             model = model?.deepclone(),
+            modelGroup = modelGroup?.deepclone(),
             particles = particles?.deepclone(),
             seats = seats?.deepclone(),
             seatsRaycast = seatsRaycast?.deepclone(),
@@ -200,6 +205,7 @@ public data class VehicleComponents(
             landMovementControls = landMovementControls?.injectSpawnProperties(location, player),
             shipMovementControls = shipMovementControls?.injectSpawnProperties(location, player),
             model = model?.injectSpawnProperties(location, player),
+            modelGroup = modelGroup?.injectSpawnProperties(location, player),
             particles = particles?.injectSpawnProperties(location, player),
             seats = seats?.injectSpawnProperties(location, player),
             seatsRaycast = seatsRaycast?.injectSpawnProperties(location, player),
@@ -228,6 +234,7 @@ public data class VehicleComponents(
             landMovementControls = landMovementControls?.injectItemProperties(itemData.get(LAND_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER)),
             shipMovementControls = shipMovementControls?.injectItemProperties(itemData.get(SHIP_MOVEMENT_CONTROLS_KEY, PersistentDataType.TAG_CONTAINER)),
             model = model?.injectItemProperties(itemData.get(MODEL_KEY, PersistentDataType.TAG_CONTAINER)),
+            modelGroup = modelGroup?.injectItemProperties(itemData.get(MODEL_GROUP_KEY, PersistentDataType.TAG_CONTAINER)),
             particles = particles?.injectItemProperties(itemData.get(PARTICLES_KEY, PersistentDataType.TAG_CONTAINER)),
             seats = seats?.injectItemProperties(itemData.get(SEATS_KEY, PersistentDataType.TAG_CONTAINER)),
             seatsRaycast = seatsRaycast?.injectItemProperties(itemData.get(SEATS_RAYCAST_KEY, PersistentDataType.TAG_CONTAINER)),
@@ -307,6 +314,11 @@ public data class VehicleComponents(
                     model!!.toItemData(itemMeta, itemLore, componentDataContainer)
                     itemData.set(MODEL_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
                 }
+                VehicleComponentType.MODEL_GROUP -> {
+                    val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
+                    modelGroup!!.toItemData(itemMeta, itemLore, componentDataContainer)
+                    itemData.set(MODEL_GROUP_KEY, PersistentDataType.TAG_CONTAINER, componentDataContainer)
+                }
                 VehicleComponentType.PARTICLES -> {
                     val componentDataContainer = itemData.adapterContext.newPersistentDataContainer()
                     particles!!.toItemData(itemMeta, itemLore, componentDataContainer)
@@ -378,6 +390,9 @@ public data class VehicleComponents(
                 VehicleComponentType.MODEL -> {
                     json.add("model", model!!.toJson())
                 }
+                VehicleComponentType.MODEL_GROUP -> {
+                    json.add("modelGroup", modelGroup!!.toJson())
+                }
                 VehicleComponentType.PARTICLES -> {
                     json.add("particles", particles!!.toJson())
                 }
@@ -425,6 +440,7 @@ public data class VehicleComponents(
             landMovementControls = landMovementControls?.injectJsonProperties( json["landMovementControls"]?.asJsonObject ),
             shipMovementControls = shipMovementControls?.injectJsonProperties( json["shipMovementControls"]?.asJsonObject ),
             model = model?.injectJsonProperties( json["model"]?.asJsonObject ),
+            modelGroup = modelGroup?.injectJsonProperties( json["modelGroup"]?.asJsonObject ),
             particles = particles?.injectJsonProperties( json["particles"]?.asJsonObject ),
             seats = seats?.injectJsonProperties( json["seats"]?.asJsonObject ),
             seatsRaycast = seatsRaycast?.injectJsonProperties( json["seatsRaycast"]?.asJsonObject ),
@@ -512,6 +528,12 @@ public data class VehicleComponents(
                     element=element,
                     entityVehicleData=entityVehicleData,
                 )
+                VehicleComponentType.MODEL_GROUP -> modelGroup?.afterVehicleCreated(
+                    xc=xc,
+                    vehicle=vehicle,
+                    element=element,
+                    entityVehicleData=entityVehicleData,
+                )
                 VehicleComponentType.PARTICLES -> particles?.afterVehicleCreated(
                     xc=xc,
                     vehicle=vehicle,
@@ -567,6 +589,7 @@ public data class VehicleComponents(
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.MODEL -> model?.delete(xc, vehicle, element, entityVehicleData, despawn)
+                VehicleComponentType.MODEL_GROUP -> modelGroup?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.PARTICLES -> particles?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.SEATS -> seats?.delete(xc, vehicle, element, entityVehicleData, despawn)
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.delete(xc, vehicle, element, entityVehicleData, despawn)
@@ -603,6 +626,7 @@ public data class VehicleComponents(
             var landMovementControls: LandMovementControlsComponent? = null
             var shipMovementControls: ShipMovementControlsComponent? = null
             var model: ModelComponent? = null
+            var modelGroup: ModelGroupComponent? = null
             var particles: ParticlesComponent? = null
             var seats: SeatsComponent? = null
             var seatsRaycast: SeatsRaycastComponent? = null
@@ -659,6 +683,10 @@ public data class VehicleComponents(
                         layout.add(VehicleComponentType.MODEL)
                         model = ModelComponent.fromToml(toml.getTable(k)!!, logger)
                     }
+                    "model_group" -> {
+                        layout.add(VehicleComponentType.MODEL_GROUP)
+                        modelGroup = ModelGroupComponent.fromToml(toml.getTable(k)!!, logger)
+                    }
                     "particles" -> {
                         layout.add(VehicleComponentType.PARTICLES)
                         particles = ParticlesComponent.fromToml(toml.getTable(k)!!, logger)
@@ -696,6 +724,7 @@ public data class VehicleComponents(
                 landMovementControls,
                 shipMovementControls,
                 model,
+                modelGroup,
                 particles,
                 seats,
                 seatsRaycast,
@@ -740,6 +769,7 @@ public class ArchetypeStorage(
     internal val landMovementControls: ArrayList<LandMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.LAND_MOVEMENT_CONTROLS) ) ArrayList() else null
     internal val shipMovementControls: ArrayList<ShipMovementControlsComponent>? = if ( layout.contains(VehicleComponentType.SHIP_MOVEMENT_CONTROLS) ) ArrayList() else null
     internal val model: ArrayList<ModelComponent>? = if ( layout.contains(VehicleComponentType.MODEL) ) ArrayList() else null
+    internal val modelGroup: ArrayList<ModelGroupComponent>? = if ( layout.contains(VehicleComponentType.MODEL_GROUP) ) ArrayList() else null
     internal val particles: ArrayList<ParticlesComponent>? = if ( layout.contains(VehicleComponentType.PARTICLES) ) ArrayList() else null
     internal val seats: ArrayList<SeatsComponent>? = if ( layout.contains(VehicleComponentType.SEATS) ) ArrayList() else null
     internal val seatsRaycast: ArrayList<SeatsRaycastComponent>? = if ( layout.contains(VehicleComponentType.SEATS_RAYCAST) ) ArrayList() else null
@@ -769,6 +799,8 @@ public class ArchetypeStorage(
         get() = this.shipMovementControls
     public val modelView: List<ModelComponent>?
         get() = this.model
+    public val modelGroupView: List<ModelGroupComponent>?
+        get() = this.modelGroup
     public val particlesView: List<ParticlesComponent>?
         get() = this.particles
     public val seatsView: List<SeatsComponent>?
@@ -801,6 +833,7 @@ public class ArchetypeStorage(
             LandMovementControlsComponent::class -> this.landMovementControlsView?.get(denseIndex) as T
             ShipMovementControlsComponent::class -> this.shipMovementControlsView?.get(denseIndex) as T
             ModelComponent::class -> this.modelView?.get(denseIndex) as T
+            ModelGroupComponent::class -> this.modelGroupView?.get(denseIndex) as T
             ParticlesComponent::class -> this.particlesView?.get(denseIndex) as T
             SeatsComponent::class -> this.seatsView?.get(denseIndex) as T
             SeatsRaycastComponent::class -> this.seatsRaycastView?.get(denseIndex) as T
@@ -894,6 +927,10 @@ public class ArchetypeStorage(
                     this.model?.pushAtDenseIndex(denseIndex, components.model!!)
                 }
                 
+                VehicleComponentType.MODEL_GROUP -> {
+                    this.modelGroup?.pushAtDenseIndex(denseIndex, components.modelGroup!!)
+                }
+                
                 VehicleComponentType.PARTICLES -> {
                     this.particles?.pushAtDenseIndex(denseIndex, components.particles!!)
                 }
@@ -964,6 +1001,7 @@ public class ArchetypeStorage(
                 VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.swapRemove(denseIndex)
                 VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.swapRemove(denseIndex)
                 VehicleComponentType.MODEL -> model?.swapRemove(denseIndex)
+                VehicleComponentType.MODEL_GROUP -> modelGroup?.swapRemove(denseIndex)
                 VehicleComponentType.PARTICLES -> particles?.swapRemove(denseIndex)
                 VehicleComponentType.SEATS -> seats?.swapRemove(denseIndex)
                 VehicleComponentType.SEATS_RAYCAST -> seatsRaycast?.swapRemove(denseIndex)
@@ -999,6 +1037,7 @@ public class ArchetypeStorage(
         landMovementControls?.clear()
         shipMovementControls?.clear()
         model?.clear()
+        modelGroup?.clear()
         particles?.clear()
         seats?.clear()
         seatsRaycast?.clear()
@@ -1034,6 +1073,7 @@ public class ArchetypeStorage(
                 LandMovementControlsComponent::class -> { archetype -> archetype.landMovementControlsView as List<T> }
                 ShipMovementControlsComponent::class -> { archetype -> archetype.shipMovementControlsView as List<T> }
                 ModelComponent::class -> { archetype -> archetype.modelView as List<T> }
+                ModelGroupComponent::class -> { archetype -> archetype.modelGroupView as List<T> }
                 ParticlesComponent::class -> { archetype -> archetype.particlesView as List<T> }
                 SeatsComponent::class -> { archetype -> archetype.seatsView as List<T> }
                 SeatsRaycastComponent::class -> { archetype -> archetype.seatsRaycastView as List<T> }
