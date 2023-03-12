@@ -38,6 +38,10 @@ public data class SeatsRaycastComponent(
             // map with keys as constructor property names
             val properties = HashMap<String, Any>()
 
+            toml.getNumberAs<Double>("hitbox_width")?.let { properties["hitboxWidth"] = it }
+            toml.getNumberAs<Double>("hitbox_height")?.let { properties["hitboxHeight"] = it }
+            toml.getNumberAs<Double>("hitbox_height_offset")?.let { properties["hitboxHeightOffset"] = it }
+
             return mapToObject(properties, SeatsRaycastComponent::class)
         }
     }
