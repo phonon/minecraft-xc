@@ -131,7 +131,10 @@ public fun XV.systemShipMovement(
             || blBelowRear1.isShipTraversable()
         )
         val player = seats.passengers[shipMovement.seatController]
-        player?.sendMessage("notGrounded: ${notGrounded}\n isTraversable: ${isTraversable}")
+
+        if ( xv.debug ) {
+            player?.sendMessage("notGrounded: ${notGrounded}\n isTraversable: ${isTraversable}")
+        }
 
         if ( notGrounded && isTraversable ) {
             val player = seats.passengers[shipMovement.seatController]

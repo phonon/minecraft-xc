@@ -74,6 +74,11 @@ public data class VehiclePrototype(
     val spawnTimeSeconds: Double = 0.0,
     // vehicle despawn time in seconds
     val despawnTimeSeconds: Double = 0.0,
+    // spawn at target block (default spawns at player location)
+    val spawnAtTargetBlock: Boolean = false,
+    // spawn offset positions (e.g. to spawn vehicles perpendicular to player, or position into water)
+    val spawnOffsetY: Double = 0.0,
+    val spawnOffsetYaw: Float = 0f,
 ) {
     val uuid: UUID = UUID.randomUUID()
 
@@ -173,6 +178,9 @@ public data class VehiclePrototype(
             unsortedElements: List<VehicleElementPrototype>,
             spawnTimeSeconds: Double,
             despawnTimeSeconds: Double,
+            spawnAtTargetBlock: Boolean = false,
+            spawnOffsetY: Double = 0.0,
+            spawnOffsetYaw: Double = 0.0,
             logger: Logger? = null,
         ): VehiclePrototype? {
             
@@ -310,6 +318,9 @@ public data class VehiclePrototype(
                 maxDepth,
                 spawnTimeSeconds,
                 despawnTimeSeconds,
+                spawnAtTargetBlock,
+                spawnOffsetY,
+                spawnOffsetYaw.toFloat(),
             )
         }
         
@@ -326,11 +337,15 @@ public data class VehiclePrototype(
                 val name = toml.getString("name") ?: ""
 
                 // item properties
+                // TODO: need a better way to combine elements and general prototype properties...
                 val itemName = toml.getString("item_name") ?: name
                 val itemLore = toml.getArrayOrEmpty("item_lore").toList().map { it.toString() }
                 val itemCustomModelData = toml.getNumberAs<Int>("item_custom_model_data") ?: 0
                 val spawnTimeSeconds = toml.getNumberAs<Double>("spawn_time") ?: 4.0
                 val despawnTimeSeconds = toml.getNumberAs<Double>("despawn_time") ?: 4.0
+                val spawnAtTargetBlock = toml.getBoolean("spawn_at_target_block") ?: false
+                val spawnOffsetY = toml.getNumberAs<Double>("spawn_offset_y") ?: 0.0
+                val spawnOffsetYaw = toml.getNumberAs<Double>("spawn_offset_yaw") ?: 0.0
 
                 // vehicle elements
                 val unsortedElements = ArrayList<VehicleElementPrototype>()
@@ -351,6 +366,9 @@ public data class VehiclePrototype(
                     unsortedElements,
                     spawnTimeSeconds,
                     despawnTimeSeconds,
+                    spawnAtTargetBlock,
+                    spawnOffsetY,
+                    spawnOffsetYaw,
                 )
             } catch (e: Exception) {
                 logger?.warning("Failed to parse prototype file: ${source.toString()}, ${e}")

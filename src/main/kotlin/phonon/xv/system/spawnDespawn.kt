@@ -38,7 +38,7 @@ import phonon.xv.util.item.itemInMainHandEquivalentTo
  */
 public data class SpawnVehicleRequest(
     val prototype: VehiclePrototype,
-    val location: Location? = null,
+    val location: Location,
     val player: Player? = null,
     val item: ItemStack? = null,
     // if true, skip spawn timer 
@@ -50,7 +50,7 @@ public data class SpawnVehicleRequest(
  */
 public data class SpawnVehicleFinish(
     val prototype: VehiclePrototype,
-    val location: Location? = null,
+    val location: Location,
     val player: Player? = null,
     val item: ItemStack? = null,
     val itemIdTag: Int? = null,
@@ -113,6 +113,10 @@ public fun XV.systemSpawnVehicle(
         ) = request
 
         try {
+            val locationSpawn = location.clone()
+            locationSpawn.y = locationSpawn.y + prototype.spawnOffsetY
+            locationSpawn.yaw = locationSpawn.yaw + prototype.spawnOffsetYaw
+            
             if ( player !== null ) {
                 if ( xv.isPlayerRunningTask(player) ) {
                     continue // player already running task, skip
@@ -141,7 +145,7 @@ public fun XV.systemSpawnVehicle(
                         onFinish = {
                             finishQueue.add(SpawnVehicleFinish(
                                 prototype,
-                                location,
+                                locationSpawn,
                                 player,
                                 item,
                                 itemIdTag,
@@ -153,7 +157,7 @@ public fun XV.systemSpawnVehicle(
                 } else { // no spawn, go directly to finish
                     finishQueue.add(SpawnVehicleFinish(
                         prototype,
-                        location,
+                        locationSpawn,
                         player,
                         item,
                         itemIdTag,

@@ -24,29 +24,29 @@ armorstand_visible = true
 # NOTE: below is a toml array of model part tables
 [[model_group.parts]] # front
 model_id = 120001
-offset = [0.0, -0.5, 1.8]
+offset = [0.0, -1.5, 1.8]
 hitbox = [2.3, 2.4, 2.3]
 hitbox_y_offset = 0.5
 
 [[model_group.parts]] # rear
 model_id = 120002
-offset = [0.0, -0.5, -0.7]
+offset = [0.0, -1.5, -0.7]
 hitbox = [2.3, 2.4, 2.3]
 hitbox_y_offset = 0.5
 
 [[model_group.parts]] # sails
 model_id = 120003
-offset = [0.0, 0.0, 0.0]
+offset = [0.0, -1.0, 0.0]
 
 [[model_group.parts]] # oars left
 model_id = 120004
 model_id_moving = 120005 # when moving
-offset = [0.5, 0.0, 0.0]
+offset = [0.5, -1.0, 0.0]
 
 [[model_group.parts]] # oars right
 model_id = 120006
 model_id_moving = 120007 # when moving
-offset = [-0.5, 0.0, 0.0]
+offset = [-0.5, -1.0, 0.0]
 
 [health]
 max = 20.0
@@ -67,19 +67,19 @@ MOLOTOV = 1.3
 # max_mount_distance = 2.0 # TODO
 count = 9
 offsets = [
-    0.0, 0.5, -4.0, # controller
+    0.0, 0.5, -3.0, # controller
     
-     0.75, 0.5, -3.0, # rear right
-    -0.75, 0.5, -3.0, # rear left
+     0.75, 0.5, -1.75, # rear right
+    -0.75, 0.5, -1.75, # rear left
 
-     0.75, 0.5, -1.0, # mid rear right
-    -0.75, 0.5, -1.0, # mid rear left
+     0.75, 0.5, -0.5, # mid rear right
+    -0.75, 0.5, -0.5, # mid rear left
 
-     0.75, 0.5, 1.0, # mid front right
-    -0.75, 0.5, 1.0, # mid front left
+     0.75, 0.5, 0.75, # mid front right
+    -0.75, 0.5, 0.75, # mid front left
 
-     0.75, 0.5, 3.0, # front right
-    -0.75, 0.5, 3.0, # front left
+     0.75, 0.5, 2.25, # front right
+    -0.75, 0.5, 2.25, # front left
 ]
 armor = [
     10.0,
@@ -91,6 +91,9 @@ armor = [
 
 # use seat raycasting for mounting
 [seats_raycast]
+hitbox_width = 0.75
+hitbox_height = 1.0
+hitbox_height_offset = -0.25
 
 # handles player's input controls for ship movement
 [ship_movement_controls]
@@ -100,8 +103,8 @@ seat_controller = 0
 # translational speed parameters (all positive)
 acceleration = 0.02
 deceleration_multiplier = 0.8
-speed_max_forward = 0.4
-speed_max_reverse = 0.3
+speed_max_forward = 0.75
+speed_max_reverse = 0.5
 
 # yaw turning rate parameters
 yaw_rotation_acceleration = 0.1

@@ -175,8 +175,9 @@ public data class TransformComponent(
         location: Location?,
         player: Player?,
     ): TransformComponent {
-        if ( location === null )
+        if ( location === null ) {
             return this.self()
+        }
         return this.copy(
             world = location.world,
             x = location.x,

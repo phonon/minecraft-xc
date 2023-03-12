@@ -7,6 +7,7 @@ package phonon.xv.listener
 import java.time.LocalDateTime
 import java.text.MessageFormat
 import org.bukkit.ChatColor
+import org.bukkit.Location
 import org.bukkit.attribute.Attribute
 import org.bukkit.entity.Player
 import org.bukkit.entity.EntityType
@@ -211,10 +212,31 @@ public class EventListener(val xv: XV): Listener {
                     val vehiclePrototype = xv.vehiclePrototypes[prototypeName]
                     if ( vehiclePrototype !== null ) {
                         // println("SPAWN VEHICLE REQUEST: ${vehiclePrototype.name}")
+                        val locationSpawn = if ( vehiclePrototype.spawnAtTargetBlock ) {
+                            val block = player.getTargetBlock(null, 5)
+                            if ( block === null ) {
+                                return // skip spawning
+                            }
+                            // get block location and add player yaw/pitch
+                            val locBlock = block.location.clone()
+                            val locPlayer = player.location.clone()
+                            // add spawn y offset
+                            Location(
+                                locBlock.world,
+                                locBlock.x,
+                                locBlock.y,
+                                locBlock.z,
+                                locPlayer.yaw,
+                                locPlayer.pitch,
+                            )
+                        } else {
+                            player.location
+                        }
+
                         xv.spawnRequests.add(
                             SpawnVehicleRequest(
                                 vehiclePrototype,
-                                location = player.location,
+                                location = locationSpawn,
                                 player = player,
                                 item = itemInHand,
                             )
