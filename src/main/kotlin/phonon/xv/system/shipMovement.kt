@@ -14,6 +14,7 @@ import phonon.xv.component.ShipMovementControlsComponent
 import phonon.xv.component.TransformComponent
 import phonon.xv.core.ComponentsStorage
 import phonon.xv.core.iter.ComponentTuple3
+import phonon.xv.util.Message
 import kotlin.math.floor
 
 /**
@@ -130,6 +131,7 @@ public fun XV.systemShipMovement(
             || blBelowRear0.isShipTraversable()
             || blBelowRear1.isShipTraversable()
         )
+
         val player = seats.passengers[shipMovement.seatController]
 
         if ( xv.debug ) {
@@ -137,7 +139,6 @@ public fun XV.systemShipMovement(
         }
 
         if ( notGrounded && isTraversable ) {
-            val player = seats.passengers[shipMovement.seatController]
             if (player !== null) {
                 val controls = userInputs[player.uniqueId] ?: UserInput()
 
@@ -248,125 +249,138 @@ public fun XV.systemShipMovement(
                 }
             }
 
-            // copied from land
-            // APPLY TURNING/ROTATION MOTION
-            // NOTE: make sure this happens before translational motion
-            // because translation depends on forward vector that
-            // needs to be updated from rotation
-            val newYaw = if (shipMovement.yawRotationSpeed != 0.0) {
-                val newYaw = transform.yaw + shipMovement.yawRotationSpeed
-
-                // constrain yaw angle to [0, 360]
-                if (newYaw >= 360.0) {
-                    newYaw - 360.0
-                } else if (newYaw < 0.0) {
-                    newYaw + 360.0
-                } else {
-                    newYaw
-                }
-
-                // at this point we differ from the land movement impl
-                // rotating our boat may cause any of the front or back
-                // contact points to collide. We don't want to finalize our
-                // yaw changes for transform just yet because we may need to
-                // undo/modify these changes based on if we collide
-
-                // replace w/ transform.updateYaw(newYaw)
-                // val yawRad = Math.toRadians(newYaw)
-                // transform.yaw = newYaw
-                // transform.yawf = newYaw.toFloat()
-                // transform.yawRad = yawRad
-                // transform.yawSin = Math.sin(yawRad)
-                // transform.yawCos = Math.cos(yawRad)
-                // transform.yawDirty = true
-            } else {
-                transform.yaw
-            }
-            val yawRad = Math.toRadians(newYaw)
-            val yawSin = Math.sin(yawRad)
-            val yawCos = Math.cos(yawRad)
-
-            // translational motion
-            // ============================================
-            // APPLY FORWARD/BACKWARD CONTROLLED TRANSLATIONAL MOTION
-            // ============================================
-            if ( shipMovement.speed != 0.0 ) {
-                transform.isMoving = true
-
-                // next position from forward vector
-                val dx = -yawSin * shipMovement.speed
-                val dz = yawCos * shipMovement.speed
-                val xNext = xCurr + dx
-                val zNext = zCurr + dz
-                var yNext = yNew
-                // we do the 1 block step up check here
-                // do it w/ ground contact points
-                val blCenter = world.getBlockAt(xNext.toInt(), yNext.toInt() + 1, zNext.toInt())
-                if ( shipMovement.speed > 0 ) {
-                    // if moving forward, check front 2 points and center
-                    // test to see if 1 block up is still traversable. if any of
-                    // contact points are in traversable blocks then move up 1
-                    val blFront0 = getContactPointBlock(world, xNext, yNext + 1, zNew, yawSin, yawCos, shipMovement.groundContactPoints, 0)
-                    val blFront1 = getContactPointBlock(world, xNext, yNext + 1, zNew, yawSin, yawCos, shipMovement.groundContactPoints, 1)
-
-                    if ( blCenter.isShipTraversable() || blFront0.isShipTraversable() || blFront1.isShipTraversable() )
-                        yNext += 1
-                } else if ( shipMovement.speed < 0 ) {
-                    val blRear0 = getContactPointBlock(world, xNext, yNext + 1, zNew, yawSin, yawCos, shipMovement.groundContactPoints, 0)
-                    val blRear1 = getContactPointBlock(world, xNext, yNext + 1, zNew, yawSin, yawCos, shipMovement.groundContactPoints, 1)
-
-                    if ( blCenter.isShipTraversable() || blRear0.isShipTraversable() || blRear1.isShipTraversable() )
-                        yNext += 1
-                }
-
-                // ===========================================
-                // COLLISION CHECK
-                // ===========================================
-
-                // front collision check
-                val collision = if ( shipMovement.speed > 0 ) {
-                    val blCenter = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.frontContactPoints, 0)
-                    val blTop0 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.frontContactPoints, 3)
-                    val blTop1 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.frontContactPoints, 6)
-                    val blBottom0 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.frontContactPoints, 9)
-                    val blBottom1 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.frontContactPoints, 12)
-
-                    blCenter.isGrounded() || blTop0.isGrounded() || blTop1.isGrounded() || blBottom0.isGrounded() || blBottom1.isGrounded()
-                } else if ( shipMovement.speed < 0 ) {
-                    val blCenter = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.backwardContactPoints, 0)
-                    val blTop0 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.backwardContactPoints, 3)
-                    val blTop1 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.backwardContactPoints, 6)
-                    val blBottom0 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.backwardContactPoints, 9)
-                    val blBottom1 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.backwardContactPoints, 12)
-
-                    blCenter.isGrounded() || blTop0.isGrounded() || blTop1.isGrounded() || blBottom0.isGrounded() || blBottom1.isGrounded()
-                } else {
-                    false
-                }
-
-
-                if ( collision ) {
-                    // TODO check our collision settings to qualify this as collision
-                    //  play explosion, send request to health system to reduce health
-                    shipMovement.speed = 0.0
-                    shipMovement.yawRotationSpeed = 0.0
-                    Bukkit.broadcast(Component.text("OMG!!! You crashed!"))
-                } else {
-                    // no collision so we can move forward
-                    xNew = xNext
-                    yNew = yNext
-                    zNew = zNext
-                    positionChanged = true
-                    // update yaw
-                    transform.updateYaw(newYaw)
-                }
-            }
-
         } else {
-            // canMove is false
-            // set everything to 0
-            shipMovement.speed = 0.0
+            var newSpeed = 0.0
+
+            if (player !== null) {
+                val controls = userInputs[player.uniqueId] ?: UserInput()
+                // allow small amount of speed, so players can "unstuck" the vehicle
+                if ( controls.forward ) {
+                    newSpeed = shipMovement.speedGrounded
+                } else if ( controls.backward ) {
+                    newSpeed = -shipMovement.speedGrounded
+                }
+            }
+
+            shipMovement.speed = newSpeed
+
+            // dont allow rotation when grounded
             shipMovement.yawRotationSpeed = 0.0
+        }
+
+        // APPLY TURNING/ROTATION MOTION
+        // NOTE: make sure this happens before translational motion
+        // because translation depends on forward vector that
+        // needs to be updated from rotation
+        val newYaw = if ( shipMovement.yawRotationSpeed != 0.0 ) {
+            val newYaw = transform.yaw + shipMovement.yawRotationSpeed
+
+            // constrain yaw angle to [0, 360]
+            if (newYaw >= 360.0) {
+                newYaw - 360.0
+            } else if (newYaw < 0.0) {
+                newYaw + 360.0
+            } else {
+                newYaw
+            }
+
+            // at this point we differ from the land movement impl
+            // rotating our boat may cause any of the front or back
+            // contact points to collide. We don't want to finalize our
+            // yaw changes for transform just yet because we may need to
+            // undo/modify these changes based on if we collide
+
+            // replace w/ transform.updateYaw(newYaw)
+            // val yawRad = Math.toRadians(newYaw)
+            // transform.yaw = newYaw
+            // transform.yawf = newYaw.toFloat()
+            // transform.yawRad = yawRad
+            // transform.yawSin = Math.sin(yawRad)
+            // transform.yawCos = Math.cos(yawRad)
+            // transform.yawDirty = true
+        } else {
+            transform.yaw
+        }
+        val yawRad = Math.toRadians(newYaw)
+        val yawSin = Math.sin(yawRad)
+        val yawCos = Math.cos(yawRad)
+
+        // translational motion
+        // ============================================
+        // APPLY FORWARD/BACKWARD CONTROLLED TRANSLATIONAL MOTION
+        // ============================================
+        if ( shipMovement.speed != 0.0 ) {
+            transform.isMoving = true
+
+            // next position from forward vector
+            val dx = -yawSin * shipMovement.speed
+            val dz = yawCos * shipMovement.speed
+            val xNext = xCurr + dx
+            val zNext = zCurr + dz
+            var yNext = yNew
+            // we do the 1 block step up check here
+            // do it w/ ground contact points
+            val blCenter = world.getBlockAt(xNext.toInt(), yNext.toInt() + 1, zNext.toInt())
+            if ( shipMovement.speed > 0 ) {
+                // if moving forward, check front 2 points and center
+                // test to see if 1 block up is still traversable. if any of
+                // contact points are in traversable blocks then move up 1
+                val blFront0 = getContactPointBlock(world, xNext, yNext + 1, zNew, yawSin, yawCos, shipMovement.groundContactPoints, 0)
+                val blFront1 = getContactPointBlock(world, xNext, yNext + 1, zNew, yawSin, yawCos, shipMovement.groundContactPoints, 1)
+
+                if ( blCenter.isShipTraversable() || blFront0.isShipTraversable() || blFront1.isShipTraversable() )
+                    yNext += 1
+            } else if ( shipMovement.speed < 0 ) {
+                val blRear0 = getContactPointBlock(world, xNext, yNext + 1, zNew, yawSin, yawCos, shipMovement.groundContactPoints, 0)
+                val blRear1 = getContactPointBlock(world, xNext, yNext + 1, zNew, yawSin, yawCos, shipMovement.groundContactPoints, 1)
+
+                if ( blCenter.isShipTraversable() || blRear0.isShipTraversable() || blRear1.isShipTraversable() )
+                    yNext += 1
+            }
+
+            // ===========================================
+            // COLLISION CHECK
+            // ===========================================
+
+            // front collision check
+            val collision = if ( shipMovement.speed > 0 ) {
+                val blCenter = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.frontContactPoints, 0)
+                val blTop0 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.frontContactPoints, 3)
+                val blTop1 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.frontContactPoints, 6)
+                val blBottom0 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.frontContactPoints, 9)
+                val blBottom1 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.frontContactPoints, 12)
+
+                blCenter.isGrounded() || blTop0.isGrounded() || blTop1.isGrounded() || blBottom0.isGrounded() || blBottom1.isGrounded()
+            } else if ( shipMovement.speed < 0 ) {
+                val blCenter = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.backwardContactPoints, 0)
+                val blTop0 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.backwardContactPoints, 3)
+                val blTop1 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.backwardContactPoints, 6)
+                val blBottom0 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.backwardContactPoints, 9)
+                val blBottom1 = getContactPointBlock(world, xNext, yNext, zNext, yawSin, yawCos, shipMovement.backwardContactPoints, 12)
+
+                blCenter.isGrounded() || blTop0.isGrounded() || blTop1.isGrounded() || blBottom0.isGrounded() || blBottom1.isGrounded()
+            } else {
+                false
+            }
+
+
+            if ( collision ) {
+                // TODO check our collision settings to qualify this as collision
+                //  play explosion, send request to health system to reduce health
+                shipMovement.speed = 0.0
+                shipMovement.yawRotationSpeed = 0.0
+                if ( xv.debug && player !== null ) {
+                    Message.print(player, "Collision detected!")
+                }
+            } else {
+                // no collision so we can move forward
+                xNew = xNext
+                yNew = yNext
+                zNew = zNext
+                positionChanged = true
+                // update yaw
+                transform.updateYaw(newYaw)
+            }
         }
 
         // UPDATE TRANSFORM POSITION

@@ -75,6 +75,8 @@ public data class ShipMovementControlsComponent(
     val decelerationMultiplier: Double = 0.8,
     val speedMaxForward: Double = 0.4,
     val speedMaxReverse: Double = 0.3,
+    // speed allowed when grounded
+    val speedGrounded: Double = 0.05,
     // yaw turning rate parameters
     val yawRotationAcceleration: Double = 0.1,
     val yawRotationDecelerationMultiplier: Double = 0.5,
@@ -160,6 +162,7 @@ public data class ShipMovementControlsComponent(
             toml.getNumberAs<Double>("deceleration_multiplier")?.let { properties["decelerationMultiplier"] = it }
             toml.getNumberAs<Double>("speed_max_forward")?.let { properties["speedMaxForward"] = it }
             toml.getNumberAs<Double>("speed_max_reverse")?.let { properties["speedMaxReverse"] = it }
+            toml.getNumberAs<Double>("speed_grounded")?.let { properties["speedGrounded"] = it }
 
             // rotational motion
             toml.getNumberAs<Double>("yaw_rotation_acceleration")?.let { properties["yawRotationAcceleration"] = it }

@@ -14,6 +14,9 @@ item_lore = [
 
 spawn_time = 2.0
 despawn_time = 2.0
+spawn_at_target_block = true
+spawn_offset_y = 1.0
+spawn_offset_yaw = 90.0
 
 # contains position, rotation, etc.
 [transform]
@@ -149,8 +152,8 @@ count = 4
 offset_x = 0.0
 offset_y = 1.0
 offset_z = 0.0
-random_x = 0.3
+random_x = 0.5
 random_y = 1.0
-random_z = 0.3
+random_z = 0.5
 health_threshold = 10.0
 tick_period = 2
