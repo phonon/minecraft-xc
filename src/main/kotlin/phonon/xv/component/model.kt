@@ -162,6 +162,7 @@ public data class ModelComponent(
         if ( entity is ArmorStand ) {
             this.armorstand = entity
             entity.setInvulnerable(false) // make sure armorstand vulnerable so interact triggers
+            entity.setVisible(this.armorstandVisible)
             // entity -> vehicle mapping
             entityVehicleData[entity.uniqueId] = EntityVehicleData(
                 vehicle,
