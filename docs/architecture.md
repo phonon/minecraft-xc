@@ -88,23 +88,28 @@ which is common ECS terminology [1-3].
 
 
 # VehicleElement and Vehicle Layout
+![fig_vehicle_layout](figs/fig_vehicle_layout.svg)
 
 ```kotlin
 class VehicleElement(
     // identifier tags:
     // readable name identifier
-    name: String,
+    val name: String,
     // persistent id saved across server restarts
-    uuid: UUID,
+    val uuid: UUID,
     // transient id, used to index into runtime elements storage
-    id: ElementId,
+    val id: ElementId,
 
-    // references to components data storage
-    components: VehicleComponents,
-)
+    // components in element 
+    val components: VehicleComponents,
+) {
+    // parent and children hierarchy set lazily after creation
+    var parent: VehicleElement? = null
+    var children: List<VehicleElement> = listOf()
+}
 ```
-A **vehicle element** is just an instance of components along with some
-identifier tags. Reason for each tag:
+The core of a **vehicle element** is just an instance of components along
+with some identifier tags. Reason for each tag:
 - `name`: Used as a human readable name for debugging.
 - `uuid`: Unique, persistent id for the element that is saved/loaded.
 - `id`: This is an integer id used for faster indexing in storage
@@ -126,14 +131,14 @@ Next questions:
 class Vehicle(
     // identifier tags:
     // readable name identifier
-    name: String,
+    val name: String,
     // persistent id saved across server restarts
-    uuid: UUID,
+    val uuid: UUID,
     // transient id, used to index into runtime elements storage
-    id: ElementId,
+    val id: ElementId,
 
-    // elements in vehicle, topologically sorted as a tree
-    elements: List<VehicleElement>,
+    // elements in vehicle, ordered from depth sorted elements
+    val elements: List<VehicleElement>,
 )
 ```
 
@@ -142,8 +147,15 @@ multiple components and how to position elements relative to other elements.
 Vehicle is created from a set of vehicle elements and a description of the
 element tree hierarchy.
 
-During vehicle creation, the elements are topologically sorted. This makes
+During vehicle creation, the elements are depth sorted. This makes
 it easier if we need to update elements in sorted parent-child order.
+
+In the element config, we give each element a string "name". We can
+then specify an element's parent inside the config using the string names.
+The parent/child tree hierarchy are formed by element's `parent` and
+`children` fields, which are set after elements are all created.
+We can then traverse the element trees and form a depth-sorted elements
+list for the vehicle.
 
 
 # Components Storage
@@ -163,7 +175,7 @@ With these requirements, the Archetype ECS data storage pattern [1, 2] is going 
 be most suited because we dont need to add/remove components and mainly need
 fast query + iteration performance.
 
-```rust
+```kotlin
 /// We can use either a enum set, and maybe later look into
 /// bitset optimizations.
 ComponentLayout {
@@ -231,7 +243,12 @@ The files there are
   examples. 
 
 
-# Vehicle Creation and Deletion
+# Elements and Vehicles Storage
+
+
+
+
+# Vehicle Creation and Deletion Life Cycle
 
 ## Prototypes
 

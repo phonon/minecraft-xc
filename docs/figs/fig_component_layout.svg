@@ -302,8 +302,8 @@
     <rect
        x="112"
        y="101.33333"
-       width="432.83694"
-       height="36.685585"
+       width="595.6114"
+       height="40.571937"
        id="rect40917" />
     <rect
        x="112"
@@ -518,8 +518,8 @@
     <rect
        x="112"
        y="101.33333"
-       width="432.83694"
-       height="36.685585"
+       width="542.2781"
+       height="40.571937"
        id="rect71249" />
     <rect
        x="112"
@@ -599,7 +599,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect6793);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6086">GUN_TURRET</tspan></text>
+         id="tspan4657">GUN_TURRET</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-0.88747094,-9.7321741)"
@@ -607,9 +607,9 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect6793-7);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6090"><tspan
+         id="tspan4661"><tspan
            style="font-weight:bold"
-           id="tspan6088">Layout</tspan></tspan></text>
+           id="tspan4659">Layout</tspan></tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-3.4179409,-21.871673)"
@@ -617,9 +617,9 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect6793-7-7);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6094"><tspan
+         id="tspan4665"><tspan
            style="font-weight:bold"
-           id="tspan6092">VehicleComponents</tspan></tspan></text>
+           id="tspan4663">VehicleComponents</tspan></tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,1.0243678,15.47571)"
@@ -627,7 +627,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect11511);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6096">HEALTH</tspan></text>
+         id="tspan4667">HEALTH</tspan></text>
     <rect
        style="fill:#f8dc82;fill-opacity:1;stroke:#000000;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3401-6-0"
@@ -642,7 +642,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect11511-2);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6098">GunTurretComponent</tspan></text>
+         id="tspan4669">GunTurretComponent</tspan></text>
     <rect
        style="fill:#c0e5a9;fill-opacity:1;stroke:#000000;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3401-1"
@@ -664,7 +664,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect6793-6);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6100">MODEL</tspan></text>
+         id="tspan4671">MODEL</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,1.0243667,43.697935)"
@@ -672,7 +672,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect11511-7);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6102">TRANSFORM</tspan></text>
+         id="tspan4673">TRANSFORM</tspan></text>
     <rect
        style="fill:#fac1ee;fill-opacity:1;stroke:#000000;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3401-6-5-7"
@@ -687,7 +687,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect11511-7-9);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6104">LAND_MOVEMENT_CONTROLS</tspan></text>
+         id="tspan4675">LAND_MOVEMENT_CONTROLS</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-2.0749946,88.82873)"
@@ -695,7 +695,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect30686);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6106">gunTurret</tspan></text>
+         id="tspan4677">gunTurret</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-2.0749946,102.71493)"
@@ -703,7 +703,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect31314);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6108">health</tspan></text>
+         id="tspan4679">health</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-2.0749946,117.12163)"
@@ -711,7 +711,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect31636);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6110">model</tspan></text>
+         id="tspan4681">model</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-2.0749946,130.79069)"
@@ -719,7 +719,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect31640);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6112">transform</tspan></text>
+         id="tspan4683">transform</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-2.0749946,144.65779)"
@@ -727,7 +727,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect32746);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6114">landMovementControls</tspan></text>
+         id="tspan4685">landMovementControls</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-2.0749946,159.24296)"
@@ -735,7 +735,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect35214);fill:#bfbfbf;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6116">shipMovementControls</tspan></text>
+         id="tspan4687">shipMovementControls</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-2.414055,77.666314)"
@@ -743,9 +743,9 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect35788);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6120"><tspan
+         id="tspan4691"><tspan
            style="font-weight:bold"
-           id="tspan6118">Component References:</tspan></tspan></text>
+           id="tspan4689">Component References:</tspan></tspan></text>
     <text
        xml:space="preserve"
        transform="scale(0.26458333)"
@@ -755,12 +755,12 @@
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-6.5999611,-37.545766)"
        id="text40915"
-       style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect40917);fill:#000000;fill-opacity:1;stroke:none"><tspan
+       style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect40917);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
-         y="120.797"
-         id="tspan6124"><tspan
+         y="125.66282"
+         id="tspan4695"><tspan
            style="font-weight:bold"
-           id="tspan6122">Example Components for a Tank</tspan></tspan></text>
+           id="tspan4693">Example Components for a Tank</tspan></tspan></text>
     <rect
        style="fill:#fe9a8d;fill-opacity:1;stroke:#000000;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect44407"
@@ -796,7 +796,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect44421);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6126">HealthComponent</tspan></text>
+         id="tspan4697">HealthComponent</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,113.91326,116.62001)"
@@ -804,7 +804,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect45477);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6128">ModelComponent</tspan></text>
+         id="tspan4699">ModelComponent</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,113.91326,130.57374)"
@@ -812,7 +812,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect45933);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6130">TransformComponent</tspan></text>
+         id="tspan4701">TransformComponent</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,113.91326,144.52747)"
@@ -820,7 +820,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect46767);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6132">LandMovementControlsComponent</tspan></text>
+         id="tspan4703">LandMovementControlsComponent</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:1.41111;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Mend)"
        d="m 59.266667,118.53333 81.844443,0"
@@ -867,9 +867,9 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71221);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6136"><tspan
+         id="tspan4707"><tspan
            style="font-weight:bold"
-           id="tspan6134">Layout</tspan></tspan></text>
+           id="tspan4705">Layout</tspan></tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,259.04872,-21.871673)"
@@ -877,9 +877,9 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71223);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6140"><tspan
+         id="tspan4711"><tspan
            style="font-weight:bold"
-           id="tspan6138">VehicleComponents</tspan></tspan></text>
+           id="tspan4709">VehicleComponents</tspan></tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,260.39167,88.82873)"
@@ -887,7 +887,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71235);fill:#bfbfbf;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6142">gunTurret</tspan></text>
+         id="tspan4713">gunTurret</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,260.39167,102.71493)"
@@ -895,7 +895,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71237);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6144">health</tspan></text>
+         id="tspan4715">health</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,260.39167,117.12163)"
@@ -903,7 +903,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71239);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6146">model</tspan></text>
+         id="tspan4717">model</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,260.39167,130.79069)"
@@ -911,7 +911,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71241);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6148">transform</tspan></text>
+         id="tspan4719">transform</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,260.39167,144.65779)"
@@ -919,7 +919,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71243);fill:#bfbfbf;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6150">landMovementControls</tspan></text>
+         id="tspan4721">landMovementControls</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,260.39167,159.24296)"
@@ -927,7 +927,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71245);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6152">shipMovementControls</tspan></text>
+         id="tspan4723">shipMovementControls</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,260.05261,77.666314)"
@@ -935,19 +935,19 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71247);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6156"><tspan
+         id="tspan4727"><tspan
            style="font-weight:bold"
-           id="tspan6154">Component References:</tspan></tspan></text>
+           id="tspan4725">Component References:</tspan></tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,255.8667,-37.545766)"
        id="text71175"
-       style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71249);fill:#000000;fill-opacity:1;stroke:none"><tspan
+       style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71249);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
-         y="120.797"
-         id="tspan6160"><tspan
+         y="125.66282"
+         id="tspan4731"><tspan
            style="font-weight:bold"
-           id="tspan6158">Example Components for a Ship</tspan></tspan></text>
+           id="tspan4729">Example Components for a Ship</tspan></tspan></text>
     <rect
        style="fill:#fe9a8d;fill-opacity:1;stroke:#000000;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect71177"
@@ -983,7 +983,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71251);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6162">HealthComponent</tspan></text>
+         id="tspan4733">HealthComponent</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,376.37992,116.62001)"
@@ -991,7 +991,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71253);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6164">ModelComponent</tspan></text>
+         id="tspan4735">ModelComponent</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,376.37992,130.57374)"
@@ -999,7 +999,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71255);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6166">TransformComponent</tspan></text>
+         id="tspan4737">TransformComponent</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,376.37992,159.04499)"
@@ -1007,7 +1007,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect71259);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6168">ShipMovementControlsComponent</tspan></text>
+         id="tspan4739">ShipMovementControlsComponent</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:1.41111;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Mend)"
        d="m 310.44444,132.64445 93.13334,0"
@@ -1042,7 +1042,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect11511-9);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6170">HEALTH</tspan></text>
+         id="tspan4741">HEALTH</tspan></text>
     <rect
        style="fill:#c0e5a9;fill-opacity:1;stroke:#000000;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3401-1-7"
@@ -1064,7 +1064,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect6793-6-7);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6172">MODEL</tspan></text>
+         id="tspan4743">MODEL</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,263.49103,29.586824)"
@@ -1072,7 +1072,7 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect11511-7-0);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6174">TRANSFORM</tspan></text>
+         id="tspan4745">TRANSFORM</tspan></text>
     <rect
        style="fill:#ccb7f7;fill-opacity:1;stroke:#000000;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect3401-6-5-7-9"
@@ -1087,6 +1087,6 @@
        style="font-style:normal;font-weight:normal;font-size:21.3333px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect11511-7-9-4);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="120.797"
-         id="tspan6176">SHIP_MOVEMENT_CONTROLS</tspan></text>
+         id="tspan4747">SHIP_MOVEMENT_CONTROLS</tspan></text>
   </g>
 </svg>
