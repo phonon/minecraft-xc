@@ -1,75 +1,267 @@
 # XV Composable Vehicle Engine Architecture
 
-At a high-level the engine roughly follows an ECS-style data layout.
-The following are high-level design decisions:
-1. Vehicles are a list of vehicle "elements"
-2. Vehicle elements are a set of vehicle "components", components are unique
-    and an element can only have at most 1 component of each type.
-3. Vehicle components are a pre-defined, hard-coded finite set (use Enum)
-4. Single global storage of components state
-5. Vehicle logic handled in systems which are pure functions
+At a high-level the vehicle engine architecture uses an archetype ECS [1-3].
+The following are high-level design rules:
+1. Vehicle "elements" are a set of vehicle "components", which are unique
+   and an element can only have at most 1 component of each type.
+2. Vehicle components are a pre-defined, **hard-coded** finite set (using an Enum)
+3. Components cannot be added/removed after the element is created.
+4. "Vehicles" are a tree hierarchy of vehicle elements.
+5. Components, elements, and vehicles hold state but have no logic.
+6. No cross-coupling allowed in a component. E.g. a component cannot
+   know about other components, cannot query if it is part of a vehicle
+   holding another component type, and should never hold any references
+   to other components.
+7. Components are stored in struct-of-arrays "archetypes" in a global
+   storage.
+8. Vehicle logic handled in systems which are pure functions that operate on
+   and mutate components state.
+
+This design doc includes simplified versions of components, elements, and 
+vehicle data structures to illustrate the general engine architecture.
 
 
-# Vehicle Data Layout
+# Components layout
+![fig_component_layout](figs/fig_component_layout.svg)
 
-A vehicle is just an identifier (name, id) and list of element ids. 
-```rust
-Vehicle {
-    name: String,
-    id: VehicleId,
-    elements: Array<ElementId>,
+Components are a hard-coded set of types (simplified example below).
+To simplify things, currently there is no support for letting a client
+write custom components using this plugin as a library.
+
+```kotlin
+enum class VehicleComponentType {
+    GUN_TURRET,
+    HEALTH,
+    MODEL,
+    TRANSFORM,
+    LAND_MOVEMENT_CONTROLS,
+    SHIP_MOVEMENT_CONTROLS,
 }
+
+// component class implementations
+data class GunTurretComponent( ... ) { ... }
+data class HealthComponent( ... ) { ... }
+data class ModelComponent( ... ) { ... }
+data class TransformComponent( ... ) { ... }
+data class LandMovementControlsComponent( ... ) { ... }
+data class ShipMovementControlsComponent( ... ) { ... }
 ```
 
-Why not store components directly in the vehicle? Problem: how to handle
-multiple of the same component (e.g. 2x tank turrets).
+Each component is just a pure data class that holds component state
+but contains no logic. Each component has a corresponding enum value.
+The enum values let us specify a component **layout** as an `EnumSet`
+indicating which components actually exist. We can then have a common
+object that supports all components, using the layout to specify which
+components actually exist inside:
 
-Allowing multiple components in a single entity significantly complicates
-ECS-style layouts. Easier to add another layer in the hierarchy.
-Hence vehicle is a list of multiple elements. Each element stores a
-set of unique component types:
-```rust
-VehicleElement {
-    /// Identifier set
+```kotlin
+data class VehicleComponents(
+    // layout specifies which components exists
+    val layout: EnumSet<VehicleComponentType>,
+
+    // all components supported, but they may or may not exist
+    // inside this components object 
+    val gunTurret: GunTurretComponent? = null,
+    val health: HealthComponent? = null,
+    val model: ModelComponent? = null,
+    val transform: TransformComponent? = null,
+    val landMovementControls: LandMovementControlsComponent? = null,
+    val shipMovementControls: ShipMovementControlsComponent? = null,
+)
+```
+The `VehicleComponents` is the basic storage unit of components for a vehicle.
+This structure comes with tradeoffs/limitations:
+1. **Only allows engine hard-coded component types.** If we allow unknown,
+   customizable component types, we can no longer hard code fields for
+   each component. A possible extension is to add some field for custom
+   components using a `Map<Int, UnknownComponent>`, but this will complicate
+   specifying component layouts. We would need to migrate from enum system
+   perhaps into a bitset style system with id ranges allocated for built-in
+   components and for custom components.
+2. **Can't have that many unique component types.** If we had to support 
+   1000s of different component types, then the memory footprint would
+   become very painful. But we are well <100 component types, so this
+   structure is still pretty small (just a bunch of references).
+
+The **layout** is also referred to as the **archetype** of the vehicle,
+which is common ECS terminology [1-3].
+
+
+# VehicleElement and Vehicle Layout
+
+```kotlin
+class VehicleElement(
+    // identifier tags:
+    // readable name identifier
     name: String,
+    // persistent id saved across server restarts
+    uuid: UUID,
+    // transient id, used to index into runtime elements storage
     id: ElementId,
 
-    /// EnumSet enforces only at most 1 of any component type.
-    /// Adding this set here simplifies deleting vehicle element.
-    /// This is similar to a "bitset" ECS data layout.
+    // references to components data storage
+    components: VehicleComponents,
+)
+```
+A **vehicle element** is just an instance of components along with some
+identifier tags. Reason for each tag:
+- `name`: Used as a human readable name for debugging.
+- `uuid`: Unique, persistent id for the element that is saved/loaded.
+- `id`: This is an integer id used for faster indexing in storage
+  data structures (rather than using the uuid). This id is assigned
+  when element is inserted into storage, and it can change on every
+  server restart.
+
+Next questions:
+- **How do we add multiple components directly to vehicle?**
+  E.g. can we have two gun turrets? Allowing multiple components
+  significantly complicates the simple layout and component references
+  structure...
+- **Can we position some vehicle elements relative to other parts?**
+  Can we have a gun turret attached to a model? How about a gun turret attached
+  to a model that is itself attached to another model?
+
+
+```kotlin
+class Vehicle(
+    // identifier tags:
+    // readable name identifier
+    name: String,
+    // persistent id saved across server restarts
+    uuid: UUID,
+    // transient id, used to index into runtime elements storage
+    id: ElementId,
+
+    // elements in vehicle, topologically sorted as a tree
+    elements: List<VehicleElement>,
+)
+```
+
+A **vehicle** is a tree of multiple vehicle elements. This solves allowing
+multiple components and how to position elements relative to other elements.
+Vehicle is created from a set of vehicle elements and a description of the
+element tree hierarchy.
+
+During vehicle creation, the elements are topologically sorted. This makes
+it easier if we need to update elements in sorted parent-child order.
+
+
+# Components Storage
+
+Assumptions
+- No adding/removing components during runtime. Once vehicle element is
+made, it is fixed.
+- Vehicle elements define component layouts. All possible layouts can be
+generated at startup and pre-determined by configs.
+- Have constant max number of elements, `MAX_VEHICLE_ELEMENTS` defined in
+config. Mineman server performance won't handle more than a few thousand
+vehicles so there is no reason to support an infinite number. Constrain 
+the max count, then simply stop new vehicles from being created when limit
+reached.
+
+With these requirements, the Archetype ECS data storage pattern [1, 2] is going to
+be most suited because we dont need to add/remove components and mainly need
+fast query + iteration performance.
+
+```rust
+/// We can use either a enum set, and maybe later look into
+/// bitset optimizations.
+ComponentLayout {
     components: EnumSet<VehicleComponentType>,
 }
-```
 
-Components are a hard-coded set (example below). To simplify things, we will
-not add any support for letting a client write custom components using this
-plugin as a library:
-```rust
-enum VehicleComponentType {
-    TRANSFORM,
-    HEALTH,
-    ARTILLERY_TURRET,
-    TANK_TURRET,
-    LAND_MOVEMENT,
-    WATER_MOVEMENT,
+Archetype {
+    layout: ComponentLayout,
+
+    /// Custom wrapper around an EnumMap. Only the storages in the
+    /// layout are needed, rest are null.
+    /// Note I have layout here as array of structs, if you are not
+    /// familiar see [6].
+    /// If archetype is for type (A, B, C, D) and we only
+    /// want to read (A, B) in a system, theres two layouts
+    ///     StructOfArray {
+    ///         a: Array<A>,
+    ///         b: Array<B>,
+    ///         c: Array<C>,
+    ///         d: Array<D>,
+    ///     }
+    ///     ArrayOfStruct {
+    ///         data: Array<(A, B, C, D)>
+    ///     }
+    /// The first should be slightly easier to work with.
+    components: {
+        TRANSFORM => Map<ElementId, TransformComponent>?,
+        HEALTH => Map<ElementId, HealthComponent>?,
+        ARTILLERY_TURRET => Map<ElementId, ArtilleryTurretComponent>?,
+        TANK_TURRET => Map<ElementId, TankTurretComponent>?,
+        LAND_MOVEMENT => Map<ElementId, LandMovementComponent>?,
+        WATER_MOVEMENT => Map<ElementId, WaterMovementComponent>?,
+    }
 }
 
-/// Component data classes
-TransformComponent { ... }
-HealthComponent { ... }
-ArtilleryTurretComponent { ... }
-TankTurretComponent { ... }
-LandMovementComponent { ... }
-WaterMovementComponent { ... }
+ComponentsStorage {
+    /// Vehicle element manager, handles creating/free-ing element ids.
+    element_id_manager: ElementIdManager,
+
+    /// Map vehicle element id => component layout
+    /// Array pre-allocated to max size MAX_VEHICLE_ELEMENTS
+    element_layouts: Array<ComponentLayout>,
+
+    /// Map component layout => archetype data storage.
+    /// Dense map so the values are stored as a packed array.
+    /// When we do a system iteration query, like iter(comp1, comp2)
+    /// we can have the query cache the dense map packed indices needed
+    /// so we only need to do the component filter once on first execution.
+    /// This saves most of the cost in archetype iteration querying.
+    components: DenseMap<ComponentLayout, Archetype>,
+}
 ```
+
+## Note on Archetype Auto-Generation
+
+Because we are hard-coding vehicle components, there is a lot of boilerplate
+for adding a component. To deal with this, archetype storage is auto
+generated with python scripts and templates in the `scripts/` folder.
+The files there are
+- `archetype_gen.py`: Run this to generate archetypes. Should be run
+  each time a component type is added/removed.
+- `components.py`: Specify all component classes and their enum type
+  in here.
+- `documentation_gen.py`: Generates component config documentation
+  examples. 
+
+
+# Vehicle Creation and Deletion
+
+## Prototypes
+
+## Vehicle Build Sequence
+
+## Standardized Component Life Cycle Interface: `VehicleComponent`
+So that all components satisfy this creation/deletion process, all components
+must implement the `VehicleComponent` interface. This contains overrideable
+creation functions to allow customizing creation/deletion for components,
+as well as an important `deepclone()` function.
+
+## `deepclone()` to Prevent Accidental Shared Objects
+Components must manually implement `deepclone()` if they internally
+contain non-primitive, object references as state. A real case was components
+holding `Array<T>` or `IntArray` objects. Without a `deepclone()`, the
+components injected into the global state will all be sharing references
+to the same `Array<T>`, so mutating the array affected all components.
+This is fixed by making `deepclone()` deep clone the array object.
 
 
 # Data Config
 
-Vehicle and vehicle elements are composable and data-defined by user configs
-(using `.toml` config format as default engine standard):
+Vehicles, elements, and components are designed as such to be highly
+composable by user configs. The same components can be re-used to
+create different vehicle types. `.toml` config format is the default
+engine standard:
 - TOML format spec: https://toml.io/en/v1.0.0
 - Particularly, read array of tables: https://toml.io/en/v1.0.0#array-of-tables
+
+Below are examples of `.toml` data config format for vehicles:
 
 ## Example: Simple tank
 ```toml
@@ -94,7 +286,7 @@ max_speed = 1.5
 offset = [0, 1, 0]
 ```
 
-## Example: Ship with multiple turrets
+## Example: Complicated ship with multiple turrets
 ```toml
 # A vehicle that needs multiple of the same components
 # needs to explicity define the elements, give them names
@@ -176,81 +368,10 @@ Engine {
 }
 ```
 
-# Components Storage
 
-Assumptions
-- No adding/removing components during runtime. Once vehicle element is
-made, it is fixed.
-- Vehicle elements define component layouts. All possible layouts can be
-generated at startup and pre-determined by configs.
-- Have constant max number of elements, `MAX_VEHICLE_ELEMENTS` defined in
-config. Mineman server performance won't handle more than a few thousand
-vehicles so there is no reason to support an infinite number. Constrain 
-the max count, then simply stop new vehicles from being created when limit
-reached.
+# ECS System Programming
 
-With these requirements, the Archetype ECS data storage pattern [1, 2] is going to
-be most suited because we dont need to add/remove components and mainly need
-fast query + iteration performance.
-
-```rust
-/// We can use either a enum set, and maybe later look into
-/// bitset optimizations.
-ComponentLayout {
-    components: EnumSet<VehicleComponentType>,
-}
-
-Archetype {
-    layout: ComponentLayout,
-
-    /// Custom wrapper around an EnumMap. Only the storages in the
-    /// layout are needed, rest are null.
-    /// Note I have layout here as array of structs, if you are not
-    /// familiar see [5].
-    /// If archetype is for type (A, B, C, D) and we only
-    /// want to read (A, B) in a system, theres two layouts
-    ///     StructOfArray {
-    ///         a: Array<A>,
-    ///         b: Array<B>,
-    ///         c: Array<C>,
-    ///         d: Array<D>,
-    ///     }
-    ///     ArrayOfStruct {
-    ///         data: Array<(A, B, C, D)>
-    ///     }
-    /// The first should be slightly easier to work with.
-    components: {
-        TRANSFORM => Map<ElementId, TransformComponent>?,
-        HEALTH => Map<ElementId, HealthComponent>?,
-        ARTILLERY_TURRET => Map<ElementId, ArtilleryTurretComponent>?,
-        TANK_TURRET => Map<ElementId, TankTurretComponent>?,
-        LAND_MOVEMENT => Map<ElementId, LandMovementComponent>?,
-        WATER_MOVEMENT => Map<ElementId, WaterMovementComponent>?,
-    }
-}
-
-ComponentsStorage {
-    /// Vehicle element manager, handles creating/free-ing element ids.
-    element_id_manager: ElementIdManager,
-
-    /// Map vehicle element id => component layout
-    /// Array pre-allocated to max size MAX_VEHICLE_ELEMENTS
-    element_layouts: Array<ComponentLayout>,
-
-    /// Map component layout => archetype data storage.
-    /// Dense map so the values are stored as a packed array.
-    /// When we do a system iteration query, like iter(comp1, comp2)
-    /// we can have the query cache the dense map packed indices needed
-    /// so we only need to do the component filter once on first execution.
-    /// This saves most of the cost in archetype iteration querying.
-    components: DenseMap<ComponentLayout, Archetype>,
-}
-```
-
-
-# ECS Programming
-
-See Refs [1-4] for ECS architecture design and its problems.  
+See Refs [1-5] for ECS architecture design and its problems.  
 
 This contains some examples of ECS style programming for things 
 that are easy in typical hierarchical OOP, but more difficult in ECS.
@@ -485,12 +606,14 @@ fn system_delete_vehicles(
 
 [2] Legion, archetype based ECS: https://github.com/amethyst/legion
 
-[3] skypjack's ECS series: https://skypjack.github.io/2019-02-14-ecs-baf-part-1/
+[3] Unity ECS concepts: https://docs.unity3d.com/Packages/com.unity.entities@0.2/manual/ecs_core.html
 
-[4] ECS problems: https://ajmmertens.medium.com/why-vanilla-ecs-is-not-enough-d7ed4e3bebe5
+[4] skypjack's ECS series: https://skypjack.github.io/2019-02-14-ecs-baf-part-1/
 
-[5] Array of structs vs struct of arrays: https://en.wikipedia.org/wiki/AoS_and_SoA
+[5] ECS problems: https://ajmmertens.medium.com/why-vanilla-ecs-is-not-enough-d7ed4e3bebe5
 
-[6] cache friendly data structures/benchmarks: https://tylerayoung.com/2019/01/29/benchmarks-of-cache-friendly-data-structures-in-c/
+[6] Array of structs vs struct of arrays: https://en.wikipedia.org/wiki/AoS_and_SoA
 
-[7] high perf computing, hardware/cache meme: https://en.algorithmica.org/hpc/  
+[7] cache friendly data structures/benchmarks: https://tylerayoung.com/2019/01/29/benchmarks-of-cache-friendly-data-structures-in-c/
+
+[8] high perf computing, hardware/cache meme: https://en.algorithmica.org/hpc/  
