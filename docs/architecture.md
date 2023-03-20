@@ -1,5 +1,7 @@
 # XV Composable Vehicle Engine Architecture
 
+*Edited: 2023-03-19*
+
 At a high-level the vehicle engine architecture uses an archetype ECS [1-3].
 The following are high-level design rules:
 1. Vehicle "elements" are a set of vehicle "components", which are unique
@@ -137,7 +139,7 @@ class Vehicle(
     // transient id, used to index into runtime elements storage
     val id: ElementId,
 
-    // elements in vehicle, ordered from depth sorted elements
+    // elements in vehicle, ordered from tree depth sorted elements
     val elements: List<VehicleElement>,
 )
 ```
@@ -159,76 +161,132 @@ list for the vehicle.
 
 
 # Components Storage
+![fig_archetype_storage](figs/fig_archetype_storage.svg)
 
-Assumptions
+```kotlin
+class ArchetypeStorage(
+    // component layout, indicates which storages exist
+    layout: EnumSet<VehicleComponentType>,
+    // max number elements allowed in storage
+    maxElements: Int,
+) {
+    // sparse lookup from element id => element components dense index
+    // (note vehicle element id is just a typealias for int)
+    val lookup: IntArray
+
+    // reverse lookup from dense array index => vehicle element id
+    val elements: IntArray
+
+    // dense packed components storage arrays
+    // only components in layout will be non-null arrays
+    val gunTurret: ArrayList<GunTurretComponent>?
+    val health: ArrayList<HealthComponent>?
+    val model: ArrayList<ModelComponent>?
+    val transform: ArrayList<TransformComponent>?
+    val landMovementControls: ArrayList<LandMovementControlsComponent>?
+    val shipMovementControls: ArrayList<ShipMovementControlsComponent>?
+}
+```
+
+```kotlin
+class ComponentsStorage(
+    val maxElements: Int,
+) {
+    // layout enum set => archetype storage
+    val lookup: HashMap<EnumSet<VehicleComponentType>, ArchetypeStorage>
+
+    // global element ids
+    // fixed-size lookup table mapping element id  => element
+    val elementsLookup: Array<VehicleElement?>
+
+    // free element ids stack:
+    // - pop to allocate an id
+    // - push free id back when element deleted
+    val freeElementIds: Stack<ElementId>
+
+    // element uuid -> element
+    val uuidToElement: HashMap<UUID, VehicleElement>
+}
+```
+
+Assumptions:
 - No adding/removing components during runtime. Once vehicle element is
 made, it is fixed.
 - Vehicle elements define component layouts. All possible layouts can be
-generated at startup and pre-determined by configs.
+generated at startup and pre-determined after parsing configs.
 - Have constant max number of elements, `MAX_VEHICLE_ELEMENTS` defined in
 config. Mineman server performance won't handle more than a few thousand
 vehicles so there is no reason to support an infinite number. Constrain 
 the max count, then simply stop new vehicles from being created when limit
 reached.
 
-With these requirements, the Archetype ECS data storage pattern [1, 2] is going to
-be most suited because we dont need to add/remove components and mainly need
-fast query + iteration performance.
+With these requirements, the Archetype ECS data storage pattern [1-3] is
+best suited because we dont need to add/remove components and mainly need
+fast query + iteration performance. Since we know all layouts based on
+parsing config files, we can create all archetype storages needed during
+load.
 
-```kotlin
-/// We can use either a enum set, and maybe later look into
-/// bitset optimizations.
-ComponentLayout {
-    components: EnumSet<VehicleComponentType>,
-}
+## `ArchetypeStorage`: Stores Component Sets for Iteration
+Internally the components archetype storage is backed by a "sparse set" 
+data structure, read [4] for background knowledge needed. The sparse set
+combines a sparse indexed lookup (using element id) for `O(1)` lookup and
+a packed "dense" storage array for `O(n)` iteration.
 
-Archetype {
-    layout: ComponentLayout,
+Vehicle element `id` field indexes into the sparse lookup table. The integer
+value stored inside the lookup array at index `id` corresponds to the
+index in the dense packed array, which contains the element's components.
 
-    /// Custom wrapper around an EnumMap. Only the storages in the
-    /// layout are needed, rest are null.
-    /// Note I have layout here as array of structs, if you are not
-    /// familiar see [6].
-    /// If archetype is for type (A, B, C, D) and we only
-    /// want to read (A, B) in a system, theres two layouts
-    ///     StructOfArray {
-    ///         a: Array<A>,
-    ///         b: Array<B>,
-    ///         c: Array<C>,
-    ///         d: Array<D>,
-    ///     }
-    ///     ArrayOfStruct {
-    ///         data: Array<(A, B, C, D)>
-    ///     }
-    /// The first should be slightly easier to work with.
-    components: {
-        TRANSFORM => Map<ElementId, TransformComponent>?,
-        HEALTH => Map<ElementId, HealthComponent>?,
-        ARTILLERY_TURRET => Map<ElementId, ArtilleryTurretComponent>?,
-        TANK_TURRET => Map<ElementId, TankTurretComponent>?,
-        LAND_MOVEMENT => Map<ElementId, LandMovementComponent>?,
-        WATER_MOVEMENT => Map<ElementId, WaterMovementComponent>?,
-    }
-}
+For example of archetype lookup as shown in the images above:
+- Vehicle element id = 4
+- `archetype.lookup[4]` == 1: Use element id directly as index in lookup.
+  The value in lookup array is the dense index, in this case index 1.
+- `archetype.health[1]` == Vehicle's `HealthComponent`: We use the dense
+  index = 1 (found by lookup), to index into the archetype's `health`
+  components array. The value at dense index 1 is the same vehicle
+  `HealthComponent` as the component stored by `VehicleComponents`.  
+- `archetype.model[1]` == Vehicle's `ModelComponent`
+- and so on...
 
-ComponentsStorage {
-    /// Vehicle element manager, handles creating/free-ing element ids.
-    element_id_manager: ElementIdManager,
+## `ComponentsStorage`: Manages Archetype Storages and Element Ids
+The `ArchetypeStorage` is the internal building block for the global
+components storage. The `ComponentsStorage` manages all archetypes. At
+its core is just a map from layouts `EnumSet<VehicleComponentType>` to
+their `ArchetypeStorage`.
 
-    /// Map vehicle element id => component layout
-    /// Array pre-allocated to max size MAX_VEHICLE_ELEMENTS
-    element_layouts: Array<ComponentLayout>,
+The secondary purpose of `ComponentsStorage` is the global element id
+allocation manager:
+- `freeElementIds`: Maintains a stack of available element ids.
+- `elementsLookup`: Element "id" corresponds to array index, allowing fast
+  element lookup from id. This array is a similar sparse lookup array as in
+  the `ArchetypeStorage`, and can contain holes when elements are deleted.
+- `uuidToElement`: Alternative lookup using element UUID. This is only used
+  in cases where a UUID is stored in a Minecraft object like an entity or
+  item and we need to check if element exists with that UUID.
 
-    /// Map component layout => archetype data storage.
-    /// Dense map so the values are stored as a packed array.
-    /// When we do a system iteration query, like iter(comp1, comp2)
-    /// we can have the query cache the dense map packed indices needed
-    /// so we only need to do the component filter once on first execution.
-    /// This saves most of the cost in archetype iteration querying.
-    components: DenseMap<ComponentLayout, Archetype>,
+
+## Note on Archetype Storage Format.
+
+The storages use struct of arrays, if you are not familiar see [6].
+If archetype is for type `(A, B, C, D)` and we only want to read `(A, B)`
+in a system, theres two reasonable layout types [6]:
+```
+StructOfArray {
+    a: Array<A>,
+    b: Array<B>,
+    c: Array<C>,
+    d: Array<D>,
 }
 ```
+versus
+```
+ArrayOfStruct {
+    data: Array<(A, B, C, D)>
+}
+```
+But the fist one struct of arrays (SoA) is much easier for querying
+component subsets for Iterators.
 
+    
 ## Note on Archetype Auto-Generation
 
 Because we are hard-coding vehicle components, there is a lot of boilerplate
@@ -618,7 +676,60 @@ fn system_delete_vehicles(
 ```
 
 
-# Useful References
+# Limitations and Future Architectural Changes
+
+Future extensions needed (should implement both together):
+1. Support runtime loading custom components
+2. Systems scheduler, cull unused systems
+
+## 1. Supporting custom loaded components
+The most limiting aspect of this implementation is hard-coding component 
+types. This makes this unusable a library. In the ideal case, a user would
+use this as the core vehicle engine and use base components, then implement
+and compile custom components using this a as a library, into an extension
+`.jar`. Then this plugin should runtime load these custom component
+definitions, before parsing the vehicle `.toml` configs. 
+
+The reason for hard-coding components was simplicity and some slight
+performance. If we allow custom components, we will need to introduce
+another layer of indirection in the archetype storages (higher complexity,
+plus another layer indirection). We also cannot use simple enums or
+hardcode components into a `VehicleComponents` type anymore, without
+introducing some kind of map `Map<Class, UnknownComponent>`
+
+
+## 2. Systems scheduler
+As more very-specific components are written, its likely that servers
+will not need all components/systems and only need a small subset. E.g. a 
+server set in ancient times will want ships but likely not planes.
+
+In future convert systems into something like a `Runnable` interface,
+and replace the current hard-coded update tick with a scheduled 
+runtime generated list of runnables that only run systems that involve
+components actually used.
+
+This can be done by:
+1. We assume no adding/removing components, so prototypes parsed at load
+   will specify all possible components used.
+2. Make systems a class that must specify all components queried.
+3. Check system's component dependencies with the loaded list of all
+   possible components from 1. If a system involves a component that
+   no prototype uses, then we can cull the system.
+4. The **scheduler** will perform 3 and build a final update function
+   with only a list of systems that actually need to run.
+
+The new system class can also implement some optimizations like caching
+references to all archetype storages (or even the storage arrays themselves)
+that need to be accessed. This could potentially reduce some of the 
+indirection costs for allowing custom component types.
+
+This scheduler should also parallelize systems if possible. Though only a
+few systems are safe to parallelize, as most of the Bukkit API needs to
+be synchronous.
+
+
+
+# References
 [1] ECS data layouts: https://csherratt.github.io/blog/posts/specs-and-legion/
 
 [2] Legion, archetype based ECS: https://github.com/amethyst/legion
