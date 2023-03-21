@@ -301,18 +301,222 @@ The files there are
   examples. 
 
 
-# Elements and Vehicles Storage
+# Vehicles Storage
+```kotlin
+class VehicleStorage(
+    val maxVehicles: Int
+) {
+    // fixed-size lookup map VehicleId => Vehicle
+    val lookup: Array<Vehicle?>
 
+    // free ids stack
+    val freeIds: Stack<VehicleId>
 
+    // vehicle uuid -> vehicle
+    val uuidToVehicle: HashMap<UUID, Vehicle>
+
+    // element uuid => owning vehicle id
+    val elementToVehicle: HashMap<UUID, VehicleId>
+}
+```
+The vehicles storage is nearly identical to the element storage parts inside
+the `ComponentsStorage` described above. Similar to elements, we allow a max
+vehicles count (from config) and pre-size the `lookup` and `freeIds` to
+this max count. The lookup is identical to elements, except we use a
+`VehicleId` instead of `ElementId` (both are just type alias integers).
 
 
 # Vehicle Creation and Deletion Life Cycle
 
+```kotlin
+class VehicleElementPrototype(
+    // name of element within a vehicle element tree
+    val name: String,
+    // name of element's parent, used for forming tree
+    val parent: String?,
+    // base components with default values defined in config
+    val components: VehicleComponents,
+)
+```
+
+Creation/deletion system needs to support:
+- **Mixing configurable properties and runtime "instance" properties**:
+  Simple example is a vehicle max health (from config file) and current
+  health (stored in item property or from `.json` save state). This is
+  handled by "prototypes" which contains base properties from configs,
+  and a creation system that "injects" overriding properties during
+  creation. See picture above.
+- **Global properties and instance properties**: Extension to previous,
+  max health is a global property shared among all vehicles. While
+  current health is unique per each vehicle created. Prototypes
+  solve this combined with making component classes have immutable fields
+  for these global properties and mutable fields for vehicle instance
+  runtime state.
+- **Creation from different sources/systems**: E.g. spawn from item in 
+  player hand, create from `/spawn` command, load from json, etc. In each
+  case, we have different sources for properties. When we spawn from an
+  item in player hand, we want to inject properties stored inside item.
+  When we reload world and vehicles from `.json` save file, we want to
+  inject properties from json.
+- **Hot reloading properties for rapid testing/editing**: We need
+  creation process to support hot reloading plugin using `/xv reload`
+  so we can rapidly edit configs without entire server reload.
+  This is done by just making sure the save/load system can always
+  re-create the same vehicle runtime state.
+
+
 ## Prototypes
+
+The vehicle element "prototype" `VehicleElementPrototype` contains the
+base properties defined in a config file. When vehicles are created,
+properties during creation are "injected" on top of the base properties
+in the prototype.
+
+The prototype is just a set of `VehicleComponents`, where each component
+contains its "default" config state.
+
+This is loosely based on ideas of prototype inheritence [7], except
+here we are just copying and then overwriting base properties, without
+any prototype chain lookup.
+
 
 ## Vehicle Build Sequence
 
+All creation systems begin with a prototype `VehicleElementPrototype`.
+Then depending on the creation system, we customize what properties
+are injected into the prototype:
+- **Spawning from item in player hand**: Inject player location and
+  properties stored inside the item.
+- **Spawning using /spawn command**: Inject just player location.
+- **Loading from `.json` save state**: Inject with only data parsed
+  from `.json` save state. No player or item properties.
+
+After creation system property injection, we emit an additional
+"builder" the `VehicleElementBuilder`. This is needed is to include any
+additional element instance creation properties not in the base prototype.
+Currently the only property added is the `UUID`.
+
+The "builder" acts as a standard interface for the engine to finish
+creation by allocating an element ID and putting all the new element 
+components into its archetype storage (from matching element layout).
+
+
 ## Standardized Component Life Cycle Interface: `VehicleComponent`
+
+```kotlin
+data class VehicleComponents(
+    // properties from before
+    ...
+) {
+    /**
+     * Deepclone component objects before injecting into archetype 
+     * storage to ensure we are not referencing the same object.
+     * Delegates deepclone to each individual component so objects
+     * inside component (like Arrays, Maps, etc.) are also
+     * deepcloned.
+     */
+    fun deepclone(): VehicleComponents {
+        return VehicleComponents(
+            layout,
+            gunTurret = gunTurret?.deepclone(),
+            health = health?.deepclone(),
+            model = model?.deepclone(),
+            transform = transform?.deepclone(),
+            landMovementControls = landMovementControls?.deepclone(),
+            shipMovementControls = shipMovementControls?.deepclone(),
+        )
+    }
+
+    /**
+     * During creation, inject player specific properties and generate
+     * a new instance of components. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectSpawnProperties(
+        location: Location?,
+        player: Player?,
+    ): VehicleComponents {
+        return copy(
+            gunTurret = gunTurret?.injectSpawnProperties(location, player),
+            health = health?.injectSpawnProperties(location, player),
+            model = model?.injectSpawnProperties(location, player),
+            transform = transform?.injectSpawnProperties(location, player),
+            landMovementControls = landMovementControls?.injectSpawnProperties(location, player),
+            shipMovementControls = shipMovementControls?.injectSpawnProperties(location, player),
+        )
+    }
+
+    /**
+     * During creation, inject item specific properties and generate
+     * a new instance of this component. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectItemProperties(
+        itemData: PersistentDataContainer
+    ): VehicleComponents {
+        return copy(
+            gunTurret = gunTurret?.injectItemProperties(itemData),
+            health = health?.injectItemProperties(itemData),
+            model = model?.injectItemProperties(itemData),
+            transform = transform?.injectItemProperties(itemData),
+            landMovementControls = landMovementControls?.injectItemProperties(itemData),
+            shipMovementControls = shipMovementControls?.injectItemProperties(itemData),
+        )
+    }
+
+    /**
+     * During creation, inject json specific properties and generate
+     * a new instance of this component. Used to load serialized vehicle
+     * state from stored json objects. Delegates injecting property
+     * effects to each individual component.
+     */
+    fun injectJsonProperties(
+        json: JsonObject,
+    ): VehicleComponents {
+        return copy(
+            gunTurret = gunTurret?.injectJsonProperties(json),
+            health = health?.injectJsonProperties(json),
+            model = model?.injectJsonProperties(json),
+            transform = transform?.injectJsonProperties(json),
+            landMovementControls = landMovementControls?.injectJsonProperties(json),
+            shipMovementControls = shipMovementControls?.injectJsonProperties(json),
+        )
+    }
+
+
+    /**
+     * Serialize components set into a json object.
+     */
+    fun toJson(): JsonObject {
+        val json = JsonObject()
+        for ( c in this.layout ) {
+            when ( c ) {
+                VehicleComponentType.GUN_TURRET -> {
+                    json.add("gunTurret", gunTurret!!.toJson())
+                }
+                VehicleComponentType.HEALTH -> {
+                    json.add("health", health!!.toJson())
+                }
+                VehicleComponentType.MODEL -> {
+                    json.add("model", model!!.toJson())
+                }
+                VehicleComponentType.TRANSFORM -> {
+                    json.add("transform", transform!!.toJson())
+                }
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> {
+                    json.add("landMovementControls", landMovementControls!!.toJson())
+                }
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> {
+                    json.add("shipMovementControls", shipMovementControls!!.toJson())
+                }
+                null -> {}
+            }
+        }
+        return json
+    }
+}
+```
+
 So that all components satisfy this creation/deletion process, all components
 must implement the `VehicleComponent` interface. This contains overrideable
 creation functions to allow customizing creation/deletion for components,
@@ -327,7 +531,7 @@ to the same `Array<T>`, so mutating the array affected all components.
 This is fixed by making `deepclone()` deep clone the array object.
 
 
-# Data Config
+# Vehicle Configuration
 
 Vehicles, elements, and components are designed as such to be highly
 composable by user configs. The same components can be re-used to
@@ -742,6 +946,8 @@ be synchronous.
 
 [6] Array of structs vs struct of arrays: https://en.wikipedia.org/wiki/AoS_and_SoA
 
-[7] cache friendly data structures/benchmarks: https://tylerayoung.com/2019/01/29/benchmarks-of-cache-friendly-data-structures-in-c/
+[7] Javascript prototype inheritence: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain
 
-[8] high perf computing, hardware/cache meme: https://en.algorithmica.org/hpc/  
+[8] cache friendly data structures/benchmarks: https://tylerayoung.com/2019/01/29/benchmarks-of-cache-friendly-data-structures-in-c/
+
+[9] high perf computing, hardware/cache meme: https://en.algorithmica.org/hpc/  
