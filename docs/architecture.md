@@ -326,7 +326,8 @@ this max count. The lookup is identical to elements, except we use a
 `VehicleId` instead of `ElementId` (both are just type alias integers).
 
 
-# Vehicle Creation and Deletion Life Cycle
+# Vehicle Creation Process
+![fig_creation_process](figs/fig_creation_process.svg)
 
 ```kotlin
 class VehicleElementPrototype(
@@ -529,6 +530,8 @@ holding `Array<T>` or `IntArray` objects. Without a `deepclone()`, the
 components injected into the global state will all be sharing references
 to the same `Array<T>`, so mutating the array affected all components.
 This is fixed by making `deepclone()` deep clone the array object.
+
+# Vehicle Deletion Process
 
 
 # Vehicle Configuration
