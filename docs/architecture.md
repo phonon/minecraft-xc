@@ -2,7 +2,8 @@
 
 *Edited: 2023-03-19*
 
-At a high-level the vehicle engine architecture uses an archetype ECS [1-3].
+At a high-level the vehicle engine uses an archetype based
+entity-component-system (ECS) architecture [1-3].
 The following are high-level design rules:
 1. Vehicle "elements" are a set of vehicle "components", which are unique
    and an element can only have at most 1 component of each type.
@@ -21,6 +22,58 @@ The following are high-level design rules:
 
 This design doc includes simplified versions of components, elements, and 
 vehicle data structures to illustrate the general engine architecture.
+
+
+# Why ECS?
+![fig_ecs_intro](figs/fig_ecs_intro.svg)
+
+In an old vehicles system, we had a "Tank class" and a "Ship class" that
+had their specific properties and update function. Both would implement a
+standard `Vehicle` interface, and a global update loop would run
+`tank.update()` and `ship.update()`.
+
+In this ECS architecture, there are no "Tank class" or "Ship class".
+Instead, we decomposed these vehicles as a group of "components" that
+represent the vehicle's functionality. A tank has health, land movement, a 
+model, and a gun turret. The ship also has health and a model, but
+has no gun turret and instead has ship movement.
+
+Instead of `tank.update()` and `ship.update()` we think of each aspect of
+a vehicle as a "system". Updating health is a "system". Updating movement
+is a "system". So instead we update entire systems, which will update all
+vehicle that uses that property. E.g. `systemHealth.update()`,
+`systemLandMovement.update()` and `systemShipMovement.update()`.
+
+ECS is an organizational pattern that makes it easier to share properties
+across vehicles, which then allows us to easily configure new vehicles
+by re-using the same systems. Benefits:
+- **Easier to compose new vehicles from components**:
+  This is the main benefit. By writing "components" instead of vehicles,
+  we can build vehicles by just mix-matching components inside config file. 
+- **Better re-usability of components**:
+  Continuing above point, we only need to write components and systems once,
+  then we can re-use them for every vehicle. Tanks, cars, chariots can all
+  re-use the same land movement controls. And almost all vehicles re-use
+  the same health, hitbox, seats, and mounting systems.
+- **Better code organization**: 
+  Can enforce clear code organization: (1) components are pure data config +
+  state, (2) systems functions implement actual controls, behavior, etc.
+
+Reasons NOT to use ECS:
+- **Performance is worse**:
+  By generalizing classes `Tank` and `Ship` into components, we are adding
+  overhead and indirection to access components. And since we split single
+  `tank.update()` and `ship.update()` into separate system `update()` calls,
+  we add overhead in update. Outside of Mineman, ECS can generally be net
+  better for performance because ECS systems updates can be easier to
+  parallelize. But because our most compute intense systems
+  (like land/ship/air movement) require single-threaded Bukkit API, we lose
+  parallelization benefits of ECS. So as whole, performance of this ECS
+  should be worse than class specific vehicles using `tank.update()` and
+  `ship.update()`.
+- **Integration with Mineman is hard**:
+  Mineman Bukkit API is event driven, feeding those events into the ECS
+  system is annoying and adds complexity.
 
 
 # Components layout
@@ -719,6 +772,9 @@ offset = [1, 1, 0]
 [element.artillery_turret]
 ```
 
+# How to Write New Components
+
+
 
 # Engine / Global Data Storage Layout
 
@@ -767,10 +823,24 @@ Engine {
 
 # ECS System Programming
 
-See Refs [1-5] for ECS architecture design and its problems.  
+See Refs [1-5] for ECS architecture design and its challenges.  
 
-This contains some examples of ECS style programming for things 
-that are easy in typical hierarchical OOP, but more difficult in ECS.
+Here we'll demo some basic systems. There are two main categories:
+1. **Systems that iterate over all component sets.**
+   These are systems that loop over all archetypes that have a 
+   set of components, then run an update. Examples include health update,
+   e.g. for all vehicles with `HealthComponent`, if `health < 0` then kill
+   the vehicle. Another example is movement systems, e.g. a system for
+   all vehicles with a set `(TransformComponent, LandMovementControlsComponent)`
+   and another system for all vehicles with a set
+   `(Transform, ShipMovementControlsComponent)`.
+
+2. **Systems that respond to an event queue.**
+   These systems interface with Mineman API, typically in response to
+   player event handlers. E.g. each time player clicks mouse, add a
+   `ShootEvent` to a queue. The system drain the queue and shoots a gun
+   turret. The system checks if player is inside a vehicle, then
+   checks if that vehicle has a `GunTurretComponent`.
 
 ## Note: Differences from a "Pure" ECS
 
@@ -784,9 +854,6 @@ them directly into system functions as needed.
 
 ## Example: Basic Systems
 
-People usually shill ECS with simple iteration example like below.
-These are where ECS works well, but is fairly trivial and doesn't 
-show problems with ECS.
 ```rust
 fn system_land_movement(components: ComponentsStorage) {
     for transform, land_controller in components.query<TransformComponent, LandMovementComponent>() {
@@ -835,6 +902,15 @@ fn system_vehicle_creation(components: ComponentsStorage, requests: ArrayList<Cr
     }
 }
 ```
+
+# Advanced, Difficult Systems
+
+People usually shill ECS with simple iteration example like above.
+These are where ECS works well, but is fairly trivial and doesn't 
+show problems with ECS.
+
+This contains some examples of ECS style programming for things 
+that are easy in typical hierarchical OOP, but more difficult in ECS.
 
 
 ## Example: Parent, Child / Multiple Components
