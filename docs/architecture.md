@@ -329,18 +329,7 @@ this max count. The lookup is identical to elements, except we use a
 # Vehicle Creation Process
 ![fig_creation_process](figs/fig_creation_process.svg)
 
-```kotlin
-class VehicleElementPrototype(
-    // name of element within a vehicle element tree
-    val name: String,
-    // name of element's parent, used for forming tree
-    val parent: String?,
-    // base components with default values defined in config
-    val components: VehicleComponents,
-)
-```
-
-Creation/deletion system needs to support:
+Creation system needs to support:
 - **Mixing configurable properties and runtime "instance" properties**:
   Simple example is a vehicle max health (from config file) and current
   health (stored in item property or from `.json` save state). This is
@@ -367,7 +356,16 @@ Creation/deletion system needs to support:
 
 
 ## Prototypes
-
+```kotlin
+class VehicleElementPrototype(
+    // name of element within a vehicle element tree
+    val name: String,
+    // name of element's parent, used for forming tree
+    val parent: String?,
+    // base components with default values defined in config
+    val components: VehicleComponents,
+)
+```
 The vehicle element "prototype" `VehicleElementPrototype` contains the
 base properties defined in a config file. When vehicles are created,
 properties during creation are "injected" on top of the base properties
@@ -383,26 +381,29 @@ any prototype chain lookup.
 
 ## Vehicle Build Sequence
 
-All creation systems begin with a prototype `VehicleElementPrototype`.
-Then depending on the creation system, we customize what properties
-are injected into the prototype:
-- **Spawning from item in player hand**: Inject player location and
+All creation systems begin with components copied from a prototype
+`VehicleElementPrototype`. Then depending on the creation system,
+we "inject" new properties that overwrite original properties in
+the base components. For example, three ways we can create vehicles:
+1. **Spawning from item in player hand**: Inject player location and
   properties stored inside the item.
-- **Spawning using /spawn command**: Inject just player location.
-- **Loading from `.json` save state**: Inject with only data parsed
+2. **Spawning using /spawn command**: Inject just player location.
+3. **Loading from `.json` save state**: Inject with only data parsed
   from `.json` save state. No player or item properties.
 
 After creation system property injection, we emit an additional
 "builder" the `VehicleElementBuilder`. This is needed is to include any
 additional element instance creation properties not in the base prototype.
-Currently the only property added is the `UUID`.
+Currently the only property added is a `UUID`.
 
 The "builder" acts as a standard interface for the engine to finish
 creation by allocating an element ID and putting all the new element 
 components into its archetype storage (from matching element layout).
 
+What "injecting" properties means is shown below in new functions we
+add into `VehicleComponents`:
 
-## Standardized Component Life Cycle Interface: `VehicleComponent`
+## Standardized Component Interface: `VehicleComponent`
 
 ```kotlin
 data class VehicleComponents(
@@ -517,13 +518,84 @@ data class VehicleComponents(
     }
 }
 ```
+![fig_component_inject_properties](figs/fig_component_inject_properties.svg)
 
-So that all components satisfy this creation/deletion process, all components
-must implement the `VehicleComponent` interface. This contains overrideable
-creation functions to allow customizing creation/deletion for components,
-as well as an important `deepclone()` function.
+Consider `injectItemProperties()`, inside we are just "delegating" it to
+each individual component, by making each component run its own customized
+`injectItemProperties()`. The picture above shows:
+- `HealthComponent`: Take the current health stored inside item
+- `ModelComponent`: Take the current model skin stored inside item
+- Other components: Do nothing.
 
-## `deepclone()` to Prevent Accidental Shared Objects
+The interface `VehicleComponent` is introduced and has interface methods for
+delegating these standard creation/deletion property injection functions
+to the component class. By default, the functions do nothing and simply
+return itself. If a component needs to modify itself by injecting properties
+during creation, then write an overriding method for the component:
+
+```kotlin
+/**
+ * Component interface. Recursive interface so we can use self
+ * as a type, "F-bounded type", see:
+ * https://stackoverflow.com/questions/2413829/java-interfaces-and-return-types
+ */
+interface VehicleComponent<T: VehicleComponent<T>> {
+    // Vehicle component type enum.
+    val type: VehicleComponentType
+
+    /**
+     * Return self as correct type T. Because `this` is VehicleComponent<T>
+     * but we want T and java generics cant imply self type.
+     */
+    fun self(): T 
+
+    fun deepclone(): T
+
+    /**
+     * During creation, inject spawn specific properties and generate
+     * a new instance of this component. Such as spawn location, player
+     * who spawned the vehicle, etc.
+     */
+    fun injectSpawnProperties(
+        location: Location?,
+        player: Player?,
+    ): T {
+        return this.self()
+    }
+
+    /**
+     * During creation, inject item specific properties and generate
+     * a new instance of this component. Such as properties stored in
+     * the item, such as vehicle skin, health remaining, etc.
+     */
+    fun injectItemProperties(
+        itemData: PersistentDataContainer?,
+    ): T {
+        return this.self()
+    }
+
+    /**
+     * During creation, inject json specific properties and generate
+     * a new instance of this component. Used to load serialized vehicle
+     * state from stored json objects.
+     */
+    fun injectJsonProperties(
+        json: JsonObject?,
+    ): T {
+        return this.self()
+    }
+
+    /**
+     * Convert this component to a JSON object for serializing state.
+     * Used for saving vehicle state to disk.
+     */
+    fun toJson(): JsonObject? {
+        return null
+    }
+}
+```
+
+## Note: `deepclone()` to Prevent Accidental Shared Objects
 Components must manually implement `deepclone()` if they internally
 contain non-primitive, object references as state. A real case was components
 holding `Array<T>` or `IntArray` objects. Without a `deepclone()`, the
@@ -531,7 +603,43 @@ components injected into the global state will all be sharing references
 to the same `Array<T>`, so mutating the array affected all components.
 This is fixed by making `deepclone()` deep clone the array object.
 
+
 # Vehicle Deletion Process
+```kotlin
+data class VehicleComponents(
+    // properties from before
+    ...
+) {
+    // functions from before
+    ...
+
+    fun delete(
+        vehicle: Vehicle,
+        element: VehicleElement,
+        entityVehicleData: HashMap<UUID, EntityVehicleData>,
+    ) {
+        for ( c in layout ) {
+            when ( c ) {
+                VehicleComponentType.GUN_TURRET -> gunTurret?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.HEALTH -> health?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.MODEL -> model?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.TRANSFORM -> transform?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.LAND_MOVEMENT_CONTROLS -> landMovementControls?.delete(vehicle, element, entityVehicleData)
+                VehicleComponentType.SHIP_MOVEMENT_CONTROLS -> shipMovementControls?.delete(vehicle, element, entityVehicleData)
+                null -> {}
+            }
+        }
+    }
+}
+```
+
+Vehicle deletion does a similar process as delegating injecting properties
+to each component. Instead we are running a `.delete()` method on each
+component in the vehicle layout. Each component must manually implement
+delete to cleanup things like:
+- Armor stand entities a component created for visual models
+- Mappings from armor stand entities to vehicle, inside `entityVehicleData`
+- Things created in any external plugins, e.g. vehicle hitboxes for guns
 
 
 # Vehicle Configuration
@@ -614,8 +722,6 @@ offset = [1, 1, 0]
 
 # Engine / Global Data Storage Layout
 
-Engine is global data storage and manages all vehicle update logic:
-
 ```rust
 Engine {
     /// HARD-CODED PROPERTIES
@@ -649,6 +755,14 @@ Engine {
     }
 }
 ```
+
+`XV` is the engine which contains main parts:
+1. Vehicle data storage (archetypes, vehicle storage, etc.).
+2. Other data storage (user controls inputs, entity-vehicle mappings,
+   event queues, etc.).
+3. Systems update tick inside `update()`.
+4. Scheduler for running systems update on each tick.
+5. Random helper functions.
 
 
 # ECS System Programming
