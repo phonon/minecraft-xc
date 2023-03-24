@@ -708,34 +708,92 @@ Below are examples of `.toml` data config format for vehicles:
 
 ## Example: Simple tank
 ```toml
-# Simple vehicles do not have any duplicate components so
-# these only need a single element. In this case, we can
-# just write components directly in the config.
-# Parser will do a scan and recognize this only needs a
-# single anonymous element.
+# Simple vehicles do not have any duplicate components so these
+# only need a single element. In this case, we can just write
+# components directly in the config. Parser will do a scan and
+# recognize this only needs a single anonymous element.
+#
+# Each component properties are configured by a separate
+# toml table.
 
+# vehicle common properties
 name = "tank"
+item_name = "Debug Tank"
+item_custom_model_data = 104000
+spawn_time = 4.0
+despawn_time = 4.0
 
-# contains position, rotation, etc.
+# contains position, rotation, etc., no config needed
 [transform]
 
+# contains max health
+[health]
+max = 20
+
+# model properties
+[model]
+model_id = 104001
+
 # handles player's input controls for land movement
-[land_movement]
-acceleration = 0.25
-max_speed = 1.5
+[land_movement_controls]
+acceleration = 0.03
+speed_max_forward = 0.3
+speed_max_reverse = 0.2
 
 # tank turret movement and input controls
-[tank_turret]
-offset = [0, 1, 0]
+[gun_turret]
+turret_offset = [0.0, 0.5, 0.0]
+turret_model_id = 104002
 ```
 
-## Example: Complicated ship with multiple turrets
+## Example: Simple ship
 ```toml
-# A vehicle that needs multiple of the same components
-# needs to explicity define the elements, give them names
-# and setup parenting.
+# Simple ship re-uses same transform, health, and model
+# components, but has ship movement component. Note
+# how config is very similar to tank.
 
+# vehicle common properties
+name = "ship"
+item_name = "Debug Ship"
+item_custom_model_data = 120000
+spawn_time = 4.0
+despawn_time = 4.0
+
+# contains position, rotation, etc., no config needed
+[transform]
+
+# contains max health
+[health]
+max = 40
+
+# model properties
+[model]
+model_id = 120001
+
+# handles player's input controls for land movement
+[ship_movement_controls]
+acceleration = 0.02
+deceleration_multiplier = 0.8
+speed_max_forward = 0.4
+speed_max_reverse = 0.3
+```
+
+## Example: Complicated Ship with Multiple Turret Elements
+```toml
+# A vehicle that needs multiple of the same components requires
+# using multiple elements in the same vehicle. Setup is more complicated:
+# 1. Explicitly specify TOML array called "element" which contains
+#    a table for each element.
+# 2. Each element table contains tables for each component.
+# 3. Give each element a name.
+# 4. Setup parenting using names to refer to parent element.
+
+# vehicle common properties
 name = "gunboat"
+item_name = "Debug Gunboat"
+item_custom_model_data = 160000
+spawn_time = 4.0
+despawn_time = 4.0
 
 ### MAIN BOAT ELEMENT
 [[element]]
@@ -744,10 +802,19 @@ name = "base"
 # main boat position, rotation, etc.
 [element.transform]
 
+# contains max health
+[element.health]
+max = 40
+
+# model properties
+[element.model]
+model_id = 160001
+
 # handles player's input controls for land movement
-[element.water_movement]
-acceleration = 0.25
-max_speed = 1.5
+[element.ship_movement_controls]
+acceleration = 0.02
+deceleration_multiplier = 0.8
+speed_max_forward = 0.4
 
 
 ### LEFT SIDE GUN TURRET
@@ -758,7 +825,10 @@ parent = "base"
 [element.transform]
 offset = [-1, 1, 0]
 
-[element.artillery_turret]
+[element.model]
+model_id = 160002
+
+[element.gun_turret]
 
 
 ### RIGHT SIDE GUN TURRET
@@ -769,10 +839,14 @@ parent = "base"
 [element.transform]
 offset = [1, 1, 0]
 
-[element.artillery_turret]
+[element.model]
+model_id = 160002
+
+[element.gun_turret]
 ```
 
 # How to Write New Components
+
 
 
 
@@ -904,6 +978,8 @@ fn system_vehicle_creation(components: ComponentsStorage, requests: ArrayList<Cr
 ```
 
 # Advanced, Difficult Systems
+
+*Section is TODO*
 
 People usually shill ECS with simple iteration example like above.
 These are where ECS works well, but is fairly trivial and doesn't 
