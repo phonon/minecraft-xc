@@ -847,41 +847,69 @@ model_id = 160002
 
 # How to Write New Components
 
+Since components are hard-coded, there is lot of boilerplate inside
+archetype storage that is auto generated for all components.
+The kotlin files `core/archetype.kt` and `core/iterator.kt` are
+auto-generated and should not be edited directly.
 
+Python and is needed to generate. Internally the generation is done
+by jinja2 templates.
 
+1. Write a new component class, implement the `VehicleComponent`
+   interface. For example, we implement a `FuelComponent`.
+2. Inside python file `scripts/components.py` contains components
+   and their `VehicleComponentType` enum name mapping. Add to the
+   python dict named `components` a new mapping:
+```
+components = {
+    ...
+    "FUEL": "FuelComponent",
+    ...
+}
+```
+3. Run archetype generation script, which will re-generate the
+   `core/archetype.kt` and `core/iterator.kt` files. This adds
+   the enum type for the new component, and includes the new
+   component hard-coding into the `VehicleComponents` class and
+   archetype storage class.
+```
+python scripts/archetype_gen.py 
+```
+
+If you need to modify the core archetype storage and components,
+you need to edit the jinja2 templates located at
+`scripts/templates/template_archetype.kt`.
 
 # Engine / Global Data Storage Layout
 
-```rust
-Engine {
-    /// HARD-CODED PROPERTIES
-    
-    /// Global map of all vehicles
-    vehicles: HashMap<VehicleId, Vehicle>,
+```kotlin
+class XV() {    
+    // Global map of all vehicles
+    val vehicles: HashMap<VehicleId, Vehicle>
 
-    /// Associate mineman entity uuid => Vehicle
-    entity_to_vehicle: HashMap<UUID, Vehicle>,
+    // Associate mineman entity uuid => Vehicle
+    val entity_to_vehicle: HashMap<UUID, Vehicle>
 
-    /// ENTITY/COMPONENT STORAGE
-    /// Component support must support:
-    /// - iteration over groups of components associated with the same id:
-    ///     - components.iter((C1, C2, C3)) => iter over (id, comp1, comp2, comp3)
-    /// - individual entity queries:
-    ///     - components.get(id).position.get()
-    components: ComponentsStorage,
+    // ENTITY/COMPONENT STORAGE
+    // Component support must support:
+    // - iteration over groups of components associated with the same id:
+    //     - components.iter((C1, C2, C3)) => iter over (id, comp1, comp2, comp3)
+    // - individual entity queries:
+    //     - components.get(id).position.get()
+    val components: ComponentsStorage
 
-    /// Hard-coded system schedule to update all vehicle components.
-    /// Mineman single-threaded, so just pass each system the entire
-    /// components storage. Systems are arbitrary functions that
-    /// implicitly follow interface `system_fn(components, ...)`
-    /// where `components` is the first arg, ... is arbitrary other
-    /// args. Interface not strictly enforced because some systems
-    /// need other global resources (e.g. timestamp, or update dt)
-    fn update() {
-        system_land_movement(components)
-        system_water_movement(components)
-        system_artillery_turrets(components)
-        system_tank_turrets(components)
+    // Hard-coded system schedule to update all vehicle components.
+    // Mineman single-threaded, so just pass each system the entire
+    // components storage. Systems are arbitrary functions that
+    // implicitly follow interface `system_fn(components, ...)`
+    // where `components` is the first arg, ... is arbitrary other
+    // args. Interface not strictly enforced because some systems
+    // need other global resources (e.g. timestamp, or update dt)
+    fun update() {
+        systemLandMovement(components)
+        systemShipMovement(components)
+        systemGunTurret(components)
+        systemHealthUpdate(components)
     }
 }
 ```
@@ -907,7 +935,8 @@ Here we'll demo some basic systems. There are two main categories:
    the vehicle. Another example is movement systems, e.g. a system for
    all vehicles with a set `(TransformComponent, LandMovementControlsComponent)`
    and another system for all vehicles with a set
-   `(Transform, ShipMovementControlsComponent)`.
+   `(Transform, ShipMovementControlsComponent)`. These systems use
+   "component tuple iterators".
 
 2. **Systems that respond to an event queue.**
    These systems interface with Mineman API, typically in response to
