@@ -1,6 +1,6 @@
 # XV Composable Vehicle Engine Architecture
 
-*Edited: 2023-03-19*
+*Edited: 2023-03-24*
 
 At a high-level the vehicle engine uses an archetype based
 entity-component-system (ECS) architecture [1-3].
@@ -279,11 +279,20 @@ fast query + iteration performance. Since we know all layouts based on
 parsing config files, we can create all archetype storages needed during
 load.
 
+
 ## `ArchetypeStorage`: Stores Component Sets for Iteration
 Internally the components archetype storage is backed by a "sparse set" 
 data structure, read [4] for background knowledge needed. The sparse set
 combines a sparse indexed lookup (using element id) for `O(1)` lookup and
 a packed "dense" storage array for `O(n)` iteration.
+
+Benefits of this structure:
+- `O(n)` iteration over a set of components across all archetypes,
+  e.g. `components.iter<A, B, C>()` => yields
+  `(id, comp1, comp2, comp3)`, where `A`, `B`, and `C` are different
+  component types, for all elements containing this set.
+- `O(1)` map access for getting element components by `id`, 
+  `components.get(id)` => element and its components.
 
 Vehicle element `id` field indexes into the sparse lookup table. The integer
 value stored inside the lookup array at index `id` corresponds to the
@@ -880,54 +889,69 @@ If you need to modify the core archetype storage and components,
 you need to edit the jinja2 templates located at
 `scripts/templates/template_archetype.kt`.
 
-# Engine / Global Data Storage Layout
+# XV Engine / Global Data Storage Layout
 
 ```kotlin
-class XV() {    
-    // Global map of all vehicles
-    val vehicles: HashMap<VehicleId, Vehicle>
+class XV() {
+    // ==============================================================
+    // core vehicle/component storage
+    // ==============================================================
+    // archetype storages and element storage
+    val storage: ComponentsStorage
 
-    // Associate mineman entity uuid => Vehicle
-    val entity_to_vehicle: HashMap<UUID, Vehicle>
+    // vehicle storage
+    val vehicleStorage: VehicleStorage
 
-    // ENTITY/COMPONENT STORAGE
-    // Component support must support:
-    // - iteration over groups of components associated with the same id:
-    //     - components.iter((C1, C2, C3)) => iter over (id, comp1, comp2, comp3)
-    // - individual entity queries:
-    //     - components.get(id).position.get()
-    val components: ComponentsStorage
+    // ==============================================================
+    // other global resources (user inputs, event queues, etc.)
+    // ==============================================================
+    // associates mineman armorstand entity uuid => Vehicle
+    val entityVehicleData: HashMap<UUID, Vehicle>
+    
+    // user controls inputs
+    val userInputs: HashMap<UUID, UserInput>
+
+    // vehicle creation/deletion requests
+    val createRequests: Queue<CreateVehicleRequest>
+    val deleteRequests: Queue<DeleteVehicleRequest>
+
+    // shoot weapon event requests
+    val shootWeaponRequests: Queue<ShootWeaponRequest>
+
+    // etc.
+    ...
+
+    // ==============================================================
+    // helper functions here
+    // ==============================================================
+    ...
 
     // Hard-coded system schedule to update all vehicle components.
     // Mineman single-threaded, so just pass each system the entire
     // components storage. Systems are arbitrary functions that
-    // implicitly follow interface `system_fn(components, ...)`
-    // where `components` is the first arg, ... is arbitrary other
+    // implicitly follow interface `systemFunc(storage, ...)`
+    // where `storage` is the first arg, ... is arbitrary other
     // args. Interface not strictly enforced because some systems
-    // need other global resources (e.g. timestamp, or update dt)
+    // need other global resources (e.g. request queues)
     fun update() {
-        systemLandMovement(components)
-        systemShipMovement(components)
-        systemGunTurret(components)
-        systemHealthUpdate(components)
+        systemCreate(storage, createRequests)
+
+        systemLandMovement(storage, userInputs)
+        systemShipMovement(storage, userInputs)
+        systemShootWeapon(storage, shootWeaponRequests)
+        systemUpdateModels(storage)
+
+        systemDelete(storage, deleteRequests)
     }
 }
 ```
 
-`XV` is the engine which contains main parts:
-1. Vehicle data storage (archetypes, vehicle storage, etc.).
-2. Other data storage (user controls inputs, entity-vehicle mappings,
-   event queues, etc.).
-3. Systems update tick inside `update()`.
-4. Scheduler for running systems update on each tick.
-5. Random helper functions.
-
-
 # ECS System Programming
 
-See Refs [1-5] for ECS architecture design and its challenges.  
+See Refs [1-5] for ECS programming design and challenges.  
 
-Here we'll demo some basic systems. There are two main categories:
+Here we'll show how to implement some basic systems. There are two main
+categories:
 1. **Systems that iterate over all component sets.**
    These are systems that loop over all archetypes that have a 
    set of components, then run an update. Examples include health update,
@@ -938,34 +962,251 @@ Here we'll demo some basic systems. There are two main categories:
    `(Transform, ShipMovementControlsComponent)`. These systems use
    "component tuple iterators".
 
-2. **Systems that respond to an event queue.**
-   These systems interface with Mineman API, typically in response to
-   player event handlers. E.g. each time player clicks mouse, add a
-   `ShootEvent` to a queue. The system drain the queue and shoots a gun
-   turret. The system checks if player is inside a vehicle, then
-   checks if that vehicle has a `GunTurretComponent`.
-
-## Note: Differences from a "Pure" ECS
-
-In a "pure ECS", the `Engine` world state would only be the `components`
-storage. No other properties like `vehicles` or `entity_to_vehicle`.
-Those would normally be stored as their own type of "singleton" components.
-Because we are designing a very specific engine, we can ignore these
-rules and just hard-code our specific "singleton" components, and pass
-them directly into system functions as needed.
+2. **Systems that respond to an "request" queue.**
+   These systems take a queue of "requests" and handle them. E.g. each time
+   player clicks mouse, add a `ShootRequest` to a queue. The system drains
+   the queue, checks if player is inside a vehicle, checks if that vehicle
+   has a `GunTurretComponent`, then shoots the turret. Typically these
+   interface with Mineman API in response to player event handlers.
+   Unlike component tuple iterators which iterate over all vehicles
+   with matching components, these will involve manually checking
+   if a vehicle has components needed for an event response.
 
 
-## Example: Basic Systems
+## Component Tuple Iterators
+```kotlin
+val storage: ComponentsStorage
 
-```rust
-fn system_land_movement(components: ComponentsStorage) {
-    for transform, land_controller in components.query<TransformComponent, LandMovementComponent>() {
-        let new_transform = {
-            // update with current transform and land controller state.
+for ( (id, transform, model, health) in ComponentTuple3.query<
+    TransformComponent,
+    ModelComponent,
+    HealthComponent,
+>(storage) ) {
+    // do something with components
+}
+```
+
+The main way to run a system over all component groups is a "Component
+Tuple iterator", example is above. We are "querying" all archetypes
+in the storage for all vehicle elements that contain the components.
+So for example above, all of "cars", "tanks" and "ships" contain the
+components `(Transform, Model, Health)` so this will loop over all
+vehicles. On other hand, querying `(Transform, LandMovementControls)`
+will only iterate over cars and tanks.
+
+The output of the tuple iterator is element id and components from query.
+These are hard-coded implemented for different tuple sizes, e.g.
+```
+ComponentTuple1.query<A> => (id, compA)
+
+ComponentTuple2.query<A, B> => (id, compA, compB)
+
+ComponentTuple3.query<A, B, C> => (id, compA, compB, compC)
+
+ComponentTuple4.query<A, B, C, D> => (id, compA, compB, compC, compD)
+
+...
+```
+
+
+Note the component tuple iterators are also auto-generated from a template
+using the same `archetype_gen.py` python script from before.
+The template implementations are inside 
+```
+scripts/templates/template_iterator_component_tuple.kt
+scripts/templates/template_iterator.kt
+```
+and the output is `xv/core/iterator.kt`. Currently up to 6-sized tuples
+`(A, B, C, D, E, F)` are generated (see `archetype_gen.py`). These are
+manually generated so the iterator generics are static at compile-time.
+Don't fuck with it to try and generalize using runtime casts.
+
+
+## Other Notes on Systems:
+1. Most systems are "extension functions" on `XV`, read about kotlin
+   extension functions: <https://kotlinlang.org/docs/extensions.html>
+   These give access to `XV` internal engine state variables as if the
+   system were a method of `XV` (used for convenience). 
+2. In a "pure ECS", the `Engine` world state would only be the `components`
+   storage. No other properties like `entityVehicleData` or `userInputs`.
+   Those would be stored as their own type of "singleton" components.
+   Because we are designing a very specific engine, we can ignore these
+   rules and just hard-code our specific "singleton" components, and pass
+   them directly into system functions as needed.
+
+## Example: Basic Component Iterator Systems
+Below is a basic system function that just iterates over all vehicle
+elements that contain both a `(TransformComponent, ModelComponent)`.
+Note that a "system" is just a pure function. Inside is a loop
+over all vehicle elements and their queried component tuple. Inside
+the loop is the logic that works on all elements containing the
+components specified.
+
+```kotlin
+fun XV.systemUpdateModels(
+    storage: ComponentsStorage,
+) {
+    val xv = this
+
+    for ( (id, transform, model) in ComponentTuple2.query<
+        TransformComponent,
+        ModelComponent,
+    >(storage) ) {
+        try {
+            val newLocation = Location(
+                transform.x,
+                transform.y,
+                transform.z,
+                transform.yaw,
+                transform.pitch,
+            )
+            model.armorstand.teleport(newLocation)
+        }
+        // unless 100% sure update won't error, typically wrap in
+        // try/catch to avoid one bad vehicle breaking the loop.
+        catch ( err: Exception ) {
+            if ( xv.debug ) err.printStackTrace()
+        }
+    }
+}
+```
+
+
+## Example: Systems with External Resources, e.g. User Inputs
+
+Events are designed more for OOP or actor programming models, 
+`event => object.handle(event)`. In our ECS style, you never call
+method directly on any object as there are no real vehicle "objects".
+
+An issue with ECS: external events and shared resources between components,
+e.g. user inputs. There's no need for each vehicle to have a separate
+component that holds global user input controls. But ECS architectures
+don't easily support sharing common resources. So here, we just do it by
+manually hard-coding and passing around shared global resources.
+Example of global resource is `userInputs` holding player WASD controls.
+
+```kotlin
+/**
+ * Packet listener that handles user vehicle input controls
+ */
+class ControlsListener(val xv: XV): PacketListener {
+    fun onPlayerControls(event: PacketReceiveEvent) {
+        // writes to userInputs stored inside xv
+        XV.userInputs[event.player.id] = PlayerControls(event)
+    }
+}
+
+/**
+ * Player land movement controls system (car, tank driving controls etc.)
+ */
+fun XV.systemLandMovement(
+    storage: ComponentsStorage,
+    // NEW external resource: player control inputs. simply pass it
+    // as an argument to the system function
+    userInputs: Map<UUID, UserInput>,
+) {
+    val xv = this
+
+    for ( (id, transform, landMovement) in ComponentTuple3.query<
+        TransformComponent,
+        LandMovementControlsComponent,
+    >(storage) ) {
+        try {
+            // use user input controls from player to update speed,
+            // acceleration, etc. then do position/rotation update
+            val controls = userInputs[player.uniqueId]
+            val (xNew, yNew, zNew) = ...
+            val yawNew = ...
+
+            transform.x = xNew
+            transform.y = yNew
+            transform.z = zNew
+            transform.yaw = yawNew
+        }
+        // unless 100% sure update won't error, typically wrap in
+        // try/catch to avoid one bad vehicle breaking the loop.
+        catch ( err: Exception ) {
+            if ( xv.debug ) err.printStackTrace()
+        }
+    }
+}
+```
+
+## Example: Event Queue Handler Systems, e.g. Shooting
+
+The other type of system involves responding to a user event, like
+pressing mouse and shooting the tank gun. There are two ways of managing
+these events:
+1. Make it like `userInputs` from before: store the event in a global
+   storage when player presses to shoot. Then have a system with a
+   component tuple iterator looping over all vehicles with guns, and
+   if the player that pressed shoot in global storage is also the passenger
+   of the vehicle with the gun, shoot the gun.
+2. Have a queue of shoot "requests", make the system only run for each
+   shoot request that enters the queue. Each time player clicks, a
+   shoot request is pushed into the queue.
+
+The problem with #1: it would actually be okay in a non-Mineman
+implementation because we can just parallelize systems, but in Mineman its
+hard to parallelize due to the single-threaded Bukkit API, so we assume
+systems are all single-threaded. Also assume shoot events are relatively
+rare, they may happen only every ~100 ticks. So most of the time we are
+doing single-threaded, busy work looping over vehicles doing nothing.
+
+This is why systems for relatively rare events that do not happen every
+tick are written as a request queue handler instead of using a 
+component tuple iterator. Below is a standard format for request
+handling systems:
+
+
+```kotlin
+// helper extension function implements a "drain()" iterator
+// which pops item from queue while iterating
+import phonon.xv.util.drain
+
+/**
+ * Pushed to queue to player click event handler.
+ * Vehicle and element are found using `entityVehicleData`
+ * where during component creation (see above), components
+ * map armorstand entity UUID => vehicle.
+ */
+data class ShootWeaponRequest(
+    player: Player,
+    vehicle: Vehicle,
+    element: VehicleElement,
+)
+
+/**
+ * Player land movement controls system (car, tank driving controls etc.)
+ */
+fun XV.systemShootWeapon(
+    storage: ComponentsStorage,
+    // external resource: player shoot request queue
+    shootWeaponRequests: Queue<ShootWeaponRequest>,
+) {
+    val xv = this
+
+    for request in shootWeaponRequests.drain() {
+        // language trick to easily unpack a data class
+        val (
+            player,
+            vehicle,
+            element,
+        ) = request
+
+        try {
+            // get gun turret from element
+            val gunTurret = element.gunTurret
+            if ( gunTurret === null ) continue // skip if component not there
+
+            // do gun shooting
             ...
-        };
-        transform.position = new_transform.position;
-        transform.rotation = new_transform.rotation;
+        }
+        // unless 100% sure update won't error, typically wrap in
+        // try/catch to avoid one bad vehicle breaking the loop.
+        catch ( err: Exception ) {
+            if ( xv.debug ) err.printStackTrace()
+        }
     }
 }
 ```
@@ -973,161 +1214,94 @@ fn system_land_movement(components: ComponentsStorage) {
 
 ## Example: Vehicle Creation / Spawning
 
-Entity creation relies on doing external modification on the data storage.
-Since we don't have a pure ECS, we can just create data structures outside
-of the main component storage to handle these external event signals.
+Vehicle creation needs to modify the components storage. So in this case
+we really cannot iterate or query the storage during the creation system.
+This system has to use a request queue. Below example shows how player
+and item properties are actually injected during vehicle creation.
 
 Because mineman and this engine is single-threaded, we don't need to
 worry about synchronization issues required in a real ECS.
-Entity creation/deletion and component add/remove is a pain point in ECS.
-In parallel ECS this always requires a sync step and a system that
-can take control of the entire ECS, e.g. see Legion's
+Vehicle creation/deletion and component add/remove is a pain point in ECS.
+In parallel ECS this always requires a single-threaded sync step and a 
+system that can take control of the entire ECS, e.g. see Legion's
 https://docs.rs/legion/latest/legion/systems/struct.CommandBuffer.html
 
-```rust
-/// Engine global variable that holds a queue of all player 
-/// vehicle creation requests.
-const requests: ArrayList<CreateRequest>
+```kotlin
+data class CreateRequest(
+    vehicleType: VehiclePrototype,
+    player: Player?,
+    item: ItemStack?,
+)
 
-@EventHandler
-fn event_player_uses_item(event: PlayerItemEvent) {
-    requests.add(CreateRequest(event))
-}
-
-/// System that takes components and the external event queue.
-fn system_vehicle_creation(components: ComponentsStorage, requests: ArrayList<CreateRequest>) {
-    for req in requests {
-        // create entity:
-        // 1. process item in player hand, check if valid, etc.
-        // 2. convert it into an vehicle layout
-        // 3. initialize components here from item, then insert
-        //    elements and components into storage.
-    }
-}
-```
-
-# Advanced, Difficult Systems
-
-*Section is TODO*
-
-People usually shill ECS with simple iteration example like above.
-These are where ECS works well, but is fairly trivial and doesn't 
-show problems with ECS.
-
-This contains some examples of ECS style programming for things 
-that are easy in typical hierarchical OOP, but more difficult in ECS.
-
-
-## Example: Parent, Child / Multiple Components
-
-Trees/hierarchies are difficult to implement in ECS data layouts, since
-these require some form of pointer link between objects. This is another
-situation since we only care about vehicles, we break away from a pure ECS
-more and hard-code vehicle element hierarchy structure. In a "pure ECS" this
-would be another component, but because this is so core to vehicles, we
-can just hard code it.
-
-There's no "good" way to do this in an ECS, this is a pain point that we
-will adjust as we try things out.
-
-```rust
-VehicleElement {
-    /// Main layout from before
-    name: String,
-    id: ElementId,
-    components: EnumSet<VehicleComponentType>,
-
-    /// Additional built-in parent-child tree structure
-    parent: ElementId,
-    children: Array<ElementId>,
-}
-
-/// Engine global variable stores list of all vehicle tree roots.
-/// These are vehicle elements with no parent and have children.
-const root_elements_with_children: Set<ElementId>
-
-fn system_vehicle_creation(components: ComponentsStorage, requests: ArrayList<CreateRequest>) {
-    for req in requests {
-        // do previous steps...
-
-        // ADDITIONAL:
-        for element in elements_created {
-            // add parent, child relationships
-            // determine these by node string names in config
-            if has_no_parent_and_has_children(element) {
-                root_elements_with_children.add(element)
-            }
+public class EventListener(val xv: XV): Listener {
+    @EventHandler
+    fun onPlayerUseSpawnItem(event: PlayerItemEvent) {
+        val player = event.player
+        val item = event.item
+        val vehicleType = getVehicleType(item)
+        if ( vehicleType !== null ) {
+            xv.createRequests.add(CreateRequest(vehicleType, player, item))
         }
     }
 }
 
-
-/// In engine update, we call this system with the `root_elements_with_children`
-fn system_update_positions(components: ComponentsStorage, root_elements: Set<ElementId>) {
-    // do tree update
-    for element in root_elements {
-        if element.components.has(TRANSFORM_COMPONENT) {
-            // update()
-            for child in element.children {
-                // update()
-            }
-        }
-    }
-}
-```
-
-
-## Example: External Events, Handling User Controls
-
-Events are designed for typical OOP or actor programming models, 
-`event => object.handle(event)`. In ECS style, you never call
-method directly on object. This is same as vehicle creation, use a
-global queue then pass it to the system.
-
-This is another issue with ECS: shared resources between components,
-e.g. user inputs. There's no need for each vehicle to have a separate
-component that holds player movement controls. But ECS architectures
-don't easily support sharing common resources. Here we just do it by
-manually hard-coding and passing around shared global resources.
-
-```rust
-/// Engine global variable that holds player controls
-const controls: HashMap<UUID, PlayerControls>
-
-@EventHandler
-fn event_player_controls(event: PlayerControlsEvent) {
-    controls[event.player.id] = PlayerControls(event)
-}
-
-/// System that takes components and global controls,
-/// Re-write the land movement controls from first example...
-fn system_land_movement(
-    components: ComponentsStorage,
-    controls: HashMap<UUID, PlayerControls>,
+fun XV.systemCreate(
+    storage: ComponentsStorage,
+    createRequests: Queue<CreateRequest>,
 ) {
-    for transform, land_controller in components.query<TransformComponent, LandMovementComponent>() {
-        let new_transform = {
-            // update with player controls, current transform and land controller state.
-            if land_controller.passenger != null {
-                let player_controls = controls[land_controller.passenger.id]
-                // update...
+    val xv = this
+
+    for request in createRequests.drain() {
+        val (
+            vehicleType,
+            player,
+            item,
+        ) = request
+
+        try {
+            // gets a list of base element components from prototype
+            val elementComponents: List<VehicleComponents>
+                = vehicleType.elements.map { e -> e.components }
+            
+            // inject item properties
+            if ( item !== null ) {
+                for ( i in 0 until elementComponents.size ) {
+                    // new component objects created after injecting properties
+                    elementComponents[i] = elementComponents[i].injectItemProperties(item)
+                }
             }
-            // ...
-        };
-        transform.position = new_transform.position;
-        transform.rotation = new_transform.rotation;
+
+            // inject player properties
+            if ( player !== null ) {
+                for ( i in 0 until elementComponents.size ) {
+                    // new component objects created after injecting properties
+                    elementComponents[i] = elementComponents[i].injectSpawnProperties(player)
+                }
+            }
+
+            // send to xv to finish creation process
+            xv.createVehicle(elementComponents)
+        }
+        // unless 100% sure update won't error, typically wrap in
+        // try/catch to avoid one bad vehicle breaking the loop.
+        catch ( err: Exception ) {
+            if ( xv.debug ) err.printStackTrace()
+        }
     }
 }
 ```
 
 
-## Example: External Events, Handling Damage, Vehicle Deletion
+## Example: External Plugin Events, Damage, Deletion
 
-Just another example of queueing events. We'll have another input
-queue for projectile damage events, then have a queue of entities
-to delete if their health goes less than 0.
+Another example of interfacing with events from an external plugin, in
+this case gun damage event on a vehicle hitbox. And then if vehicle
+health becomes less than 0, queue a new delete request event.
+Think of structuring systems as an input events passing through a chain
+of systems, which may create new requests in response to requests.
+Illustration and systems overview below.
 
-```rust
+```kotlin
 /// Engine global variable that queue of projectile damage
 const projectile_damage_queue: Array<ProjectileDamageRequest>
 
@@ -1135,7 +1309,7 @@ const projectile_damage_queue: Array<ProjectileDamageRequest>
 const dead_vehicles: Array<DeleteVehicleRequest>
 
 @EventHandler
-fn event_projectile_damage(event: ProjectileDamageEvent) {
+fun event_projectile_damage(event: ProjectileDamageEvent) {
     projectile_damage_queue.add(ProjectileDamageRequest(event))
 }
 
@@ -1144,7 +1318,7 @@ fn event_projectile_damage(event: ProjectileDamageEvent) {
 /// 
 /// "Requests" are an equivalent idea as "events" here, our queue
 /// processes input events and emits new output events.
-fn system_damage(
+fun system_damage(
     components: ComponentsStorage,
     projectile_damage_queue: Array<ProjectileDamageRequest>,
     dead_vehicles: Array<DeleteVehicleRequest>,
@@ -1167,7 +1341,7 @@ fn system_damage(
 
 /// This system runs after damage and any other systems that mark vehicles to
 /// be deleted.
-fn system_delete_vehicles(
+fun system_delete_vehicles(
     components: ComponentsStorage,
     dead_vehicles: Array<DeleteVehicleRequest>,
 ) {
@@ -1176,6 +1350,67 @@ fn system_delete_vehicles(
     }
 }
 ```
+
+# Advanced, Difficult Systems
+
+*Section is TODO*
+
+People usually shill ECS with simple iteration examples like above.
+These are where ECS works well, but are fairly trivial and do not 
+show problems with ECS.
+
+This contains examples of ECS style systems for things that
+are easy in typical hierarchical OOP, but much more difficult in ECS.
+
+
+## Example: Parent, Child / Multiple Components
+
+Trees/hierarchies are difficult to implement in ECS data layouts, since
+these require some form of pointer link between objects. This is another
+situation since we only care about vehicles, we break away from a pure ECS
+more and hard-code vehicle element hierarchy structure. In a "pure ECS" this
+would be another component, but because this is so core to vehicles, we
+can just hard code it.
+
+There's no "good" way to do this in an ECS, this is a pain point that we
+will adjust as we try things out.
+
+```kotlin
+class VehicleElement(
+    val name: String,
+    val uuid: UUID,
+    val id: ElementId,
+    val components: VehicleComponents,
+) {
+    // parent-child hierarchy is set after all elements inside
+    // a vehicle tree are created
+    var parent: VehicleElement?
+    var children: List<VehicleElement>
+}
+
+fun systemUpdateTransformTree(
+    storage: ComponentsStorage,
+    vehicles: VehicleStorage,
+) {
+    // During vehicle creation, we ensured vehicle elements is a list
+    // sorted by tree depth, so we can update elements in order.
+    // The parent will always be updated before its children.
+    // This update adds a child's transform position offset to its parent's
+    // transform position.
+    for vehicle in vehicles {
+        for element in vehicle.elements {
+            val transform = element.components.transform
+            val parentTransform = element.parent?.components?.transform
+            if ( transform !== null && parentTransform !== null ) {
+                transform.x = parentTransform.x + transform.offsetX
+                transform.y = parentTransform.y + transform.offsetY
+                transform.z = parentTransform.z + transform.offsetZ
+            }
+        }
+    }
+}
+```
+
 
 
 # Limitations and Future Architectural Changes
