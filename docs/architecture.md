@@ -77,7 +77,7 @@ Reasons NOT to use ECS:
 
 
 # Components layout
-![fig_component_layout](figs/fig_component_layout.svg)
+![fig_ecs_component_layout](figs/fig_ecs_component_layout.svg)
 
 Components are a hard-coded set of types (simplified example below).
 To simplify things, currently there is no support for letting a client
@@ -143,7 +143,7 @@ which is common ECS terminology [1-3].
 
 
 # VehicleElement and Vehicle Layout
-![fig_vehicle_layout](figs/fig_vehicle_layout.svg)
+![fig_ecs_vehicle_layout](figs/fig_ecs_vehicle_layout.svg)
 
 ```kotlin
 class VehicleElement(
@@ -214,7 +214,7 @@ list for the vehicle.
 
 
 # Components Storage
-![fig_archetype_storage](figs/fig_archetype_storage.svg)
+![fig_ecs_archetype_storage](figs/fig_ecs_archetype_storage.svg)
 
 ```kotlin
 class ArchetypeStorage(
@@ -389,7 +389,7 @@ this max count. The lookup is identical to elements, except we use a
 
 
 # Vehicle Creation Process
-![fig_creation_process](figs/fig_creation_process.svg)
+![fig_ecs_creation_process](figs/fig_ecs_creation_process.svg)
 
 Creation system needs to support:
 - **Mixing configurable properties and runtime "instance" properties**:
@@ -580,7 +580,7 @@ data class VehicleComponents(
     }
 }
 ```
-![fig_component_inject_properties](figs/fig_component_inject_properties.svg)
+![fig_ecs_component_inject_properties](figs/fig_ecs_component_inject_properties.svg)
 
 Consider `injectItemProperties()`, inside we are just "delegating" it to
 each individual component, by making each component run its own customized
@@ -974,6 +974,8 @@ categories:
 
 
 ## Component Tuple Iterators
+![fig_ecs_component_tuple_iterator](figs/fig_ecs_component_tuple_iterator.svg)
+
 ```kotlin
 val storage: ComponentsStorage
 
@@ -1034,7 +1036,7 @@ Don't fuck with it to try and generalize using runtime casts.
    rules and just hard-code our specific "singleton" components, and pass
    them directly into system functions as needed.
 
-## Example: Basic Component Iterator Systems
+## Example: Basic Component Tuple Iterator Systems
 Below is a basic system function that just iterates over all vehicle
 elements that contain both a `(TransformComponent, ModelComponent)`.
 Note that a "system" is just a pure function. Inside is a loop
@@ -1107,7 +1109,7 @@ fun XV.systemLandMovement(
 ) {
     val xv = this
 
-    for ( (id, transform, landMovement) in ComponentTuple3.query<
+    for ( (id, transform, landMovement) in ComponentTuple2.query<
         TransformComponent,
         LandMovementControlsComponent,
     >(storage) ) {
