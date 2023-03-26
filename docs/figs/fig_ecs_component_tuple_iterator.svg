@@ -23,9 +23,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:document-units="mm"
      showgrid="true"
-     inkscape:zoom="1.7132752"
-     inkscape:cx="521.51574"
-     inkscape:cy="212.16673"
+     inkscape:zoom="0.60573427"
+     inkscape:cx="652.92657"
+     inkscape:cy="809.76102"
      inkscape:window-width="2400"
      inkscape:window-height="1321"
      inkscape:window-x="2391"
@@ -44,7 +44,7 @@
        spacingx="0.35277778"
        spacingy="0.35277778"
        empspacing="4"
-       originx="118.53333"
+       originx="118.53332"
        originy="11.288889" />
   </sodipodi:namedview>
   <defs
@@ -1015,9 +1015,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect68025);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67624"><tspan
+         id="tspan68045"><tspan
            style="font-weight:bold"
-           id="tspan67622">Tank Archetype</tspan></tspan></text>
+           id="tspan68043">Tank Archetype</tspan></tspan></text>
     <rect
        style="fill:#fe9a8d;fill-opacity:1;stroke:#000000;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect68017"
@@ -1160,7 +1160,7 @@
        y="0"><tspan
          x="253.29964"
          y="120.797"
-         id="tspan67626">gunTurret</tspan></text>
+         id="tspan68047">gunTurret</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-134.10053,12.405758)"
@@ -1170,7 +1170,7 @@
        y="0"><tspan
          x="290.69542"
          y="120.797"
-         id="tspan67628">health</tspan></text>
+         id="tspan68049">health</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-134.10053,26.349438)"
@@ -1180,7 +1180,7 @@
        y="0"><tspan
          x="291.92458"
          y="120.797"
-         id="tspan67630">model</tspan></text>
+         id="tspan68051">model</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-134.24895,40.812248)"
@@ -1190,7 +1190,7 @@
        y="0"><tspan
          x="252.61214"
          y="120.797"
-         id="tspan67632">transform</tspan></text>
+         id="tspan68053">transform</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-148.76579,54.679348)"
@@ -1200,7 +1200,7 @@
        y="0"><tspan
          x="165.99388"
          y="120.797"
-         id="tspan67634">landMovementControls</tspan></text>
+         id="tspan68055">landMovementControls</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-148.92023,68.470768)"
@@ -1210,7 +1210,7 @@
        y="0"><tspan
          x="167.69179"
          y="120.797"
-         id="tspan67636">shipMovementControls</tspan></text>
+         id="tspan68057">shipMovementControls</tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,64.052473,-13.636652)"
@@ -1218,9 +1218,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect7778);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67640"><tspan
+         id="tspan68061"><tspan
            style="font-weight:bold"
-           id="tspan67638">Car Archetype</tspan></tspan></text>
+           id="tspan68059">Car Archetype</tspan></tspan></text>
     <rect
        style="fill:#fe9a8d;fill-opacity:1;stroke:#000000;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect7708"
@@ -1340,9 +1340,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect9732);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67644"><tspan
+         id="tspan68065"><tspan
            style="font-weight:bold"
-           id="tspan67642">Ship Archetype</tspan></tspan></text>
+           id="tspan68063">Ship Archetype</tspan></tspan></text>
     <rect
        style="fill:#fe9a8d;fill-opacity:1;stroke:#000000;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect9662"
@@ -1462,9 +1462,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect2775);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67648"><tspan
+         id="tspan68069"><tspan
            dx="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -0.00010299683 0.00010108948 0 0 0 0 0 0 0 0 0.00010108948 -0.00010299683"
-           id="tspan67646">ComponentTuple3&lt;TransformComponent, ModelComponent, HealthComponent&gt;.query(storage)</tspan></tspan></text>
+           id="tspan68067">ComponentTuple3&lt;TransformComponent, ModelComponent, HealthComponent&gt;.query(storage)</tspan></tspan></text>
     <rect
        style="fill:#fef8e5;fill-opacity:1;stroke:#bfbfbf;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect22287"
@@ -1570,9 +1570,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect25077);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67652"><tspan
+         id="tspan68073"><tspan
            style="font-weight:bold"
-           id="tspan67650">Tank</tspan></tspan></text>
+           id="tspan68071">Tank</tspan></tspan></text>
     <rect
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.352778;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect27089"
@@ -1699,9 +1699,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect27145);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67656"><tspan
+         id="tspan68077"><tspan
            style="font-weight:bold"
-           id="tspan67654">Car</tspan></tspan></text>
+           id="tspan68075">Car</tspan></tspan></text>
     <rect
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.352778;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect29191"
@@ -1828,9 +1828,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect29237);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67660"><tspan
+         id="tspan68081"><tspan
            style="font-weight:bold"
-           id="tspan67658">Ship</tspan></tspan></text>
+           id="tspan68079">Ship</tspan></tspan></text>
     <rect
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.352778;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect29191-6"
@@ -1957,9 +1957,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect29237-3);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67664"><tspan
+         id="tspan68085"><tspan
            style="font-weight:bold"
-           id="tspan67662">Ship</tspan></tspan></text>
+           id="tspan68083">Ship</tspan></tspan></text>
     <rect
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.352778;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect32286"
@@ -2016,9 +2016,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect32414);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67668"><tspan
+         id="tspan68089"><tspan
            dx="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.00010204315"
-           id="tspan67666">ComponentTuple2&lt;TransformComponent, LandMovementControlsComponent&gt;.query(storage)</tspan></tspan></text>
+           id="tspan68087">ComponentTuple2&lt;TransformComponent, LandMovementControlsComponent&gt;.query(storage)</tspan></tspan></text>
     <rect
        style="fill:#fef8e5;fill-opacity:1;stroke:#bfbfbf;stroke-width:0.352777;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect32304"
@@ -2124,9 +2124,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect32416);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67672"><tspan
+         id="tspan68093"><tspan
            style="font-weight:bold"
-           id="tspan67670">Tank</tspan></tspan></text>
+           id="tspan68091">Tank</tspan></tspan></text>
     <rect
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.352778;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect32338"
@@ -2253,9 +2253,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect32418);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67676"><tspan
+         id="tspan68097"><tspan
            style="font-weight:bold"
-           id="tspan67674">Car</tspan></tspan></text>
+           id="tspan68095">Car</tspan></tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-63.985295,308.89978)"
@@ -2263,9 +2263,9 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect37244);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67680"><tspan
+         id="tspan68101"><tspan
            dx="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.00010681152"
-           id="tspan67678">ComponentTuple2&lt;TransformComponent, ShipMovementControlsComponent&gt;.query(storage)</tspan></tspan></text>
+           id="tspan68099">ComponentTuple2&lt;TransformComponent, ShipMovementControlsComponent&gt;.query(storage)</tspan></tspan></text>
     <text
        xml:space="preserve"
        transform="matrix(0.26458333,0,0,0.26458333,-56.685322,-27.998763)"
@@ -2273,8 +2273,8 @@
        style="font-style:normal;font-weight:normal;font-size:26.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect64744);fill:#000000;fill-opacity:1;stroke:none"><tspan
          x="112"
          y="125.66282"
-         id="tspan67684"><tspan
+         id="tspan68105"><tspan
            style="font-weight:bold"
-           id="tspan67682">ComponentsStorage</tspan></tspan></text>
+           id="tspan68103">ComponentsStorage</tspan></tspan></text>
   </g>
 </svg>

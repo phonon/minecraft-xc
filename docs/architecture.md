@@ -1297,58 +1297,110 @@ fun XV.systemCreate(
 ## Example: External Plugin Events, Damage, Deletion
 
 Another example of interfacing with events from an external plugin, in
-this case gun damage event on a vehicle hitbox. And then if vehicle
-health becomes less than 0, queue a new delete request event.
-Think of structuring systems as an input events passing through a chain
-of systems, which may create new requests in response to requests.
-Illustration and systems overview below.
+this case gun damage event on a vehicle hitbox. General strategy is to
+design how data/events flow across systems in the update tick. This is a
+form of "data flow computing". All logic is centralized into specific
+systems, e.g. all delete requests are handled in a single delete system.
+Other systems can push a delete request to the delete queue, but actual
+logic is only inside delete system. Helps keep overall vehicles logic
+organized.
+
+1. Input is gun damage event (from combat core XC)
+2. XV should have an event handler for the gun damage event as an
+   adapter, which pushes a new internally adapted event into a
+   "damage request" queue.
+3. Damage system flushes the queue and does damage if vehicle
+   has a health component.
+4. Death system always runs, it checks if a health component
+   current health < 0, then generates a delete request and pushes
+   that into a delete vehicle queue.
+5. Delete system flushes delete queue and deletes vehicles.
+
+![fig_ecs_system_data_movement](figs/fig_ecs_system_data_movement.svg)
 
 ```kotlin
-/// Engine global variable that queue of projectile damage
-const projectile_damage_queue: Array<ProjectileDamageRequest>
+data class DamageRequest(
+    val element: VehicleElement,
+    val damage: Double,
+)
 
-/// Vehicles that are "dead" and need to be deleted
-const dead_vehicles: Array<DeleteVehicleRequest>
+data class DeleteRequest(
+    val vehicle: Vehicle,
+)
 
-@EventHandler
-fun event_projectile_damage(event: ProjectileDamageEvent) {
-    projectile_damage_queue.add(ProjectileDamageRequest(event))
+/**
+ * Adapts external XC projectile damage event to an internal
+ * plugin damage request
+ */
+public class EventListener(val xv: XV): Listener {
+    @EventHandler
+    fun onVehicleDamage(event: XcDamageEvent) {
+        xv.damageRequests.add(DamageRequest(event))
+    }
 }
 
-/// System that handles all damage "requests" and creates output
-/// "requests" for a vehicle that is destroyed.
-/// 
-/// "Requests" are an equivalent idea as "events" here, our queue
-/// processes input events and emits new output events.
-fun system_damage(
+/**
+ * Handles damage on vehicles with healthcomponent
+ */
+fun systemDamage(
     components: ComponentsStorage,
-    projectile_damage_queue: Array<ProjectileDamageRequest>,
-    dead_vehicles: Array<DeleteVehicleRequest>,
+    damageRequests: Queue<DamageRequest>,
 ) {
     // handle damage requests
-    for request in projectile_damage_queue {
-        // components maps from mineman entity to vehicle element
-        let element_id = components.get(request.entity)
-        // get health component from element
-        let health = components.get<HealthComponent>(element_id)
-        
-        // do damage here...
+    for request in damageRequests.drain() {
+        val (
+            element,
+            damage,
+        ) = request
 
-        // if vehicle dead, push a delete request into delete queue
-        if health <= 0 {
-            dead_vehicles.add(DeleteVehicleRequest(element_id))
+        // get health component from element, then do damage
+        val health = element.components.health
+        if ( health !== undefined ) {
+            health.current -= damage
         }
     }
 }
 
-/// This system runs after damage and any other systems that mark vehicles to
-/// be deleted.
-fun system_delete_vehicles(
+/**
+ * This is a component tuple iterator that always runs and checks
+ * if vehicle health < 0, then creates delete event. This allows
+ * handling death independent of health damage, so other interactions
+ * that cause damage (e.g. vehicle crashing into wall) also feed into
+ * the same death system.
+ */
+fun systemDeath(
     components: ComponentsStorage,
-    dead_vehicles: Array<DeleteVehicleRequest>,
+    vehicleStorage: VehicleStorage,
+    deleteRequests: Queue<DeleteRequest>,
 ) {
-    for request in dead_vehicles {
-        // delete vehicle logic
+    for ( (id, health) in ComponentTuple1.query<
+        HealthComponent,
+    >(storage) ) {
+        if ( health.current < 0.0 ) {
+            val vehicle = vehicleStorage.getVehicleFromElement(id)
+            deleteRequests.add(DeleteRequest(vehicle))
+        }
+    }
+}
+
+/**
+ * System to handle delete requests from all sources that may cause
+ * vehicle to be deleted, e.g. despawning, command /xv delete, and
+ * death. Avoids having delete conditions scattered everywhere.
+ */
+fun XV.systemDeleteVehicles(
+    components: ComponentsStorage,
+    deleteRequests: Queue<DeleteRequest>,
+) {
+    val xv = this
+
+    for request in deleteRequests.drain() {
+        val (
+            vehicle,
+        ) = request
+
+        // handles internal delete logic
+        xv.deleteVehicle(vehicle)
     }
 }
 ```
