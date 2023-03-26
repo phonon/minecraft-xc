@@ -45,11 +45,9 @@ shoot_offset_y = 1.0
 # seats, needed for controllable vehicle
 [seats]
 # max_mount_distance = 2.0 # TODO
-count = 1
-offsets = [
-    0.0, 1.4, 0.0,
+seats = [
+    { offset = [0.0, 1.4, 0.0], armor = 9001.0 },
 ]
-armor = [ 9001.0 ]
 
 # handles player's input controls for land movement
 [land_movement_controls]

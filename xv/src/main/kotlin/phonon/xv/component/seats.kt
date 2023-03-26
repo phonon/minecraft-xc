@@ -61,6 +61,9 @@ public fun Entity.hasSeatTag(): Boolean {
  * single model, you must use method 2. Add a [seats_raycast] component
  * to the vehicle element. If using 2, avoid using any "mount_seat"
  * properties as these systems will conflict.
+ * 
+ * TODO:
+ * max mount distance parameter in component
  */
 public data class SeatsComponent(
     // number of seats
@@ -146,30 +149,48 @@ public data class SeatsComponent(
 
 
     companion object {
+        /**
+         * Format for seats:
+         * 
+         * [seats]
+         * seats = [ # array of tables
+         *  { offset = [0, 0, 0], armor = 1000 },
+         *  { offset = [1, 0, 1], armor = 1000 },
+         *  { offset = [-1, 0, 1], armor = 1000 },
+         * ]
+         */
         @Suppress("UNUSED_PARAMETER")
         public fun fromToml(toml: TomlTable, _logger: Logger? = null): SeatsComponent {
             // map with keys as constructor property names
             val properties = HashMap<String, Any>()
             
-            val count = toml.getLong("count")?.toInt() ?: 0
-            properties["count"] = count
-            
-            val offsets = DoubleArray(count * 3)
-            toml.getArray("offsets")?.let { arr ->
-                for ( i in 0 until count ) {
-                    offsets[i*3 + 0] = arr.getNumberAs<Double>(i*3 + 0)
-                    offsets[i*3 + 1] = arr.getNumberAs<Double>(i*3 + 1)
-                    offsets[i*3 + 2] = arr.getNumberAs<Double>(i*3 + 2)
-                }
-            }
-            properties["offsets"] = offsets
+            val seatsArray = toml.getArray("seats")
 
+            val count = seatsArray?.size() ?: 0
+            
+            // pre-allocate seat offsets and armor arrays
+            val offsets = DoubleArray(count * 3)
             val armor = DoubleArray(count)
-            toml.getArray("armor")?.let { arr ->
+
+            // parse each seat config and push into array at seat index
+            if ( seatsArray !== null ) {
                 for ( i in 0 until count ) {
-                    armor[i] = arr.getNumberAs<Double>(i)
+                    val seatConfig = seatsArray.getTable(i)
+
+                    seatConfig?.getArray("offset")?.let { arr ->
+                        offsets[i*3 + 0] = arr.getNumberAs<Double>(0)
+                        offsets[i*3 + 1] = arr.getNumberAs<Double>(1)
+                        offsets[i*3 + 2] = arr.getNumberAs<Double>(2)
+                    }
+
+                    seatConfig?.getNumberAs<Double>("armor")?.let { it ->
+                        armor[i] = it
+                    }
                 }
             }
+            
+            properties["count"] = count
+            properties["offsets"] = offsets
             properties["armor"] = armor
 
             return mapToObject(properties, SeatsComponent::class)

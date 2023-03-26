@@ -24,5 +24,6 @@ model_id = 106000
 
 # seats, needed for controllable vehicle
 [seats]
-count = 1
-offsets = [0.0, 0.0, -1.0]
+seats = [
+    { offset = [0.0, 0.0, -1.0], armor = 2.0 },
+]

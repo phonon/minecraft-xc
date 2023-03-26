@@ -57,14 +57,16 @@ bullet_convergence_distance_max = 140.0
 firerate = 1
 armorstand_visible = false
 
-# seats, needed for controllable vehicle
+# seats:
+# actually for airplane, this is a DUMMY seat, the airplane component
+# custom handles mounting player onto airplane model armorstand itself
+# (this reduces desync between player sitting and airplane model)
 [seats]
 # max_mount_distance = 2.0 # TODO
-count = 1
-offsets = [
-    0.0, 0.0, 0.0, # dummy
+seats = [
+    # fake dummy seat position, armor is actually used for player though
+    { offset = [0.0, 0.0, 0.0], armor = 9001.0 },
 ]
-armor = [ 9001.0 ]
 
 [health]
 max = 20.0

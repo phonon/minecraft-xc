@@ -37,9 +37,9 @@ hitbox_y_offset = 0.5
 
 # seats, needed for controllable vehicle
 [seats]
-count = 1
-offsets = [0.0, 0.0, -0.75]
-armor = [4.0]
+seats = [
+    { offset = [0.0, 0.0, -0.75], armor = 4.0 },
+]
 
 [health]
 max = 20.0
@@ -70,4 +70,5 @@ types = [
     { group = 0, ammo = 110, gun = 450 }, # mortar shell
 ]
 
+# this makes ammo fire immediately after reload
 [ammo_fire_when_loaded]

@@ -27,14 +27,14 @@ barrel_model_id = 103003
 seat_controller = 4 # seat for controlling gun turret
 
 # seats, needed for controllable vehicle
+# seats, needed for controllable vehicle
 [seats]
-count = 5
-offsets = [
-    0.9, 0.9, 0.0,   # front left
-    -0.9, 0.9, 0.0,  # front right
-    0.9, 0.9, -1.0,  # back left
-    -0.9, 0.9, -1.0, # back right
-    0.0, 2.5, 0.0,    # gunner
+seats = [
+    { offset = [ 0.9, 0.9,  0.0], armor = 8.0 }, # front left (driver)
+    { offset = [-0.9, 0.9,  0.0], armor = 8.0 }, # front right
+    { offset = [ 0.9, 0.9, -1.0], armor = 8.0 }, # back left
+    { offset = [-0.9, 0.9, -1.0], armor = 8.0 }, # back right
+    { offset = [ 0.0, 2.5,  0.0], armor = 8.0 }, # gunner
 ]
 
 # seat raycasting for mounting

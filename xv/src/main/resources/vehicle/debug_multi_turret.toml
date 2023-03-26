@@ -1,5 +1,6 @@
 ### Example: vehicle with multiple turrets
 # A vehicle that needs multiple of the same components
+# TODO: THIS DOES NOT ACTUALLY WORK
 
 name = "debug_multi_turret"
 
@@ -19,9 +20,8 @@ seat_to_mount = 0 # seat mounted when clicked
 
 # seats, needed for controllable vehicle
 [element.seats]
-count = 1
-offsets = [
-    0.0, 1.0, 0.0,
+seats = [
+    { offset = [0.0, 1.0, 0.0], armor = 4.0 },
 ]
 
 # handles player's input controls for land movement

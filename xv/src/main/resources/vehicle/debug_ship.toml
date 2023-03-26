@@ -15,9 +15,8 @@ model_id = 2003203
 
 # seats, needed for controllable vehicle
 [seats]
-count = 1
-offsets = [
-    0.0, 0.9, 0.0,   # front left
+seats = [
+    { offset = [0.0, 0.9, 0.0], armor = 4.0 },
 ]
 
 # use seat raycasting for mounting

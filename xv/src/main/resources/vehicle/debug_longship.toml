@@ -68,28 +68,20 @@ MOLOTOV = 1.3
 # seats, needed for controllable vehicle
 [seats]
 # max_mount_distance = 2.0 # TODO
-count = 9
-offsets = [
-    0.0, 0.5, -3.0, # controller
-    
-     0.75, 0.5, -1.75, # rear right
-    -0.75, 0.5, -1.75, # rear left
+seats = [
+    { offset = [ 0.0, 0.5, -3.0], armor = 8.0 }, # driver/controller in rear
 
-     0.75, 0.5, -0.5, # mid rear right
-    -0.75, 0.5, -0.5, # mid rear left
+    { offset = [ 0.75, 0.5, -1.75], armor = 8.0 }, # rear right
+    { offset = [-0.75, 0.5, -1.75], armor = 8.0 }, # rear left
 
-     0.75, 0.5, 0.75, # mid front right
-    -0.75, 0.5, 0.75, # mid front left
+    { offset = [ 0.75, 0.5, -0.50], armor = 8.0 }, # mid rear right
+    { offset = [-0.75, 0.5, -0.50], armor = 8.0 }, # mid rear left
 
-     0.75, 0.5, 2.25, # front right
-    -0.75, 0.5, 2.25, # front left
-]
-armor = [
-    10.0,
-    10.0, 10.0,
-    10.0, 10.0,
-    10.0, 10.0,
-    10.0, 10.0,
+    { offset = [ 0.75, 0.5,  0.75], armor = 8.0 }, # mid front right
+    { offset = [-0.75, 0.5,  0.75], armor = 8.0 }, # mid front left
+
+    { offset = [ 0.75, 0.5,  2.25], armor = 8.0 }, # front right
+    { offset = [-0.75, 0.5,  2.25], armor = 8.0 }, # front left
 ]
 
 # use seat raycasting for mounting
