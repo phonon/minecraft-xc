@@ -12,6 +12,3 @@ build
 
 # documentation book generated files
 docs/book
-
-# external libraries
-lib
