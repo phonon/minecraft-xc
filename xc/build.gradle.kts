@@ -20,8 +20,8 @@ var target = ""
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.6.10"
-    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("org.jetbrains.kotlin.jvm")
+    id("com.github.johnrengelman.shadow")
     // maven() // no longer needed in gradle 7
     
     // include paperweight, but DO NOT APPLY BY DEFAULT...
@@ -39,10 +39,7 @@ plugins {
     // id("io.papermc.paperweight.userdev") version "1.3.8" apply false
     
     // USE FOR 1.18.2 (DEFAULT)
-    id("io.papermc.paperweight.userdev") version "1.3.8"
-
-    // Apply the application plugin to add support for building a CLI application.
-    application
+    id("io.papermc.paperweight.userdev")
 }
 
 repositories {
@@ -138,11 +135,6 @@ dependencies {
             base.archivesBaseName = "${OUTPUT_JAR_NAME}-${target}-SNAPSHOT"
         }
     }
-}
-
-application {
-    // Define the main class for the application.
-    mainClassName = "phonon.xc.XCPluginKt"
 }
 
 tasks.withType<KotlinCompile> {

@@ -6,13 +6,11 @@
  * Detailed information about configuring a multi-project build in Gradle can be found
  * in the user manual at https://docs.gradle.org/6.0.1/userguide/multi_project_builds.html
  */
-
 pluginManagement {
     repositories {
         gradlePluginPortal()
         maven("https://repo.papermc.io/repository/maven-public/")
     }
-
     plugins {
         // Apply the Kotlin JVM plugin to add support for Kotlin.
         id("org.jetbrains.kotlin.jvm") version "1.6.10"
@@ -40,4 +38,6 @@ pluginManagement {
     }
 }
 
-rootProject.name = "xc"
+rootProject.name = "xv"
+include(":xc")
+project(":xc").projectDir = File("../xc")

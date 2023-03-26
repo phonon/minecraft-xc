@@ -17,10 +17,13 @@ val OUTPUT_JAR_NAME = "xv"
 var target = ""
 
 plugins {
-    id("io.papermc.paperweight.userdev") version "1.3.8"
     // Apply the Kotlin JVM plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.6.10"
-    id("com.github.johnrengelman.shadow") version "7.0.0"
+    id("org.jetbrains.kotlin.jvm")
+    id("com.github.johnrengelman.shadow")
+
+    // minecraft papermc paperweight for minecraft nms classes
+    id("io.papermc.paperweight.userdev")
+
     // maven() // no longer needed in gradle 7
 }
 
@@ -72,14 +75,15 @@ dependencies {
     // configurations["resolvableImplementation"]("org.tomlj:tomlj:1.1.0")
 
     // OLD: protocol lib (for packets)
+    // deprecated for performance issues
     // compileOnly("com.comphenix.protocol:ProtocolLib:4.7.0")
     // compileOnly(files("./lib/ProtocolLib.jar")) // local
     
     // NEW: trying to use packetevents
     compileOnly("com.github.retrooper.packetevents:spigot:2.0.0-SNAPSHOT")
     
-    // xc (combat core)
-    compileOnly(files("../xc/build/libs/xc-1.18.2-SNAPSHOT-0.0.3.jar"))
+    // xc (combat core for hitboxes, projectiles, etc.), local repo
+    implementation(project(":xc"))
 
     // required so mineman api appears for kotlin vscode plugin
     // api("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
@@ -133,7 +137,7 @@ tasks {
         }
 
         classifier = ""
-        configurations = mutableListOf(project.configurations.named("resolvableImplementation").get())
+        configurations = mutableListOf(project.configurations.named("resolvableImplementation").get()) as List<FileCollection>
         // relocate("com.google", "phonon.xc.shadow.gson") // unneeded
     }
 }
