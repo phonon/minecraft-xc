@@ -45,6 +45,12 @@
         "custom_model_data": 106000
       },
       "model": "item/vehicle/mg34_tomate"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 120000
+      },
+      "model": "item/vehicle/viking_longship_xeth_item"
     }
   ]
 }

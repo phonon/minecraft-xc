@@ -93,12 +93,59 @@
       },
       "model": "item/vehicle/biplane_xeth_test"
     },
-
     {
       "predicate": {
         "custom_model_data": 106000
       },
       "model": "item/vehicle/mg34_tomate"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 120000
+      },
+      "model": "item/vehicle/viking_longship_xeth_item"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 120001
+      },
+      "model": "item/vehicle/viking_longship_xeth_front"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 120002
+      },
+      "model": "item/vehicle/viking_longship_xeth_rear"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 120003
+      },
+      "model": "item/vehicle/viking_longship_xeth_sails"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 120004
+      },
+      "model": "item/vehicle/viking_longship_xeth_oars_left_rest"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 120005
+      },
+      "model": "item/vehicle/viking_longship_xeth_oars_left_row"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 120006
+      },
+      "model": "item/vehicle/viking_longship_xeth_oars_right_rest"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 120007
+      },
+      "model": "item/vehicle/viking_longship_xeth_oars_right_row"
     }
   ]
 }
