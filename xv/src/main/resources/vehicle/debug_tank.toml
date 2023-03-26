@@ -80,14 +80,14 @@ time_per_fuel_when_moving = 60
 
 [ammo]
 can_reload_inside = true
-time_reload_inside = 4000 # milliseconds
+time_reload_inside = 2000 # milliseconds
 can_reload_outside = false
 groups = [
     { max_ammo = 1 }, # group 0
 ]
 types = [
-    { group = 0, ammo = 200, gun = 500 }, # he shell
-    { group = 0, ammo = 210, gun = 510 }, # ap shell
+    { group = 0, ammo = 410, gun = 910 }, # he shell
+    { group = 0, ammo = 411, gun = 911 }, # ap shell
 ]
 
 # smoke particles when health < 50%

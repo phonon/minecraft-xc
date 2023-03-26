@@ -1,0 +1,140 @@
+# Gun id. Used to map different custom models => gun.
+# Must be an integer from [0, 1024].
+id = 910
+
+# Item properties
+[item]
+name = "&6High Explosive Shell"
+lore = []
+
+# SPECIAL VEHICLE WEAPON:
+# only need default (sets gun id), set all others to -1
+[model]
+default = 910
+empty = -1
+reload = -1
+ads = -1
+
+# Equiped properties
+[equip]
+delay = 1000
+slowness = 0
+no_sprint = false
+
+# Crawl required
+[crawl]
+required = false
+time = 1000
+
+# Ammo id and count
+[ammo]
+id = 410
+desc = "High Explosive Shell"
+max = 1
+per_reload = -1
+ignore = false
+
+# Reload time in milliseconds
+[reload]
+time = 2000
+
+# [left-click] Single or burst mode firing config
+[shoot]
+fire_mode = "single"
+burst_count = 1
+burst_delay = 2
+delay = 1000
+
+# [right-click] Automatic fire settings
+[automatic]
+enabled = false
+delay_ticks = 2
+slowness = 2
+
+# sway: projectile randomness depending on player motion state
+[sway]
+base = 0.01
+speed_multiplier = 0.100
+aim_down_sights = 0.125
+ride_horse = 1.500
+ride_boat = 1.500
+ride_armor_stand = 1.000
+
+# player visual recoil from firing guns
+[recoil]
+single_horizontal = 2.000
+single_vertical = 6.000
+auto_horizontal = 2.000
+auto_vertical = 6.000
+single_fire_ramp = 1.000
+auto_fire_ramp = 1.000
+
+# Handler for what happens when projectile hits a block or entity.
+# If nothing specified, no effect will happen when a projectile hits.
+# Events will still be emitted, allowing custom handlers to be used.
+# So disable these if you are managing hits in external plugin.
+# Valid options for entity: ["damage", "explosion"]
+# Valid options for block: ["explosion"]
+[hit]
+entity = "explosion"
+block = "explosion"
+fire_ticks = 0
+block_fire_probability = 0.000
+
+# Projectile properties.
+# Damage types:
+# ["UNKNOWN", "MELEE", "BULLET", "FIRE", "EXPLOSIVE", "EXPLOSIVE_SHELL", "ARMOR_PIERCING", "ARMOR_PIERCING_SHELL"]
+[projectile]
+count = 1
+damage = 9.000
+armor_reduction = 0.500
+resist_reduction = 0.500
+velocity = 15.000
+gravity = 0.2
+lifetime = 100
+max_distance = 200.000
+damage_type = "EXPLOSIVE_SHELL"
+damage_min = 8.000
+damage_drop_distance = 0.000
+
+# projectile particle trail properties
+[projectile.particles]
+type = "REDSTONE"
+size = 3.0
+color = [255, 255, 255]
+spacing = 1.500
+force_render = true
+block_hit_particles = true
+
+# Explosion damage properties. These are only used if the handler
+# for block or entity hit has an explosion effect.
+[explosion]
+damage = 32.0
+max_distance = 5.0
+radius = 2.0
+falloff = 5.0
+armor_reduction = 0.500
+blast_prot_reduction = 6.0
+damage_type = "EXPLOSIVE_SHELL"
+block_damage_power = 3.5
+
+# Explosion particle settings
+[explosion.particles]
+type = "EXPLOSION_LARGE"
+count = 12
+random_x = 1.5
+random_y = 1.5
+random_z = 1.5
+
+# Sounds
+[sound]
+shoot = "tank_he.shoot"
+empty = "tank_he.empty"
+reload_start = "tank_he.reload_start"
+reload_finish = "tank_he.reload_finish"
+explosion = "tank_he.impact"
+# alternative detailed mode to specify volume and pitch
+# shoot = { name = "gun_shoot", volume = 1.0, pitch = 1.0 } 
+# empty = { name = "gun_empty", volume = 1.0, pitch = 1.0 } 
+# reload_start = { name = "gun_reload_start", volume = 1.0, pitch = 1.0 } 
+# reload_finish = { name = "gun_reload_finish", volume = 1.0, pitch = 1.0 } 

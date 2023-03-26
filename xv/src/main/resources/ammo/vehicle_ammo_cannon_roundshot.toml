@@ -1,0 +1,12 @@
+# Debugging ammo, shows all configurable properties.
+# For testing/loading ammo properties.
+
+# Ammo id. This is the ammo custom model data.
+id = 400
+
+# Item properties
+[item]
+name = "Cannon Round Shot"
+lore = [
+    "Block damaging shot for cannon.",
+]

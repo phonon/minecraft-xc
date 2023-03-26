@@ -7,7 +7,7 @@
 name = "debug_airplane"
 
 item_name = "Debug Airplane"
-item_custom_model_data = 110000
+item_custom_model_data = 150000
 item_lore = [
     "Planes when",
 ]
@@ -20,7 +20,7 @@ despawn_time = 2.0
 
 # plane big component, contains model, controls, etc.
 [airplane]
-model_id = 110000
+model_id = 150001
 model_offset = [0.0, 0.5, 0.0]
 speed_fast = 1.6
 speed_steady = 1.2
@@ -75,34 +75,36 @@ death_particle = "EXPLOSION_HUGE"
 death_particle_count = 1
 
 [health.damage_multiplier]
-BULLET = 0.1
-ANTI_TANK_RIFLE = 0.15
+BULLET = 0.15
+ANTI_TANK_RIFLE = 0.5
 ARMOR_PIERCING = 1.0
 ARMOR_PIERCING_SHELL = 1.0
 EXPLOSIVE = 0.16
 EXPLOSIVE_SHELL = 0.5
-MOLOTOV = 1.3
-FLAK = 2.0
+MOLOTOV = 0.5
+FLAK = 1.75
 
 [fuel]
-max = 64
+max = 100
 material = "DRAGON_BREATH"
 amount_per_item = 1
 max_amount_per_refuel = 32
-time_per_fuel_when_idle = 200
-time_per_fuel_when_moving = 60
-ignore = true
+time_per_fuel_when_idle = 1000
+time_per_fuel_when_moving = 200
+ignore = false
 
+# ammos and their associated guns or throwable item
 [ammo]
 can_reload_inside = false
-time_reload_inside = 2000 # milliseconds
+time_reload_inside = 1000 # milliseconds
 can_reload_outside = true
 groups = [
-    { max_ammo = 1000, ammo_per_item = 250 }, # group 0
+    { max_ammo = 1000, ammo_per_item = 250, max_reload = 1 }, # group 0
+    { max_ammo = 100, ammo_per_item = 10, max_reload = 1 }, # group 1
 ]
 types = [
-    # { group = 0, ammo = 150, gun = 600 }, # machinegun
-    { group = 0, ammo = 250, throwable = 50 }, # bomb
+    { group = 0, ammo = 420, gun = 930 }, # machinegun
+    { group = 1, ammo = 450, throwable = 50 }, # bomb
 ]
 
 # smoke particles when health < 50%

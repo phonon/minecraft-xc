@@ -101,6 +101,12 @@
     },
     {
       "predicate": {
+        "custom_model_data": 116000
+      },
+      "model": "item/vehicle/riverboat_xeth"
+    },
+    {
+      "predicate": {
         "custom_model_data": 120000
       },
       "model": "item/vehicle/viking_longship_xeth_item"
@@ -146,6 +152,18 @@
         "custom_model_data": 120007
       },
       "model": "item/vehicle/viking_longship_xeth_oars_right_row"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 150000
+      },
+      "model": "item/vehicle/spitfire_viceroy_landing"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 150001
+      },
+      "model": "item/vehicle/spitfire_viceroy"
     }
   ]
 }

@@ -1,0 +1,9 @@
+# Ammo id. This is the ammo custom model data.
+id = 420
+
+# Item properties
+[item]
+name = "Machine Gun Belt"
+lore = [
+    ".50 cal machine gun belt",
+]

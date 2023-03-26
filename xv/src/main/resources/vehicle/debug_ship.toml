@@ -6,21 +6,34 @@
 
 name = "debug_ship"
 
+item_name = "Debug Ship"
+item_custom_model_data = 116000
+item_lore = []
+
+spawn_time = 2.0
+despawn_time = 2.0
+
 # contains position, rotation, etc.
 [transform]
 
 # armor stand model
 [model]
-model_id = 2003203
+model_id = 116000
 
 # seats, needed for controllable vehicle
 [seats]
 seats = [
-    { offset = [0.0, 0.9, 0.0], armor = 4.0 },
+    { offset = [0.0, 0.4, 0.6], armor = 4.0 },
+    { offset = [0.0, 0.4, -0.6], armor = 4.0 },
+    { offset = [0.0, 0.4, -3.0], armor = 4.0 },
 ]
+
 
 # use seat raycasting for mounting
 [seats_raycast]
+hitbox_width = 0.75
+hitbox_height = 1.0
+hitbox_height_offset = -0.25
 
 # handles player's input controls for ship movement
 [ship_movement_controls]
@@ -68,3 +81,34 @@ backward_contacts_displace = [
     0.0,
     -4.0
 ]
+
+[health]
+max = 20.0
+death_sound = "minecraft:entity.generic.explode"
+death_particle = "EXPLOSION_HUGE"
+death_particle_count = 1
+
+[health.damage_multiplier]
+BULLET = 0.1
+ANTI_TANK_RIFLE = 0.5
+ARMOR_PIERCING = 1.0
+ARMOR_PIERCING_SHELL = 1.0
+EXPLOSIVE = 0.25
+EXPLOSIVE_SHELL = 0.5
+MOLOTOV = 1.0
+FLAK = 1.0
+
+# smoke particles from boat smoke stack
+# TODO: fix smoke particle offsets
+[smoke_particles]
+particle = "CAMPFIRE_COSY_SMOKE"
+offset_x = 0.0
+offset_y = 3.0
+offset_z = -2.5
+random_x = 0.25
+random_y = 0.3
+random_z = 0.25
+speed = 0.22
+extra_data = 0.22
+health_threshold = 20.0
+tick_period = 3

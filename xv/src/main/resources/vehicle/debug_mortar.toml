@@ -16,7 +16,10 @@ despawn_time = 2.0
 # contains position, rotation, etc.
 [transform]
 
-# apply gravity
+# apply gravity so vehicle falls
+# NOTE: due to minecraft client side interpolation, sometimes
+# vehicle will appear to fall into ground. but after relogging, it
+# will properly be on top of block again...
 [gravity]
 area = 1
 delay = 1
@@ -41,6 +44,7 @@ seats = [
     { offset = [0.0, 0.0, -0.75], armor = 4.0 },
 ]
 
+# health needed so you can shoot cannons with cannons or guns
 [health]
 max = 20.0
 death_sound = "minecraft:entity.generic.explode"
@@ -58,6 +62,7 @@ EXPLOSIVE = 0.75
 EXPLOSIVE_SHELL = 1.0
 MOLOTOV = 1.0
 
+# ammos and their associated guns
 [ammo]
 can_reload_inside = true
 time_reload_inside = 3000 # milliseconds
@@ -67,7 +72,7 @@ groups = [
     { max_ammo = 1 }, # group 0
 ]
 types = [
-    { group = 0, ammo = 110, gun = 450 }, # mortar shell
+    { group = 0, ammo = 405, gun = 905 }, # mortar shell
 ]
 
 # this makes ammo fire immediately after reload
