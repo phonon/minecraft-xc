@@ -1,0 +1,14 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# Component indicating seats should use custom raycasting system
+# for mounting. Player interaction will do a raycast to detect
+# which seat in the vehicle element should be mounted.
+# Each seat in the vehicle is given a hitbox with sizes defined
+# in this component
+
+[seats_raycast]
+
+hitbox_width = 1.25
+hitbox_height = 1.50
+hitbox_height_offset = 0.25

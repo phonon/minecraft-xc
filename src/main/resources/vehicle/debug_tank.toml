@@ -1,0 +1,120 @@
+# Simple vehicles do not have any duplicate components so
+# these only need a single element. In this case, we can
+# just write components directly in the config.
+# Parser will do a scan and recognize this only needs a
+# single anonymous element.
+
+name = "debug_tank"
+
+item_name = "Debug Tank"
+item_custom_model_data = 104000
+item_lore = [
+    "Tanks when",
+]
+
+spawn_time = 4.0
+despawn_time = 4.0
+
+# contains position, rotation, etc.
+[transform]
+
+# armor stand model
+[model]
+model_id = 104001
+seat_to_mount = 0 # seat mounted when clicked
+decals = "panzer_ii_tomate_body"
+
+# rotating gun turret, controlled by mouse
+[gun_turret]
+turret_offset = [0.0, 0.5, 0.0]
+barrel_offset = [0.0, 0.0, 1.45]
+barrel_pitch_min = -10.0
+barrel_pitch_max = 20.0
+turret_control_yaw = "mouse"
+barrel_control_yaw = "mouse"
+barrel_control_pitch = "mouse"
+turret_model_id = 104002
+barrel_model_id = 104003
+seat_to_mount = 0 # seat mounted when clicked
+seat_controller = 0 # seat for controlling gun
+shoot_mouse_weapon = 0 # which ammo group to shoot
+hitbox = [2.3, 2.4, 2.3]
+hitbox_y_offset = -0.5
+shoot_offset_y = 1.0
+
+# seats, needed for controllable vehicle
+[seats]
+# max_mount_distance = 2.0 # TODO
+count = 1
+offsets = [
+    0.0, 1.4, 0.0,
+]
+armor = [ 9001.0 ]
+
+# handles player's input controls for land movement
+[land_movement_controls]
+seat_controller = 0
+acceleration = 0.03
+speed_max_forward = 0.3
+speed_max_reverse = 0.2
+
+[health]
+max = 20.0
+death_sound = "minecraft:entity.generic.explode"
+death_particle = "EXPLOSION_HUGE"
+death_particle_count = 1
+
+[health.damage_multiplier]
+ANTI_TANK_RIFLE = 0.15
+ARMOR_PIERCING = 1.0
+ARMOR_PIERCING_SHELL = 1.0
+EXPLOSIVE = 0.16
+EXPLOSIVE_SHELL = 0.5
+MOLOTOV = 1.3
+
+[fuel]
+max = 64
+material = "DRAGON_BREATH"
+amount_per_item = 1
+max_amount_per_refuel = 32
+time_per_fuel_when_idle = 200
+time_per_fuel_when_moving = 60
+
+[ammo]
+can_reload_inside = true
+time_reload_inside = 4000 # milliseconds
+can_reload_outside = false
+groups = [
+    { max_ammo = 1 }, # group 0
+]
+types = [
+    { group = 0, ammo = 200, gun = 500 }, # he shell
+    { group = 0, ammo = 210, gun = 510 }, # ap shell
+]
+
+# smoke particles when health < 50%
+[smoke_particles]
+particle = "CAMPFIRE_COSY_SMOKE"
+offset_x = 0.0
+offset_y = 1.0
+offset_z = 0.0
+random_x = 0.75
+random_y = 0.4
+random_z = 0.75
+speed = 0.22
+extra_data = 0.22
+health_threshold = 10.0
+tick_period = 4
+
+# lava particles when health < 25%
+[particles]
+particle = "LAVA"
+count = 4
+offset_x = 0.0
+offset_y = 1.0
+offset_z = 0.0
+random_x = 0.3
+random_y = 1.0
+random_z = 0.3
+health_threshold = 5.0
+tick_period = 2

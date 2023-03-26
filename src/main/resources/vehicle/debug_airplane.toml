@@ -1,0 +1,132 @@
+# Simple vehicles do not have any duplicate components so
+# these only need a single element. In this case, we can
+# just write components directly in the config.
+# Parser will do a scan and recognize this only needs a
+# single anonymous element.
+
+name = "debug_airplane"
+
+item_name = "Debug Airplane"
+item_custom_model_data = 110000
+item_lore = [
+    "Planes when",
+]
+
+spawn_time = 2.0
+despawn_time = 2.0
+
+# contains position, rotation, etc.
+[transform]
+
+# plane big component, contains model, controls, etc.
+[airplane]
+model_id = 110000
+model_offset = [0.0, 0.5, 0.0]
+speed_fast = 1.6
+speed_steady = 1.2
+speed_slow = 0.8
+speed_fly_min = 0.7
+speed_liftoff = 1.0
+acceleration = 0.02
+deceleration = 0.02
+ground_acceleration = 0.02
+ground_deceleration = 0.02
+yaw_acceleration = 0.2
+yaw_speed_max = 4.0
+yaw_speed_on_ground = 1.0
+pitch_acceleration = 0.02
+pitch_speed_max = 1.0
+pitch_max = 50.0
+pitch_min = -70.0
+ground_pitch = 20.0
+safe_landing_pitch = -30.0
+seat_to_mount = 0 # seat mounted when clicked
+seat_controller = 0 # seat for controlling gun
+shoot_mouse_weapon = 0 # which ammo group to shoot
+health_controllable = 2.0 # minimum health for plane to still be controlled
+health_damage_per_crash = 15.0 # damage when hitting blocks
+hitbox = [2.5, 1.8, 2.5]
+hitbox_y_offset = 1.0
+shoot_offset_y = 1.0
+bullet_offset = [1.5, 1.1, 1.25]
+bullet_offset_2 = [-1.5, 1.1, 1.25]
+use_multiple_bullet_offsets = true
+bullet_convergence_distance = 80.0
+bullet_convergence_distance_min = 60.0
+bullet_convergence_distance_max = 140.0
+firerate = 1
+armorstand_visible = false
+
+# seats, needed for controllable vehicle
+[seats]
+# max_mount_distance = 2.0 # TODO
+count = 1
+offsets = [
+    0.0, 0.0, 0.0, # dummy
+]
+armor = [ 9001.0 ]
+
+[health]
+max = 20.0
+death_sound = "minecraft:entity.generic.explode"
+death_particle = "EXPLOSION_HUGE"
+death_particle_count = 1
+
+[health.damage_multiplier]
+BULLET = 0.1
+ANTI_TANK_RIFLE = 0.15
+ARMOR_PIERCING = 1.0
+ARMOR_PIERCING_SHELL = 1.0
+EXPLOSIVE = 0.16
+EXPLOSIVE_SHELL = 0.5
+MOLOTOV = 1.3
+FLAK = 2.0
+
+[fuel]
+max = 64
+material = "DRAGON_BREATH"
+amount_per_item = 1
+max_amount_per_refuel = 32
+time_per_fuel_when_idle = 200
+time_per_fuel_when_moving = 60
+ignore = true
+
+[ammo]
+can_reload_inside = false
+time_reload_inside = 2000 # milliseconds
+can_reload_outside = true
+groups = [
+    { max_ammo = 1000, ammo_per_item = 250 }, # group 0
+]
+types = [
+    # { group = 0, ammo = 150, gun = 600 }, # machinegun
+    { group = 0, ammo = 250, throwable = 50 }, # bomb
+]
+
+# smoke particles when health < 50%
+[smoke_particles]
+particle = "CAMPFIRE_SIGNAL_SMOKE"
+offset_x = 0.0
+offset_y = 1.0
+offset_z = 0.0
+random_x = 0.75
+random_y = 0.4
+random_z = 0.75
+speed = 0.22
+extra_data = 0.22
+health_threshold = 10.0
+tick_period = 0
+force = true
+
+# lava particles when health < 25%
+[particles]
+particle = "LAVA"
+count = 4
+offset_x = 0.0
+offset_y = 1.0
+offset_z = 0.0
+random_x = 0.3
+random_y = 1.0
+random_z = 0.3
+health_threshold = 5.0
+tick_period = 2

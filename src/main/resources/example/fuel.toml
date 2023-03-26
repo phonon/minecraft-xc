@@ -1,0 +1,36 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+
+
+[fuel]
+
+current = 0
+max = 100
+
+# how long it takes to refuel (in milliseconds)
+time_refuel = 4000
+
+# flag if player can reload outside vehicle
+can_reload_outside = true
+
+# flag if player can reload inside vehicle
+can_reload_inside = false
+
+# minecraft material used as fuel
+material = "DRAGON_BREATH"
+
+# amount of load fuel to give per item
+amount_per_item = 1
+
+# max amount OF ITEMS to load per refuel
+max_amount_per_refuel = 64
+
+# amount of time per fuel burn while not moving (in ticks)
+time_per_fuel_when_idle = 200
+
+# amouint of time per fuel burn while moving (in ticks)
+time_per_fuel_when_moving = 60
+
+# drop fuel item instead of storing into item during despawn
+drop_item = true

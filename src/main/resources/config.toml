@@ -1,0 +1,65 @@
+# XV Config
+# Vehicle plugin for miney man
+
+[world]
+sea_level = 63 # global sea level, used by some systems
+
+# material types for custom items, must match a Material exactly
+[material]
+vehicle = "IRON_HORSE_ARMOR"
+
+# world border culling system: destroy vehicles outside of border
+[culling]
+enabled = false
+period = 200 # how often in ticks
+border_min_x = -1000
+border_min_y = -1
+border_min_z = -1000
+border_max_x = 1000
+border_max_y = 300
+border_max_z = 1000
+
+# seat raycast mounting
+[seat_raycast]
+chunk_range = 1
+distance = 2.5
+debug = false
+
+# =========================================================
+# ADVANCED ENGINE CONFIG
+# =========================================================
+# generally dont need to touch these...
+
+# folders within `plugins/xv` containing item configs
+[paths]
+vehicle = "vehicle" # vehicle configs
+save = "vehiclesave.json"  # save state
+backup = "backup"   # backup save states folder
+
+# save settings
+[save]
+period = 1200 # how often in ticks to run save
+min_vehicles_per_tick = 10 # min vehicles to save per pipeline tick
+pipeline_ticks = 4 # max number of pipeline ticks to save vehicles, larger => more desync in vehicle state
+backup_period = 18000 # how often in ticks to save a long-term backup, default = 15 min
+json_pretty_printing = false # are vehicles saved in human-readable json, or all on one line
+
+# misc random engine settings
+[misc]
+# default debug mode when plugin reloads (can still be toggled via command)
+debug = false
+# debug print vehicle damage taken (can use when balancing damage)
+debug_damage = false
+# debug show particles around vehicle contact points
+debug_contact_points = false
+# debug vehicle seats by turning armor stands visible
+debug_seats = false
+# Setting this true will delete invaid armor stands when 
+# entities loaded. Default AVOID THIS because any error in load
+# function can cause all player vehicles to be accidentally deleted
+# (because no armor stand mappings were properly loaded)
+delete_invalid_armor_stands = false
+# max vehicle instances allowed in world
+max_vehicles = 10000
+# create default configs
+create_demo_configs = true

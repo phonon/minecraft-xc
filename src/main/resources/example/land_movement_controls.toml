@@ -1,0 +1,64 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# Land movement controls component.
+# 
+# Immutable properties are the settings for how motion
+# updates in land motion system (acceleration, turning, etc.).
+# 
+# Mutable properties are the current motion state,
+# speed, yaw turning speed, etc.
+# 
+# To update immutable settings dynamically, create copy of
+# component and copy over the runtime motion state.
+# 
+# Contact points are used for 5-point contact for ground detection.
+# Imagine a vehicle as a rectangle defined by contact points:
+#       
+#        p1    p2                 contacts = [
+#       _________                    origin,
+#      | x     x |                   origin + p1,
+#      |         |                   origin + p2,
+#      |    O    |  <- origin        origin + p3,
+#      |         |                   origin + p4,
+#      |_x_____x_|                ]
+#       p3     p4
+# 
+# We can then simulate gravity for vehicle to fall by checking if
+# all contact points are in air:
+#      if ( all_in_air(contacts) ) {
+#        apply_gravity()
+#      }
+# This is much more robust than just checking origin. This prevents
+# vehicles from falling into 1 block holes.
+# 
+# Note the contact points are stored as local offsets from origin.
+# The packed double array is in order [p1, p2, p3, p4].
+# Keep this convention order (front = p1, p2, rear = p3, p4).
+# We can do other fancy stuff like fitting a plane to the local y
+# values at each contact point and rotate vehicle to match terrain,
+# which needs a standard convention for point order
+
+[land_movement_controls]
+
+# seat index that controls vehicle
+seat_controller = 0
+
+# translational speed parameters (all positive)
+acceleration = 0.02
+deceleration_multiplier = 0.8
+speed_max_forward = 0.4
+speed_max_reverse = 0.3
+
+# yaw turning rate parameters
+yaw_rotation_acceleration = 0.1
+yaw_rotation_deceleration_multiplier = 0.5
+yaw_rotation_speed_max = 2.0
+
+# contact points for ground detection
+contact_points = [
+    1.2, 0.0, 2.0,
+    -1.2, 0.0, 2.0,
+    1.2, 0.0, -2.0,
+    -1.2, 0.0, -2.0,
+]

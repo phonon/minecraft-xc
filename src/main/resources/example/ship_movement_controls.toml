@@ -1,0 +1,106 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# Ship movement controls component.
+#
+# Immutable properties are the settings for how motion
+# updates in land motion system (acceleration, turning, etc.).
+#
+# Mutable properties are the current motion state,
+# speed, yaw turning speed, etc.
+#
+# To update immutable settings dynamically, create copy of
+# component and copy over the runtime motion state.
+#
+# For simulating gravity, this component uses the same 5
+# contact point implementation as land movement controls.
+# For ship movement in particular, the ground contact points
+# will also be used to determine whether a ship is
+# "grounded," and thus if it can move/rotate. A ship is
+# considered grounded if any of its ground contact points is
+# in a non ship-traversable and non ship-passable block.
+#
+# We say a block is ship-traversable if a ship is able to travel
+# through, but not fall through it. An example of a ship-traversable
+# block is water. We say a block is ship-passable if a ship is able
+# to fall through. An example would be air. We say a block is grounded
+# if it is neither ship-traversable nor ship-passable. Note each of these
+# labels is mutually exclusive.
+#
+# A ship can only move when the following conditions are met:
+# 1. NONE of the ship's ground contact points are touching a grounded block
+# 2. AT LEAST ONE of the ship's ground contact points is touching a
+#    ship-traversable block
+#
+# 5 contact points are also used to simulate front and
+# backward collisions.
+#
+# The format for frontal and backward contact points
+# is the same as that of the ground contacts in the order
+# [p1, p2, p3, p4, p5]
+#
+#       TOP OF ELEMENT
+#        p1    p2                 contacts = [
+#       _________                    origin + p5,
+#      | x     x |                   origin + p1,
+#      |         |                   origin + p2,
+#      |    x <----p5                origin + p3,
+#      |         |                   origin + p4,
+#      |_x_____x_|                ]
+#       p3     p4
+#      BOTTOM OF ELEMENT
+#
+# This component makes the (practical) assumption that front and back
+# collision contact points will always be the same size. (imagine
+# a boat that can't move forward into a 3 block high roof,
+# but can back out of one) Thus, this component accepts the
+# relative coordinates of the front contact points, and an
+# [x, y, z] offset array to offset each of the forward
+# contact points into backward contacts
+
+[ship_movement_controls]
+
+# seat index that controls vehicle
+seat_controller = 0
+
+# translational speed parameters (all positive)
+acceleration = 0.02
+deceleration_multiplier = 0.8
+speed_max_forward = 0.4
+speed_max_reverse = 0.3
+
+# yaw turning rate parameters
+yaw_rotation_acceleration = 0.1
+yaw_rotation_deceleration_multiplier = 0.5
+yaw_rotation_speed_max = 2.0
+
+# the speed at which boats can
+# turn at the full turn accel
+yaw_rotation_effective_speed = 0.1
+
+# collision settings
+# i-frame after collision, -1 to disable
+collision_cooldown_ticks = 60
+
+# min speed needed to register a collision, -1 to disable
+min_collision_speed = 0.2
+
+# contact points for gravity
+ground_contact_points = [
+    1.2, 0.0, 2.0,
+    -1.2, 0.0, 2.0,
+    1.2, 0.0, -2.0,
+    -1.2, 0.0, -2.0,
+]
+front_contact_points = [
+    1.2, 0.0, 2.0,
+    -1.2, 0.0, 2.0,
+    1.2, 3.0, 2.0,
+    -1.2, 3.0, 2.0,
+    0.0, 1.5, 2.0,
+]
+backward_contacts_displace = [
+    0.0,
+    0.0,
+    -4.0
+]

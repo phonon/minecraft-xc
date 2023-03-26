@@ -1,0 +1,73 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# WASD-controlled single barrel. Direction is the yaw of the vehicle.
+# Barrel pitch is moved up/down with W/S keys. Example usage is a barrel
+# for a cannon vehicle.
+# 
+# Contains LOCAL position/rotation offsets from base element transform.
+# Controls system functions should always use this in combination
+# with a TransformComponent as the base transform position.
+# 
+# This also internally manages rendering armor stand models
+# for barrel
+
+[gun_barrel]
+
+# barrel local offset relative to transform
+barrel_offset = [0.0, 1.0, 0.0]
+
+# min and max barrel pitch rotation in degs
+pitch_min = -15.0
+
+# max barrel pitch rotation in degs
+pitch_max = 15.0
+
+# seat index that controls this component
+seat_controller = 0
+
+# control style for yaw (mouse, wasd, or none)
+control_yaw = ControlStyle.NONE
+
+# control style for pitch (mouse, wasd, or none)
+control_pitch = ControlStyle.NONE
+
+# speed that barrel yaw rotates at
+yaw_rotation_speed = 1.0
+
+# speed that barrel pitch rotates at
+pitch_rotation_speed = 0.5
+
+# if true, this component rotation will also update base transform
+update_transform = false
+
+# seat to mount when armorstand clicked
+seat_to_mount = -1
+//
+-1
+for
+none
+
+# material for model
+material = "BONE"
+
+# custom model data for the armorstand
+model_id = 0
+
+# name of skins variant set to use instead of single model id (optional)
+skin = null
+skin_default_variant = null
+
+# whether to show the armor stand (for debugging)
+# hitbox size in blocks, at local position
+hitbox = [1.0, 1.0, 1.0]
+hitbox_y_offset = 0.0
+
+# if can shoot with left mouse, which ammo group to shoot (-1 to disable)
+shoot_mouse_weapon = 0
+
+# if can shoot with spacebar, which ammo group to shoot (-1 to disable)
+shoot_spacebar_weapon = -1
+
+# offset along barrel direction to spawn projectile
+projectile_offset = 1.0

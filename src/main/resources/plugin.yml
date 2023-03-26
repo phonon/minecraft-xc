@@ -1,0 +1,23 @@
+main: phonon.xv.XVPlugin
+name: xv
+version: 0.0.3
+api-version: 1.16
+depend: [kotlin, packetevents]
+softdepend: [xc]
+commands:
+  xv:
+    description: xv
+    permission: xv.command
+    usage: /xv help
+  vehicledecal:
+    aliases: [vdecal]
+    permission: xv.vehicledecal
+    usage: /vehicledecal [name]
+  vehicleskin:
+    aliases: [vskin]
+    permission: xv.vehicleskin
+    usage: /vehicleskin [name]
+permissions:
+  xv.admin:
+    description: Allow xv admin commands
+    default: op

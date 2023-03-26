@@ -1,0 +1,25 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# Component indicating vehicle transform should have gravity. This
+# calculates if block underneath current transform position is open,
+# then applies gravity and forces the vehicle to fall.
+# 
+# Used for stationary weapons like mortars and cannons which simply
+# rotate in place.
+# 
+# Do not use with other motion controllers
+# (e.g. LandMovementControlsComponent) as these internally implement
+# gravity
+
+[gravity]
+
+_dummy = true
+//
+dummy
+property
+to
+avoid
+empty
+data
+class

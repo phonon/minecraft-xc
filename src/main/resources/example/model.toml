@@ -1,0 +1,32 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# Represents an ArmorStand mode
+
+[model]
+
+# armor stand local offset
+offset = [0.0, 0.0, 0.0]
+
+# hitbox size in blocks, at local position
+hitbox = [0.0, 0.0, 0.0]
+hitbox_y_offset = 0.0
+
+# seat to mount when armorstand clicked
+seat_to_mount = -1
+//
+-1
+for
+none
+
+# material for model
+material = "BONE"
+
+# custom model data for the armorstand
+model_id = 0
+
+# name of skins variant set to use instead of single model id (optional)
+skin = null
+skin_default_variant = null
+
+# whether to show the armor stand (for debugging)

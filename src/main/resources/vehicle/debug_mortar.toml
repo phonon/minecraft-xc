@@ -1,0 +1,73 @@
+# Simple vehicles do not have any duplicate components so
+# these only need a single element. In this case, we can
+# just write components directly in the config.
+# Parser will do a scan and recognize this only needs a
+# single anonymous element.
+
+name = "debug_mortar"
+
+item_name = "Debug Mortar"
+item_custom_model_data = 101000
+item_lore = []
+
+spawn_time = 2.0
+despawn_time = 2.0
+
+# contains position, rotation, etc.
+[transform]
+
+# apply gravity
+[gravity]
+area = 1
+delay = 1
+
+# armor stand gun barrel
+[gun_barrel]
+barrel_offset = [0.0, -0.35, 0.0]
+pitch_min = 30.0
+pitch_max = 70.0
+pitch_rotation_speed = 0.2
+control_yaw = "mouse"
+control_pitch = "wasd"
+update_transform = true
+seat_to_mount = 0 # seat mounted when clicked
+model_id = 101000
+hitbox = [1.0, 1.0, 1.0]
+hitbox_y_offset = 0.5
+
+# seats, needed for controllable vehicle
+[seats]
+count = 1
+offsets = [0.0, 0.0, -0.75]
+armor = [4.0]
+
+[health]
+max = 20.0
+death_sound = "minecraft:entity.generic.explode"
+death_particle = "EXPLOSION_NORMAL"
+death_particle_count = 8
+death_particle_random_x = 0.5
+death_particle_random_y = 0.75
+death_particle_random_z = 0.5
+
+[health.damage_multiplier]
+ANTI_TANK_RIFLE = 0.5
+ARMOR_PIERCING = 1.0
+ARMOR_PIERCING_SHELL = 1.0
+EXPLOSIVE = 0.75
+EXPLOSIVE_SHELL = 1.0
+MOLOTOV = 1.0
+
+[ammo]
+can_reload_inside = true
+time_reload_inside = 3000 # milliseconds
+can_reload_outside = true
+time_reload_outside = 1000 # milliseconds
+groups = [
+    { max_ammo = 1 }, # group 0
+]
+types = [
+    { group = 0, ammo = 110, gun = 450 }, # mortar shell
+]
+
+[ammo_fire_when_loaded]

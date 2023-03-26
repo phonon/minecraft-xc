@@ -1,0 +1,33 @@
+# THIS IS A GENERATED COMPONENT CONFIG EXAMPLE FILE THAT SHOWS
+# THIS COMPONENT'S CONFIG OPTIONS.
+
+# Component for periodic particle effects depending on vehicle condition
+
+[particles]
+
+particle = Particle.CAMPFIRE_SIGNAL_SMOKE
+
+# number of particles
+count = 1
+
+# position offset relative to element transform
+offset_x = 0.0
+offset_y = 0.0
+offset_z = 0.0
+
+# random offset for each particle
+random_x = 0.0
+random_y = 0.0
+random_z = 0.0
+
+# for particles with extra data, such as campfire smoke
+extra_data = null
+
+# force particles render
+force = false
+
+# minimum health before displaying particles, set to large number to always display
+health_threshold = 10000.0
+
+# how often to display particles, in ticks
+tick_period = 2

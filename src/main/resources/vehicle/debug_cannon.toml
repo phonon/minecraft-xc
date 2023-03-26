@@ -1,0 +1,36 @@
+# Simple vehicles do not have any duplicate components so
+# these only need a single element. In this case, we can
+# just write components directly in the config.
+# Parser will do a scan and recognize this only needs a
+# single anonymous element.
+
+name = "debug_cannon"
+
+item_name = "Debug Cannon"
+item_lore = [
+    "This is a debug cannon.",
+]
+
+# contains position, rotation, etc.
+[transform]
+
+# rotating gun barrel model
+# moves up/down with WASD controls
+[gun_turret]
+turret_offset = [0.0, 0.0, 0.0]
+barrel_offset = [0.0, -0.35, 0.0]
+barrel_pitch_min = -15.0
+barrel_pitch_max = 15.0
+turret_control_yaw = "wasd"
+barrel_control_yaw = "wasd"
+barrel_control_pitch = "wasd"
+turret_model_id = 100001
+barrel_model_id = 100002
+seat_to_mount = 0 # seat mounted when clicked
+seat_controller = 0 # seat for controlling vehicle
+update_transform = true
+
+# seats, needed for controllable vehicle
+[seats]
+count = 1
+offsets = [0.0, 0.2, -1.0]

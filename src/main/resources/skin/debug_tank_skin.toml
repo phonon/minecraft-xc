@@ -1,0 +1,23 @@
+# Example skin config file for a tank
+# Each table is a set of skins (for some vehicle).
+# Each skin is just a mapping from a string key to a custom model
+# id integer, corresponding to a custom model in the resourcepack.
+# Format for mappings are either:
+#    baseTexture = modelId
+#    baseTexture.decal = modelId
+# The '.' separator splits base textures and specific "decal" textures.
+# Common format is to have a set of base model textures for a
+# vehicle model, then compile all combinations of texture + decal
+# (where decal is just an image like a flag or logo placed on
+# parts of the vehicle). These files should be generated when compiling
+# all combinations of base texture + decal texture.
+# Use quoted keys or else toml parser may sperg out about the "."
+[debug_tank]
+"default" = 1000
+"default.flag_axis" = 1001
+"default.flag_allies" = 1002
+"default.cute" = 1003
+"desert" = 1100
+"desert.flag_axis" = 1101
+"desert.flag_allies" = 1102
+"desert.cute" = 1103

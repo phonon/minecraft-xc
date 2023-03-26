@@ -1,0 +1,54 @@
+### Example: vehicle with multiple turrets
+# A vehicle that needs multiple of the same components
+
+name = "debug_multi_turret"
+
+### MAIN ELEMENT
+[[element]]
+name = "base"
+
+# main boat position, rotation, etc.
+[element.transform]
+
+# armor stand model
+[element.model]
+seat_to_mount = 0 # seat mounted when clicked
+
+# use seat raycasting for mounting
+[element.seats_raycast]
+
+# seats, needed for controllable vehicle
+[element.seats]
+count = 1
+offsets = [
+    0.0, 1.0, 0.0,
+]
+
+# handles player's input controls for land movement
+[element.land_movement_controls]
+seat_controller = 0
+acceleration = 0.03
+speed_max_forward = 0.3
+speed_max_reverse = 0.2
+
+
+### LEFT SIDE GUN TURRET
+[[element]]
+name = "left_turret"
+parent = "base"
+
+[element.transform]
+offset = [-1, 1, 0]
+
+[element.gun_turret]
+
+
+### RIGHT SIDE GUN TURRET
+[[element]]
+name = "right_turret"
+parent = "base"
+
+[element.transform]
+offset = [1, 1, 0]
+
+[element.gun_turret]
