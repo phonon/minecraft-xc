@@ -9,10 +9,10 @@ import org.tomlj.TomlTable
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.entity.Player
+import phonon.xc.util.mapToObject
 import phonon.xc.util.toml.*
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
-import phonon.xv.util.mapToObject
 
 /**
  * Contains a vehicle elements world position and rotation.

@@ -11,9 +11,9 @@ import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.persistence.PersistentDataType
 import phonon.xc.XC
+import phonon.xc.util.mapToObject
 import phonon.xc.util.toml.*
 import phonon.xv.core.*
-import phonon.xv.util.mapToObject
 import kotlin.collections.HashMap
 
 /**

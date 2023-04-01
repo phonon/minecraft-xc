@@ -12,13 +12,13 @@ import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataAdapterContext
 import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
+import phonon.xc.util.mapToObject
 import phonon.xc.util.toml.*
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.core.Vehicle
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.core.VehicleElement
-import phonon.xv.util.mapToObject
 
 // namespace keys for saving item persistent data
 private val FUEL_KEY_CURRENT = NamespacedKey("xv", "current")

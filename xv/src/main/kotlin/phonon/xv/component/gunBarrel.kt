@@ -17,6 +17,7 @@ import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.EulerAngle
 import phonon.xc.XC
 import phonon.xc.util.HitboxSize
+import phonon.xc.util.mapToObject
 import phonon.xc.util.toml.*
 import phonon.xv.core.ENTITY_KEY_COMPONENT
 import phonon.xv.core.EntityVehicleData
@@ -27,7 +28,6 @@ import phonon.xv.core.VehicleElement
 import phonon.xv.common.ControlStyle
 import phonon.xv.util.entity.setVehicleUuid
 import phonon.xv.util.item.createCustomModelItem
-import phonon.xv.util.mapToObject
 
 /**
  * WASD-controlled single barrel. Direction is the yaw of the vehicle.
