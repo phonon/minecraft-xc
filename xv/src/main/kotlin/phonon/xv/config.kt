@@ -18,8 +18,8 @@ import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.Material
 import org.bukkit.entity.EntityType
 import org.tomlj.Toml
+import phonon.xc.util.toml.getNumberAs
 import phonon.xv.util.mapToObject
-import phonon.xv.util.toml.getNumberAs
 
 /**
  * Immutable XV config

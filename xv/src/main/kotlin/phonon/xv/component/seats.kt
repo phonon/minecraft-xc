@@ -1,7 +1,8 @@
 package phonon.xv.component
 
-import com.google.gson.JsonObject
+import java.util.UUID
 import java.util.logging.Logger
+import com.google.gson.JsonObject
 import org.tomlj.TomlTable
 import org.bukkit.Location
 import org.bukkit.NamespacedKey
@@ -10,10 +11,9 @@ import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.persistence.PersistentDataType
 import phonon.xc.XC
+import phonon.xc.util.toml.*
 import phonon.xv.core.*
 import phonon.xv.util.mapToObject
-import phonon.xv.util.toml.*
-import java.util.*
 import kotlin.collections.HashMap
 
 /**

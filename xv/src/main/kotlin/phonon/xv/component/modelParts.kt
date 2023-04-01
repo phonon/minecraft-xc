@@ -15,6 +15,7 @@ import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
 import phonon.xc.XC
 import phonon.xc.util.HitboxSize
+import phonon.xc.util.toml.*
 import phonon.xv.XV
 import phonon.xv.core.ENTITY_KEY_COMPONENT
 import phonon.xv.core.Vehicle
@@ -24,7 +25,6 @@ import phonon.xv.core.VehicleElement
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.util.entity.setVehicleUuid
 import phonon.xv.util.mapToObject
-import phonon.xv.util.toml.*
 import phonon.xv.util.item.createCustomModelItem
 import phonon.xv.util.math.rotatePrecomputedYawX
 import phonon.xv.util.math.rotatePrecomputedYawZ

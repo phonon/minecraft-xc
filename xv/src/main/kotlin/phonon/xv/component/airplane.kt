@@ -17,6 +17,7 @@ import org.bukkit.util.Vector
 import org.bukkit.util.EulerAngle
 import phonon.xc.XC
 import phonon.xc.util.HitboxSize
+import phonon.xc.util.toml.*
 import phonon.xv.core.ENTITY_KEY_COMPONENT
 import phonon.xv.core.EntityVehicleData
 import phonon.xv.core.Vehicle
@@ -27,7 +28,6 @@ import phonon.xv.util.CustomArmorStand
 import phonon.xv.util.entity.setVehicleUuid
 import phonon.xv.util.item.createCustomModelItem
 import phonon.xv.util.mapToObject
-import phonon.xv.util.toml.*
 import phonon.xv.util.math.EulerOrder
 import phonon.xv.util.math.Mat3
 import phonon.xv.util.math.directionFromPrecomputedYawPitch

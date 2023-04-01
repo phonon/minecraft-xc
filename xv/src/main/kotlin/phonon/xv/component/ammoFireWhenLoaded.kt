@@ -3,10 +3,10 @@ package phonon.xv.component
 import com.google.gson.JsonObject
 import java.util.logging.Logger
 import org.tomlj.TomlTable
+import phonon.xc.util.toml.*
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
-import phonon.xv.util.toml.*
 
 /**
  * Marker component indicating vehicle should immediately fire when

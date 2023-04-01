@@ -1,5 +1,6 @@
 package phonon.xv.component
 
+import java.util.UUID
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import org.bukkit.Bukkit
@@ -8,12 +9,10 @@ import org.tomlj.TomlTable
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.entity.Player
+import phonon.xc.util.toml.*
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
-import phonon.xv.util.toml.*
-import java.util.*
-import kotlin.collections.HashMap
 
 /**
  * Contains a vehicle elements world position and rotation.

@@ -1,13 +1,13 @@
 package phonon.xv.component
 
+import java.util.logging.Logger
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import org.tomlj.TomlTable
+import phonon.xc.util.toml.getNumberAs
 import phonon.xv.core.VehicleComponent
 import phonon.xv.core.VehicleComponentType
 import phonon.xv.util.mapToObject
-import phonon.xv.util.toml.getNumberAs
-import java.util.logging.Logger
 
 /**
  * Ship movement controls component.
