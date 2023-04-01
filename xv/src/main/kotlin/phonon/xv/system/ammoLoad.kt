@@ -30,13 +30,18 @@ import phonon.xv.util.progressBar10
 import phonon.xv.util.Message
 import phonon.xv.util.drain
 import phonon.xv.util.item.addIntId
+import phonon.xv.util.item.createCustomModelItem
 import phonon.xv.util.item.itemInMainHandEquivalentTo
 
 /**
  * A request to add ammo to a vehicle.
  */
 public data class AmmoLoadRequest(
+    // vehicle element
+    val element: VehicleElement,
+    // ammo component in element
     val ammoComponent: AmmoComponent,
+    // player loading ammo
     val player: Player? = null,
     // inside or outside vehicle
     val isInside: Boolean = false,
@@ -48,6 +53,7 @@ public data class AmmoLoadRequest(
  * Signal to finish adding ammo to vehicle.
  */
 public data class AmmoLoadFinish(
+    val element: VehicleElement,
     val ammoComponent: AmmoComponent,
     val group: Int, // group index
     val ammoType: AmmoComponent.AmmoWeaponType,
@@ -69,6 +75,7 @@ public fun XV.systemAmmoLoadVehicle(
 
     for ( request in requests.drain() ) {
         val (
+            element,
             ammoComponent,
             player,
             isInside,
@@ -139,6 +146,7 @@ public fun XV.systemAmmoLoadVehicle(
                         },
                         onFinish = {
                             finishQueue.add(AmmoLoadFinish(
+                                element,
                                 ammoComponent,
                                 groupIdx,
                                 ammoType,
@@ -152,6 +160,7 @@ public fun XV.systemAmmoLoadVehicle(
                     xv.startTaskForPlayer(player, task)
                 } else { // no spawn, go directly to finish
                     finishQueue.add(AmmoLoadFinish(
+                        element,
                         ammoComponent,
                         groupIdx,
                         ammoType,
@@ -177,6 +186,7 @@ public fun XV.systemFinishAmmoLoadVehicle(
 
     for ( request in requests.drain() ) {
         val (
+            element,
             ammoComponent,
             group,
             ammoType,
@@ -223,6 +233,23 @@ public fun XV.systemFinishAmmoLoadVehicle(
                 
                 // mark player who loaded
                 ammoComponent.playerLoadedUuid[group] = player.uniqueId
+
+                // if element has compatible gun barrel/turret models with
+                // different loaded models, adjust models here.
+                // (hard-coded here...maybe need separate system)
+                element.components.gunBarrel?.let { gunBarrel ->
+                    if ( gunBarrel.loadedModelId > 0 ) {
+                        gunBarrel.armorstand?.getEquipment()?.setHelmet(createCustomModelItem(gunBarrel.material, gunBarrel.loadedModelId))
+                    }
+                }
+                element.components.gunTurret?.let { gunTurret ->
+                    if ( gunTurret.barrelLoadedModelId > 0 ) {
+                        gunTurret.armorstandBarrel?.getEquipment()?.setHelmet(createCustomModelItem(gunTurret.material, gunTurret.barrelLoadedModelId))
+                    }
+                    if ( gunTurret.turretLoadedModelId > 0 ) {
+                        gunTurret.armorstandTurret?.getEquipment()?.setHelmet(createCustomModelItem(gunTurret.material, gunTurret.turretLoadedModelId))
+                    }
+                }
 
                 xv.infoMessage.put(player, 2, "Loaded ammo: ${ammoComponent.current[group]}/${maxAmmo}")
             }

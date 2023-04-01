@@ -106,6 +106,7 @@ public fun XV.systemInteractWithVehicle(
                     val ammoComponent = element.components.ammo!!
                     if ( ammoComponent.canReloadOutside && player.itemMaterialInMainHandEqualTo(xv.xc.config.materialAmmo) ) {
                         xv.ammoLoadRequests.add(AmmoLoadRequest(
+                            element = element,
                             ammoComponent = ammoComponent,
                             player = player,
                             isInside = false,
@@ -223,6 +224,7 @@ public fun XV.systemInteractInsideVehicle(
                     val ammoComponent = playerElement.components.ammo!!
                     if ( ammoComponent.canReloadInside && player.itemMaterialInMainHandEqualTo(xv.xc.config.materialAmmo) ) {
                         xv.ammoLoadRequests.add(AmmoLoadRequest(
+                            element = playerElement,
                             ammoComponent = ammoComponent,
                             player = player,
                             isInside = true,

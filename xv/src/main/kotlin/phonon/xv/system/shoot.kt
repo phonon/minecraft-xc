@@ -8,6 +8,7 @@ import java.util.Queue
 import java.util.UUID
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.math.max
 import kotlin.math.min
 import org.bukkit.ChatColor
 import org.bukkit.Location
@@ -29,6 +30,7 @@ import phonon.xv.component.GunBarrelComponent
 import phonon.xv.component.GunTurretComponent
 import phonon.xv.component.TransformComponent
 import phonon.xv.util.drain
+import phonon.xv.util.item.createCustomModelItem
 
 /**
  * Request to shoot weapon in vehicle, corresponding to some ammo group.
@@ -94,7 +96,8 @@ public fun XV.systemShootWeapon(
                 continue
             }
 
-            ammo.current[group] = ammoAmount - 1
+            val newAmmoAmount = max(0, ammoAmount - 1)
+            ammo.current[group] = newAmmoAmount
 
             // xv.logger.info("Shooting weapon: ${ammoType}")
 
@@ -126,6 +129,18 @@ public fun XV.systemShootWeapon(
                 )
                 shootDirection = shootPosition.direction
                 shootPosition.add(shootDirection.clone().multiply(2.0))
+
+                // if new ammo is 0, update gun turret armorstand model to unloaded variant
+                if ( newAmmoAmount == 0 ) {
+                    // intentionally checking for a loaded model id here,
+                    // which indicates gun barrel should be using different model id
+                    if ( gunTurret.turretLoadedModelId > 0 ) {
+                        source.getEquipment().setHelmet(createCustomModelItem(gunTurret.material, gunTurret.turretModelId))
+                    }
+                    if ( gunTurret.barrelLoadedModelId > 0 ) {
+                        gunTurret.armorstandBarrel?.getEquipment()?.setHelmet(createCustomModelItem(gunTurret.material, gunTurret.barrelModelId))
+                    }
+                }
             }
             else if ( component == VehicleComponentType.GUN_BARREL ) {
                 val gunBarrel = element.components.gunBarrel!!
@@ -144,6 +159,15 @@ public fun XV.systemShootWeapon(
                 )
                 shootDirection = shootPosition.direction
                 shootPosition.add(shootDirection.clone().multiply(2.0))
+
+                // if new ammo is 0, update gun barrel armorstand model to unloaded variant
+                if ( newAmmoAmount == 0 ) {
+                    // intentionally checking for a loaded model id here,
+                    // which indicates gun barrel should be using different model id
+                    if ( gunBarrel.loadedModelId > 0 ) {
+                        source.getEquipment().setHelmet(createCustomModelItem(gunBarrel.material, gunBarrel.modelId))
+                    }
+                }
             }
             else if ( component == VehicleComponentType.AIRPLANE ) {
 

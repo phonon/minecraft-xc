@@ -70,6 +70,8 @@ public data class GunBarrelComponent(
     val material: Material = Material.BONE, // @skip
     // custom model data for the armorstand
     val modelId: Int = 0,
+    // use separate custom models when ammo is loaded (if this id != -1)
+    val loadedModelId: Int = -1,
     // name of skins variant set to use instead of single model id (optional)
     val skin: String? = null,
     val skinDefaultVariant: String? = null,

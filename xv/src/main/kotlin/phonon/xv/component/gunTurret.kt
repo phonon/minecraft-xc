@@ -95,6 +95,9 @@ public data class GunTurretComponent(
     // custom model data for the armorstands
     val turretModelId: Int = 0,
     val barrelModelId: Int = 0,
+    // use separate custom models when ammo is loaded (if this id != -1)
+    val turretLoadedModelId: Int = -1,
+    val barrelLoadedModelId: Int = -1,
     // name of skins variant set to use instead of single model id (optional)
     val skinTurret: String? = null,
     val skinTurretDefaultVariant: String? = null,
@@ -452,8 +455,11 @@ public data class GunTurretComponent(
                 }
             }
 
-            toml.getLong("turret_model_id")?.let { properties["turretModelId"] = it.toInt() }
-            toml.getLong("barrel_model_id")?.let { properties["barrelModelId"] = it.toInt() }
+            toml.getNumberAs<Int>("turret_model_id")?.let { properties["turretModelId"] = it }
+            toml.getNumberAs<Int>("barrel_model_id")?.let { properties["barrelModelId"] = it }
+
+            toml.getNumberAs<Int>("turret_loaded_model_id")?.let { properties["turretLoadedModelId"] = it }
+            toml.getNumberAs<Int>("barrel_loaded_model_id")?.let { properties["barrelLoadedModelId"] = it }
 
             toml.getString("skin_turret")?.let { properties["skinTurret"] = it }
             toml.getString("skin_turret_default_variant")?.let { properties["skinTurretDefaultVariant"] = it }

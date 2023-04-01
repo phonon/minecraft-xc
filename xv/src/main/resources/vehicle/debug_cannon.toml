@@ -39,6 +39,7 @@ barrel_control_yaw = "wasd"
 barrel_control_pitch = "wasd"
 turret_model_id = 100001
 barrel_model_id = 100002
+barrel_loaded_model_id = 100003
 seat_to_mount = 0 # seat mounted when clicked
 seat_controller = 0 # seat for controlling vehicle
 update_transform = true

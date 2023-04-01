@@ -22,6 +22,12 @@
       },
       "model": "item/vehicle/cannon_1700s_xeth_barrel"
     },
+    {
+      "predicate": {
+        "custom_model_data": 100003
+      },
+      "model": "item/vehicle/cannon_1700s_xeth_barrel_loaded"
+    },
 
     {
       "predicate": {
