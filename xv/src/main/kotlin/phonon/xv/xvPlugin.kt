@@ -39,7 +39,7 @@ public class XVPlugin : JavaPlugin() {
     override fun onLoad() {
         PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this))
         // Are all listeners read only?
-        PacketEvents.getAPI().getSettings().readOnlyListeners(true)
+        // PacketEvents.getAPI().getSettings().readOnlyListeners(true) // api changed wtf?
         PacketEvents.getAPI().load()
     }
 

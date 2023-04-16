@@ -1,6 +1,6 @@
 package phonon.xv.system
 
-import java.util.*
+import java.util.UUID
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.Material

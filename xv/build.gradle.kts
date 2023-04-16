@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 // plugin versioning
-version = "0.0.3"
+version = "0.0.4"
 
 // base of output jar name
 val OUTPUT_JAR_NAME = "xv"

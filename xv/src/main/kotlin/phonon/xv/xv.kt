@@ -147,6 +147,8 @@ public class XV (
     internal var shootWeaponRequests: Queue<ShootWeaponRequest> = ArrayDeque()
     // damage queues
     internal var damageQueue: Queue<VehicleDamageRequest> = ArrayDeque()
+    // teleport queue
+    internal var teleportQueue: Queue<TeleportVehicleRequest> = ArrayDeque()
 
     // ========================================================================
     // RUNNING TASKS
@@ -770,6 +772,15 @@ public class XV (
     }
 
     /**
+     * Get vehicle from entity if it exists.
+     */
+    public fun getVehicleFromEntity(
+        entity: Entity,
+    ): Vehicle? {
+        return this.entityVehicleData[entity.getUniqueId()]?.vehicle
+    }
+
+    /**
      * Get vehicle from entity player is looking at.
      */
     public fun getVehiclePlayerIsLookingAt(
@@ -821,6 +832,30 @@ public class XV (
         }
 
         return vehiclesNearLocation
+    }
+
+    /**
+     * Helper function to teleport a vehicle to target location (x, y, z)
+     * within the vehicle's world.
+     */
+    public fun teleport(
+        vehicle: Vehicle,
+        x: Double,
+        y: Double,
+        z: Double,
+        yaw: Double? = null,
+        pitch: Double? = null,
+    ) {
+        teleportQueue.add(
+            TeleportVehicleRequest(
+                vehicle = vehicle,
+                x = x,
+                y = y,
+                z = z,
+                yaw = yaw,
+                pitch = pitch,
+            )
+        )
     }
 
     /**
@@ -906,6 +941,10 @@ public class XV (
         systemShipMovement(storage, userInputs)
         systemPlaneFuel(storage)
         systemPlaneMovement(storage, userInputs, despawnFinishQueue)
+
+        // do vehicle teleport after movement controls
+        // (since movement controls resets transform dirty flags)
+        systemTeleport(teleportQueue)
 
         // vehicle gun controls
         systemGunBarrelControls(storage, userInputs)
