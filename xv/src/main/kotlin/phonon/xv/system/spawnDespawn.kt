@@ -311,67 +311,71 @@ public fun XV.systemFinishDespawnVehicle(
             dropItem,
             force,
         ) = request
+        
+        if ( vehicle.valid ) { // not yet despawned, this check prevents double despawns
+            vehicle.valid = false
 
-        // create request to destroy vehicle
-        deleteRequests.add(DeleteVehicleRequest(vehicle))
+            // create request to destroy vehicle
+            deleteRequests.add(DeleteVehicleRequest(vehicle))
 
-        try {
-            // drop item if vehicle has valid position in world
-            if ( dropItem ) {
-                // search elements for first element with transform component
-                // -> use that element as vehicle "location"
-                var location: Location? = null
-                findloc@ for ( element in vehicle.elements ) {
-                    if ( element.layout.contains(VehicleComponentType.TRANSFORM) ) {
-                        val transform = element.components.transform!!
-                        val world = transform.world
-                        if ( world !== null ) {
-                            // add some y offset so that item drops from near middle of vehicle
-                            location = Location(world, transform.x, transform.y + 1.0, transform.z)
-                        }
-                        break@findloc
-                    }
-                }
-
-                if ( location !== null ) {
-                    val item = vehicle.prototype.toItemStack(
-                        xv.config.materialVehicle,
-                        vehicle.elements,
-                    )
-                    if ( item !== null ) {
-                        location.world.dropItem(location, item)
-                    }
-                    
-                    // COMPONENT SPECIFIC DESPAWN SYSTEMS:
-                    // TODO: abstract out if possible
-
-                    for ( element in vehicle.elements ) {
-                        // drop fuel item at vehicle location
-                        if ( element.layout.contains(VehicleComponentType.FUEL) ) {
-                            val fuel = element.components.fuel!!
-                            if ( fuel.dropItem && fuel.material != Material.AIR && fuel.current > 0 ) {
-                                val item = ItemStack(fuel.material, fuel.current / fuel.amountPerItem)
-                                location.world.dropItem(location, item)
+            try {
+                // drop item if vehicle has valid position in world
+                if ( dropItem ) {
+                    // search elements for first element with transform component
+                    // -> use that element as vehicle "location"
+                    var location: Location? = null
+                    findloc@ for ( element in vehicle.elements ) {
+                        if ( element.layout.contains(VehicleComponentType.TRANSFORM) ) {
+                            val transform = element.components.transform!!
+                            val world = transform.world
+                            if ( world !== null ) {
+                                // add some y offset so that item drops from near middle of vehicle
+                                location = Location(world, transform.x, transform.y + 1.0, transform.z)
                             }
+                            break@findloc
                         }
+                    }
 
-                        // drop ammo item at vehicle location
-                        if ( element.layout.contains(VehicleComponentType.AMMO) ) {
-                            val ammo = element.components.ammo!!
-                            if ( ammo.dropItem ) {
-                                if ( xv.debug ) {
-                                    xv.logger.warning("TODO: drop ammo item")
+                    if ( location !== null ) {
+                        val item = vehicle.prototype.toItemStack(
+                            xv.config.materialVehicle,
+                            vehicle.elements,
+                        )
+                        if ( item !== null ) {
+                            location.world.dropItem(location, item)
+                        }
+                        
+                        // COMPONENT SPECIFIC DESPAWN SYSTEMS:
+                        // TODO: abstract out if possible
+
+                        for ( element in vehicle.elements ) {
+                            // drop fuel item at vehicle location
+                            if ( element.layout.contains(VehicleComponentType.FUEL) ) {
+                                val fuel = element.components.fuel!!
+                                if ( fuel.dropItem && fuel.material != Material.AIR && fuel.current > 0 ) {
+                                    val item = ItemStack(fuel.material, fuel.current / fuel.amountPerItem)
+                                    location.world.dropItem(location, item)
+                                }
+                            }
+
+                            // drop ammo item at vehicle location
+                            if ( element.layout.contains(VehicleComponentType.AMMO) ) {
+                                val ammo = element.components.ammo!!
+                                if ( ammo.dropItem ) {
+                                    if ( xv.debug ) {
+                                        xv.logger.warning("TODO: drop ammo item")
+                                    }
                                 }
                             }
                         }
                     }
+                } else {
+                    null
                 }
-            } else {
-                null
+            } catch ( err: Exception ) {
+                err.printStackTrace()
+                xv.logger.severe("Error despawning vehicle: ${err.message}")
             }
-        } catch ( err: Exception ) {
-            err.printStackTrace()
-            xv.logger.severe("Error despawning vehicle: ${err.message}")
         }
     }
 }

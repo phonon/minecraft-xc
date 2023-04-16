@@ -51,6 +51,11 @@ public data class Vehicle(
     val elements: List<VehicleElement>,
 ) {
     public val rootElements: List<VehicleElement>
+
+    // flag whether vehicle is still valid spawned vehicle
+    // use to check for redundant delete or despawns (e.g. when two players
+    // despawn the same vehicle at same time)
+    public var valid: Boolean = true
     
     init {
         // find root elements from elements without parents
