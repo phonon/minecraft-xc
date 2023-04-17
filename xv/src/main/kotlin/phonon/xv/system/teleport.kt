@@ -133,12 +133,15 @@ internal fun XV.systemTeleport(
                 }
             }
 
-            // get distance2 to target
+            // get distance^2 to target
             val dx = x - transform.x
             val dy = y - transform.y
             val dz = z - transform.z
             val dist2 = dx*dx + dy*dy + dz*dz
 
+            // for distance threshold for simple teleport, using 2 chunks (32 blocks)
+            // as threshold as most view distances should never go under this...
+            // but really should be configurable or input parameter
             if ( ( dist2 > 1024.0 && hasPassengers ) || forceMultiStep == true ) { 
                 // begin multi-step teleport
                 // unmount + teleport player -> teleport vehicle -> remount
