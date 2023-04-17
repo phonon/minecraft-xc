@@ -38,7 +38,12 @@ public fun XV.systemUpdateSeats(
                 // debug
                 // println("armorstand: ${armorstand?.getUniqueId()}, player: $player, player.getVehicle() ${ ?.getVehicle()?.getUniqueId()}")
 
-                if ( player !== null ) {
+                // unmount player if they are not in the vehicle
+                // (only do if seats not in a teleporting process, where 
+                // teleport system must temporarily override this and
+                // manually unmount and remount players,
+                // see systems/teleport.kt)
+                if ( player !== null && seats.teleporting == false ) {
                     val playerVehicle = player.getVehicle()
                     if ( playerVehicle === null || playerVehicle.getUniqueId() !== armorstand?.getUniqueId() || !player.isOnline() || player.isDead() ) {
                         if ( armorstand !== null && armorstandIsExternal == false ) {

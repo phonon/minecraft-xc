@@ -129,6 +129,11 @@ public fun XV.systemDestroyVehicle(
 
     while ( requests.isNotEmpty() ) {
         val (vehicle,) = requests.remove()
+
+        // invalidate vehicle, in case systems hold stale references to vehicle
+        // e.g. multi-tick teleport and somehow vehicle killed during process
+        vehicle.valid = false
+
         xv.deleteVehicle(vehicle)
     }
 }

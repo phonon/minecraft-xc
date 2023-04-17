@@ -149,6 +149,8 @@ public class XV (
     internal var damageQueue: Queue<VehicleDamageRequest> = ArrayDeque()
     // teleport queue
     internal var teleportQueue: Queue<TeleportVehicleRequest> = ArrayDeque()
+    internal var teleportStepVehicleQueue: Queue<TeleportStepVehicle> = ArrayDeque()
+    internal var teleportStepRemountQueue: Queue<TeleportStepRemount> = ArrayDeque()
 
     // ========================================================================
     // RUNNING TASKS
@@ -208,6 +210,10 @@ public class XV (
         shootWeaponRequests = ArrayDeque()
         // damage queue
         damageQueue = ArrayDeque()
+        // teleport queues
+        teleportQueue = ArrayDeque()
+        teleportStepVehicleQueue = ArrayDeque()
+        teleportStepRemountQueue = ArrayDeque()
         
         // kill player tasks
         for ( (uuid, task) in playerTasks ) {
@@ -944,7 +950,12 @@ public class XV (
 
         // do vehicle teleport after movement controls
         // (since movement controls resets transform dirty flags)
-        systemTeleport(teleportQueue)
+        // see `systems/teleport.kt` for details on why there are 3 steps
+        // IN THIS SPECIFIC ORDER: teleport player -> teleport vehicle -> remount
+        // each system feeds into previous system ON NEXT TICK
+        systemTeleportStepRemount(teleportStepRemountQueue)
+        systemTeleportStepVehicles(teleportStepVehicleQueue, teleportStepRemountQueue)
+        systemTeleport(teleportQueue, teleportStepVehicleQueue)
 
         // vehicle gun controls
         systemGunBarrelControls(storage, userInputs)

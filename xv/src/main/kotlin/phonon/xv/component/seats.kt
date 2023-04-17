@@ -104,6 +104,10 @@ public data class SeatsComponent(
     val healthDisplay: DoubleArray = DoubleArray(count) { -1.0 }
     val healthDisplayMax: DoubleArray = DoubleArray(count) { -1.0 }
 
+    // flag that seats is going through multi-tick teleport process
+    // avoid doing normal unmounting during this process
+    var teleporting = false
+
     override fun deepclone(): SeatsComponent {
         return this.copy()
     }
